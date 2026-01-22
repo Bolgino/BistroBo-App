@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<title>BistroBò</title>
+	<link rel="manifest" href="manifest.json">
+	<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+	<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+	<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
+	<link rel="icon" href="favicon.ico" type="image/x-icon">
+	<!--STYLE-->
+	<link rel="stylesheet" href="main/style.css">
+</head>
+
+<body>
+	<div id="themeBackground"></div>
+	<!-- LOADER GLOBALE -->
+	<div id="loader"> <div class="burger-loader">
+			<div class="b-top"></div>
+			<div class="b-salad"></div>
+			<div class="b-meat"></div>
+			<div class="b-bottom"></div>
+		</div>
+		<div id="loaderText">ACCENDENDO I FORNELLI...</div>
+	</div>
+
+	<div id="offlineLoader" class="hidden">
+		<div class="spinner"></div>
+		<div style="font-size: 1.2rem; font-weight: bold;">CONNESSIONE PERSA</div>
+		<div>Riconnessione in corso...</div>
+	</div>
+
+	<!-- ================= LOGIN / REGISTRAZIONE ================= -->
+	<div id="loginWrapper">
+		<h1>BistroBò</h1>
+		<div id="loginDiv">
+			<h2>Login</h2>
+			Email: <input type="text" id="username"><br>
+			Password: <input type="password" id="password"><br>
+			<button id="loginBtn">Accedi</button>
+			<button id="vaiRegBtn">Registrati</button> 
+			<div id="loginMsg"></div>
+		</div>
+
+		<div id="registerDiv" class="hidden">
+			<h2>Registrazione</h2>
+			Email: <input type="email" id="regEmail"><br>
+			Password: <input type="password" id="regPassword"><br>
+			<label for="regRole" id="labelRegRole" style="display:none;"><b>Ruolo:</b></label>
+			<select id="regRole" style="display:none;">
+				<option value="" selected>-- Seleziona ruolo --</option>
+				<option value="cassa">Cassa</option>
+				<option value="cucina">Cucina</option>
+				<option value="bere">Bere</option>
+			</select>
+			<br><br>
+			<button id="regBtn">Registrati</button>
+			<button id="tornaLoginBtn">Torna al login</button>
+			<div id="regMsg"></div>
+		</div>
+	</div>
+
+	<!-- ================= LOGOUT ================= -->
+	<div id="logoutDiv" class="hidden">
+		<button id="passaACassaBtn" style="display:none; margin-left:10px;">Passa a Cassa</button>
+		<button id="logoutBtn">Logout</button>
+		<div id="orologioDiv" 
+			style="text-align:right; 
+					margin-top:10px;
+					font-weight:bold; 
+					font-size:1.3em; 
+					color:#000000;">
+			<span id="orologio">--:--</span>
+		</div>
+	</div>
+
+	<!-- ================= CASSA ================= -->
+	<div id="cassaDiv" class="hidden">
+		<h2>Cassa</h2>
+		
+		<!-- Pulsanti tab -->
+		<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+			
+			<div>
+				<button class="tabBtn active" data-tab="aggiungiComandaTab">Aggiungi Comanda</button>
+				<button id="ingredientiCriticiTabBtn" class="tabBtn" data-tab="ingredientiCriticiTab" style="display:none;">Ingredienti Critici</button>
+				<button id="preordiniTabBtn" class="tabBtn" data-tab="preordiniTab" style="display:none;">Preordini</button>
+				<button class="tabBtn" data-tab="listaComandeTab">Lista Comande</button>
+				<button class="tabBtn" data-tab="chatCassaTab">Chat</button>
+			</div>
+
+			<div id="boxTempoMedioCassa" 
+				style="background:#e3f2fd; padding:6px 12px; border-radius:6px; 
+						font-size:0.9em; font-weight:bold; color:#0d47a1; text-align:center; 
+						border:1px solid #bbdefb; display:none; 
+						min-width: 150px; white-space: nowrap;">
+				⏱️ Attesa media: <span id="valoreTempoMedioCassa">--</span> min
+			</div>
+		</div>
+
+		<!-- Contenuto tab Aggiungi Comanda -->
+		<div id="aggiungiComandaTab" class="tabContent active">
+			<div style="display:flex; gap:20px;">
+				<!-- Lista Comanda -->
+				<div style="flex:1; border:1px solid #ccc; padding:10px;">
+					<h3>Comanda Corrente</h3>
+					Numero e Lettera Comanda: 
+					<input type="number" id="numComanda" min="1" style="width:60px;">
+					<input type="text" id="letteraComanda" maxlength="1" style="width:40px;" pattern="[A-Za-z]"><br><br>
+					
+					<div id="asportoContainer" style="display:none; margin:8px 0;">
+						<label>
+							<input type="checkbox" id="checkAsporto">
+							<b class="asportoText">ASPORTO</b>
+						</label>
+					</div>
+
+					Quantità: 
+					<select id="quantita" class="selectQty">
+						<option value="">--</option>
+						<script>
+							for(let i=1;i<=20;i++){
+								document.write(`<option value="${i}">${i}</option>`);
+							}
+						</script>
+					</select>
+
+					<!-- Riquadro con comanda corrente -->
+					<div id="comandaCorrente" 
+						 style="height:250px; padding:5px; 
+								border:1px solid #ccc; border-radius:5px; overflow-y:auto; margin-bottom:15px;">
+					</div>
+
+          <!-- Spazio note comanda -->
+          <label for="noteComanda"><b>Note:</b></label><br>
+		  <!-- 🔹 Tick destinazioni note (visibili solo se impostazione attiva) -->
+			<div id="noteDestinazioniDiv" style="display:none; margin-bottom:6px;">
+				<label><input type="checkbox" id="tickCucina" checked> Cucina</label>
+				<label style="margin-left:10px;"><input type="checkbox" id="tickBere"> Bere</label>
+				<label id="tickSnackLabel" style="margin-left:10px; display:none;">
+						<input type="checkbox" id="tickSnack"> Snack
+				</label>
+			</div>
+
+          <textarea id="noteComanda" 
+                    placeholder="Note comanda (es. allergie, richieste)" 
+                    style="width:98%; height:150px; resize:vertical; border:1px solid #ccc; border-radius:3px; padding-top:8px; padding-bottom:8px; padding-left:0px; padding-right:5px; text-align:left;"></textarea>
+				</div>
+
+
+				<!-- Menu da aggiungere -->
+				<div style="flex:1; border:1px solid #ccc; padding:10px;">
+					<div id="menuCibi"><h3>Cibi</h3></div>
+					<div id="menuBevande"><h3>Bevande</h3></div>
+					<div id="menuSnack"><h3>Snack</h3></div>
+				</div>
+			</div>
+
+			<!-- Totale e soldi (ora dentro la tab Aggiungi Comanda) -->
+			<div id="totaleDiv" class="stickyBar" style="margin-top:15px;">
+				<div class="stickyLeft">
+					<b style="color:red;">Totale: €<span id="totale">0.00</span></b>
+					<b style="color:green;">Pagato: €<span id="totalePagato">0.00</span></b>
+					<b>
+						Resto: €<span id="restoDovuto">0.00</span>
+						<span id="suggerimentoResto" style="font-size:0.9em; color:blue;"></span>
+					</b>
+					<!-- Metodo pagamento -->
+					<div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+						<label for="metodoPagamento" style="margin:0;"><b>Metodo pagamento:</b></label>
+						<select id="metodoPagamento" style="width:120px; height:28px;">
+							<option value="contanti" selected>Contanti</option>
+							<option value="pos">POS</option>
+						</select>
+					</div>
+
+					<!-- Pulsante Invio comanda grande a capo -->
+					<button id="inviaComandaBtn" class="stickyBtn">Invia Comanda</button>
+
+
+				</div>
+
+				<div class="stickyRight">
+					<div id="banconoteDiv" style="display:flex; gap:10px; flex-wrap:wrap;"></div>
+					<div id="moneteDiv" style="display:flex; gap:10px; flex-wrap:wrap;"></div>
+					<button id="resetSoldiBtn">Reset Soldi</button>
+				</div>
+			</div>
+		</div>
+		<!-- Tab Lista Comande -->
+		<div id="listaComandeTab" class="tabContent">
+			<h3>Comande inviate (<span id="conteggioComande">0</span>):</h3>
+			<input type="text" id="cercaComandaCassa" 
+				placeholder="🔍 Cerca numero comanda..." 
+				style="margin:10px 0; width:100%; padding:5px; font-size:16px;">
+			<div id="comandeCassa"></div>
+		</div>
+		<!-- Tab Ingredienti Critici -->
+		<div id="ingredientiCriticiTab" class="tabContent">
+			<h3>Ingredienti Critici</h3>
+			<div id="listaIngredientiCritici"></div>
+		</div>
+		<!-- CHAT INTERNA -->
+		<div id="chatCassaTab" class="tabContent">
+			<h3>Chat interna</h3>
+			<div id="chatContainerCassa" class="chat-container"></div>
+			<div class="chat-input-bar">
+				<input type="text" id="chatInputCassa" placeholder="Scrivi un messaggio...">
+				<button id="chatSendCassaBtn" title="Invia messaggio">➤</button>
+			</div>
+		</div>
+		<div id="preordiniTab" class="tabContent">
+			<h3>Preordini</h3>
+			<div id="listaPreordiniCassa"></div>
+		</div>
+
+
+	</div>
+
+	<!-- ================= CUCINA ================= -->
+	<div id="cucinaDiv" class="hidden">
+		<h2>Cucina</h2>
+		<div>
+			<button class="tabBtn" data-tab="daFareTab">Da fare</button>
+			<button class="tabBtn" data-tab="menuCucinaTab">Menu</button>
+			<button class="tabBtn" data-tab="ingredientiCucinaTab">Ingredienti</button>
+			<button class="tabBtn" data-tab="storicoTab">Storico</button>
+			<button class="tabBtn" data-tab="chatCucinaTab">Chat</button>
+
+		</div>
+
+		<!-- DA FARE -->
+		<div id="daFareTab" class="tabContent active">
+			<input type="text" id="cercaComandaCucina" placeholder="🔍 Cerca numero comanda..." 
+				style="margin:10px 0; width:100%; padding:5px; font-size:16px;">
+			<div id="daFareComandeContainer"></div>
+		</div>
+
+		<!-- STORICO -->
+		<div id="storicoTab" class="tabContent">
+			<input type="text" id="cercaComandaCucinaStorico" placeholder="🔍 Cerca numero comanda..." 
+				style="margin:10px 0; width:100%; padding:5px; font-size:16px;">
+			<div id="storicoComandeContainer"></div>
+		</div>
+
+		<div id="ingredientiCucinaTab" class="tabContent"></div>
+		<div id="menuCucinaTab" class="tabContent">
+			<h3>Menu</h3>
+			<div id="menuCucinaContainer" style="display:flex; flex-direction:column; gap:10px;"></div>
+		</div>
+		<!-- CHAT INTERNA -->
+		<div id="chatCucinaTab" class="tabContent">
+			<h3>Chat interna</h3>
+			<div id="chatContainerCucina" class="chat-container"></div>
+			<div class="chat-input-bar">
+				<input type="text" id="chatInputCucina" placeholder="Scrivi un messaggio...">
+				<button id="chatSendCucinaBtn" title="Invia messaggio">➤</button>
+			</div>
+		</div>
+	</div>
+
+
+	<!-- ================= BERE ================= -->
+	<div id="bereDiv" class="hidden">
+		<h2>Bere</h2>
+		<div>
+			<button class="tabBtn" data-tab="daBereTab">Da fare</button>
+			<button class="tabBtn" data-tab="menuBereTab">Menu</button>
+			<button class="tabBtn" data-tab="ingredientiBereTab">Ingredienti</button>
+			<button class="tabBtn" data-tab="storicoBereTab">Storico</button>
+		    <button class="tabBtn" data-tab="chatBereTab">Chat</button>
+
+		</div>
+
+		<!-- DA FARE -->
+		<div id="daBereTab" class="tabContent active">
+			<input type="text" id="cercaComandaBere" placeholder="🔍 Cerca numero comanda..." 
+				style="margin:10px 0; width:100%; padding:5px; font-size:16px;">
+			<div id="daBereComandeContainer"></div>
+		</div>
+
+		<!-- STORICO -->
+		<div id="storicoBereTab" class="tabContent">
+			<input type="text" id="cercaComandaBereStorico" placeholder="🔍 Cerca numero comanda..." 
+				style="margin:10px 0; width:100%; padding:5px; font-size:16px;">
+			<div id="storicoBereComandeContainer"></div>
+		</div>
+
+		<div id="ingredientiBereTab" class="tabContent"></div>
+		<div id="menuBereTab" class="tabContent">
+			<h3>Menu</h3>
+			<div id="menuBereContainer" style="display:flex; flex-wrap:wrap; gap:10px;"></div>
+		</div>
+
+		<!-- CHAT INTERNA -->
+		<div id="chatBereTab" class="tabContent">
+			<h3>Chat interna</h3>
+			<div id="chatContainerBere" class="chat-container"></div>
+			<div class="chat-input-bar">
+				<input type="text" id="chatInputBere" placeholder="Scrivi un messaggio...">
+				<button id="chatSendBereBtn" title="Invia messaggio">➤</button>
+			</div>
+		</div>
+	</div>
+	<!-- ================= SNACK ================= -->
+	<div id="snackDiv" class="hidden">
+	<h2>Snack</h2>
+	<div>
+		<button class="tabBtn" data-tab="daSnackTab">Da fare</button>
+		<button class="tabBtn" data-tab="menuSnackTab">Menu</button>
+		<button class="tabBtn" data-tab="ingredientiSnackTab">Ingredienti</button>
+		<button class="tabBtn" data-tab="storicoSnackTab">Storico</button>
+		<button class="tabBtn" data-tab="chatSnackTab">Chat</button>
+	</div>
+
+	<div id="daSnackTab" class="tabContent active">
+		<input type="text" id="cercaComandaSnack" placeholder="🔍 Cerca numero comanda..." 
+		style="margin:10px 0; width:100%; padding:5px; font-size:16px;">
+		<div id="daSnackComandeContainer"></div>
+	</div>
+
+	<div id="storicoSnackTab" class="tabContent">
+		<input type="text" id="cercaComandaSnackStorico" placeholder="🔍 Cerca numero comanda..." 
+		style="margin:10px 0; width:100%; padding:5px; font-size:16px;">
+		<div id="storicoSnackComandeContainer"></div>
+	</div>
+
+	<div id="ingredientiSnackTab" class="tabContent"></div>
+	<div id="menuSnackTab" class="tabContent">
+		<h3>Menu</h3>
+		<div id="menuSnackContainer" style="display:flex; flex-direction:column; gap:10px;"></div>
+	</div>
+
+	<div id="chatSnackTab" class="tabContent">
+		<h3>Chat interna</h3>
+		<div id="chatContainerSnack" class="chat-container"></div>
+		<div class="chat-input-bar">
+		<input type="text" id="chatInputSnack" placeholder="Scrivi un messaggio...">
+		<button id="chatSendSnackBtn" title="Invia messaggio">➤</button>
+		</div>
+	</div>
+	</div>
+	<!-- ================= ADMIN ================= -->
+	<div id="adminDiv" class="hidden">
+		<h2>Admin</h2>
+		<div>
+			<button class="tabBtn" data-tab="comandeTab">Comande</button>
+			<button class="tabBtn" data-tab="preordiniAdminTab">Preordini</button>
+			<button class="tabBtn" data-tab="menuTab">Menu</button>
+			<button class="tabBtn" data-tab="ingredientiTab">Ingredienti</button>
+			<button class="tabBtn" data-tab="scontiTab">Sconti</button> 
+			<button class="tabBtn" data-tab="incassiTab">Statistiche Vendita</button>
+			<button class="tabBtn" data-tab="utentiTab">Utenti</button>
+		    <button class="tabBtn" data-tab="chatAdminTab">Chat</button>
+			<button class="tabBtn" data-tab="impostazioniTab">Impostazioni</button>
+		</div>
+
+		<!-- Comande Admin -->
+		<div id="comandeTab" class="tabContent">
+			<h3>Comande inviate (<span id="conteggioComandeAdmin">0</span>):</h3>
+			<div id="boxTempoMedioAdmin" style="background:#e3f2fd; padding:10px; border-radius:8px; margin-bottom:10px; font-weight:bold; color:#0d47a1; display:none;">
+                ⏱️ Tempo medio attesa (Cibo): <span id="valoreTempoMedioAdmin">--</span> min
+            </div>
+			<input type="text" id="cercaComandaAdmin" 
+				placeholder="🔍 Cerca numero comanda..." 
+				style="margin:10px 0; width:100%; padding:5px; font-size:16px;">
+			<div id="listaComandeAdmin"></div>
+		</div>
+		<!-- Preordini Admin -->
+		<div id="preordiniAdminTab" class="tabContent">
+			<h3>Gestione Preordini</h3>
+			<div id="listaPreordiniAdmin"></div>
+		</div>
+		<!-- Incassi -->
+		<div id="incassiTab" class="tabContent">
+		<h3>Statistiche Incassi</h3>
+		<div style="margin-bottom:10px;">
+			<button id="generaExcelBtn">📊 Esporta Excel</button>
+			<button id="generaPdfBtn">📄 Esporta PDF</button>
+		</div>
+		<div id="contenutoStatistiche"></div>
+		</div>
+
+		<!-- Ingredienti -->
+		<div id="ingredientiTab" class="tabContent">
+			<h3>Ingredienti</h3>
+			<div style="display:flex; gap:12px; align-items:center; margin-bottom:10px;">
+				Nome: <input type="text" id="ingredienteNome" placeholder="es. Pomodoro">
+				Categoria:
+				<select id="ingredienteCategoria">
+					<option value="cibi">Cibi</option>
+					<option value="bevande">Bevande</option>
+					<option value="snack">Snack</option>
+				</select>
+				Quantità iniziale (opzionale): <input type="number" step="0.01" id="ingredienteRimanente" min="0" style="width:100px">
+				Unità: 
+				<select id="ingredienteUnita">
+					<option value="pz">Pezzi</option>
+					<option value="kg">Kg</option>
+					<option value="l">Litri</option>
+				</select>
+				<button id="aggiungiIngredienteBtn">Aggiungi/Salva ingrediente</button>
+			</div>
+			<div id="ingredientiDiv"></div>
+		</div>
+
+		<!-- Menu -->
+		<div id="menuTab" class="tabContent">
+			<h3>Menu</h3>
+			<div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+				Nome: <input type="text" id="piattoNome">
+				Prezzo: <input type="number" id="piattoPrezzo" step="0.01">
+				Categoria:
+				<select id="piattoCat">
+					<option value="cibi">Cibi</option>
+					<option value="bevande">Bevande</option>
+					<option value="snack">Snack</option>
+				</select>
+				<button id="mostraOpzioniIngredientiBtn">Mostra/aggiorna ingredienti</button>
+			</div>
+			<div id="piattoIngredientiContainer" style="margin-bottom:10px; display:none;"></div>
+			<button id="aggiungiMenuBtn">Aggiungi piatto</button>
+			<div id="menuAdmin"></div>
+		</div>
+
+		<!-- Utenti -->
+		<div id="utentiTab" class="tabContent">
+			<h3>Gestione Utenti</h3>
+			Username: <input id="newUsername">
+			Password: <input id="newPass">
+			Ruolo:
+			<select id="newRole">
+				<option value="cassa">Cassa</option>
+				<option value="cucina">Cucina</option>
+				<option value="admin">Admin</option>
+				<option value="bere">Bere</option>
+			</select>
+			<button id="registraBtn">Registra Utente</button>
+			<div id="listaUtenti"></div>
+		</div>
+
+		<!-- Sconti -->
+		<div id="scontiTab" class="tabContent">
+			<h3>Gestione Sconti</h3>
+			<div id="listaSconti"></div>
+		</div>
+		<!-- CHAT INTERNA -->
+		<div id="chatAdminTab" class="tabContent">
+			<h3>Chat interna</h3>
+			<div id="chatContainerAdmin" class="chat-container"></div>
+			<div class="chat-input-bar">
+				<input type="text" id="chatInputAdmin" placeholder="Scrivi un messaggio...">
+				<button id="chatSendAdminBtn" title="Invia messaggio">➤</button>
+			</div>
+		</div>
+
+		<!-- Impostazioni -->
+		<div id="impostazioniTab" class="tabContent">
+			<h3>Impostazioni</h3>
+			<div class="settingItem">
+				<div class="settingLabel">
+					<span>Nome Stand</span>
+					<small>Nome dell'attività da mostrare in cima alla stampa delle comande</small>
+				</div>
+				<div class="inputContainer">
+					<input type="text" id="inputNomeStand" placeholder="BistroBò" />
+					<button id="saveNomeStandBtn">Salva</button>
+				</div>
+			</div>
+			<div class="settingItem">
+				<div class="settingLabel">
+					<span>Tema sito</span>
+					<small>Personalizza il sito per un'esperienza ancora più incredibile!</small>
+				</div>
+				<select id="selectTema">
+					<option value="default">Default</option>
+					<option value="scout">Scout</option>
+					<option value="autunno">Autunno</option>
+					<option value="inverno">Inverno</option>
+					<option value="primavera">Primavera</option>
+					<option value="estate">Estate</option>
+				</select>
+			</div>
+			<div class="settingItem">
+				<div class="settingLabel">
+					<span>Suoni globali cassa</span>
+					<small>Abilita/disabilita tutti i suoni relativi alla Cassa</small>
+				</div>
+				<button id="toggleSuonoCassaBtn" class="toggleBtn">🔔 ON</button>
+			</div>
+			<div class="settingItem">
+				<div class="settingLabel">
+					<span>Suono nuove comande per i profili</span>
+					<small>Suona un avviso quando vengono arriva una nuova comanda. Valido per tutti i profili</small>
+				</div>
+				<button class="toggleBtn" id="toggleSuonoBtn">🔔 ON</button>
+			</div>
+			<div class="settingItem">
+				<div class="settingLabel">
+					<span>Abilita casella “Asporto”</span>
+					<small>Mostra la casella “Asporto” in Cassa per etichettare le comande con "Asporto" (sia normali sia preordini)</small>
+				</div>
+				<button id="toggleAsportoBtn" class="toggleBtn">OFF</button>
+			</div>
+			<!-- ================= PREORDINI ================= -->
+			<div class="settingItem">
+				<div class="settingLabel">
+					<span>Abilita sistema Preordini</span>
+					<small>Consente la gestione dei preordini (pagina clienti e scheda dedicata in Cassa e Admin)</small>
+				</div>
+				<button id="togglePreordiniBtn" class="toggleBtn">OFF</button>
+			</div>
+			<div class="settingItem" id="settingLetteraPreordini" style="display:none;">
+				<div class="settingLabel">
+					<span>Lettera preordini</span>
+					<small>Seleziona la lettera da usare nelle comande che derivano da un preordine</small>
+				</div>
+				<input type="text" id="inputLetteraPreordini" maxlength="1" style="width:40px;" pattern="[A-Za-z]">
+			</div>
+			<div class="settingItem" id="settingSuonoPreordini" style="display:none;">
+				<div class="settingLabel">
+					<span>Suoni Notifiche Preordini</span>
+					<small>Abilita/disabilita il suono dei preordini</small>
+				</div>
+				<button id="toggleSuonoPreordiniBtn" class="toggleBtn">🔔 ON</button>
+			</div>
+			<div class="settingItem" id="settingOrdinaPreordini" style="display:none;">
+				<div class="settingLabel">
+					<span>Nuovi Preordini in alto</span>
+					<small>I nuovi Preordini appariranno sempre in cima alla lista</small>
+				</div>
+				<button id="toggleOrdinaPreordiniBtn" class="toggleBtn">ON</button>
+			</div>
+			<div class="settingItem" id="settingPreordiniInfo" style="display:none;">
+				<div class="settingLabel">
+					<span>Richiedi Numero, Orario di Consegna e Posizione nei preordini</span>
+					<small>Se attivo, i clienti dovranno compilare numero di telefono, Orario di Consegna desiderato e posizione (Specifica San Matteo)</small>
+				</div>
+				<button id="togglePreordiniInfoBtn" class="toggleBtn">ON</button>
+			</div>
+
+			<div class="settingItem">
+				<div class="settingLabel">
+					<span>Invio note ai profili</span>
+					<small>Permetti alla cassa e, se abilitato, ai preordini di scegliere le destinazioni delle note nei vari profili</small>
+				</div>
+				<button id="toggleNoteDestinazioniBtn" class="toggleBtn">OFF</button>
+			</div>
+			<div class="settingItem">
+				<div class="settingLabel">
+					<span>Stampa automatica comande</span>
+					<small>Se attivato, le comande verranno stampate automaticamente all'invio dalla cassa e, se abilitato, all'aggiunta del preordine come comanda </small>
+				</div>
+				<button id="toggleStampaComande" class="toggleBtn">OFF</button>
+			</div>
+			<div class="settingItem">
+				<div class="settingLabel">
+					<span>Nuove comande in alto Cucina</span>
+					<small>Le nuove comande appariranno sempre in cima alla lista Cucina</small>
+				</div>
+				<button id="toggleNuoveInAltoCucinaBtn" class="toggleBtn">ON</button>
+			</div>
+			<div class="settingItem">
+				<div class="settingLabel">
+					<span>Nuove comande in alto Bere</span>
+					<small>Le nuove comande appariranno sempre in cima alla lista Bere</small>
+				</div>
+				<button id="toggleNuoveInAltoBereBtn" class="toggleBtn">ON</button>
+			</div>
+			<div class="settingItem">
+				<div class="settingLabel">
+					<span>Profilo Snack</span>
+					<small>Abilita o disabilita il profilo Snack. <b>Prima di disattivarlo o attivarlo, completare tutte le comande attive di Snack e di Cucina!</b></small>
+				</div>
+				<button id="toggleSnackBtn" class="toggleBtn">OFF</button>
+			</div>
+
+			<div class="settingItem" id="settingNuoveInAltoSnack" style="display:none;">
+				<div class="settingLabel">
+					<span>Nuove comande in alto Snack</span>
+					<small>Le nuove comande Snack appariranno in cima alla lista Snack</small>
+				</div>
+				<button id="toggleNuoveInAltoSnackBtn" class="toggleBtn">OFF</button>
+			</div>
+			<div class="settingItem">
+				<div class="settingLabel">
+					<span>Approvazione automatica nuovi utenti</span>
+					<small>Se attivato, i nuovi utenti verranno approvati automaticamente e non necessiteranno dell'approvazione dell'admin</small>
+				</div>
+				<button id="toggleApprovazioneBtn" class="toggleBtn">OFF</button>
+			</div>
+			<div class="settingItem" id="settingChatAbilitata">
+				<div class="settingLabel">
+					<span>Chat Abilitata</span>
+					<small>Abilita o disabilita la chat interna</small>
+				</div>
+				<button id="toggleChatAbilitataBtn" class="toggleBtn">ON</button>
+			</div>
+			<div class="settingItem">
+				<div class="settingLabel">
+					<span>Suono Notifica Chat</span>
+					<small>Attiva/disattiva il suono quando arrivano nuovi messaggi nella chat</small>
+				</div>
+				<button id="toggleSuonoChatBtn" class="toggleBtn">🔔 ON</button>
+			</div>
+			<div class="settingItem">
+				<div class="settingLabel">
+					<span>Reset Chat</span>
+					<small>Elimina tutti i messaggi della chat interna per fare un po' di pulizia</small>
+				</div>
+				<button id="resetChatBtn" class="toggleBtn">Reset</button>
+			</div>
+			<div class="settingItem">
+				<div class="settingLabel">
+					<span>Backup Database</span>
+					<small>Scarica o ripristina il backup completo (preordini, comande, utenti, menù, ingredienti, impostazioni) del database (non caricare precedenti versioni del sito)</small>
+				</div>
+				<div style="display:flex; gap:10px; align-items:center;">
+					<button id="backupDbBtn" class="toggleBtn">Scarica Backup</button>
+					<button id="restoreDbBtn" class="toggleBtn">Ripristina Backup</button>
+					<input type="file" id="restoreDbFile" style="display:none;">
+				</div>
+			</div>
+
+			<div class="settingItem">
+				<div class="settingLabel">
+					<span>Cancella comande inserite</span>
+					<small>Rimuove tutte le comande presenti nel sistema. <b>Operazione irreversibile!</b></small>
+				</div>
+				<button id="cancellaComandeBtn" class="toggleBtn">ELIMINA</button>
+			</div>
+
+
+		</div>
+	</div>
+
+	<!-- ================= SCRIPT ================= -->
+	<script src="main/script.js"></script>
+	<script src="preordini.js"></script>
+	<script>
+		(function(){
+			// 1. CONFIGURAZIONE
+			const TEMPO_MINIMO_LOADER = 3000; // 3.5 secondi di panino garantiti
+			const start = Date.now();
+			const loader = document.getElementById("loader");
+			const textEl = document.getElementById("loaderText");
+
+			// 2. FRASI A ROTAZIONE
+			const frasi = [
+				"Affettando il salame...",
+				"Scaldando la piastra...",
+				"Controllando la croccantezza...",
+				"Mettendo il formaggio extra...",
+				"Scolando la pasta al dente...",
+				"Rubando una patatina...",
+				"Lucidando le forchette...",
+				"Preparando la linea...",
+				"Cercando la ricetta della nonna...",
+				"Litigando con la pellicola...",
+				"Assaggiando il sugo (per sicurezza)...",
+				"Contando i tortellini...",
+				"Caricando carboidrati...",
+				"Recuperando il mestolo...",
+				"Scongelando l'entusiasmo...",
+				"Aggiungendo un pizzico di sale..."
+			];
+
+			// Cambio frase ogni 1.2 secondi
+			if(textEl) {
+				let i = 0;
+				// Imposta subito la prima frase a caso per variare
+				i = Math.floor(Math.random() * frasi.length);
+				textEl.innerText = frasi[i].toUpperCase();
+
+				setInterval(() => {
+					i = (i + 1) % frasi.length;
+					textEl.innerText = frasi[i].toUpperCase();
+				}, 1200);
+			}
+
+			// 3. LOGICA DI CHIUSURA "RITARDATA"
+			// Questa funzione controlla ciclicamente se possiamo nascondere il loader
+			function checkRimuoviLoader() {
+				const now = Date.now();
+				const tempoPassato = now - start;
+				
+				// Verifichiamo due condizioni:
+				// A. È passato il tempo minimo (3.5s)?
+				// B. Il tema è stato caricato? (La classe 'tema-caricato' viene messa dal tuo script.js quando firebase risponde)
+				const temaCaricato = document.body.classList.contains('tema-caricato');
+
+				if (tempoPassato >= TEMPO_MINIMO_LOADER && temaCaricato) {
+					// Se entrambe sono vere, via il panino!
+					if(loader) loader.classList.add("nascosto-davvero");
+				} else {
+					// Altrimenti riprova tra poco
+					requestAnimationFrame(checkRimuoviLoader);
+				}
+			}
+
+			// Avvia il controllo
+			checkRimuoviLoader();
+
+			// FALLBACK DI SICUREZZA
+			// Se per qualche motivo assurdo il tema non carica in 10 secondi, apri comunque
+			setTimeout(() => {
+				if(loader) loader.classList.add("nascosto-davvero");
+			}, 10000);
+
+		})();
+	</script>
+	<script>
+	if ('serviceWorker' in navigator) {
+		navigator.serviceWorker.register('sw.js');
+	}
+	</script>
+</body>
+</html>

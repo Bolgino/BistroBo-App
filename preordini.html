@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title> Preordina - BistroBò</title>
+
+  <!-- CSS principale -->
+  <link rel="stylesheet" href="main/style.css"> 
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
+  <!-- Config Firebase per preordini.html -->
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDxpd24nF3qmNrh8j40jxjhYzh1RC08DhI",
+      authDomain: "comande-6fb85.firebaseapp.com",
+      databaseURL: "https://comande-6fb85-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "comande-6fb85"
+    };
+
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+  </script>
+
+  <!-- Script preordini -->
+  <script src="preordini.js" defer></script>
+</head>
+
+<body class="preordine-body">
+
+  <div class="preordine-container">
+    <h1 class="preordine-title">Preordina al BistroBò</h1>
+
+    <div id="menuClienti" class="preordine-menu"></div>
+
+    <h3 class="preordine-totale">
+      Totale: €<span id="totaleCliente">0.00</span>
+    </h3>
+
+    <textarea id="noteCliente" class="preordine-note" placeholder="Note (es. senza cipolla, no pomodoro, orario di consegna...)"></textarea>
+
+    <div class="preordine-soldi">
+      <label><input type="checkbox" id="soldiGiusti"> Ho i soldi giusti</label>
+      <label>Resto richiesto (€): <input type="number" id="restoRichiesto" step="0.5" min="0"></label>
+    </div>
+
+    <input type="text" id="nomeCliente" class="preordine-input" placeholder="Il tuo nome">
+    <div id="telefonoWrapper" style="display:none;">
+        <input type="tel" id="telefonoCliente" class="preordine-input"
+          placeholder="Telefono"
+          inputmode="numeric"
+          pattern="[0-9]{6,15}">
+    </div>
+
+    <div id="posizioneWrapper" style="display:none;">
+        <input type="text" id="posizioneCliente" class="preordine-input" placeholder="Numero Postazione / Posizione">
+    </div>
+    <div id="orarioConsegnaWrapper" 
+        style="display:none; display:inline-flex; align-items:center; gap:8px;">
+        <label>Orario di consegna:</label>
+        <input type="time" id="orarioConsegnaCliente" class="preordine-input" style="width:130px;">
+    </div>
+
+
+
+    <!-- Pulsante in fondo al contenuto -->
+    <button id="inviaPreordineBtn" class="preordine-btn">📩 Invia Preordine</button>
+
+    <div id="msgInvio" class="preordine-msg"></div>
+  </div>
+  <!-- ===================== POPUP DI RIEPILOGO ===================== -->
+  <div id="popupRiepilogo" class="popup-riep hidden">
+    <div class="popup-content">
+        <h2>Riepilogo Ordine</h2>
+        <div id="popupRiepilogoContenuto"></div>
+
+        <div class="popup-btns">
+            <button id="confermaInvioPreordine" class="preordine-btn">Conferma</button>
+            <button id="annullaInvioPreordine" class="preordine-btn">Annulla</button>
+        </div>
+    </div>
+  </div>
+
+  <!-- ===================== NOTIFICA CENTRALE ===================== -->
+  <div id="notificaCentrale" class="notifica-centrale hidden"></div>
+
+  <!-- Sfondo dinamico per i temi -->
+  <div id="themeBackground"></div>
+</body>
+</html>

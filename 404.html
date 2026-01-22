@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pagina non trovata - BistroBò</title>
+  <!-- collega al tuo style.css -->
+  <link rel="stylesheet" href="main/style.css" />
+  <style>
+    /* aggiungo solo qualche extra per centrare il contenuto */
+    #errorBox {
+      text-align: center;
+      margin-top: 100px;
+    }
+    #errorBox h1 {
+      font-size: 4rem;
+      color: #e74c3c;
+    }
+    #errorBox p {
+      margin: 15px 0;
+      font-size: 1.2rem;
+    }
+    #errorBox a {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 10px 20px;
+      background: var(--main-color, #3498db);
+      color: #fff;
+      border-radius: 6px;
+      text-decoration: none;
+      transition: 0.3s;
+    }
+    #errorBox a:hover {
+      background: #2980b9;
+    }
+  </style>
+</head>
+<body>
+  <div id="errorBox">
+    <h1>404</h1>
+    <p>Ops! La pagina che cerchi non esiste.</p>
+    <a href="./index.html">🏠 Torna alla Home</a>
+  </div>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { getDatabase, ref, get, onValue } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+    // Config Firebase (usa la stessa del sito principale)
+    const firebaseConfig = {
+    apiKey: "AIzaSyDxpd24nF3qmNrh8j40jxjhYzh1RC08DhI",
+    authDomain: "comande-6fb85.firebaseapp.com",
+    databaseURL: "https://comande-6fb85-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "comande-6fb85",
+    storageBucket: "comande-6fb85.firebasestorage.app",
+    messagingSenderId: "676960522709",
+    appId: "1:676960522709:web:cc2284c87e73044f566d5c"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    async function applicaTema() {
+      try {
+        const temaSnap = await get(ref(db, "impostazioni/tema"));
+        const tema = temaSnap.val() || "default";
+
+        // Rimuovi tutte le classi tema
+        document.body.classList.remove(
+          "tema-default","tema-scout","tema-inverno",
+          "tema-autunno","tema-primavera","tema-estate"
+        );
+        document.body.classList.add("tema-" + tema, "tema-caricato");
+
+        // Se vuoi, aggiorna anche il colore del titolo
+        const titolo = document.querySelector("#errorBox h1");
+        if (titolo) titolo.style.color = ""; // lascia che segua la classe
+      } catch(e) {
+        console.error("Errore caricamento tema:", e);
+        document.body.classList.add("tema-caricato"); // fallback
+      }
+    }
+
+    // Applica subito tema
+    applicaTema();
+
+    // Aggiornamento realtime (opzionale)
+    onValue(ref(db, "impostazioni/tema"), snap => {
+      const tema = snap.val() || "default";
+      document.body.classList.remove(
+        "tema-default","tema-scout","tema-inverno",
+        "tema-autunno","tema-primavera","tema-estate"
+      );
+      document.body.classList.add("tema-" + tema);
+    });
+  </script>
+
+</body>
+</html>

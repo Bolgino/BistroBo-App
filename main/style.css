@@ -1,0 +1,1582 @@
+/* ================= RESET / BASE ================= */
+
+/* BODY inizialmente invisibile fino al caricamento del tema */
+body {
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out; /* transizione più morbida */
+    font-family: 'Poppins', sans-serif;
+    min-height: 100vh;
+    margin: 0;
+    color: #000000;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+/* Mostra il body solo dopo aver applicato il tema */
+body.tema-caricato {
+    opacity: 1;
+}
+
+/* Nasconde elementi temporaneamente */
+.hidden { display: none; }
+
+/* Fallback background per evitare flash bianco prima che il tema venga applicato */
+#themeBackground {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: -1;
+    background-size: cover;
+    background-position: center;
+    transition: background 0.8s ease;
+    background-color: #f0f0f0; /* colore neutro mentre il JS imposta il gradiente */
+}
+
+/* ================= TIPOGRAFIA ================= */
+h1 {
+    font-family: 'Poppins', sans-serif; 
+    font-weight: 800; 
+    color: #ff0000; 
+    text-shadow: 1px 1px 2px #ffffff;
+    text-align: center;
+    margin-bottom: 40px;
+}
+h3 {
+    font-size: 1.3em; 
+    margin-bottom: 10px; 
+    color: #2f00ff; 
+    text-shadow:
+        -0.2px -0.2px 0 #ffffff,
+        0.2px -0.2px 0 #ffffff,
+        -0.2px 0.2px 0 #ffffff,
+        0.2px 0.2px 0 #ffffff; 
+}
+h4 {
+    font-size: 1.15em; 
+    margin-top: 8px; 
+    margin-bottom: 6px; 
+    color: #2f00ff; 
+    font-weight: 600;
+    text-shadow:
+        -0.2px -0.2px 0 #ffffff,
+        0.2px -0.2px 0 #ffffff,
+        -0.2px 0.2px 0 #ffffff,
+        0.2px 0.2px 0 #ffffff;
+}
+
+/* ================= BOTTONI GENERICI ================= */
+button {
+    border: none;
+    cursor: pointer;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+    padding: 10px 16px; /* Più spaziosi */
+    border-radius: 12px; /* Angoli arrotondati moderni */
+    transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1); /* Animazione fluida */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Leggera ombreggiatura */
+    position: relative;
+    overflow: hidden;
+}
+
+button:hover {
+    opacity: 0.95;
+    transform: translateY(-2px); /* Si alza leggermente */
+    box-shadow: 0 5px 12px rgba(0,0,0,0.15); /* Ombra più marcata */
+}
+
+button:active {
+    transform: translateY(0) scale(0.97); /* Effetto pressione */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Eccezione per pulsanti piccoli (es. +/- nelle comande) */
+#comandaCorrente button {
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%; /* Perfettamente rotondi */
+    line-height: 30px;
+    box-shadow: none;
+    border: 1px solid #ddd;
+}
+#comandaCorrente button:hover {
+    transform: scale(1.1);
+    background-color: #f0f0f0;
+}
+/* ================= LOGIN / REGISTRAZIONE ================= */
+input, select {
+    padding: 5px 8px;
+    border-radius: 4px;
+    border: 1px solid #9e9e9e;
+}
+input:focus, select:focus {
+    outline: none;
+    border-color: #388e3c;
+    box-shadow: 0 0 3px #388e3c;
+}
+#loginWrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 80vh;
+}
+#loginDiv, #registerDiv {
+    position: relative;
+    max-width: 400px;
+    margin: 0 auto;
+    background: rgba(255, 255, 255, 0.95); /* leggermente trasparente */
+    padding: 20px 30px;
+    border-radius: 15px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+}
+#loginDiv button, #registerDiv button {
+    color: #1b3a2d; /* verde scuro testo */
+    border-radius: 10px;
+    border: none;
+    padding: 8px 16px;
+    margin-top: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: 0.3s;
+}
+#loginDiv button:hover, #registerDiv button:hover { 
+    opacity: 0.9; 
+}
+
+/* ================= LOGOUT ================= */
+#logoutDiv {
+    text-align: right; 
+    margin: 10px 20px; 
+}
+#logoutBtn {
+    padding: 8px 16px;
+    border-radius: 50px; /* Arrotondato */
+    background: linear-gradient(135deg, #ff9800, #ffb74d);
+    color: #fff;
+    font-weight: bold;
+    border: none;
+    box-shadow: 0 4px 10px rgba(255, 152, 0, 0.3);
+}
+#logoutBtn:hover {
+    box-shadow: 0 6px 14px rgba(255, 152, 0, 0.5);
+}
+
+
+/* ================= COMANDE / ORDINI ================= */
+.order {
+    border-radius: 15px;
+    background: #ffffffdd;
+    padding: 15px 20px;
+    margin-bottom: 15px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+.order:hover { transform: translateY(-5px); box-shadow: 0 12px 25px rgba(0,0,0,0.2); }
+.orderContent { flex: 1; margin-left: 1rem; word-break: break-word; background: #f0f4f8; padding: 8px 12px; border-radius: 8px; }
+.orderContentCibo { color:#333; }
+.orderContentBere { color:#0077cc; }
+.orderButtons { display: flex; gap: 5px; }
+.order > div.header { padding: 6px 10px; font-size: 1.1em; }
+.order div > div { font-size: 1em; margin: 2px 0; line-height: 1.4em; }
+
+/* ================= STICKY BAR ================= */
+.stickyBtn {
+    position: sticky;
+    bottom: 10px;
+    right: 10px;
+    padding: 14px 24px; /* Più grande per facile tocco */
+    font-size: 1.2em;
+    color: white;
+    background: linear-gradient(135deg, #2e7d32, #43a047); /* Verde brillante */
+    border-radius: 50px;
+    box-shadow: 0 6px 15px rgba(46, 125, 50, 0.4);
+    cursor: pointer;
+    z-index: 100;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.stickyBtn:active {
+    transform: scale(0.95);
+}
+.stickyBar {
+    position: sticky;   /* rimane in basso durante lo scroll */
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start; /* mantiene contenuti allineati in alto */
+    gap: 20px;
+    padding: 12px 30px;      /* box più grande */
+    background: linear-gradient(135deg, #fefefe, #f5f5f5);
+    border-top: 2px solid #ccc;
+    box-shadow: 0 -3px 10px rgba(0,0,0,0.2);
+    border-radius: 12px;
+    z-index: 100;
+}
+
+/* ================= STICKY LEFT ================= */
+.stickyLeft { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 10px; 
+    min-height: 120px; 
+    justify-content: flex-end;
+}
+
+.stickyLeft b { 
+    font-size: 1.1em; 
+    line-height: 1.4em;
+}
+
+/* Pulsante invia comanda fisso */
+.stickyLeft {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    position: relative; /* necessario per posizionamento assoluto del resto consigliato */
+}
+
+/* Desktop */
+#suggerimentoResto {
+    position: absolute;
+    left: calc(100% + 5px);
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    max-height: 80px;
+    max-width: calc(100vw - 50px);
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    background: transparent;
+    border-radius: 5px;
+    box-sizing: border-box;
+    z-index: 100;
+}
+
+/* Mobile */
+.stickyBar { overflow-x: auto; }
+@media (max-width: 768px) {
+    #suggerimentoResto {
+        position: relative;   /* non più assoluto */
+        left: auto;
+        top: auto;
+        transform: none;
+        margin-top: 5px;     /* distanza dal Totale/Pagato */
+        width: 100%;         /* occupa tutta la riga disponibile */
+        overflow-x: auto;    /* scroll se troppe monete */
+        white-space: nowrap;
+    }
+}
+
+
+#suggerimentoResto img {
+    height: auto;   /* altezza proporzionata */
+    width: auto;    /* larghezza proporzionata */
+    max-height: none; /* nessun limite */
+    max-width: none;  /* nessun limite */
+}
+
+/* ================= STICKY RIGHT ================= */
+/* StickyRight: colonna verticale */
+.stickyRight {
+    display: flex;
+    flex-direction: column;       /* verticale */
+    justify-content: flex-end;    /* Reset Soldi in basso */
+    align-items: flex-end;        /* allineato a destra */
+    gap: 5px;
+    min-height: 120px;
+    max-width: 325px;             /* limita la larghezza massima */
+    width: 100%;                  /* usa il 100% possibile del max-width */
+    box-sizing: border-box;
+    flex-shrink: 0;               /* non si restringe troppo */
+}
+
+/* wrapper per banconote e monete */
+#banconoteDiv, #moneteDiv {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+/* Reset Soldi */
+#resetSoldiBtn {
+    background: linear-gradient(135deg, #e53935, #ef5350);
+    color: white; 
+    padding: 8px 16px; 
+    border-radius: 8px; 
+    border: none; 
+    font-weight: bold; 
+    cursor: pointer; 
+    box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+}
+#resetSoldiBtn:hover { opacity: 0.9; }
+
+/* ================= TABS ================= */
+.tabBtn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 50px; /* Forma a pillola */
+    background: #f0f2f5; /* Grigio chiaro di base */
+    color: #555;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 600;
+    margin-right: 8px;
+    margin-bottom: 8px; /* Spazio sotto se vanno a capo */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    border: 1px solid transparent;
+}
+
+.tabBtn:hover {
+    background: #e4e6eb;
+    transform: translateY(-2px);
+    color: #333;
+}
+
+.tabBtn.active {
+    color: #fff !important; /* Testo bianco su sfondo colorato */
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2); /* Ombra colorata */
+    transform: scale(1.05); /* Leggermente più grande */
+    border-color: rgba(255,255,255,0.2);
+}
+
+/* Colori specifici per le tab attive (più brillanti) */
+#cassaDiv .tabBtn.active { 
+    background: linear-gradient(135deg, #43a047, #66bb6a); /* Verde Cassa */
+} 
+#cucinaDiv .tabBtn.active { 
+    background: linear-gradient(135deg, #fb8c00, #ffa726); /* Arancio Cucina */
+} 
+#bereDiv .tabBtn.active { 
+    background: linear-gradient(135deg, #0288d1, #29b6f6); /* Blu Bere */
+} 
+#adminDiv .tabBtn.active { 
+    background: linear-gradient(135deg, #d32f2f, #ef5350); /* Rosso Admin */
+}
+#snackDiv .tabBtn.active { 
+    background: linear-gradient(135deg, #fbc02d, #ffeb3b); /* Giallo Snack */
+    color: #3e2723 !important; /* Testo scuro per il giallo */
+}
+
+.tabContent { display: none; }
+.tabContent.active { display: block; animation: fadeIn 0.3s ease-in-out; }
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+/* ================= IMPOSTAZIONI ADMIN ================= */
+.settingItem {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding: 6px 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background: #f5f5f5;
+}
+
+.toggleBtn {
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+    transition: 0.2s;
+}
+
+.toggleBtn:hover {
+    opacity: 0.85;
+}
+
+/* ================= ANIMAZIONI ================= */
+.newOrder {
+    position: relative;
+    border: 2px solid #ffba1a;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+.newOrder::after {
+    content: "NUOVA";
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    background: #fb3a00;
+    color: white;
+    font-weight: bold;
+    padding: 2px 6px;
+    border-radius: 5px;
+    font-size: 0.8em;
+}
+@keyframes lampeggio {
+    0% { border-color: #f2ab06; box-shadow: 0 4px 10px 5px rgba(0,0,0,0.1); }
+    50% { border-color: #dd3d0c; box-shadow: 0 4px 20px 5px rgba(0,0,0,0.3); }
+    100% { border-color: #e4e800; box-shadow: 0 4px 10px 5px rgba(0,0,0,0.1); }
+}
+.blink { animation: lampeggio 0.8s ease-in-out 10; }
+
+@keyframes blinkRed {
+  0% { background-color: red; color: white; }
+  50% { background-color: transparent; color: red; }
+  100% { background-color: red; color: white; }
+}
+@keyframes blinkOrange {
+  0% { background-color: orange; color: white; }
+  50% { background-color: transparent; color: orange; }
+  100% { background-color: orange; color: white; }
+}
+
+/* ================= TABLES ================= */
+.tableHeader { font-weight:bold; display:flex; }
+.tableCol { flex:1; text-align:center; }
+.tableColLeft { flex:2; text-align:left; }
+.tableRow { display:flex; }
+
+/* ================= MOBILE ================= */
+#comandaCorrente { min-height:100px; padding:10px; border:none !important; border-radius:5px; background:transparent; box-shadow: none !important; }
+.selectQty { width:60px; }
+
+@media (max-width: 768px) {
+    #aggiungiComandaTab { flex-direction: column; }
+    .order { flex-direction: column; }
+    .orderContent { margin-left:0; margin-right:0; }
+}
+
+/* ================= SCONTI / EXTRA ================= */
+#ingredientiCriticiTabBtn {
+  border: 2px solid transparent; 
+}
+.sconto-item {
+    padding: 5px 10px;
+    border-bottom: 1px solid #ccc; /* linea orizzontale */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+/*================== ALERT BASE ===========================*/
+.toast {
+  position: fixed;
+  padding: 20px 30px;    
+  border-radius: 12px;   
+  font-weight: bold;
+  font-size: 18px;      
+  min-width: 250px;
+  text-align: center;  
+  opacity: 0;
+  z-index: 2000;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  pointer-events: auto;
+  transform: translateY(-20px); /* parte leggermente sopra */
+  transition: transform 0.5s ease, opacity 0.5s ease;
+}
+
+/* ================= POSIZIONI ================= */
+.toast.info {
+  background: #007bff;
+  bottom: 20px;
+  right: 20px;
+  left: auto;
+  transform: translateY(20px); /* parte dal basso */
+  font-size: 20px; 
+}
+
+.toast.warn {
+  background: #ff9800;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-20px);
+  font-size: 18px;
+}
+
+.toast.error {
+  background: #f44336;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-20px);
+  font-size: 22px; 
+  animation: blinkalert 0.6s ease-in-out infinite;
+}
+.toast.critico,
+.toast.attenzione {
+  position: fixed;
+  top: 50%;            
+  left: 50%;              
+  transform: translate(-50%, -50%); 
+  z-index: 5000;
+  padding: 16px 24px;
+  border-radius: 12px;
+  font-weight: bold;
+  font-size: 18px;
+  min-width: 300px;
+  max-width: 90%;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+/* mantieni le differenze grafiche */
+.toast.critico {
+  background: #d32f2f;
+  color: #fff;
+  border: 2px solid #b71c1c;
+  animation: blinkCritico 0.8s ease-in-out infinite;
+}
+@keyframes blinkCritico {
+  0%, 100% { background-color: #d32f2f; }
+  50% { background-color: #ff5252; }
+}
+
+.toast.attenzione {
+  background: #ff9800;
+  color: #fff;
+  border: 2px solid #e65100;
+  animation: blinkAttenzione 1s ease-in-out infinite;
+}
+@keyframes blinkAttenzione {
+  0%, 100% { background-color: #ff9800; }
+  50% { background-color: #ffb74d; }
+}
+
+
+/* ================= ANIMAZIONI ================= */
+@keyframes blinkalert {
+  0% { opacity: 1; }
+  50% { opacity: 0.3; }
+  100% { opacity: 1; }
+}
+/* ================= BARRA RICERCA ================= */
+#cercaComandaCassa,
+#cercaComandaAdmin {
+    width: 100%;
+    padding: 8px 12px;
+    margin-bottom: 10px;
+    font-size: 1em;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    box-sizing: border-box; /* importante per larghezza completa */
+}
+#banconoteDiv button, #moneteDiv button {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+#banconoteDiv button.pressed, #moneteDiv button.pressed {
+  transform: scale(0.96);
+  transition: transform 0.05s;
+}
+/*ORARIO CASSA*/
+.order {
+    position: relative; /* serve per posizionamento dell’orario */
+    padding-bottom: 28px; /* spazio per l’orario */
+}
+
+.orderTime {
+    position: absolute;
+    bottom: 6px;
+    left: 10px;
+    font-size: 0.85em;
+    color: #444;
+    font-style: italic;
+}
+/* === Checkbox visivo stilizzato per la cucina === */
+.visual-checkbox {
+  display: inline-block;
+  width: 1.2em;
+  height: 1.2em;
+  border: 2px solid #aaa;
+  border-radius: 3px;
+  vertical-align: middle;
+  margin-left: 10px;
+  cursor: pointer;
+  position: relative;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+.visual-checkbox.checked {
+  background-color: #4CAF50;
+  border-color: #4CAF50;
+}
+.visual-checkbox.checked::after {
+  content: "";
+  position: absolute;
+  left: 0.25em;
+  top: 0.05em;
+  width: 0.35em;
+  height: 0.7em;
+  border: solid white;
+  border-width: 0 3px 3px 0;
+  transform: rotate(45deg);
+}
+.tickItem {
+    width: 18px;
+    height: 18px;
+    margin-right: 6px;
+    transform: scale(1.3);
+    accent-color: green;
+    cursor: pointer;
+}
+.order .tickComanda {
+    display: inline-block;
+}
+.order.storico .tickComanda {
+    display: none;
+}
+/* ================= ASPORTO PER TEMA (colori come titolo) ================= */
+.asportoLabel {
+    font-weight: bold;
+    padding: 2px 8px;
+    border-radius: 6px;
+    margin-top: 4px;
+    display: inline-block;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+}
+
+/* Default */
+body.tema-default .asportoLabel {
+    background: linear-gradient(135deg, #e0e0e0, #f5f5f5);
+    color: #000000;
+}
+
+/* Scout */
+body.tema-scout .asportoLabel {
+    background: linear-gradient(135deg, #c8e6c9, #a5d6a7);
+    color: #d32f2f;
+}
+
+/* Autunno */
+body.tema-autunno .asportoLabel {
+    background: linear-gradient(135deg, #ffe0b2, #ffcc80);
+    color: #6b3e00;
+}
+
+/* Inverno */
+body.tema-inverno .asportoLabel {
+    background: linear-gradient(135deg, #b3e5fc, #e0f7fa);
+    color: #00bcd4;
+}
+
+/* Primavera */
+body.tema-primavera .asportoLabel {
+    background: linear-gradient(135deg, #c8e6c9, #f8bbd0);
+    color: #4caf50;
+}
+
+/* Estate */
+body.tema-estate .asportoLabel {
+    background: linear-gradient(135deg, #fff9c4, #b3e5fc);
+    color: #2196f3;
+}
+/* ================= ASPORTO TEXT PER TEMA (più contrasto su sfondi chiari) ================= */
+body.tema-default .asportoText   { color: #000000; }
+body.tema-scout .asportoText     { color: #c62828; }   /* rosso più carico */
+body.tema-autunno .asportoText   { color: #5d2400; text-shadow: 1px 1px 3px rgba(255,255,255,0.7); }  /* marrone più scuro e contrastato */
+body.tema-estate .asportoText    { color: #004c91; text-shadow: 1px 1px 3px rgba(255,255,255,0.6); }  /* blu più profondo */
+body.tema-inverno .asportoText   { color: #0288d1; text-shadow: 1px 1px 3px rgba(255,255,255,0.5); }  /* blu ciano più forte */
+body.tema-primavera .asportoText { color: #43a047; }   /* verde acceso */
+
+
+/* ================= SCONTI PER TEMA (più carichi su sfondi chiari) ================= */
+.scontoTxt {
+    font-weight: bold;
+    text-shadow: 0.5px 0.5px 1px rgba(255,255,255,0.4);
+}
+
+body.tema-default .scontoTxt   { color: #000000; }
+body.tema-scout .scontoTxt     { color: #c62828; }   /* rosso intenso */
+body.tema-autunno .scontoTxt   { color: #4b1f00; text-shadow: 1px 1px 3px rgba(255,255,255,0.8); }  /* marrone scuro caldo */
+body.tema-estate .scontoTxt    { color: #003c8f; text-shadow: 1px 1px 3px rgba(255,255,255,0.7); }  /* blu oceano più intenso */
+body.tema-inverno .scontoTxt   { color: #0277bd; text-shadow: 1px 1px 3px rgba(255,255,255,0.6); } /* blu più saturo */
+body.tema-primavera .scontoTxt { color: #2e7d32; }   /* verde medio */
+
+
+.statoBtn {
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-weight: bold;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.statoBtn:hover {
+  transform: scale(1.05);
+}
+/* ========== CHAT STYLE ========== */
+.chat-container {
+  height: 400px; /* altezza fissa, puoi regolare */
+  overflow-y: auto;
+  border-radius: 12px;
+  padding: 14px;
+  background: linear-gradient(180deg, #e9e9e9 0%, #ffffff 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  max-width: 1400px; /* ✅ stessa max-width della barra input */
+  margin: 0 auto;    /* ✅ centrata */
+}
+
+/* Messaggi */
+.chat-message {
+  max-width: 70%;
+  padding: 9px 13px;
+  border-radius: 16px;
+  line-height: 1.4;
+  word-wrap: break-word;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  font-size: 0.95em;
+}
+.chat-message.me {
+  align-self: flex-end;
+  background: #dcf8c6;
+  border-bottom-right-radius: 4px;
+}
+.chat-message.other {
+  align-self: flex-start;
+  background: #fff;
+  border-bottom-left-radius: 4px;
+}
+.chat-sender {
+  font-size: 0.75em;
+  color: #666;
+  margin-bottom: 2px;
+}
+
+/* Barra input */
+.chat-input-bar {
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  max-width: 1400px; /* ✅ stessa larghezza del box dei messaggi */
+  margin: 0 auto 10px auto; /* ✅ centrata orizzontalmente e 10px in basso */
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: #fafafa;
+  border-top: 1px solid #ddd;
+  border-radius: 20px;
+  box-shadow: 0 -1px 6px rgba(0, 0, 0, 0.08);
+}
+
+/* Input field */
+#chatInputCassa,
+#chatInputCucina,
+#chatInputBere,
+#chatInputAdmin,
+#chatInputSnack {
+  flex: 1;
+  padding: 12px 18px;
+  border-radius: 25px;
+  border: 1px solid #ccc;
+  font-size: 1em;
+  background: #f8f8f8;
+  outline: none;
+  transition: 0.2s;
+}
+
+#chatInputCassa:focus,
+#chatInputCucina:focus,
+#chatInputBere:focus,
+#chatInputAdmin:focus,
+#chatInputSnack:focus {
+  background: #fff;
+  border-color: #4caf50;
+  box-shadow: 0 0 4px #4caf50;
+}
+
+/* Pulsante invio */
+#chatSendCassaBtn,
+#chatSendCucinaBtn,
+#chatSendBereBtn,
+#chatSendAdminBtn,
+#chatSendSnackBtn {
+  width: 46px;
+  height: 46px;
+  border: none;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4caf50, #2e7d32);
+  color: #fff;
+  font-size: 1.3em;
+  cursor: pointer;
+  transition: 0.25s;
+}
+
+#chatSendCassaBtn:hover,
+#chatSendCucinaBtn:hover,
+#chatSendBereBtn:hover,
+#chatSendAdminBtn:hover,
+#chatSendSnackBtn:hover {
+  transform: scale(1.08);
+  background: linear-gradient(135deg, #66bb6a, #388e3c);
+}
+.settingItem {
+	display: flex;
+	justify-content: space-between; /* bottone o gruppo di bottoni a destra */
+	align-items: flex-start; /* non centrare verticalmente, ma partire dall’alto */
+	margin-bottom: 10px;
+	padding: 8px 10px;
+	border: 1px solid #ccc;
+	border-radius: 6px;
+	background: #f5f5f5;
+	gap: 10px;
+}
+
+.settingLabel {
+	display: flex;
+	flex-direction: column; /* forza il testo principale sopra e la descrizione sotto */
+	line-height: 1.2em;
+	max-width: 70%; /* evita che si schiaccino troppo vicino al bottone */
+}
+
+.settingLabel span {
+	font-weight: 600;
+	display: block;
+	margin-bottom: 3px;
+}
+
+.settingLabel small {
+	font-size: 0.85em;
+	color: #555;
+	display: block;
+}
+#noteDestinazioniDiv label {
+  font-weight: 600;
+  color: #333;
+}
+#noteDestinazioniDiv input[type="checkbox"] {
+  transform: scale(1.2);
+  margin-right: 5px;
+}
+/* ================= LOADER FULLSCREEN ================= */
+/* ================= GESTIONE LOADERS (INIT & OFFLINE) ================= */
+
+/* --- 1. LOADER DI AVVIO (IL PANINO TEMATIZZATO) --- */
+#loader {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 99999; /* Altissimo */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    
+    /* SFONDO DI DEFAULT (Arancione Bistro) se la variabile tema non è ancora caricata */
+    background: radial-gradient(circle, #fff8e1 0%, #ffecb3 100%); 
+    /* Se il tema è caricato, usa la variabile: */
+    background: var(--loader-bg, radial-gradient(circle, #fff8e1 0%, #ffecb3 100%));
+    
+    color: var(--loader-text, #e65100);
+    transition: opacity 0.8s ease-in-out, visibility 0.8s; /* Transizione lenta in uscita */
+    
+    /* FORZIAMO LA VISIBILITÀ INIZIALE */
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Questa classe viene aggiunta SOLO quando decidiamo noi (dopo 3 secondi) */
+#loader.nascosto-davvero {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none;
+}
+
+/* Definizioni Colori Temi per il Panino */
+body.tema-default #loader   { --loader-bg: radial-gradient(circle, #fff8e1 0%, #ffecb3 100%); --loader-text: #e65100; }
+body.tema-scout #loader     { --loader-bg: radial-gradient(circle, #f1f8e9 0%, #c8e6c9 100%); --loader-text: #2e7d32; }
+body.tema-inverno #loader   { --loader-bg: radial-gradient(circle, #e3f2fd 0%, #bbdefb 100%); --loader-text: #1565c0; }
+body.tema-estate #loader    { --loader-bg: radial-gradient(circle, #fffde7 0%, #fff59d 100%); --loader-text: #fbc02d; }
+body.tema-autunno #loader   { --loader-bg: radial-gradient(circle, #fbe9e7 0%, #ffccbc 100%); --loader-text: #d84315; }
+body.tema-primavera #loader { --loader-bg: radial-gradient(circle, #f3e5f5 0%, #e1bee7 100%); --loader-text: #8e24aa; }
+
+/* STILE DEL PANINO (CSS PURO) */
+.burger-loader {
+    position: relative;
+    width: 100px; height: 80px;
+    display: flex; flex-direction: column;
+    justify-content: space-between; align-items: center;
+    animation: bounceBurger 1.5s infinite ease-in-out;
+}
+.b-top {
+    width: 100%; height: 35px; background: #f4a261;
+    border-radius: 50px 50px 10px 10px; border-bottom: 4px solid #e76f51;
+    position: relative; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+/* Correggi questa parte dentro .b-top::after */
+.b-top::after {
+    content: " . . . "; 
+    position: absolute; 
+    top: 5px; left: 25px;
+    color: #ffd166; 
+    /* PRIMA ERA SBAGLIATO (fontSize, fontWeight) */
+    font-size: 20px;       /* Corretto col trattino */
+    font-weight: bold;     /* Corretto col trattino */
+    letter-spacing: 10px;
+}
+.b-salad {
+    width: 110%; height: 10px; background: #2a9d8f;
+    border-radius: 10px; margin: -5px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+/* Correggi questa parte dentro .b-meat */
+.b-meat {
+    width: 95%; height: 18px; 
+    background: #6d4c41; 
+    /* PRIMA ERA SBAGLIATO (borderRadius) */
+    border-radius: 8px;    /* Corretto col trattino */
+}
+.b-bottom {
+    width: 100%; height: 25px; background: #f4a261;
+    border-radius: 10px 10px 40px 40px; border-top: 3px solid #e76f51;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+@keyframes bounceBurger {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-10px) scale(1.05); }
+}
+
+#loaderText {
+    margin-top: 30px; font-size: 1.3rem; font-weight: 700;
+    text-align: center; min-height: 1.5em; text-transform: uppercase; letter-spacing: 1px;
+}
+
+
+/* --- 2. LOADER OFFLINE (RIMANE LO SPINNER CLASSICO) --- */
+#offlineLoader {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    background: rgba(0,0,0,0.6); /* Sfondo scuro semitrasparente */
+    backdrop-filter: blur(5px); /* Effetto sfocato moderno */
+    z-index: 100000; /* Deve stare SOPRA a tutto, anche al loader panino */
+    color: #fff;
+}
+
+#offlineLoader.hidden {
+    display: none;
+}
+
+/* La classe .spinner serve SOLO per l'offline loader ora */
+.spinner {
+    width: 60px; height: 60px;
+    border: 6px solid rgba(255,255,255,0.3);
+    border-radius: 50%;
+    border-top-style: solid; border-top-color: #fff; /* Bianco puro */
+    animation: spin 1s linear infinite;
+    box-shadow: 0 0 15px rgba(0,0,0,0.5);
+    margin-bottom: 20px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* ================= TEMA DEFAULT (azzurrino) ================= */
+#themeBackground {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: -1;
+  background-size: cover;
+  background-position: center;
+  transition: background 0.8s ease;
+}
+
+/* ================= LOADER PER TEMA ================= */
+body.tema-default #loader .spinner,
+body.tema-default #offlineLoader .spinner {
+    border-top-color: #005f73;
+    border-right-color: #73c2fb88;
+    border-bottom-color: #73c2fb88;
+    border-left-color: #73c2fb88;
+    box-shadow: 0 0 25px #73c2fbaa;
+}
+
+body.tema-scout #loader .spinner,
+body.tema-scout #offlineLoader .spinner {
+    border-top-color: #43a047;
+    border-right-color: #7cff8088;
+    border-bottom-color: #7cff8088;
+    border-left-color: #7cff8088;
+    box-shadow: 0 0 25px #7cff80aa;
+}
+
+body.tema-autunno #loader .spinner,
+body.tema-autunno #offlineLoader .spinner {
+    border-top-color: #6b3e00;
+    border-right-color: #d3540088;
+    border-bottom-color: #d3540088;
+    border-left-color: #d3540088;
+    box-shadow: 0 0 25px #d35400aa;
+}
+
+body.tema-inverno #loader .spinner,
+body.tema-inverno #offlineLoader .spinner {
+    border-top-color: #00bcd4;
+    border-right-color: #a0c4ff88;
+    border-bottom-color: #a0c4ff88;
+    border-left-color: #a0c4ff88;
+    box-shadow: 0 0 25px #00bcd4aa;
+}
+
+body.tema-primavera #loader .spinner,
+body.tema-primavera #offlineLoader .spinner {
+    border-top-color: #4caf50;
+    border-right-color: #c3fae888;
+    border-bottom-color: #c3fae888;
+    border-left-color: #c3fae888;
+    box-shadow: 0 0 25px #4caf50aa;
+}
+
+body.tema-estate #loader .spinner,
+body.tema-estate #offlineLoader .spinner {
+    border-top-color: #2196f3;
+    border-right-color: #a0e9ff88;
+    border-bottom-color: #a0e9ff88;
+    border-left-color: #a0e9ff88;
+    box-shadow: 0 0 25px #2196f3aa;
+}
+
+
+/* ================= MESSAGGIO OFFLINE ================= */
+#offlineLoader div {
+    margin-top: 20px;
+    font-size: 1.5em;
+    font-family: Arial, sans-serif;
+    color: white;
+    text-align: center;
+}
+
+/* ================= TEMA DEFAULT (azzurrino) ================= */
+body.tema-default {
+    background: linear-gradient(135deg, #a0d8ef, #73c2fb); /* azzurro chiaro/medio */
+}
+
+body.tema-default button {
+    background: linear-gradient(135deg, #028090, #00a896); /* toni blu/verde armonici */
+    color: #fff;
+}
+body.tema-default #themeBackground {
+  background: linear-gradient(135deg, #a0d8ef, #73c2fb);
+}
+/* ================= TEMA SCOUT (verdino) ================= */
+body.tema-scout {
+    background: linear-gradient(135deg, #ffeb3b, #8bc34a, #5dce61); 
+}
+body.tema-scout button {
+    background: linear-gradient(135deg, #fbc02d, #f57f17);
+    color: #3e2723;
+    border: 1px solid #3e2723;
+}
+
+body.tema-scout #themeBackground {
+  background: linear-gradient(135deg, #ffeb3b, #8bc34a, #5dce61);
+}
+
+/* ================= AUTUNNO ================= */
+body.tema-autunno #themeBackground {
+  background:
+    /* cielo con gradazioni */
+    linear-gradient(to bottom, #ffd27f 0%, #ff9e6d 30%, #d35400 60%, #c0392b 100%),
+    /* montagne / colline */
+    radial-gradient(circle at bottom left, rgba(139,69,19,0.6) 0%, rgba(205,92,92,0.4) 50%, transparent 70%),
+    radial-gradient(circle at bottom right, rgba(160,82,45,0.5) 0%, rgba(210,105,30,0.3) 50%, transparent 70%);
+}
+
+/* ================= INVERNO ================= */
+body.tema-inverno #themeBackground {
+  background:
+    /* cielo invernale */
+    linear-gradient(to bottom, #a0c4ff 0%, #ffffff 60%, #89b0ae 100%),
+    /* montagne innevate */
+    radial-gradient(circle at bottom left, rgba(200,230,255,0.6) 0%, rgba(255,255,255,0.5) 50%, transparent 70%),
+    radial-gradient(circle at bottom right, rgba(180,210,230,0.5) 0%, rgba(255,255,255,0.3) 50%, transparent 70%);
+}
+
+
+/* ================= AUTUNNO ================= */
+body.tema-autunno button {
+  background: linear-gradient(135deg, #d35400, #e67e22);
+  color: #fff;
+  border: 1px solid #c0392b;
+}
+
+/* ================= INVERNO ================= */
+body.tema-inverno button {
+  background: linear-gradient(135deg, #4dabf7, #1976d2);
+  color: #fff;
+  border: 1px solid #1b3a4b;
+}
+
+/* ================= PRIMAVERA ================= */
+body.tema-primavera #themeBackground {
+  background:
+    /* cielo primaverile leggermente rosa */
+    linear-gradient(to bottom, #ffe0ec 0%, #fddde6 40%, #c3fae8 100%),
+    /* colline e prati */
+    radial-gradient(circle at bottom left, rgba(129,199,132,0.6) 0%, rgba(76,175,80,0.4) 50%, transparent 70%),
+    radial-gradient(circle at bottom right, rgba(155,221,161,0.5) 0%, rgba(255,182,193,0.3) 50%, transparent 70%);
+}
+
+body.tema-primavera button {
+  background: linear-gradient(135deg, #ff8da3, #81c784); /* rosa → verde */
+  color: #fff;
+  border: 1px solid #d96d82;
+}
+
+/* ================= ESTATE ================= */
+body.tema-estate #themeBackground {
+  background:
+    /* cielo estivo più azzurro */
+    linear-gradient(to bottom, #48cae4 0%, #a0e9ff 60%, #fffacd 100%),
+    /* colline / prati caldi ma chiari */
+    radial-gradient(circle at bottom left, rgba(144,238,144,0.5) 0%, rgba(173,255,47,0.3) 50%, transparent 70%),
+    radial-gradient(circle at bottom right, rgba(173,255,47,0.4) 0%, rgba(144,238,144,0.2) 50%, transparent 70%);
+  
+  background-size: cover;
+  background-attachment: fixed;
+  color: #000; /* testi scuri per contrasto */
+}
+
+body.tema-estate button {
+  background: linear-gradient(135deg, #ffeb3b, #48cae4); /* giallo sole → azzurro cielo */
+  color: #000;
+  border: 1px solid #fdd835;
+}
+/* ================= TITOLO LOGIN PER TEMA ================= */
+.tema-default h1 { color: #000000; }      /* nero */
+.tema-scout h1   { color: #d32f2f; }      /* rosso scout */
+.tema-primavera h1 { color: #4caf50; }    /* verde primavera */
+.tema-estate h1  { color: #2196f3; }      /* blu estate */
+.tema-autunno h1 { color: #6b3e00; }  /* arancione/marrone scuro, più leggibile */
+.tema-inverno h1 { color: #00bcd4; }      /* ciano inverno */
+/* ================= CONTAINER CENTRATO ================= */
+.preordine-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    text-align: center;
+    box-sizing: border-box;
+}
+
+/* ================= MENU CLIENTI ================= */
+.preordine-menu {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 600px;
+    margin-bottom: 20px;
+}
+
+/* Ogni riga del menu in un box singolo */
+.menu-item {
+    padding: 12px 12px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    background: #ffffffdd;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+/* Riga superiore: select + nome */
+.menu-item-top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* Quantità */
+.menu-item select {
+    width: 60px;
+    border-radius: 6px;
+    text-align: center;
+}
+
+/* Nome piatto */
+.menu-item .piatto-nome {
+    font-weight: 600;
+    font-size: 1em;
+}
+
+/* Ingredienti sotto al nome, ALLINEATI A SINISTRA */
+.menu-item .piatto-ingredienti {
+    font-size: 0.78em;
+    color: #444;
+    line-height: 1.3;
+    margin-top: 4px;
+    padding-left: 72px; /* si allinea sotto al nome */
+    text-align: left;   /* forza sinistra */
+}
+
+
+/* ================= PULSANTE INVIO ================= */
+.preordine-btn {
+    width: 100%;
+    max-width: 400px;
+    padding: 15px;
+    font-size: 1.2em;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #4caf50, #2e7d32);
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    margin-top: 20px;
+    transition: 0.3s;
+}
+.preordine-btn:hover {
+    transform: scale(1.03);
+}
+
+/* ================= NOTE E INPUT ================= */
+.preordine-note,
+.preordine-input {
+    width: 100%;
+    max-width: 600px;
+    padding: 10px;
+    margin-bottom: 15px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 1.1em;
+    box-sizing: border-box;
+    margin-top: 10px;
+}
+
+/* ================= TITOLO PREORDINA ================= */
+.preordine-title {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 800;
+    font-size: 2em;
+    text-align: center;
+    text-shadow: 1px 1px 2px #ffffff;
+    margin-bottom: 30px;
+    color: inherit; /* segue il tema selezionato */
+}
+
+/* ================= SOLDI ================= */
+.preordine-soldi {
+    display: flex;
+    flex-direction: column; /* verticale */
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    max-width: 400px;
+    margin-bottom: 20px;
+    font-size: 1.2em;
+}
+
+.preordine-soldi label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.preordine-soldi input[type="checkbox"] {
+    transform: scale(1.5); /* checkbox più grande */
+    cursor: pointer;
+}
+
+.preordine-soldi input[type="number"] {
+    padding: 6px 8px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    width: 120px;
+    font-size: 1em;
+}
+/* Preordini stile comande */
+.order.admin-preordine,
+.order.cassa-preordine {
+    border-radius: 12px; /* più arrotondato */
+    padding: 16px 20px;  /* più spazio interno */
+    margin-bottom: 15px;
+    background: linear-gradient(135deg, #ffffff, #f5f7fa); /* leggero gradiente */
+    box-shadow: 0 6px 18px rgba(0,0,0,0.12); /* ombra morbida */
+    font-family: 'Poppins', sans-serif;
+    transition: transform 0.3s, box-shadow 0.3s, background 0.3s;
+    border: 1px solid #e0e0e0; /* bordo più leggero */
+}
+
+/* Hover più gradevole */
+.order.admin-preordine:hover,
+.order.cassa-preordine:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    background: linear-gradient(135deg, #fefefe, #e8f0f8);
+}
+
+/* Header del preordine */
+.order-header {
+    font-weight: 700;
+    font-size: 1.05rem;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    color: #333;
+}
+
+/* Corpo ordine */
+.order-body div {
+    margin: 4px 0;
+    font-size: 0.95rem;
+    line-height: 1.4em;
+    color: #555;
+}
+
+/* Footer ordine */
+.order-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 12px;
+}
+
+/* Pulsanti Aggiungi / Elimina */
+.order-footer button {
+    padding: 6px 10px;
+    font-size: 0.85rem;
+    border-radius: 8px;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s;
+}
+.order-footer button.aggiungi {
+    background: linear-gradient(135deg, #4caf50, #2e7d32);
+    color: #fff;
+}
+.order-footer button.elimina {
+    background: linear-gradient(135deg, #f44336, #d32f2f);
+    color: #fff;
+}
+.order-footer button:hover {
+    opacity: 0.9;
+    transform: scale(1.05);
+}
+
+
+.order-header small {
+    font-weight: 400;
+    font-size: 0.75rem;
+    color: #666;
+}
+
+.order-body div {
+    margin: 2px 0;
+}
+
+/* Cassa: aggiungi sempre a sinistra */
+.order.cassa-preordine .order-footer {
+    flex-direction: row-reverse;
+}
+
+/* Lampeggio nuovi preordini */
+.blink {
+    animation: blinkAnim 1s ease-in-out 3;
+}
+@keyframes blinkAnim {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.50; }
+}
+
+.order-footer span {
+    margin-left: 15px;
+    font-weight: bold;
+}
+
+@keyframes blinkTab {
+  0%, 100% { background-color: #a3d8f4; }
+  50% { background-color: #ffeb3b; } /* colore lampeggio, giallo */
+}
+
+.tabBtn.blink {
+  animation: blinkTab 0.6s ease-in-out 5; /* lampeggia 5 volte */
+}
+
+/* Toast preordini separato: base */
+.toast.preordineToast {
+  position: fixed;
+  z-index: 5000;
+  padding: 20px 30px;       /* come index */
+  border-radius: 12px;      /* più grande */
+  font-weight: bold;
+  font-size: 18px;           /* come index */
+  min-width: 250px;          /* come index */
+  max-width: 280px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  opacity: 0;
+  pointer-events: auto;
+}
+
+/* Info */
+.toast.preordineToast.info {
+  background: #007bff;
+  color: #fff;
+  bottom: 20px;
+  right: 20px;
+  left: auto;
+}
+
+/* Warn */
+.toast.preordineToast.warn {
+  background: #ff9800;
+  color: #000;
+  top: 20px;
+  left: 50%;
+  font-size: 18px;
+}
+
+/* Error */
+.toast.preordineToast.error {
+  background: #f44336;
+  color: #fff;
+  top: 20px;
+  left: 50%;
+  font-size: 18px;
+}
+
+/* 🔥 Lampeggio tab preordini */
+.tab-lampeggia {
+    animation: lampeggiaTab 0.8s infinite !important;
+    background-image: none !important;
+}
+
+@keyframes lampeggiaTab {
+    0% { background-color: rgba(255, 255, 0, 0.2); }
+    50% { background-color: rgba(255, 255, 0, 0.8); }
+    100% { background-color: rgba(255, 255, 0, 0.2); }
+}
+/* style.css */
+.piatto-sconto {
+    font-size: 0.85em;
+    color: #0077cc;
+    margin-left: 0.5em;
+    font-weight: bold;
+    display: inline-block;
+    min-width: 120px; /* larghezza fissa per allineamento */
+}
+.categoria-titolo {
+    font-size: 1.1em;
+    font-weight: bold;
+    margin-top: 15px;
+    margin-bottom: 5px;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 3px;
+}
+
+.menu-item.esaurito {
+    opacity: 0.4;
+    filter: grayscale(100%);
+}
+.menu-item.esaurito select {
+    pointer-events: none;
+}
+.piatto-esaurito-label {
+    color: #b30000;
+    font-size: 0.85em;
+    font-weight: bold;
+    margin-left: 5px;
+    margin-top: 3px;
+}
+#inputNomeStand {
+    margin-right: 5px; /* distanza minima tra input e bottone */
+    vertical-align: middle; /* allineamento verticale */
+}
+
+#saveNomeStandBtn {
+    vertical-align: middle; /* allinea con input */
+    cursor: pointer;
+}
+/* =================== POPUP RIEPILOGO =================== */
+.popup-riep {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.55);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.popup-riep.hidden { display: none; }
+
+.popup-content {
+    background: #ffffff;
+    padding: 25px;
+    width: 90%;
+    max-width: 420px;
+    border-radius: 15px;
+    box-shadow: 0px 0px 18px rgba(0,0,0,0.3);
+    animation: popupIn 0.25s ease-out;
+}
+
+@keyframes popupIn {
+    from { transform: scale(0.6); opacity: 0; }
+    to   { transform: scale(1); opacity: 1; }
+}
+
+.popup-btns {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center; /* centra i bottoni */
+    gap: 15px; /* spazio uniforme tra i bottoni */
+}
+
+.popup-btns button {
+    flex: 0 1 120px; /* larghezza base 120px, non cresce oltre */
+    padding: 10px 15px; /* altezza uniforme e padding interno */
+    font-size: 1rem;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
+    white-space: nowrap; /* evita che il testo vada a capo */
+}
+
+.popup-btns button.preordine-btn {
+    background-color: #4caf50;
+    color: white;
+    border: none;
+}
+
+.popup-btns button.preordine-btn-secondary {
+    background-color: #f44336;
+    color: white;
+    border: none;
+}
+
+.popup-btns button:hover {
+    opacity: 0.9;
+    transform: scale(1.05);
+}
+/* =================== NOTIFICA CENTRALE =================== */
+.notifica-centrale {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: #4caf50;
+    color: white;
+    padding: 18px 28px;
+    border-radius: 10px;
+    font-size: 1.2em;
+    font-weight: 600;
+    z-index: 10000;
+    box-shadow: 0 0 12px rgba(0,0,0,0.3);
+    opacity: 0;
+    transition: opacity .4s;
+}
+
+.notifica-centrale.show {
+    opacity: 1;
+}
+
