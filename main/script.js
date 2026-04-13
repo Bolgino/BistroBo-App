@@ -2367,7 +2367,7 @@ soldi.forEach(s => {
         } else {
             restoDovutoSpan.parentElement.style.color = "black";
         }
-
+		sincronizzaDisplayLive();
         // Piccolo feedback visivo
         btn.classList.add("pressed");
         setTimeout(() => btn.classList.remove("pressed"), 100);
@@ -2380,6 +2380,7 @@ document.getElementById("resetSoldiBtn").onclick = () => {
     restoDovutoSpan.innerText = "0.00";
     aggiornaSuggerimentoResto();
     restoDovutoSpan.parentElement.style.color = "black";
+	sincronizzaDisplayLive();
 };
 function calcolaRestoMinimo(resto) {
     if (!checkOnline(true)) return;
