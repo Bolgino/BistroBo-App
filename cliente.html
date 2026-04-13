@@ -4,60 +4,55 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BistroBò - Schermo Cliente</title>
+    
     <link rel="icon" type="image/x-icon" href="./favicon.ico">
-
+    
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-
+    
     <link rel="stylesheet" href="main/style.css">
-
+    
     <style>
-        /* Solo layout strutturale, i colori e gli sfondi sono gestiti al 100% da style.css */
-        .schermo-layout { max-width: 900px; margin: 20px auto; padding: 15px; display: flex; flex-direction: column; gap: 20px; flex: 1; }
+        /* NESSUN BACKGROUND FORZATO. Lasciamo che style.css metta i gradienti! */
+        .cliente-wrapper { max-width: 900px; margin: 30px auto; padding: 20px; display: flex; flex-direction: column; gap: 20px; }
         
         .riga-ordine { display: flex; justify-content: space-between; font-size: 1.8em; padding: 15px 0; border-bottom: 1px dashed var(--border-color); }
         .riga-ordine:last-child { border-bottom: none; }
         
         .griglia-totali { display: grid; grid-template-columns: 1fr 1fr 1.5fr; gap: 15px; }
-        .valore-gigante { font-size: 3.2em; font-weight: bold; line-height: 1.2; margin-top: 10px; }
+        .valore-gigante { font-size: 3em; font-weight: bold; margin-top: 10px; }
         
-        /* Stile input standard BistroBò */
         .input-display { width: 100%; padding: 15px; margin-bottom: 15px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-color); font-size: 1.1em; box-sizing: border-box; }
-        .btn-display { width: 100%; padding: 15px; font-weight: bold; font-size: 1.2em; background: var(--primary-color); color: white; border: none; border-radius: 8px; cursor: pointer; }
+        .btn-display { width: 100%; padding: 15px; font-weight: bold; font-size: 1.2em; background: var(--primary-color); color: white; border: none; border-radius: 8px; cursor: pointer; transition: filter 0.2s; }
+        .btn-display:hover { filter: brightness(0.9); }
+        
+        /* Nasconde il loader default del tuo style.css in attesa del tema */
+        #loader { display: none !important; }
     </style>
 </head>
-
-<body>
-
-    <div class="topBar" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px;">
+<body> <div class="topBar" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; position: relative; z-index: 999;">
         <div style="display: flex; align-items: center; gap: 15px;">
             <img src="icon-192.png" alt="Logo" class="logo" style="width: 40px; height: 40px; margin: 0;">
-            <h2 style="margin: 0;">Display <span id="numComandaDisplay" style="color: var(--primary-color);"></span></h2>
+            <h2 style="margin: 0; color: var(--text-color);">Display <span id="numComandaDisplay" style="color: var(--primary-color);"></span></h2>
         </div>
-        <button id="logoutBtn" onclick="eseguiLogout()" style="display: none; background: transparent; border: 1px solid var(--text-color); color: var(--text-color); padding: 8px 15px; border-radius: 5px; cursor: pointer;">Esci</button>
+        <button id="logoutBtn" onclick="auth.signOut().then(() => location.reload())" style="display: none; background: transparent; border: 1px solid var(--text-color); color: var(--text-color); padding: 8px 15px; border-radius: 5px; cursor: pointer;">Esci</button>
     </div>
 
-    <div id="loaderArea" style="text-align: center; margin-top: 100px;">
-        <img src="icon-192.png" alt="Logo" style="width: 80px; animation: pulse 1.5s infinite;">
-        <h2>Caricamento Display...</h2>
-    </div>
-
-    <div class="schermo-layout">
+    <div class="cliente-wrapper">
         
-        <div id="loginDiv" class="box" style="display: none; max-width: 400px; margin: 0 auto; text-align: center; width: 100%;">
-            <h2 style="margin-top:0;">Accesso Riservato</h2>
-            <p style="color: var(--primary-color); font-weight: bold; margin-bottom: 20px;">Accedi come schermo cliente.</p>
+        <div id="loginDiv" class="box" style="display: none; max-width: 400px; margin: 40px auto; text-align: center; width: 100%;">
+            <h2 style="margin-top:0;">Accesso Display</h2>
             <input type="email" id="loginEmail" class="input-display" placeholder="cliente@bistrobo.it">
             <input type="password" id="loginPassword" class="input-display" placeholder="Password">
             <button onclick="eseguiLogin()" class="btn-display">ACCEDI AL MONITOR</button>
         </div>
 
-        <div id="cassaDiv" class="box" style="display: none; max-width: 400px; margin: 0 auto; text-align: center; width: 100%;">
+        <div id="cassaDiv" class="box" style="display: none; max-width: 400px; margin: 40px auto; text-align: center; width: 100%;">
             <h2 style="margin-top:0;">Configura Display</h2>
-            <p style="opacity: 0.8; margin-bottom: 20px;">Seleziona la cassa da mostrare:</p>
+            <p style="opacity: 0.8; margin-bottom: 20px;">Quale dispositivo devi seguire?</p>
             <select id="selectCassa" class="input-display"></select>
-            <button onclick="avviaDisplay()" class="btn-display" style="background: #4caf50;">COLLEGA CASSA</button>
+            <button onclick="avviaDisplay()" class="btn-display" style="background: #4caf50;">CONNETTI</button>
         </div>
 
         <div id="displayScreen" style="display: none; flex-direction: column; gap: 20px;">
@@ -98,13 +93,10 @@
         const db = firebase.database();
         const auth = firebase.auth();
 
-        // ================================================================
-        // 1. GESTIONE TEMA (Identica a preordini.js)
-        // ================================================================
+        // 1. GESTIONE TEMA (Sblocca il CSS di BistroBò)
         db.ref("impostazioni/tema").on("value", snap => {
             const tema = snap.val() || "default";
 
-            // Rimuove classi vecchie e aggiunge il nuovo tema
             document.body.classList.remove(
                 "tema-default", "tema-scout", "tema-inverno",
                 "tema-autunno", "tema-primavera", "tema-estate"
@@ -112,14 +104,11 @@
             document.body.classList.add("tema-" + tema);
             document.documentElement.setAttribute('data-theme', tema);
 
-            // Sblocca la pagina rendendola visibile (fondamentale in BistroBò)
+            // Questo è il segreto: sblocca lo schermo e carica il gradiente!
             document.body.classList.add("tema-caricato");
-            
-            // Nasconde il loader iniziale
-            document.getElementById("loaderArea").style.display = "none";
         });
 
-        // Applica colori custom se presenti nel database
+        // Applica i colori custom se presenti
         db.ref("impostazioni/colori").on("value", snap => {
             const col = snap.val();
             if(col) {
@@ -128,9 +117,7 @@
             }
         });
 
-        // ================================================================
-        // 2. GESTIONE AUTENTICAZIONE E VISTE
-        // ================================================================
+        // 2. GESTIONE ACCESSO E VISTE
         auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
         
         auth.onAuthStateChanged(user => {
@@ -149,19 +136,7 @@
             const p = document.getElementById("loginPassword").value;
             
             if (e !== "cliente@bistrobo.it") return alert("Accesso riservato all'account Display Cliente.");
-
-            document.getElementById("loginDiv").style.display = "none";
-            document.getElementById("loaderArea").style.display = "block";
-
-            auth.signInWithEmailAndPassword(e, p).catch(err => {
-                document.getElementById("loaderArea").style.display = "none";
-                document.getElementById("loginDiv").style.display = "block";
-                alert("Errore login: Password errata.");
-            });
-        }
-
-        function eseguiLogout() {
-            auth.signOut().then(() => window.location.reload());
+            auth.signInWithEmailAndPassword(e, p).catch(err => alert("Errore login: Controlla la password."));
         }
 
         function mostraSezione(id) {
@@ -171,9 +146,7 @@
             document.getElementById(id).style.display = (id === "displayScreen") ? "flex" : "block";
         }
 
-        // ================================================================
-        // 3. MOTORE DI RICEZIONE LIVE
-        // ================================================================
+        // 3. SINCRONIZZAZIONE RICEZIONE LIVE
         function caricaCasse() {
             mostraSezione("cassaDiv");
             db.ref("utenti").once("value", snap => {
@@ -204,11 +177,11 @@
                     document.getElementById("totale").innerText = "€ 0.00";
                     document.getElementById("pagato").innerText = "€ 0.00";
                     document.getElementById("resto").innerText = "€ 0.00";
-                    document.getElementById("listaPiatti").innerHTML = '<div style="text-align:center; margin-top:100px; opacity:0.5; font-size: 1.5em;">In attesa di articoli...</div>';
+                    document.getElementById("listaPiatti").innerHTML = '<div style="text-align:center; margin-top:100px; opacity:0.5; font-size: 1.5em;">Pronto per il prossimo ordine!</div>';
                     return;
                 }
                 
-                document.getElementById("numComandaDisplay").innerText = "#" + (data.numeroComanda || "---");
+                document.getElementById("numComandaDisplay").innerText = "- #" + (data.numeroComanda || "---");
                 document.getElementById("totale").innerText = "€ " + (data.totale || 0).toFixed(2);
                 document.getElementById("pagato").innerText = "€ " + (data.pagato || 0).toFixed(2);
                 document.getElementById("resto").innerText = "€ " + (data.resto || 0).toFixed(2);
