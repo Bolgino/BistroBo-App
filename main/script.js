@@ -43,7 +43,8 @@ window.settings = {
   ordinaPreordini: true,
   nuoveInAltoSnack: false,
   preordiniRichiediInfo: false,
-  nomeStand: "BistroBò"
+  nomeStand: "BistroBò",
+	displayClienteAbilitato: false
 };
 
 //Ingredienti Critici
@@ -373,6 +374,12 @@ function initImpostazioniToggle() {
             );
         }
     });
+	// TOGGLE DISPLAY CLIENTE
+	const toggleDisplayClienteBtn = document.getElementById("toggleDisplayClienteBtn");
+	const displayClienteRef = db.ref("impostazioni/displayClienteAbilitato");
+	initToggle(toggleDisplayClienteBtn, displayClienteRef, {on: "ON", off: "OFF"}, false, val => {
+	    window.settings.displayClienteAbilitato = val;
+	});
     // NUOVE COMANDE IN ALTO BERE
     const toggleNuoveInAltoBereBtn = document.getElementById("toggleNuoveInAltoBereBtn");
     const nuoveInAltoBereRef = db.ref("impostazioni/nuoveInAltoBere");
@@ -2237,7 +2244,7 @@ function aggiornaComandaCorrente(){
 
     aggiornaStatoInvio();
     aggiornaSuggerimentoResto();
-	
+	sincronizzaDisplayLive();
 }
 // --- INPUT E PULSANTE ---
 const numInput = document.getElementById("numComanda");
@@ -2582,6 +2589,32 @@ function caricaComandeCassa() {
         hideLoader(); // 🔹 chiudi anche in caso di errore
     });
     initRicercaComande("comandeCassa", "cercaComandaCassa");
+}
+// --- FUNZIONE TRASMISSIONE DATI PER SCHERMO CLIENTE ---
+function sincronizzaDisplayLive() {
+    // Esci se non abilitato o se non sei in un profilo che può inviare (Cassa/Admin)
+    if (!window.settings.displayClienteAbilitato || (ruolo !== 'cassa' && ruolo !== 'admin')) return;
+    if (!uid) return;
+
+    const totale = parseFloat(document.getElementById("totale").innerText) || 0;
+    const num = document.getElementById("numComanda").value.trim();
+    const lett = document.getElementById("letteraComanda").value.trim().toUpperCase();
+
+    const dati = {
+        piatti: comandaCorrente.map(p => ({
+            nome: p.nome,
+            quantita: p.quantita,
+            prezzo: calcolaPrezzoConSconto(p) / p.quantita // prezzo unitario calcolato
+        })),
+        totale: totale,
+        numeroComanda: (num + lett) || "---",
+        pagato: totalePagato || 0,
+        resto: parseFloat(document.getElementById("restoDovuto").innerText) || 0,
+        timestamp: Date.now()
+    };
+
+    // Scrive nel "canale" specifico di questo utente (UID cassa)
+    db.ref("displayLive/" + uid).set(dati);
 }
 // ------------------ ADMIN -----------------
 //INGREDIENTI
@@ -5259,6 +5292,7 @@ document.addEventListener("DOMContentLoaded", () => {
             // ✅ reset dopo l’invio
             comandaCorrente = [];
             aggiornaComandaCorrente();
+			sincronizzaDisplayLive();
             noteInput.value = ""; 
             numInput.value = "";
             letteraInput.value = "";
