@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BistroBò - Schermo Cliente</title>
+    
     <link rel="icon" type="image/x-icon" href="./favicon.ico">
     
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -13,97 +14,109 @@
     <link rel="stylesheet" href="main/style.css">
     
     <style>
-        /* VARIABILI TEMA FORZATE: Garantiscono che i colori ci siano anche senza lo script della cassa */
-        :root {
-            --bg-color: #121212;
-            --text-color: #ffffff;
-            --card-bg: #1e1e1e;
+        /* Regole di impaginazione specifiche per lo schermo intero, 
+           i colori e i font vengono presi dal tuo style.css */
+        body, html { height: 100%; margin: 0; overflow: hidden; display: flex; flex-direction: column; transition: background-color 0.3s, color 0.3s; }
+        
+        /* Banner Connessione Persa (Stile nativo BistroBò) */
+        #offlineBanner {
+            position: fixed; top: 0; left: 0; width: 100%; background: #d32f2f; color: white;
+            text-align: center; padding: 10px; font-weight: bold; z-index: 10000; display: none;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
         }
 
-        body { 
-            margin: 0; 
-            height: 100vh; 
-            display: flex; 
-            flex-direction: column; 
-            overflow: hidden; 
-            background-color: var(--bg-color); /* Applica il nero */
-            color: var(--text-color); /* Applica il bianco */
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
+        /* Layout principale Live */
+        #displayScreen { display: none; flex-direction: column; height: 100%; padding: 20px; gap: 20px; box-sizing: border-box; }
+        .live-header { background-color: var(--primary-color, #d32f2f); color: white; padding: 15px; border-radius: 10px; text-align: center; font-size: 1.8em; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .live-content { flex: 1; display: flex; gap: 20px; overflow: hidden; }
         
-        #displayScreen { flex: 1; display: none; flex-direction: column; padding: 20px; gap: 20px; }
-        .cliente-row { display: flex; justify-content: space-between; font-size: 1.5em; padding: 15px; border-bottom: 2px dashed #444; }
-        .totale-box { font-size: 3em; font-weight: bold; text-align: right; padding: 20px; }
+        /* Lista Piatti */
+        .live-list { flex: 2; background-color: var(--card-bg, #fff); border-radius: 10px; padding: 20px; overflow-y: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .piatto-row { display: flex; justify-content: space-between; font-size: 1.8em; padding: 15px 0; border-bottom: 2px dashed var(--text-color, #ccc); opacity: 0.9; }
+        .piatto-qty { font-weight: bold; color: var(--primary-color, #d32f2f); margin-right: 15px; }
         
-        /* Contenitore per centrare i login/setup */
-        .center-box { 
-            max-width: 400px; 
-            margin: 10vh auto; 
-            padding: 30px; 
-            background: var(--card-bg); 
-            border-radius: 15px; 
-            box-shadow: 0 5px 20px rgba(0,0,0,0.5); 
-            text-align: center; 
-            display: none; /* Nascosto di default */
+        /* Sidebar Totali */
+        .live-sidebar { flex: 1; display: flex; flex-direction: column; gap: 20px; }
+        .live-card { background-color: var(--card-bg, #fff); padding: 25px; border-radius: 10px; text-align: center; display: flex; flex-direction: column; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .totale-text { font-size: 4em; font-weight: bold; color: var(--primary-color, #d32f2f); margin-top: 10px; line-height: 1; }
+        .resto-text { font-size: 3em; font-weight: bold; color: #4caf50; margin-top: 10px; line-height: 1; }
+        
+        /* Centratura per schermate di Login/Impostazione */
+        .center-container { display: none; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 20px; }
+        .center-box {
+            background-color: var(--card-bg, #fff);
+            padding: 40px; border-radius: 15px; width: 100%; max-width: 450px; text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
         }
-
-        /* Stili forzati per gli input per renderli visibili nel dark mode */
         .center-box input, .center-box select {
-            background-color: #333;
-            color: white;
-            border: 1px solid #555;
-            width: 100%; 
-            padding: 12px; 
-            margin-bottom: 15px;
-            border-radius: 8px;
-            box-sizing: border-box;
+            width: 100%; padding: 15px; margin-bottom: 20px; font-size: 1.2em;
+            background: var(--bg-color, #fff); color: var(--text-color, #000);
+            border: 1px solid var(--border-color, #ccc); border-radius: 8px; box-sizing: border-box;
         }
+        .btn-rosso { width: 100%; padding: 15px; background: #d32f2f; color: white; border: none; border-radius: 8px; font-size: 1.2em; font-weight:bold; cursor: pointer; transition: 0.2s; }
+        .btn-rosso:hover { background: #b71c1c; }
+        .btn-verde { width: 100%; padding: 15px; background: #4caf50; color: white; border: none; border-radius: 8px; font-size: 1.2em; font-weight:bold; cursor: pointer; margin-bottom: 15px; transition: 0.2s; }
+        .btn-verde:hover { background: #388e3c; }
     </style>
 </head>
 <body>
 
-    <div id="loader" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #121212; color: white; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+    <div id="offlineBanner">⚠️ Nessuna connessione a Internet. Riconnessione in corso...</div>
+
+    <div id="loader" style="position:fixed; top:0; left:0; width:100%; height:100%; background:var(--bg-color, #fff); z-index:9999; display:flex; flex-direction:column; align-items:center; justify-content:center;">
         <img src="icon-192.png" alt="Logo" style="width: 100px; margin-bottom: 20px; animation: pulse 1.5s infinite;">
-        <h2>Caricamento BistroBò...</h2>
+        <h2 style="color:var(--text-color, #000);">Caricamento Schermo...</h2>
     </div>
 
-    <div id="loginDiv" class="center-box">
-        <img src="icon-192.png" alt="Logo" style="width: 80px; margin-bottom: 10px;">
-        <h2>Accesso Display Cliente</h2>
-        <p style="color: #ff5252; font-size: 0.9em; margin-bottom: 20px;">Accesso riservato all'account autorizzato.</p>
-        
-        <input type="email" id="loginEmail" placeholder="cliente@bistrobo.it">
-        <input type="password" id="loginPassword" placeholder="Password">
-        
-        <button onclick="eseguiLogin()" style="width: 100%; padding: 15px; background: #d32f2f; color: white; border: none; border-radius: 8px; font-size: 1.2em; font-weight:bold; cursor: pointer;">ACCEDI</button>
+    <div id="loginDiv" class="center-container">
+        <div class="center-box">
+            <img src="icon-192.png" alt="Logo" style="width: 80px; margin-bottom: 15px;">
+            <h2 style="color:var(--text-color, #000); margin-top:0;">Accesso Display Cliente</h2>
+            <p style="color: #d32f2f; font-size: 0.9em; margin-bottom: 20px;">Accesso riservato all'account autorizzato.</p>
+            
+            <input type="email" id="loginEmail" placeholder="cliente@bistrobo.it">
+            <input type="password" id="loginPassword" placeholder="Password">
+            <button class="btn-rosso" onclick="eseguiLogin()">ACCEDI</button>
+        </div>
     </div>
 
-    <div id="cassaDiv" class="center-box">
-        <h2>Configura Schermo</h2>
-        <p style="color: #aaa; margin-bottom: 20px;">Seleziona la cassa da mostrare su questo monitor:</p>
-        <select id="selectCassa"></select>
-        <button onclick="avviaDisplay()" style="width: 100%; padding: 15px; background: #4caf50; color: white; border: none; border-radius: 8px; font-size: 1.2em; font-weight:bold; cursor: pointer;">AVVIA TRASMISSIONE</button>
+    <div id="cassaDiv" class="center-container">
+        <div class="center-box">
+            <h2 style="color:var(--text-color, #000); margin-top:0;">Configurazione</h2>
+            <p style="color:var(--text-color, #666); margin-bottom: 20px;">Seleziona la cassa da mostrare su questo monitor:</p>
+            
+            <select id="selectCassa"></select>
+            
+            <button class="btn-verde" onclick="avviaDisplay()">AVVIA SCHERMO</button>
+            <button onclick="firebase.auth().signOut()" style="width: 100%; padding: 10px; background: transparent; color: var(--text-color); border: 1px solid var(--text-color); border-radius: 8px; cursor: pointer;">Disconnetti</button>
+        </div>
     </div>
 
     <div id="displayScreen">
-        <div style="background: #d32f2f; color: white; padding: 20px; border-radius: 10px; text-align: center;">
-            <h1 style="margin: 0;">ORDINE <span id="numComanda">---</span></h1>
+        <div class="live-header">
+            ORDINE <span id="numComanda">---</span>
         </div>
         
-        <div style="flex: 1; overflow-y: auto; background: var(--card-bg); border-radius: 10px; padding: 20px; box-shadow: inset 0 0 10px rgba(0,0,0,0.3);" id="listaPiatti">
-        </div>
-
-        <div style="display: flex; gap: 20px;">
-            <div style="flex: 1; background: var(--card-bg); border-radius: 10px; padding: 20px; text-align: center; border: 1px solid #333;">
-                <div style="color: gray; font-size: 1.2em; text-transform: uppercase;">Pagato</div>
-                <div style="font-size: 2.5em; color: #2196f3; font-weight: bold;" id="pagato">€ 0.00</div>
-                <div style="color: gray; font-size: 1.2em; margin-top: 10px; text-transform: uppercase;">Resto</div>
-                <div style="font-size: 2.5em; color: #4caf50; font-weight: bold;" id="resto">€ 0.00</div>
+        <div class="live-content">
+            <div class="live-list" id="listaPiatti">
+                <div style="text-align:center; margin-top:50px; font-size: 1.5em; color: var(--text-color); opacity:0.5;">In attesa di articoli in cassa...</div>
             </div>
-            
-            <div style="flex: 2; background: #3e2723; border-radius: 10px; display: flex; flex-direction: column; justify-content: center; align-items: flex-end; padding: 20px; border: 1px solid #5d4037;">
-                <div style="color: #ffb300; font-size: 1.5em; font-weight: bold;">TOTALE DOVUTO</div>
-                <div class="totale-box" style="color: #ffcc80; padding: 0;" id="totale">€ 0.00</div>
+
+            <div class="live-sidebar">
+                <div class="live-card">
+                    <div style="text-transform: uppercase; letter-spacing: 1px; color: var(--text-color); opacity: 0.7;">Pagato</div>
+                    <div style="font-size: 2.5em; color: #2196f3; font-weight: bold;" id="pagato">€ 0.00</div>
+                    
+                    <hr style="width: 80%; border: 0; border-top: 1px dashed var(--text-color); opacity:0.2; margin: 20px auto;">
+                    
+                    <div style="text-transform: uppercase; letter-spacing: 1px; color: var(--text-color); opacity: 0.7;">Resto</div>
+                    <div class="resto-text" id="resto">€ 0.00</div>
+                </div>
+                
+                <div class="live-card" style="border: 3px solid var(--primary-color, #d32f2f);">
+                    <div style="text-transform: uppercase; letter-spacing: 1px; font-weight: bold; color: var(--primary-color, #d32f2f);">Totale Dovuto</div>
+                    <div class="totale-text" id="totale">€ 0.00</div>
+                </div>
             </div>
         </div>
     </div>
@@ -122,6 +135,39 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         const auth = firebase.auth();
+
+        // ---------------------------------------------------------
+        // 1. SINCRONIZZAZIONE TEMA E CONNESSIONE (Come in script.js)
+        // ---------------------------------------------------------
+        
+        // Ascolta lo stato della connessione Internet
+        db.ref(".info/connected").on("value", snap => {
+            if (snap.val() === true) {
+                document.getElementById("offlineBanner").style.display = "none";
+            } else {
+                document.getElementById("offlineBanner").style.display = "block";
+            }
+        });
+
+        // Ascolta il Tema dalle impostazioni in tempo reale
+        db.ref("impostazioni/tema").on("value", snap => {
+            const tema = snap.val() || "light";
+            // Imposta l'attributo data-theme per attivare il CSS corretto
+            document.documentElement.setAttribute("data-theme", tema);
+            
+            // Aggiunge anche le classi sul body (in base a come è scritto il tuo style.css)
+            if (tema === "dark") {
+                document.body.classList.add("dark-mode");
+                document.body.classList.remove("light-mode");
+            } else {
+                document.body.classList.add("light-mode");
+                document.body.classList.remove("dark-mode");
+            }
+        });
+
+        // ---------------------------------------------------------
+        // 2. LOGICA AUTENTICAZIONE E SCHERMATE
+        // ---------------------------------------------------------
 
         auth.onAuthStateChanged(user => {
             const loader = document.getElementById("loader");
@@ -142,13 +188,12 @@
             }
         });
 
-        // Modificata per usare lo stile inline (batte le regole di style.css)
         function mostraSchermata(idDiv) {
             document.getElementById("loginDiv").style.display = "none";
             document.getElementById("cassaDiv").style.display = "none";
             document.getElementById("displayScreen").style.display = "none";
             
-            document.getElementById(idDiv).style.display = (idDiv === "displayScreen") ? "flex" : "block";
+            document.getElementById(idDiv).style.display = (idDiv === "displayScreen") ? "flex" : "flex";
         }
 
         function eseguiLogin() {
@@ -186,6 +231,10 @@
             });
         }
 
+        // ---------------------------------------------------------
+        // 3. SINCRONIZZAZIONE LIVE DEI DATI CASSA
+        // ---------------------------------------------------------
+
         function avviaDisplay() {
             const cassaUid = document.getElementById("selectCassa").value;
             if(!cassaUid) { alert("Seleziona una cassa dall'elenco!"); return; }
@@ -194,24 +243,28 @@
             
             db.ref("displayLive/" + cassaUid).on("value", snap => {
                 const data = snap.val();
+                
+                // Se la cassa viene resettata o è vuota
                 if(!data || !data.piatti || data.piatti.length === 0) {
                     document.getElementById("numComanda").innerText = "---";
                     document.getElementById("totale").innerText = "€ 0.00";
                     document.getElementById("pagato").innerText = "€ 0.00";
                     document.getElementById("resto").innerText = "€ 0.00";
-                    document.getElementById("listaPiatti").innerHTML = '<div style="text-align:center; margin-top:50px; font-size: 2em; color: #666;">Nessun articolo in cassa...</div>';
+                    document.getElementById("listaPiatti").innerHTML = '<div style="text-align:center; margin-top:50px; font-size: 1.5em; color: var(--text-color); opacity:0.5;">In attesa di articoli in cassa...</div>';
                     return;
                 }
                 
+                // Aggiornamento Valori
                 document.getElementById("numComanda").innerText = data.numeroComanda || "---";
                 document.getElementById("totale").innerText = "€ " + (data.totale || 0).toFixed(2);
                 document.getElementById("pagato").innerText = "€ " + (data.pagato || 0).toFixed(2);
                 document.getElementById("resto").innerText = "€ " + (data.resto || 0).toFixed(2);
                 
+                // Generazione Lista Piatti
                 document.getElementById("listaPiatti").innerHTML = data.piatti.map(p => `
-                    <div class="cliente-row">
-                        <span><strong style="color: #ffeb3b; font-size: 1.2em;">${p.quantita}x</strong> &nbsp; ${p.nome}</span>
-                        <span>€ ${(p.prezzo * p.quantita).toFixed(2)}</span>
+                    <div class="piatto-row">
+                        <span><span class="piatto-qty">${p.quantita}x</span> <span style="color: var(--text-color);">${p.nome}</span></span>
+                        <span style="color: var(--text-color);">€ ${(p.prezzo * p.quantita).toFixed(2)}</span>
                     </div>
                 `).join("");
             });
