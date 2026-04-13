@@ -2244,6 +2244,7 @@ function aggiornaComandaCorrente(){
 
     aggiornaStatoInvio();
     aggiornaSuggerimentoResto();
+	sincronizzaDisplayLive();
 }
 // --- INPUT E PULSANTE ---
 const numInput = document.getElementById("numComanda");
@@ -2366,6 +2367,7 @@ soldi.forEach(s => {
         } else {
             restoDovutoSpan.parentElement.style.color = "black";
         }
+		sincronizzaDisplayLive();
         // Piccolo feedback visivo
         btn.classList.add("pressed");
         setTimeout(() => btn.classList.remove("pressed"), 100);
@@ -2378,6 +2380,7 @@ document.getElementById("resetSoldiBtn").onclick = () => {
     restoDovutoSpan.innerText = "0.00";
     aggiornaSuggerimentoResto();
     restoDovutoSpan.parentElement.style.color = "black";
+	sincronizzaDisplayLive();
 };
 function calcolaRestoMinimo(resto) {
     if (!checkOnline(true)) return;
@@ -2589,7 +2592,31 @@ function caricaComandeCassa() {
     initRicercaComande("comandeCassa", "cercaComandaCassa");
 }
 // --- FUNZIONE TRASMISSIONE DATI PER SCHERMO CLIENTE ---
+function sincronizzaDisplayLive() {
+    // Esci se non abilitato o se non sei in un profilo che può inviare (Cassa/Admin)
+    if (!window.settings.displayClienteAbilitato || (ruolo !== 'cassa' && ruolo !== 'admin')) return;
+    if (!uid) return;
 
+    const totale = parseFloat(document.getElementById("totale").innerText) || 0;
+    const num = document.getElementById("numComanda").value.trim();
+    const lett = document.getElementById("letteraComanda").value.trim().toUpperCase();
+
+    const dati = {
+        piatti: comandaCorrente.map(p => ({
+            nome: p.nome,
+            quantita: p.quantita,
+            prezzo: calcolaPrezzoConSconto(p) / p.quantita // prezzo unitario calcolato
+        })),
+        totale: totale,
+        numeroComanda: (num + lett) || "---",
+        pagato: totalePagato || 0,
+        resto: parseFloat(document.getElementById("restoDovuto").innerText) || 0,
+        timestamp: Date.now()
+    };
+
+    // Scrive nel "canale" specifico di questo utente (UID cassa)
+    db.ref("displayLive/" + uid).set(dati);
+}
 // ------------------ ADMIN -----------------
 //INGREDIENTI
 async function caricaIngredienti() {
@@ -5266,7 +5293,7 @@ document.addEventListener("DOMContentLoaded", () => {
             // ✅ reset dopo l’invio
             comandaCorrente = [];
             aggiornaComandaCorrente();
-			
+			sincronizzaDisplayLive();
             noteInput.value = ""; 
             numInput.value = "";
             letteraInput.value = "";
@@ -6118,51 +6145,6 @@ function calcolaEVisualizzaTempoMedio(comandeSnapshot) {
         valAdmin.innerText = mediaMin;
     }
 }
-// ================================================================
-// 🟢 MOTORE PROIETTORE AUTOMATICO SCHERMO CLIENTE
-// ================================================================
-let ultimoDatoInviato = "";
-
-setInterval(() => {
-    // 1. Esci se la funzione è spenta nelle impostazioni o se non siamo in cassa
-    if (!window.settings || !window.settings.displayClienteAbilitato) return;
-    if (ruolo !== 'cassa' && ruolo !== 'admin') return;
-    if (!uid) return;
-
-    // 2. Fotografa i dati ESATTI dallo schermo della Cassa in questo millisecondo
-    const totale = parseFloat(document.getElementById("totale").innerText) || 0;
-    const pagato = typeof totalePagato !== "undefined" ? totalePagato : 0; 
-    const resto = parseFloat(document.getElementById("restoDovuto").innerText) || 0;
-    
-    const inputNum = document.getElementById("numComanda");
-    const inputLett = document.getElementById("letteraComanda");
-    const num = inputNum ? inputNum.value.trim() : "";
-    const lett = inputLett ? inputLett.value.trim().toUpperCase() : "";
-
-    // 3. Impacchetta i dati
-    const dati = {
-        piatti: (typeof comandaCorrente !== "undefined" ? comandaCorrente : []).map(p => ({
-            nome: p.nome,
-            quantita: p.quantita,
-            prezzo: p.sconto ? (calcolaPrezzoConSconto(p) / p.quantita) : p.prezzo
-        })),
-        totale: totale,
-        numeroComanda: (num + lett) || "---",
-        pagato: pagato,
-        resto: resto,
-        timestamp: Date.now()
-    };
-
-    // 4. Invia al database SOLO se i soldi o i piatti sono cambiati rispetto a un attimo fa
-    const datiPerConfronto = { ...dati, timestamp: 0 };
-    const stringaDati = JSON.stringify(datiPerConfronto);
-
-    if (stringaDati !== ultimoDatoInviato) {
-        db.ref("displayLive/" + uid).set(dati)
-            .then(() => { ultimoDatoInviato = stringaDati; })
-            .catch(err => console.warn("Errore sincronizzazione:", err));
-    }
-}, 300); // 300ms = 3 volte al secondo!
 // -------------------- TABS --------------------
 document.querySelectorAll(".tabBtn").forEach(b=>{
     b.addEventListener("click",()=>{
