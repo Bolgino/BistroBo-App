@@ -14,47 +14,54 @@
     <link rel="stylesheet" href="main/style.css">
     
     <style>
-        /* Layout per tenere tutto centrato senza rompere il tuo CSS */
-        .cliente-container { max-width: 800px; margin: 30px auto; padding: 20px; }
+        /* 🚨 SCUDO ANTI-FILTRO 🚨 
+           Questo blocco distrugge qualsiasi livello di opacità, loader nascosti 
+           o overlay "bianchi" imposti da style.css globalmente */
+        html, body {
+            opacity: 1 !important;
+            visibility: visible !important;
+            filter: none !important;
+            background-color: var(--bg-color, #ffffff) !important;
+            color: var(--text-color, #000000) !important;
+        }
+        body::before, body::after { display: none !important; }
+        .overlay, #loader, .splash-screen { display: none !important; }
+
+        /* Layout Cliente pulito e in stile BistroBò */
+        .cliente-container { max-width: 800px; margin: 30px auto; padding: 20px; position: relative; z-index: 99999; }
         .box-centrato { background: var(--bg-element, #fff); padding: 30px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 20px; border: 1px solid var(--border-color, #eee); }
         .row-piatto { display: flex; justify-content: space-between; font-size: 1.5em; padding: 15px 0; border-bottom: 1px dashed var(--border-color, #ccc); }
         .row-piatto:last-child { border-bottom: none; }
         .totali-grid { display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 15px; }
     </style>
 </head>
-<body>
-
-    <div class="topBar" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px;">
+<body class="light-mode" data-theme="light"> 
+    <div class="topBar" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; position: relative; z-index: 99999;">
         <div style="display: flex; align-items: center; gap: 10px;">
             <img src="icon-192.png" alt="Logo" style="width: 40px;">
-            <h1 style="margin: 0; font-size: 1.5em;">BistroBò - <span id="numComandaDisplay">Display</span></h1>
+            <h1 style="margin: 0; font-size: 1.5em; color: var(--text-color, #000);">BistroBò - <span id="numComandaDisplay">Display</span></h1>
         </div>
         <button id="logoutBtn" onclick="eseguiLogout()" style="padding: 10px 20px; cursor: pointer; display: none;">Esci</button>
     </div>
 
     <div class="cliente-container">
 
-        <div id="loaderArea" style="text-align: center; margin-top: 100px;">
-            <img src="icon-192.png" alt="Logo" style="width: 80px; animation: pulse 1.5s infinite;">
-            <h2>Caricamento...</h2>
-        </div>
-
-        <div id="loginDiv" class="box-centrato hidden">
-            <h2 style="text-align: center;">Accesso Schermo</h2>
-            <p style="text-align: center; color: red;">Solo il display autorizzato può accedere.</p>
-            <input type="email" id="loginEmail" placeholder="cliente@bistrobo.it" style="width: 100%; padding: 15px; margin-bottom: 15px; font-size: 1.1em; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box;">
-            <input type="password" id="loginPassword" placeholder="Password" style="width: 100%; padding: 15px; margin-bottom: 15px; font-size: 1.1em; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box;">
+        <div id="loginDiv" class="box-centrato">
+            <h2 style="text-align: center; margin-top: 0;">Accesso Schermo</h2>
+            <p style="text-align: center; color: #d32f2f;">Accedi con l'account cliente autorizzato.</p>
+            <input type="email" id="loginEmail" placeholder="cliente@bistrobo.it" style="width: 100%; padding: 15px; margin-bottom: 15px; font-size: 1.1em; border-radius: 5px; border: 1px solid var(--border-color, #ccc); background: var(--bg-color, #fff); color: var(--text-color, #000); box-sizing: border-box;">
+            <input type="password" id="loginPassword" placeholder="Password" style="width: 100%; padding: 15px; margin-bottom: 15px; font-size: 1.1em; border-radius: 5px; border: 1px solid var(--border-color, #ccc); background: var(--bg-color, #fff); color: var(--text-color, #000); box-sizing: border-box;">
             <button onclick="eseguiLogin()" style="width: 100%; padding: 15px; font-size: 1.2em; font-weight: bold; background: #d32f2f; color: white; border: none; border-radius: 5px; cursor: pointer;">ACCEDI</button>
         </div>
 
-        <div id="cassaDiv" class="box-centrato hidden">
-            <h2 style="text-align: center;">Configura il Monitor</h2>
+        <div id="cassaDiv" class="box-centrato" style="display: none;">
+            <h2 style="text-align: center; margin-top: 0;">Configura il Monitor</h2>
             <p style="text-align: center; margin-bottom: 20px;">Quale cassa deve seguire questo schermo?</p>
-            <select id="selectCassa" style="width: 100%; padding: 15px; margin-bottom: 20px; font-size: 1.2em; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box;"></select>
+            <select id="selectCassa" style="width: 100%; padding: 15px; margin-bottom: 20px; font-size: 1.2em; border-radius: 5px; border: 1px solid var(--border-color, #ccc); background: var(--bg-color, #fff); color: var(--text-color, #000); box-sizing: border-box;"></select>
             <button onclick="avviaDisplay()" style="width: 100%; padding: 15px; font-size: 1.2em; font-weight: bold; background: #4caf50; color: white; border: none; border-radius: 5px; cursor: pointer;">COLLEGA CASSA</button>
         </div>
 
-        <div id="displayScreen" class="hidden">
+        <div id="displayScreen" style="display: none;">
             <div class="box-centrato" style="min-height: 300px;" id="listaPiatti">
                 <div style="text-align:center; margin-top:100px; font-size: 1.5em; opacity:0.5;">In attesa di articoli...</div>
             </div>
@@ -96,7 +103,6 @@
         // -----------------------------------------------------
         db.ref("impostazioni/tema").on("value", snap => {
             const tema = snap.val() || "light";
-            // Questo dice al tuo style.css di usare i colori corretti (Chiaro/Scuro)
             document.documentElement.setAttribute('data-theme', tema);
             if (tema === "dark") {
                 document.body.classList.add("dark-mode");
@@ -111,17 +117,9 @@
         // LOGICA DI ACCESSO
         // -----------------------------------------------------
         auth.onAuthStateChanged(user => {
-            document.getElementById("loaderArea").style.display = "none";
-            
             if (user) {
                 document.getElementById("logoutBtn").style.display = "block";
-                
-                if (user.email !== "cliente@bistrobo.it") {
-                    alert("Questo profilo non è autorizzato allo schermo cliente.");
-                    auth.signOut();
-                } else {
-                    caricaCasse();
-                }
+                caricaCasse();
             } else {
                 document.getElementById("logoutBtn").style.display = "none";
                 mostraSezione("loginDiv");
@@ -132,35 +130,22 @@
             const e = document.getElementById("loginEmail").value.trim().toLowerCase();
             const p = document.getElementById("loginPassword").value;
             
-            if(e !== "cliente@bistrobo.it") {
-                alert("Puoi usare solo l'email del cliente!"); return;
-            }
-            
-            document.getElementById("loaderArea").style.display = "block";
-            document.getElementById("loginDiv").style.display = "none";
-            
             auth.signInWithEmailAndPassword(e, p).catch(err => {
-                document.getElementById("loaderArea").style.display = "none";
-                document.getElementById("loginDiv").style.display = "block";
-                alert("Errore login: Hai registrato l'account su Firebase Authentication? (Codice: " + err.code + ")");
+                alert("Errore login: Controlla che email e password siano corrette.");
             });
         }
 
         function eseguiLogout() {
-            auth.signOut();
-            window.location.reload();
+            auth.signOut().then(() => {
+                window.location.reload();
+            });
         }
 
-        // -----------------------------------------------------
-        // LOGICA DI VISUALIZZAZIONE E SINCRONIZZAZIONE
-        // -----------------------------------------------------
         function mostraSezione(id) {
             document.getElementById("loginDiv").style.display = "none";
             document.getElementById("cassaDiv").style.display = "none";
             document.getElementById("displayScreen").style.display = "none";
-            
             document.getElementById(id).style.display = "block";
-            document.getElementById(id).classList.remove("hidden"); // Se il tuo CSS usa .hidden
         }
 
         function caricaCasse() {
@@ -187,12 +172,11 @@
             
             mostraSezione("displayScreen");
             
-            // Ascolta i dati in tempo reale della cassa selezionata
             db.ref("displayLive/" + cassaUid).on("value", snap => {
                 const data = snap.val();
                 
                 if(!data || !data.piatti || data.piatti.length === 0) {
-                    document.getElementById("numComandaDisplay").innerText = "Attesa";
+                    document.getElementById("numComandaDisplay").innerText = "In Attesa";
                     document.getElementById("totale").innerText = "€ 0.00";
                     document.getElementById("pagato").innerText = "€ 0.00";
                     document.getElementById("resto").innerText = "€ 0.00";
@@ -207,8 +191,8 @@
                 
                 document.getElementById("listaPiatti").innerHTML = data.piatti.map(p => `
                     <div class="row-piatto">
-                        <span><b style="color:#d32f2f;">${p.quantita}x</b> &nbsp; ${p.nome}</span>
-                        <span>€ ${(p.prezzo * p.quantita).toFixed(2)}</span>
+                        <span><b style="color:#d32f2f;">${p.quantita}x</b> &nbsp; <span style="color:var(--text-color, #000);">${p.nome}</span></span>
+                        <span style="color:var(--text-color, #000);">€ ${(p.prezzo * p.quantita).toFixed(2)}</span>
                     </div>
                 `).join("");
             });
