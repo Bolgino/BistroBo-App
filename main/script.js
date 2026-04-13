@@ -2360,7 +2360,6 @@ soldi.forEach(s => {
 
         // Aggiorna suggerimenti di resto
         aggiornaSuggerimentoResto();
-		sincronizzaDisplayLive();
 
         // Cambia colore testo a seconda dello stato
         if (totalePagato > totale) {
@@ -2380,7 +2379,6 @@ document.getElementById("resetSoldiBtn").onclick = () => {
     const totale = parseFloat(document.getElementById("totale").innerText) || 0;
     restoDovutoSpan.innerText = "0.00";
     aggiornaSuggerimentoResto();
-	sincronizzaDisplayLive();
     restoDovutoSpan.parentElement.style.color = "black";
 };
 function calcolaRestoMinimo(resto) {
