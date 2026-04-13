@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BistroBò - Schermo Cliente</title>
+    <link rel="icon" type="image/x-icon" href="./favicon.ico">
     
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
@@ -12,62 +13,97 @@
     <link rel="stylesheet" href="main/style.css">
     
     <style>
-        /* Aggiungiamo solo pochissime regole per centrare il contenuto del display, 
-           tutto il resto dei colori, font e bottoni sarà ereditato dal tuo style.css */
-        body { margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        /* VARIABILI TEMA FORZATE: Garantiscono che i colori ci siano anche senza lo script della cassa */
+        :root {
+            --bg-color: #121212;
+            --text-color: #ffffff;
+            --card-bg: #1e1e1e;
+        }
+
+        body { 
+            margin: 0; 
+            height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            overflow: hidden; 
+            background-color: var(--bg-color); /* Applica il nero */
+            color: var(--text-color); /* Applica il bianco */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
         
-        #displayScreen { flex: 1; display: flex; flex-direction: column; padding: 20px; gap: 20px; }
-        .cliente-row { display: flex; justify-content: space-between; font-size: 1.5em; padding: 15px; border-bottom: 2px dashed #ccc; }
+        #displayScreen { flex: 1; display: none; flex-direction: column; padding: 20px; gap: 20px; }
+        .cliente-row { display: flex; justify-content: space-between; font-size: 1.5em; padding: 15px; border-bottom: 2px dashed #444; }
         .totale-box { font-size: 3em; font-weight: bold; text-align: right; padding: 20px; }
         
         /* Contenitore per centrare i login/setup */
-        .center-box { max-width: 400px; margin: 10vh auto; padding: 30px; background: white; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); text-align: center; }
+        .center-box { 
+            max-width: 400px; 
+            margin: 10vh auto; 
+            padding: 30px; 
+            background: var(--card-bg); 
+            border-radius: 15px; 
+            box-shadow: 0 5px 20px rgba(0,0,0,0.5); 
+            text-align: center; 
+            display: none; /* Nascosto di default */
+        }
+
+        /* Stili forzati per gli input per renderli visibili nel dark mode */
+        .center-box input, .center-box select {
+            background-color: #333;
+            color: white;
+            border: 1px solid #555;
+            width: 100%; 
+            padding: 12px; 
+            margin-bottom: 15px;
+            border-radius: 8px;
+            box-sizing: border-box;
+        }
     </style>
 </head>
 <body>
 
-    <div id="loader" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+    <div id="loader" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #121212; color: white; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center;">
         <img src="icon-192.png" alt="Logo" style="width: 100px; margin-bottom: 20px; animation: pulse 1.5s infinite;">
         <h2>Caricamento BistroBò...</h2>
     </div>
 
-    <div id="loginDiv" class="center-box hidden">
+    <div id="loginDiv" class="center-box">
         <img src="icon-192.png" alt="Logo" style="width: 80px; margin-bottom: 10px;">
-        <h2>Accesso Schermo Cliente</h2>
-        <p style="color: red; font-size: 0.9em;">Solo l'account autorizzato può accedere.</p>
+        <h2>Accesso Display Cliente</h2>
+        <p style="color: #ff5252; font-size: 0.9em; margin-bottom: 20px;">Accesso riservato all'account autorizzato.</p>
         
-        <input type="email" id="loginEmail" placeholder="cliente@bistrobo.it" style="width: 100%; padding: 10px; margin-bottom: 15px;">
-        <input type="password" id="loginPassword" placeholder="Password" style="width: 100%; padding: 10px; margin-bottom: 15px;">
+        <input type="email" id="loginEmail" placeholder="cliente@bistrobo.it">
+        <input type="password" id="loginPassword" placeholder="Password">
         
-        <button onclick="eseguiLogin()" style="width: 100%; padding: 15px; background: #d32f2f; color: white; border: none; border-radius: 8px; font-size: 1.2em; cursor: pointer;">Accedi</button>
+        <button onclick="eseguiLogin()" style="width: 100%; padding: 15px; background: #d32f2f; color: white; border: none; border-radius: 8px; font-size: 1.2em; font-weight:bold; cursor: pointer;">ACCEDI</button>
     </div>
 
-    <div id="cassaDiv" class="center-box hidden">
+    <div id="cassaDiv" class="center-box">
         <h2>Configura Schermo</h2>
-        <p>Seleziona la cassa da mostrare su questo monitor:</p>
-        <select id="selectCassa" style="width: 100%; padding: 15px; font-size: 1.2em; margin-bottom: 20px;"></select>
-        <button onclick="avviaDisplay()" style="width: 100%; padding: 15px; background: #4caf50; color: white; border: none; border-radius: 8px; font-size: 1.2em; cursor: pointer;">Avvia Trasmissione</button>
+        <p style="color: #aaa; margin-bottom: 20px;">Seleziona la cassa da mostrare su questo monitor:</p>
+        <select id="selectCassa"></select>
+        <button onclick="avviaDisplay()" style="width: 100%; padding: 15px; background: #4caf50; color: white; border: none; border-radius: 8px; font-size: 1.2em; font-weight:bold; cursor: pointer;">AVVIA TRASMISSIONE</button>
     </div>
 
-    <div id="displayScreen" class="hidden">
+    <div id="displayScreen">
         <div style="background: #d32f2f; color: white; padding: 20px; border-radius: 10px; text-align: center;">
             <h1 style="margin: 0;">ORDINE <span id="numComanda">---</span></h1>
         </div>
         
-        <div style="flex: 1; overflow-y: auto; background: white; border-radius: 10px; padding: 20px; box-shadow: inset 0 0 10px rgba(0,0,0,0.1);" id="listaPiatti">
-            </div>
+        <div style="flex: 1; overflow-y: auto; background: var(--card-bg); border-radius: 10px; padding: 20px; box-shadow: inset 0 0 10px rgba(0,0,0,0.3);" id="listaPiatti">
+        </div>
 
         <div style="display: flex; gap: 20px;">
-            <div style="flex: 1; background: white; border-radius: 10px; padding: 20px; text-align: center;">
-                <div style="color: gray; font-size: 1.2em;">Pagato</div>
-                <div style="font-size: 2.5em; color: #2196f3;" id="pagato">€ 0.00</div>
-                <div style="color: gray; font-size: 1.2em; margin-top: 10px;">Resto</div>
-                <div style="font-size: 2.5em; color: #4caf50;" id="resto">€ 0.00</div>
+            <div style="flex: 1; background: var(--card-bg); border-radius: 10px; padding: 20px; text-align: center; border: 1px solid #333;">
+                <div style="color: gray; font-size: 1.2em; text-transform: uppercase;">Pagato</div>
+                <div style="font-size: 2.5em; color: #2196f3; font-weight: bold;" id="pagato">€ 0.00</div>
+                <div style="color: gray; font-size: 1.2em; margin-top: 10px; text-transform: uppercase;">Resto</div>
+                <div style="font-size: 2.5em; color: #4caf50; font-weight: bold;" id="resto">€ 0.00</div>
             </div>
             
-            <div style="flex: 2; background: #fff3e0; border-radius: 10px; display: flex; flex-direction: column; justify-content: center; align-items: flex-end; padding: 20px;">
-                <div style="color: #e65100; font-size: 1.5em; font-weight: bold;">TOTALE DOVUTO</div>
-                <div class="totale-box" style="color: #d32f2f; padding: 0;" id="totale">€ 0.00</div>
+            <div style="flex: 2; background: #3e2723; border-radius: 10px; display: flex; flex-direction: column; justify-content: center; align-items: flex-end; padding: 20px; border: 1px solid #5d4037;">
+                <div style="color: #ffb300; font-size: 1.5em; font-weight: bold;">TOTALE DOVUTO</div>
+                <div class="totale-box" style="color: #ffcc80; padding: 0;" id="totale">€ 0.00</div>
             </div>
         </div>
     </div>
@@ -87,47 +123,38 @@
         const db = firebase.database();
         const auth = firebase.auth();
 
-        // Controllo se l'utente è già loggato all'avvio
         auth.onAuthStateChanged(user => {
             const loader = document.getElementById("loader");
             
             if (user) {
-                // Se è loggato, ma non è il cliente, lo buttiamo fuori
                 if (user.email !== "cliente@bistrobo.it") {
                     auth.signOut().then(() => {
                         loader.style.display = "none";
                         mostraSchermata("loginDiv");
                     });
                 } else {
-                    // È il cliente corretto, andiamo alla scelta della cassa
                     loader.style.display = "none";
                     caricaCasse();
                 }
             } else {
-                // Nessuno loggato, mostra login
                 loader.style.display = "none";
                 mostraSchermata("loginDiv");
             }
         });
 
-        // Funzione per nascondere tutto e mostrare solo un div
+        // Modificata per usare lo stile inline (batte le regole di style.css)
         function mostraSchermata(idDiv) {
-            document.getElementById("loginDiv").classList.add("hidden");
-            document.getElementById("cassaDiv").classList.add("hidden");
-            document.getElementById("displayScreen").classList.add("hidden");
+            document.getElementById("loginDiv").style.display = "none";
+            document.getElementById("cassaDiv").style.display = "none";
+            document.getElementById("displayScreen").style.display = "none";
             
-            // Per togliere la classe hidden definita nel tuo style.css usiamo questo approccio
-            document.getElementById(idDiv).classList.remove("hidden");
-            // Se per caso nel tuo css hidden usa display:none!important, forziamo la visualizzazione:
             document.getElementById(idDiv).style.display = (idDiv === "displayScreen") ? "flex" : "block";
         }
 
-        // LOGIN CON BLOCCO EMAIL
         function eseguiLogin() {
             const e = document.getElementById("loginEmail").value.trim().toLowerCase();
             const p = document.getElementById("loginPassword").value;
             
-            // BLOCCO DI SICUREZZA:
             if(e !== "cliente@bistrobo.it") {
                 alert("ACCESSO NEGATO: Puoi accedere solo con l'account cliente@bistrobo.it");
                 return;
@@ -135,11 +162,9 @@
 
             document.getElementById("loader").style.display = "flex";
 
-            auth.signInWithEmailAndPassword(e, p).then(() => {
-                // onAuthStateChanged gestirà il resto
-            }).catch(err => {
+            auth.signInWithEmailAndPassword(e, p).catch(err => {
                 document.getElementById("loader").style.display = "none";
-                alert("Errore: Password errata o account inesistente.");
+                alert("Errore di accesso: Controlla la password.");
             });
         }
 
@@ -163,7 +188,7 @@
 
         function avviaDisplay() {
             const cassaUid = document.getElementById("selectCassa").value;
-            if(!cassaUid) { alert("Scegli una cassa!"); return; }
+            if(!cassaUid) { alert("Seleziona una cassa dall'elenco!"); return; }
             
             mostraSchermata("displayScreen");
             
@@ -174,7 +199,7 @@
                     document.getElementById("totale").innerText = "€ 0.00";
                     document.getElementById("pagato").innerText = "€ 0.00";
                     document.getElementById("resto").innerText = "€ 0.00";
-                    document.getElementById("listaPiatti").innerHTML = '<div style="text-align:center; margin-top:50px; font-size: 2em; color: #ccc;">Nessun articolo...</div>';
+                    document.getElementById("listaPiatti").innerHTML = '<div style="text-align:center; margin-top:50px; font-size: 2em; color: #666;">Nessun articolo in cassa...</div>';
                     return;
                 }
                 
@@ -185,7 +210,7 @@
                 
                 document.getElementById("listaPiatti").innerHTML = data.piatti.map(p => `
                     <div class="cliente-row">
-                        <span><strong>${p.quantita}x</strong> ${p.nome}</span>
+                        <span><strong style="color: #ffeb3b; font-size: 1.2em;">${p.quantita}x</strong> &nbsp; ${p.nome}</span>
                         <span>€ ${(p.prezzo * p.quantita).toFixed(2)}</span>
                     </div>
                 `).join("");
