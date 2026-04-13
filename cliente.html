@@ -14,65 +14,67 @@
     <link rel="stylesheet" href="main/style.css">
     
     <style>
-        /* Regole di impaginazione specifiche per lo schermo intero, 
-           i colori e i font vengono presi dal tuo style.css */
-        body, html { height: 100%; margin: 0; overflow: hidden; display: flex; flex-direction: column; transition: background-color 0.3s, color 0.3s; }
+        /* 1. ANTIPANICO: Forza la visibilità del body scavalcando eventuali blocchi di style.css */
+        body { 
+            display: flex !important; 
+            opacity: 1 !important; 
+            visibility: visible !important; 
+            margin: 0; 
+            height: 100vh; 
+            flex-direction: column; 
+            overflow: hidden; 
+            background-color: var(--bg-color, #121212) !important; 
+            color: var(--text-color, #ffffff) !important;
+            transition: background-color 0.3s, color 0.3s;
+        }
         
-        /* Banner Connessione Persa (Stile nativo BistroBò) */
         #offlineBanner {
             position: fixed; top: 0; left: 0; width: 100%; background: #d32f2f; color: white;
             text-align: center; padding: 10px; font-weight: bold; z-index: 10000; display: none;
             box-shadow: 0 2px 5px rgba(0,0,0,0.3);
         }
 
-        /* Layout principale Live */
         #displayScreen { display: none; flex-direction: column; height: 100%; padding: 20px; gap: 20px; box-sizing: border-box; }
         .live-header { background-color: var(--primary-color, #d32f2f); color: white; padding: 15px; border-radius: 10px; text-align: center; font-size: 1.8em; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .live-content { flex: 1; display: flex; gap: 20px; overflow: hidden; }
         
-        /* Lista Piatti */
-        .live-list { flex: 2; background-color: var(--card-bg, #fff); border-radius: 10px; padding: 20px; overflow-y: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .live-list { flex: 2; background-color: var(--card-bg, #1e1e1e); border-radius: 10px; padding: 20px; overflow-y: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border: 1px solid var(--border-color, #333); }
         .piatto-row { display: flex; justify-content: space-between; font-size: 1.8em; padding: 15px 0; border-bottom: 2px dashed var(--text-color, #ccc); opacity: 0.9; }
         .piatto-qty { font-weight: bold; color: var(--primary-color, #d32f2f); margin-right: 15px; }
         
-        /* Sidebar Totali */
         .live-sidebar { flex: 1; display: flex; flex-direction: column; gap: 20px; }
-        .live-card { background-color: var(--card-bg, #fff); padding: 25px; border-radius: 10px; text-align: center; display: flex; flex-direction: column; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .live-card { background-color: var(--card-bg, #1e1e1e); padding: 25px; border-radius: 10px; text-align: center; display: flex; flex-direction: column; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border: 1px solid var(--border-color, #333); }
         .totale-text { font-size: 4em; font-weight: bold; color: var(--primary-color, #d32f2f); margin-top: 10px; line-height: 1; }
         .resto-text { font-size: 3em; font-weight: bold; color: #4caf50; margin-top: 10px; line-height: 1; }
         
-        /* Centratura per schermate di Login/Impostazione */
         .center-container { display: none; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 20px; }
         .center-box {
-            background-color: var(--card-bg, #fff);
+            background-color: var(--card-bg, #1e1e1e); color: var(--text-color, #fff);
             padding: 40px; border-radius: 15px; width: 100%; max-width: 450px; text-align: center;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid var(--border-color, #333);
         }
         .center-box input, .center-box select {
             width: 100%; padding: 15px; margin-bottom: 20px; font-size: 1.2em;
-            background: var(--bg-color, #fff); color: var(--text-color, #000);
-            border: 1px solid var(--border-color, #ccc); border-radius: 8px; box-sizing: border-box;
+            background: var(--bg-color, #000); color: var(--text-color, #fff);
+            border: 1px solid var(--border-color, #555); border-radius: 8px; box-sizing: border-box;
         }
         .btn-rosso { width: 100%; padding: 15px; background: #d32f2f; color: white; border: none; border-radius: 8px; font-size: 1.2em; font-weight:bold; cursor: pointer; transition: 0.2s; }
         .btn-rosso:hover { background: #b71c1c; }
         .btn-verde { width: 100%; padding: 15px; background: #4caf50; color: white; border: none; border-radius: 8px; font-size: 1.2em; font-weight:bold; cursor: pointer; margin-bottom: 15px; transition: 0.2s; }
-        .btn-verde:hover { background: #388e3c; }
     </style>
 </head>
-<body>
+<body class="dark-mode"> <div id="offlineBanner">⚠️ Nessuna connessione a Internet.</div>
 
-    <div id="offlineBanner">⚠️ Nessuna connessione a Internet. Riconnessione in corso...</div>
-
-    <div id="loader" style="position:fixed; top:0; left:0; width:100%; height:100%; background:var(--bg-color, #fff); z-index:9999; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+    <div id="loader" style="position:fixed; top:0; left:0; width:100%; height:100%; background:var(--bg-color, #121212); z-index:9999; display:flex; flex-direction:column; align-items:center; justify-content:center;">
         <img src="icon-192.png" alt="Logo" style="width: 100px; margin-bottom: 20px; animation: pulse 1.5s infinite;">
-        <h2 style="color:var(--text-color, #000);">Caricamento Schermo...</h2>
+        <h2 style="color:var(--text-color, #ffffff);">Caricamento Schermo...</h2>
     </div>
 
     <div id="loginDiv" class="center-container">
         <div class="center-box">
             <img src="icon-192.png" alt="Logo" style="width: 80px; margin-bottom: 15px;">
-            <h2 style="color:var(--text-color, #000); margin-top:0;">Accesso Display Cliente</h2>
-            <p style="color: #d32f2f; font-size: 0.9em; margin-bottom: 20px;">Accesso riservato all'account autorizzato.</p>
+            <h2 style="margin-top:0;">Accesso Display Cliente</h2>
+            <p style="color: #ff5252; font-size: 0.9em; margin-bottom: 20px;">Accesso riservato all'account autorizzato.</p>
             
             <input type="email" id="loginEmail" placeholder="cliente@bistrobo.it">
             <input type="password" id="loginPassword" placeholder="Password">
@@ -82,34 +84,32 @@
 
     <div id="cassaDiv" class="center-container">
         <div class="center-box">
-            <h2 style="color:var(--text-color, #000); margin-top:0;">Configurazione</h2>
-            <p style="color:var(--text-color, #666); margin-bottom: 20px;">Seleziona la cassa da mostrare su questo monitor:</p>
+            <h2 style="margin-top:0;">Configurazione</h2>
+            <p style="opacity: 0.7; margin-bottom: 20px;">Seleziona la cassa da mostrare su questo monitor:</p>
             
             <select id="selectCassa"></select>
             
             <button class="btn-verde" onclick="avviaDisplay()">AVVIA SCHERMO</button>
-            <button onclick="firebase.auth().signOut()" style="width: 100%; padding: 10px; background: transparent; color: var(--text-color); border: 1px solid var(--text-color); border-radius: 8px; cursor: pointer;">Disconnetti</button>
+            <button onclick="firebase.auth().signOut()" style="width: 100%; padding: 10px; background: transparent; color: inherit; border: 1px solid var(--text-color, #fff); border-radius: 8px; cursor: pointer;">Disconnetti</button>
         </div>
     </div>
 
     <div id="displayScreen">
-        <div class="live-header">
-            ORDINE <span id="numComanda">---</span>
-        </div>
+        <div class="live-header">ORDINE <span id="numComanda">---</span></div>
         
         <div class="live-content">
             <div class="live-list" id="listaPiatti">
-                <div style="text-align:center; margin-top:50px; font-size: 1.5em; color: var(--text-color); opacity:0.5;">In attesa di articoli in cassa...</div>
+                <div style="text-align:center; margin-top:50px; font-size: 1.5em; opacity:0.5;">In attesa di articoli in cassa...</div>
             </div>
 
             <div class="live-sidebar">
                 <div class="live-card">
-                    <div style="text-transform: uppercase; letter-spacing: 1px; color: var(--text-color); opacity: 0.7;">Pagato</div>
+                    <div style="text-transform: uppercase; letter-spacing: 1px; opacity: 0.7;">Pagato</div>
                     <div style="font-size: 2.5em; color: #2196f3; font-weight: bold;" id="pagato">€ 0.00</div>
                     
-                    <hr style="width: 80%; border: 0; border-top: 1px dashed var(--text-color); opacity:0.2; margin: 20px auto;">
+                    <hr style="width: 80%; border: 0; border-top: 1px dashed var(--text-color, #fff); opacity:0.2; margin: 20px auto;">
                     
-                    <div style="text-transform: uppercase; letter-spacing: 1px; color: var(--text-color); opacity: 0.7;">Resto</div>
+                    <div style="text-transform: uppercase; letter-spacing: 1px; opacity: 0.7;">Resto</div>
                     <div class="resto-text" id="resto">€ 0.00</div>
                 </div>
                 
@@ -122,7 +122,6 @@
     </div>
 
     <script>
-        // LA TUA CONFIGURAZIONE FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyDxpd24nF3qmNrh8j40jxjhYzh1RC08DhI",
             authDomain: "comande-6fb85.firebaseapp.com",
@@ -136,43 +135,22 @@
         const db = firebase.database();
         const auth = firebase.auth();
 
-        // ---------------------------------------------------------
-        // 1. SINCRONIZZAZIONE TEMA E CONNESSIONE (Come in script.js)
-        // ---------------------------------------------------------
-        
-        // Ascolta lo stato della connessione Internet
+        // 2. Controllo Connessione (Pubblico, non blocca nulla)
         db.ref(".info/connected").on("value", snap => {
-            if (snap.val() === true) {
-                document.getElementById("offlineBanner").style.display = "none";
-            } else {
-                document.getElementById("offlineBanner").style.display = "block";
-            }
+            document.getElementById("offlineBanner").style.display = snap.val() === true ? "none" : "block";
         });
 
-        // Ascolta il Tema dalle impostazioni in tempo reale
-        db.ref("impostazioni/tema").on("value", snap => {
-            const tema = snap.val() || "light";
-            // Imposta l'attributo data-theme per attivare il CSS corretto
-            document.documentElement.setAttribute("data-theme", tema);
-            
-            // Aggiunge anche le classi sul body (in base a come è scritto il tuo style.css)
-            if (tema === "dark") {
-                document.body.classList.add("dark-mode");
-                document.body.classList.remove("light-mode");
-            } else {
-                document.body.classList.add("light-mode");
-                document.body.classList.remove("dark-mode");
-            }
-        });
-
-        // ---------------------------------------------------------
-        // 2. LOGICA AUTENTICAZIONE E SCHERMATE
-        // ---------------------------------------------------------
-
+        // 3. Autenticazione e caricamento Tema Sicuro
         auth.onAuthStateChanged(user => {
             const loader = document.getElementById("loader");
             
             if (user) {
+                // Leggiamo il tema SOLO DOPO il login per evitare l'errore Permission Denied di Firebase
+                db.ref("impostazioni/tema").on("value", snap => {
+                    const tema = snap.val() || "light";
+                    document.body.className = tema === "dark" ? "dark-mode" : "light-mode";
+                }, err => console.warn("Lettura tema fallita.", err));
+
                 if (user.email !== "cliente@bistrobo.it") {
                     auth.signOut().then(() => {
                         loader.style.display = "none";
@@ -193,7 +171,7 @@
             document.getElementById("cassaDiv").style.display = "none";
             document.getElementById("displayScreen").style.display = "none";
             
-            document.getElementById(idDiv).style.display = (idDiv === "displayScreen") ? "flex" : "flex";
+            document.getElementById(idDiv).style.display = "flex";
         }
 
         function eseguiLogin() {
@@ -206,7 +184,6 @@
             }
 
             document.getElementById("loader").style.display = "flex";
-
             auth.signInWithEmailAndPassword(e, p).catch(err => {
                 document.getElementById("loader").style.display = "none";
                 alert("Errore di accesso: Controlla la password.");
@@ -231,40 +208,33 @@
             });
         }
 
-        // ---------------------------------------------------------
-        // 3. SINCRONIZZAZIONE LIVE DEI DATI CASSA
-        // ---------------------------------------------------------
-
         function avviaDisplay() {
             const cassaUid = document.getElementById("selectCassa").value;
-            if(!cassaUid) { alert("Seleziona una cassa dall'elenco!"); return; }
+            if(!cassaUid) return alert("Seleziona una cassa dall'elenco!");
             
             mostraSchermata("displayScreen");
             
             db.ref("displayLive/" + cassaUid).on("value", snap => {
                 const data = snap.val();
                 
-                // Se la cassa viene resettata o è vuota
                 if(!data || !data.piatti || data.piatti.length === 0) {
                     document.getElementById("numComanda").innerText = "---";
                     document.getElementById("totale").innerText = "€ 0.00";
                     document.getElementById("pagato").innerText = "€ 0.00";
                     document.getElementById("resto").innerText = "€ 0.00";
-                    document.getElementById("listaPiatti").innerHTML = '<div style="text-align:center; margin-top:50px; font-size: 1.5em; color: var(--text-color); opacity:0.5;">In attesa di articoli in cassa...</div>';
+                    document.getElementById("listaPiatti").innerHTML = '<div style="text-align:center; margin-top:50px; font-size: 1.5em; opacity:0.5;">In attesa di articoli in cassa...</div>';
                     return;
                 }
                 
-                // Aggiornamento Valori
                 document.getElementById("numComanda").innerText = data.numeroComanda || "---";
                 document.getElementById("totale").innerText = "€ " + (data.totale || 0).toFixed(2);
                 document.getElementById("pagato").innerText = "€ " + (data.pagato || 0).toFixed(2);
                 document.getElementById("resto").innerText = "€ " + (data.resto || 0).toFixed(2);
                 
-                // Generazione Lista Piatti
                 document.getElementById("listaPiatti").innerHTML = data.piatti.map(p => `
                     <div class="piatto-row">
-                        <span><span class="piatto-qty">${p.quantita}x</span> <span style="color: var(--text-color);">${p.nome}</span></span>
-                        <span style="color: var(--text-color);">€ ${(p.prezzo * p.quantita).toFixed(2)}</span>
+                        <span><span class="piatto-qty">${p.quantita}x</span> <span>${p.nome}</span></span>
+                        <span>€ ${(p.prezzo * p.quantita).toFixed(2)}</span>
                     </div>
                 `).join("");
             });
