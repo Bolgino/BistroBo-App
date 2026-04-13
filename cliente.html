@@ -14,111 +14,67 @@
     <link rel="stylesheet" href="main/style.css">
     
     <style>
-        /* 1. ANTIPANICO: Forza la visibilità del body scavalcando eventuali blocchi di style.css */
-        body { 
-            display: flex !important; 
-            opacity: 1 !important; 
-            visibility: visible !important; 
-            margin: 0; 
-            height: 100vh; 
-            flex-direction: column; 
-            overflow: hidden; 
-            background-color: var(--bg-color, #121212) !important; 
-            color: var(--text-color, #ffffff) !important;
-            transition: background-color 0.3s, color 0.3s;
-        }
-        
-        #offlineBanner {
-            position: fixed; top: 0; left: 0; width: 100%; background: #d32f2f; color: white;
-            text-align: center; padding: 10px; font-weight: bold; z-index: 10000; display: none;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-        }
-
-        #displayScreen { display: none; flex-direction: column; height: 100%; padding: 20px; gap: 20px; box-sizing: border-box; }
-        .live-header { background-color: var(--primary-color, #d32f2f); color: white; padding: 15px; border-radius: 10px; text-align: center; font-size: 1.8em; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .live-content { flex: 1; display: flex; gap: 20px; overflow: hidden; }
-        
-        .live-list { flex: 2; background-color: var(--card-bg, #1e1e1e); border-radius: 10px; padding: 20px; overflow-y: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border: 1px solid var(--border-color, #333); }
-        .piatto-row { display: flex; justify-content: space-between; font-size: 1.8em; padding: 15px 0; border-bottom: 2px dashed var(--text-color, #ccc); opacity: 0.9; }
-        .piatto-qty { font-weight: bold; color: var(--primary-color, #d32f2f); margin-right: 15px; }
-        
-        .live-sidebar { flex: 1; display: flex; flex-direction: column; gap: 20px; }
-        .live-card { background-color: var(--card-bg, #1e1e1e); padding: 25px; border-radius: 10px; text-align: center; display: flex; flex-direction: column; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border: 1px solid var(--border-color, #333); }
-        .totale-text { font-size: 4em; font-weight: bold; color: var(--primary-color, #d32f2f); margin-top: 10px; line-height: 1; }
-        .resto-text { font-size: 3em; font-weight: bold; color: #4caf50; margin-top: 10px; line-height: 1; }
-        
-        .center-container { display: none; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 20px; }
-        .center-box {
-            background-color: var(--card-bg, #1e1e1e); color: var(--text-color, #fff);
-            padding: 40px; border-radius: 15px; width: 100%; max-width: 450px; text-align: center;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid var(--border-color, #333);
-        }
-        .center-box input, .center-box select {
-            width: 100%; padding: 15px; margin-bottom: 20px; font-size: 1.2em;
-            background: var(--bg-color, #000); color: var(--text-color, #fff);
-            border: 1px solid var(--border-color, #555); border-radius: 8px; box-sizing: border-box;
-        }
-        .btn-rosso { width: 100%; padding: 15px; background: #d32f2f; color: white; border: none; border-radius: 8px; font-size: 1.2em; font-weight:bold; cursor: pointer; transition: 0.2s; }
-        .btn-rosso:hover { background: #b71c1c; }
-        .btn-verde { width: 100%; padding: 15px; background: #4caf50; color: white; border: none; border-radius: 8px; font-size: 1.2em; font-weight:bold; cursor: pointer; margin-bottom: 15px; transition: 0.2s; }
+        /* Layout per tenere tutto centrato senza rompere il tuo CSS */
+        .cliente-container { max-width: 800px; margin: 30px auto; padding: 20px; }
+        .box-centrato { background: var(--bg-element, #fff); padding: 30px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 20px; border: 1px solid var(--border-color, #eee); }
+        .row-piatto { display: flex; justify-content: space-between; font-size: 1.5em; padding: 15px 0; border-bottom: 1px dashed var(--border-color, #ccc); }
+        .row-piatto:last-child { border-bottom: none; }
+        .totali-grid { display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 15px; }
     </style>
 </head>
-<body class="dark-mode"> <div id="offlineBanner">⚠️ Nessuna connessione a Internet.</div>
+<body>
 
-    <div id="loader" style="position:fixed; top:0; left:0; width:100%; height:100%; background:var(--bg-color, #121212); z-index:9999; display:flex; flex-direction:column; align-items:center; justify-content:center;">
-        <img src="icon-192.png" alt="Logo" style="width: 100px; margin-bottom: 20px; animation: pulse 1.5s infinite;">
-        <h2 style="color:var(--text-color, #ffffff);">Caricamento Schermo...</h2>
-    </div>
-
-    <div id="loginDiv" class="center-container">
-        <div class="center-box">
-            <img src="icon-192.png" alt="Logo" style="width: 80px; margin-bottom: 15px;">
-            <h2 style="margin-top:0;">Accesso Display Cliente</h2>
-            <p style="color: #ff5252; font-size: 0.9em; margin-bottom: 20px;">Accesso riservato all'account autorizzato.</p>
-            
-            <input type="email" id="loginEmail" placeholder="cliente@bistrobo.it">
-            <input type="password" id="loginPassword" placeholder="Password">
-            <button class="btn-rosso" onclick="eseguiLogin()">ACCEDI</button>
+    <div class="topBar" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <img src="icon-192.png" alt="Logo" style="width: 40px;">
+            <h1 style="margin: 0; font-size: 1.5em;">BistroBò - <span id="numComandaDisplay">Display</span></h1>
         </div>
+        <button id="logoutBtn" onclick="eseguiLogout()" style="padding: 10px 20px; cursor: pointer; display: none;">Esci</button>
     </div>
 
-    <div id="cassaDiv" class="center-container">
-        <div class="center-box">
-            <h2 style="margin-top:0;">Configurazione</h2>
-            <p style="opacity: 0.7; margin-bottom: 20px;">Seleziona la cassa da mostrare su questo monitor:</p>
-            
-            <select id="selectCassa"></select>
-            
-            <button class="btn-verde" onclick="avviaDisplay()">AVVIA SCHERMO</button>
-            <button onclick="firebase.auth().signOut()" style="width: 100%; padding: 10px; background: transparent; color: inherit; border: 1px solid var(--text-color, #fff); border-radius: 8px; cursor: pointer;">Disconnetti</button>
+    <div class="cliente-container">
+
+        <div id="loaderArea" style="text-align: center; margin-top: 100px;">
+            <img src="icon-192.png" alt="Logo" style="width: 80px; animation: pulse 1.5s infinite;">
+            <h2>Caricamento...</h2>
         </div>
-    </div>
 
-    <div id="displayScreen">
-        <div class="live-header">ORDINE <span id="numComanda">---</span></div>
-        
-        <div class="live-content">
-            <div class="live-list" id="listaPiatti">
-                <div style="text-align:center; margin-top:50px; font-size: 1.5em; opacity:0.5;">In attesa di articoli in cassa...</div>
+        <div id="loginDiv" class="box-centrato hidden">
+            <h2 style="text-align: center;">Accesso Schermo</h2>
+            <p style="text-align: center; color: red;">Solo il display autorizzato può accedere.</p>
+            <input type="email" id="loginEmail" placeholder="cliente@bistrobo.it" style="width: 100%; padding: 15px; margin-bottom: 15px; font-size: 1.1em; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box;">
+            <input type="password" id="loginPassword" placeholder="Password" style="width: 100%; padding: 15px; margin-bottom: 15px; font-size: 1.1em; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box;">
+            <button onclick="eseguiLogin()" style="width: 100%; padding: 15px; font-size: 1.2em; font-weight: bold; background: #d32f2f; color: white; border: none; border-radius: 5px; cursor: pointer;">ACCEDI</button>
+        </div>
+
+        <div id="cassaDiv" class="box-centrato hidden">
+            <h2 style="text-align: center;">Configura il Monitor</h2>
+            <p style="text-align: center; margin-bottom: 20px;">Quale cassa deve seguire questo schermo?</p>
+            <select id="selectCassa" style="width: 100%; padding: 15px; margin-bottom: 20px; font-size: 1.2em; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box;"></select>
+            <button onclick="avviaDisplay()" style="width: 100%; padding: 15px; font-size: 1.2em; font-weight: bold; background: #4caf50; color: white; border: none; border-radius: 5px; cursor: pointer;">COLLEGA CASSA</button>
+        </div>
+
+        <div id="displayScreen" class="hidden">
+            <div class="box-centrato" style="min-height: 300px;" id="listaPiatti">
+                <div style="text-align:center; margin-top:100px; font-size: 1.5em; opacity:0.5;">In attesa di articoli...</div>
             </div>
 
-            <div class="live-sidebar">
-                <div class="live-card">
-                    <div style="text-transform: uppercase; letter-spacing: 1px; opacity: 0.7;">Pagato</div>
-                    <div style="font-size: 2.5em; color: #2196f3; font-weight: bold;" id="pagato">€ 0.00</div>
-                    
-                    <hr style="width: 80%; border: 0; border-top: 1px dashed var(--text-color, #fff); opacity:0.2; margin: 20px auto;">
-                    
-                    <div style="text-transform: uppercase; letter-spacing: 1px; opacity: 0.7;">Resto</div>
-                    <div class="resto-text" id="resto">€ 0.00</div>
+            <div class="totali-grid">
+                <div class="box-centrato" style="text-align: center; margin: 0; padding: 20px;">
+                    <div style="font-size: 1.2em; opacity: 0.8;">Pagato</div>
+                    <div style="font-size: 2em; color: #2196f3; font-weight: bold;" id="pagato">€ 0.00</div>
                 </div>
-                
-                <div class="live-card" style="border: 3px solid var(--primary-color, #d32f2f);">
-                    <div style="text-transform: uppercase; letter-spacing: 1px; font-weight: bold; color: var(--primary-color, #d32f2f);">Totale Dovuto</div>
-                    <div class="totale-text" id="totale">€ 0.00</div>
+                <div class="box-centrato" style="text-align: center; margin: 0; padding: 20px;">
+                    <div style="font-size: 1.2em; opacity: 0.8;">Resto</div>
+                    <div style="font-size: 2em; color: #4caf50; font-weight: bold;" id="resto">€ 0.00</div>
+                </div>
+                <div class="box-centrato" style="text-align: right; margin: 0; padding: 20px; border: 2px solid #d32f2f;">
+                    <div style="font-size: 1.5em; font-weight: bold; color: #d32f2f;">TOTALE</div>
+                    <div style="font-size: 3em; color: #d32f2f; font-weight: bold; line-height: 1;" id="totale">€ 0.00</div>
                 </div>
             </div>
         </div>
+
     </div>
 
     <script>
@@ -135,66 +91,83 @@
         const db = firebase.database();
         const auth = firebase.auth();
 
-        // 2. Controllo Connessione (Pubblico, non blocca nulla)
-        db.ref(".info/connected").on("value", snap => {
-            document.getElementById("offlineBanner").style.display = snap.val() === true ? "none" : "block";
-        });
-
-        // 3. Autenticazione e caricamento Tema Sicuro
-        auth.onAuthStateChanged(user => {
-            const loader = document.getElementById("loader");
-            
-            if (user) {
-                // Leggiamo il tema SOLO DOPO il login per evitare l'errore Permission Denied di Firebase
-                db.ref("impostazioni/tema").on("value", snap => {
-                    const tema = snap.val() || "light";
-                    document.body.className = tema === "dark" ? "dark-mode" : "light-mode";
-                }, err => console.warn("Lettura tema fallita.", err));
-
-                if (user.email !== "cliente@bistrobo.it") {
-                    auth.signOut().then(() => {
-                        loader.style.display = "none";
-                        mostraSchermata("loginDiv");
-                    });
-                } else {
-                    loader.style.display = "none";
-                    caricaCasse();
-                }
+        // -----------------------------------------------------
+        // SINCRONIZZAZIONE TEMA BISTROBÒ
+        // -----------------------------------------------------
+        db.ref("impostazioni/tema").on("value", snap => {
+            const tema = snap.val() || "light";
+            // Questo dice al tuo style.css di usare i colori corretti (Chiaro/Scuro)
+            document.documentElement.setAttribute('data-theme', tema);
+            if (tema === "dark") {
+                document.body.classList.add("dark-mode");
+                document.body.classList.remove("light-mode");
             } else {
-                loader.style.display = "none";
-                mostraSchermata("loginDiv");
+                document.body.classList.add("light-mode");
+                document.body.classList.remove("dark-mode");
             }
         });
 
-        function mostraSchermata(idDiv) {
-            document.getElementById("loginDiv").style.display = "none";
-            document.getElementById("cassaDiv").style.display = "none";
-            document.getElementById("displayScreen").style.display = "none";
+        // -----------------------------------------------------
+        // LOGICA DI ACCESSO
+        // -----------------------------------------------------
+        auth.onAuthStateChanged(user => {
+            document.getElementById("loaderArea").style.display = "none";
             
-            document.getElementById(idDiv).style.display = "flex";
-        }
+            if (user) {
+                document.getElementById("logoutBtn").style.display = "block";
+                
+                if (user.email !== "cliente@bistrobo.it") {
+                    alert("Questo profilo non è autorizzato allo schermo cliente.");
+                    auth.signOut();
+                } else {
+                    caricaCasse();
+                }
+            } else {
+                document.getElementById("logoutBtn").style.display = "none";
+                mostraSezione("loginDiv");
+            }
+        });
 
         function eseguiLogin() {
             const e = document.getElementById("loginEmail").value.trim().toLowerCase();
             const p = document.getElementById("loginPassword").value;
             
             if(e !== "cliente@bistrobo.it") {
-                alert("ACCESSO NEGATO: Puoi accedere solo con l'account cliente@bistrobo.it");
-                return;
+                alert("Puoi usare solo l'email del cliente!"); return;
             }
-
-            document.getElementById("loader").style.display = "flex";
+            
+            document.getElementById("loaderArea").style.display = "block";
+            document.getElementById("loginDiv").style.display = "none";
+            
             auth.signInWithEmailAndPassword(e, p).catch(err => {
-                document.getElementById("loader").style.display = "none";
-                alert("Errore di accesso: Controlla la password.");
+                document.getElementById("loaderArea").style.display = "none";
+                document.getElementById("loginDiv").style.display = "block";
+                alert("Errore login: Hai registrato l'account su Firebase Authentication? (Codice: " + err.code + ")");
             });
         }
 
+        function eseguiLogout() {
+            auth.signOut();
+            window.location.reload();
+        }
+
+        // -----------------------------------------------------
+        // LOGICA DI VISUALIZZAZIONE E SINCRONIZZAZIONE
+        // -----------------------------------------------------
+        function mostraSezione(id) {
+            document.getElementById("loginDiv").style.display = "none";
+            document.getElementById("cassaDiv").style.display = "none";
+            document.getElementById("displayScreen").style.display = "none";
+            
+            document.getElementById(id).style.display = "block";
+            document.getElementById(id).classList.remove("hidden"); // Se il tuo CSS usa .hidden
+        }
+
         function caricaCasse() {
-            mostraSchermata("cassaDiv");
+            mostraSezione("cassaDiv");
             db.ref("utenti").once("value", snap => {
                 const select = document.getElementById("selectCassa");
-                select.innerHTML = '<option value="">-- Seleziona --</option>';
+                select.innerHTML = '<option value="">-- Seleziona la Cassa --</option>';
                 
                 snap.forEach(s => {
                     const u = s.val();
@@ -210,30 +183,31 @@
 
         function avviaDisplay() {
             const cassaUid = document.getElementById("selectCassa").value;
-            if(!cassaUid) return alert("Seleziona una cassa dall'elenco!");
+            if(!cassaUid) { alert("Scegli una cassa!"); return; }
             
-            mostraSchermata("displayScreen");
+            mostraSezione("displayScreen");
             
+            // Ascolta i dati in tempo reale della cassa selezionata
             db.ref("displayLive/" + cassaUid).on("value", snap => {
                 const data = snap.val();
                 
                 if(!data || !data.piatti || data.piatti.length === 0) {
-                    document.getElementById("numComanda").innerText = "---";
+                    document.getElementById("numComandaDisplay").innerText = "Attesa";
                     document.getElementById("totale").innerText = "€ 0.00";
                     document.getElementById("pagato").innerText = "€ 0.00";
                     document.getElementById("resto").innerText = "€ 0.00";
-                    document.getElementById("listaPiatti").innerHTML = '<div style="text-align:center; margin-top:50px; font-size: 1.5em; opacity:0.5;">In attesa di articoli in cassa...</div>';
+                    document.getElementById("listaPiatti").innerHTML = '<div style="text-align:center; margin-top:100px; font-size: 1.5em; opacity:0.5;">In attesa di articoli...</div>';
                     return;
                 }
                 
-                document.getElementById("numComanda").innerText = data.numeroComanda || "---";
+                document.getElementById("numComandaDisplay").innerText = "#" + (data.numeroComanda || "---");
                 document.getElementById("totale").innerText = "€ " + (data.totale || 0).toFixed(2);
                 document.getElementById("pagato").innerText = "€ " + (data.pagato || 0).toFixed(2);
                 document.getElementById("resto").innerText = "€ " + (data.resto || 0).toFixed(2);
                 
                 document.getElementById("listaPiatti").innerHTML = data.piatti.map(p => `
-                    <div class="piatto-row">
-                        <span><span class="piatto-qty">${p.quantita}x</span> <span>${p.nome}</span></span>
+                    <div class="row-piatto">
+                        <span><b style="color:#d32f2f;">${p.quantita}x</b> &nbsp; ${p.nome}</span>
                         <span>€ ${(p.prezzo * p.quantita).toFixed(2)}</span>
                     </div>
                 `).join("");
