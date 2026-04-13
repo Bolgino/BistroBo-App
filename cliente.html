@@ -37,7 +37,6 @@
             box-sizing: border-box; 
         }
 
-        /* Top Bar Trasparente */
         .topBar-cliente { 
             background: transparent; 
             padding: 20px 40px; 
@@ -47,7 +46,6 @@
             border: none;
         }
 
-        /* Titolo con ombra per leggibilità su ogni tema */
         .topBar-cliente h1 {
             margin: 0; 
             font-size: 2em; 
@@ -56,7 +54,6 @@
             text-shadow: 2px 2px 4px rgba(255,255,255,0.8), -1px -1px 0px rgba(255,255,255,0.5);
         }
 
-        /* Area Lista con scorrimento */
         .lista-piatti-scroll { 
             flex: 1; 
             overflow-y: auto; 
@@ -66,7 +63,6 @@
             box-shadow: inset 0 2px 10px rgba(0,0,0,0.05);
         }
 
-        /* Custom Scrollbar (lo "slider") */
         .lista-piatti-scroll::-webkit-scrollbar { width: 8px; }
         .lista-piatti-scroll::-webkit-scrollbar-track { background: transparent; }
         .lista-piatti-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 10px; }
@@ -83,7 +79,6 @@
         .footer-monitor { display: grid; grid-template-columns: 1fr 1fr 1.5fr; gap: 20px; }
         .valore-tot { font-size: 4em; font-weight: 800; line-height: 1; }
         
-        /* Stile Box raffinato */
         .box-cliente { 
             background: rgba(255, 255, 255, 0.95); 
             border-radius: 20px; 
@@ -99,7 +94,6 @@
             min-height: 75vh;
         }
 
-        /* Override per i pulsanti del monitor affinché usino lo stile del tema */
         .btn-monitor {
             min-width: 150px;
             text-transform: uppercase;
@@ -125,6 +119,13 @@
     </div>
 
     <div class="monitor-layout">
+        <div id="disabledDiv" class="center-screen" style="display:none;">
+            <div class="box-cliente" style="width: 500px; text-align: center; border-bottom: 8px solid #f44336;">
+                <h2 style="margin-top:0; font-weight: 800; color: #f44336; font-size: 2.2em;">Scheda Clienti Disabilitata</h2>
+                <p style="font-size: 1em; opacity: 0.7; margin-top: 10px;">per attivarla contattare l'amministratore</p>
+            </div>
+        </div>
+
         <div id="loginDiv" class="center-screen" style="display:none;">
             <div class="box-cliente" style="width: 450px; text-align: center;">
                 <h2 style="margin-top:0; font-weight: 800; color: #333;">Accesso Monitor</h2>
@@ -180,30 +181,42 @@
         const db = firebase.database();
         const auth = firebase.auth();
 
+        let monitorAbilitato = true;
+
         function notify(msg, type = 'info') {
             const container = document.getElementById('notification-container');
             const n = document.createElement('div');
-            n.className = `toast ${type}`; // Usa le classi toast di style.css
+            n.className = `toast ${type}`;
             n.style.opacity = "1";
             n.innerText = msg;
             container.appendChild(n);
             setTimeout(() => { n.style.opacity = '0'; setTimeout(() => n.remove(), 500); }, 3500);
         }
 
+        // --- GESTIONE ABILITAZIONE MONITOR (Realtime) ---
+        db.ref("impostazioni/displayClienteAbilitato").on("value", snap => {
+            monitorAbilitato = snap.val() ?? true;
+            if (!monitorAbilitato) {
+                mostraSezione("disabledDiv");
+            } else {
+                // Se viene riabilitato mentre la pagina è aperta, forziamo il refresh dello stato
+                refreshStatus();
+            }
+        });
+
         // --- GESTIONE TEMA REALTIME ---
         db.ref("impostazioni/tema").on("value", snap => {
             const tema = snap.val() || "default";
-            document.body.className = ""; // Reset
+            document.body.className = ""; 
             document.body.classList.add("tema-" + tema);
             document.body.classList.add("tema-caricato");
-            
-            // Aggiorna lo sfondo dinamico
             const bg = document.getElementById("themeBackground");
             if(bg) bg.style.display = "block";
         });
 
-        // Autenticazione Intelligente
-        auth.onAuthStateChanged(user => {
+        function refreshStatus() {
+            if (!monitorAbilitato) return;
+            const user = auth.currentUser;
             if (user) {
                 db.ref("utenti/" + user.uid).once("value", snap => {
                     const userData = snap.val();
@@ -223,7 +236,9 @@
             } else {
                 mostraSezione("loginDiv");
             }
-        });
+        }
+
+        auth.onAuthStateChanged(() => refreshStatus());
 
         function login() {
             const e = document.getElementById("email").value.trim();
@@ -254,6 +269,7 @@
         }
 
         function avviaMonitor(uidCassa) {
+            if (!monitorAbilitato) return;
             mostraSezione("displayScreen");
             document.getElementById("btnSwitch").style.display = "block";
             
@@ -306,10 +322,9 @@
         }
 
         function mostraSezione(id) {
-            ["loginDiv", "cassaDiv", "displayScreen"].forEach(d => document.getElementById(d).style.display = "none");
+            ["loginDiv", "cassaDiv", "displayScreen", "disabledDiv"].forEach(d => document.getElementById(d).style.display = "none");
             const el = document.getElementById(id);
-            if(id === "displayScreen") el.style.display = "flex";
-            else el.style.display = "flex"; // center-screen usa flex
+            if(el) el.style.display = "flex";
         }
 
         function eseguiLogout() {
