@@ -2591,32 +2591,7 @@ function caricaComandeCassa() {
     });
     initRicercaComande("comandeCassa", "cercaComandaCassa");
 }
-// --- FUNZIONE TRASMISSIONE DATI PER SCHERMO CLIENTE ---
-function sincronizzaDisplayLive() {
-    // Esci se non abilitato o se non sei in un profilo che può inviare (Cassa/Admin)
-    if (!window.settings.displayClienteAbilitato || (ruolo !== 'cassa' && ruolo !== 'admin')) return;
-    if (!uid) return;
 
-    const totale = parseFloat(document.getElementById("totale").innerText) || 0;
-    const num = document.getElementById("numComanda").value.trim();
-    const lett = document.getElementById("letteraComanda").value.trim().toUpperCase();
-
-    const dati = {
-        piatti: comandaCorrente.map(p => ({
-            nome: p.nome,
-            quantita: p.quantita,
-            prezzo: calcolaPrezzoConSconto(p) / p.quantita // prezzo unitario calcolato
-        })),
-        totale: totale,
-        numeroComanda: (num + lett) || "---",
-        pagato: totalePagato || 0,
-        resto: parseFloat(document.getElementById("restoDovuto").innerText) || 0,
-        timestamp: Date.now()
-    };
-
-    // Scrive nel "canale" specifico di questo utente (UID cassa)
-    db.ref("displayLive/" + uid).set(dati);
-}
 // ------------------ ADMIN -----------------
 //INGREDIENTI
 async function caricaIngredienti() {
@@ -5323,6 +5298,50 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 });
+// --- INIZIO FUNZIONE DISPLAY LIVE ---
+let ultimoDatoLive = "";
+
+function sincronizzaDisplayLive() {
+    // Esci se non abilitato o se non sei in un profilo che può inviare (Cassa/Admin)
+    if (!window.settings || !window.settings.displayClienteAbilitato || (ruolo !== 'cassa' && ruolo !== 'admin')) return;
+    if (!uid) return;
+
+    // Cattura i valori in modo sicuro
+    const totale = parseFloat(document.getElementById("totale").innerText) || 0;
+    const elemNum = document.getElementById("numComanda");
+    const elemLett = document.getElementById("letteraComanda");
+    const num = elemNum ? elemNum.value.trim() : "";
+    const lett = elemLett ? elemLett.value.trim().toUpperCase() : "";
+
+    const dati = {
+        piatti: (typeof comandaCorrente !== 'undefined' ? comandaCorrente : []).map(p => ({
+            nome: p.nome,
+            quantita: p.quantita,
+            prezzo: p.sconto ? (calcolaPrezzoConSconto(p) / p.quantita) : p.prezzo // prezzo unitario calcolato
+        })),
+        totale: totale,
+        numeroComanda: (num + lett) || "---",
+        pagato: (typeof totalePagato !== 'undefined' ? totalePagato : 0),
+        resto: parseFloat(document.getElementById("restoDovuto")?.innerText) || 0,
+        timestamp: Date.now()
+    };
+
+    // CREAZIONE DEL PROIETTORE:
+    // Creiamo una stringa dati senza timestamp per confrontarla
+    const perConfronto = { ...dati, timestamp: 0 };
+    const stringaDati = JSON.stringify(perConfronto);
+
+    // Invia al database SOLO se i dati sono cambiati rispetto a 300ms fa
+    if (stringaDati !== ultimoDatoLive) {
+        db.ref("displayLive/" + uid).set(dati)
+          .then(() => { ultimoDatoLive = stringaDati; })
+          .catch(err => console.warn("Errore Sincronizzazione Display:", err));
+    }
+}
+
+// Avvia l'aggiornamento live 3 volte al secondo!
+setInterval(sincronizzaDisplayLive, 300);
+// --- FINE FUNZIONE DISPLAY LIVE ---
 // ----------------------- NOTIFY -----------------------
 // --- funzione suono ---
 function playDing() {
