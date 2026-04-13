@@ -13,76 +13,157 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 
     <style>
-        /* Struttura specifica per il monitor */
-        body { display: none; flex-direction: column; height: 100vh; margin: 0; }
+        /* Struttura specifica e override per estetica moderna */
+        body { 
+            display: none; 
+            flex-direction: column; 
+            height: 100vh; 
+            margin: 0; 
+            padding: 0;
+            overflow: hidden;
+            font-family: 'Poppins', sans-serif;
+        }
         body.tema-caricato { display: flex; }
         
-        .monitor-layout { flex: 1; display: flex; flex-direction: column; gap: 20px; padding: 20px; max-width: 1100px; margin: 0 auto; width: 100%; box-sizing: border-box; }
-        .lista-piatti-scroll { flex: 1; overflow-y: auto; padding: 20px; }
-        .riga-ordine { display: flex; justify-content: space-between; font-size: 2em; padding: 15px 0; border-bottom: 1px dashed rgba(0,0,0,0.2); }
+        /* Layout Monitor */
+        .monitor-layout { 
+            flex: 1; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 20px; 
+            padding: 30px; 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            width: 100%; 
+            box-sizing: border-box; 
+        }
+
+        /* Liste e Righe */
+        .lista-piatti-scroll { 
+            flex: 1; 
+            overflow-y: auto; 
+            padding: 25px; 
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+        .riga-ordine { 
+            display: flex; 
+            justify-content: space-between; 
+            font-size: 2.2em; 
+            padding: 18px 0; 
+            border-bottom: 1px dashed rgba(0,0,0,0.1); 
+            font-weight: 500;
+        }
         
         .footer-monitor { display: grid; grid-template-columns: 1fr 1fr 1.5fr; gap: 20px; }
-        .valore-tot { font-size: 3.5em; font-weight: bold; line-height: 1.1; }
+        .valore-tot { font-size: 3.8em; font-weight: 800; line-height: 1; color: #2e7d32; }
         
-        #notification-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
-        .notification { padding: 15px 25px; border-radius: 8px; color: white; font-weight: bold; animation: slideIn 0.3s ease-out; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
-        .notif-success { background: #4caf50; }
-        .notif-error { background: #f44336; }
-        .notif-info { background: #2196f3; }
-        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+        /* Box Styling (Overriding default per coerenza) */
+        .box-cliente { 
+            background: rgba(255, 255, 255, 0.92); 
+            border-radius: 20px; 
+            padding: 30px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15); 
+            backdrop-filter: blur(10px);
+        }
 
-        /* Correzione per visibilità testi su sfondi dinamici */
-        .box { background: rgba(255, 255, 255, 0.9); border-radius: 15px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        .topBar { background: rgba(255,255,255,0.8); padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; backdrop-filter: blur(5px); }
+        /* Top Bar */
+        .topBar-cliente { 
+            background: rgba(255,255,255,0.85); 
+            padding: 15px 30px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+
+        /* Centratura Schermate Accesso */
+        .center-screen {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 80vh;
+        }
+
+        /* Form styling */
+        .input-cliente {
+            width: 100%;
+            padding: 18px;
+            margin: 12px 0;
+            border-radius: 12px;
+            border: 2px solid #eee;
+            font-size: 1.1em;
+            transition: border-color 0.3s;
+            box-sizing: border-box;
+        }
+        .input-cliente:focus { border-color: #2196f3; outline: none; }
+        
+        .btn-cliente {
+            width: 100%;
+            padding: 18px;
+            font-size: 1.2em;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 10px;
+        }
+
+        #notification-container { position: fixed; top: 20px; right: 20px; z-index: 10000; }
+        .notification { padding: 15px 25px; border-radius: 12px; color: white; font-weight: bold; margin-bottom: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); animation: slideIn 0.3s ease-out; }
+        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
     </style>
 </head>
 <body>
     <div id="themeBackground"></div>
-
     <div id="notification-container"></div>
 
-    <div class="topBar">
-        <div style="display: flex; align-items: center; gap: 15px;">
-            <img src="icon-192.png" alt="Logo" style="width: 40px;">
-            <h1 style="margin: 0; font-size: 1.5em; color: #000;">Display Cliente <span id="labelCassa" style="opacity: 0.6; font-size: 0.7em;"></span></h1>
+    <div class="topBar-cliente">
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <img src="icon-192.png" alt="Logo" style="width: 50px;">
+            <h1 style="margin: 0; font-size: 1.8em; color: #333; text-align: left;">BistroBò <span id="labelCassa" style="opacity: 0.5; font-size: 0.6em; font-weight: 400;"></span></h1>
         </div>
-        <div style="display: flex; gap: 10px;">
-            <button onclick="cambiaCassa()" id="btnSwitch" style="display:none;">Cambia Cassa</button>
-            <button onclick="eseguiLogout()" id="btnLogout" style="display:none; background: #f44336; color: white;">Esci</button>
+        <div style="display: flex; gap: 15px;">
+            <button class="tabBtn" onclick="cambiaCassa()" id="btnSwitch" style="display:none; background: #eee;">Cambia Cassa</button>
+            <button class="tabBtn" onclick="eseguiLogout()" id="btnLogout" style="display:none; background: #f44336; color: white;">Esci</button>
         </div>
     </div>
 
     <div class="monitor-layout">
-        <div id="loginDiv" class="box" style="display:none; max-width: 400px; margin: 50px auto; text-align: center;">
-            <h2 style="margin-top:0;">Accesso Display</h2>
-            <input type="email" id="email" placeholder="cliente@bistrobo.it" style="width:100%; padding:15px; margin:10px 0; border-radius:8px; border:1px solid #ccc;">
-            <input type="password" id="pass" placeholder="Password" style="width:100%; padding:15px; margin:10px 0; border-radius:8px; border:1px solid #ccc;">
-            <button onclick="login()" style="width: 100%; background: #2196f3; color: white; padding: 15px;">ENTRA</button>
+        <div id="loginDiv" class="center-screen" style="display:none;">
+            <div class="box-cliente" style="width: 450px; text-align: center;">
+                <h2 style="margin-top:0; font-weight: 800;">Accesso Display</h2>
+                <p style="opacity: 0.6;">Inserisci le credenziali del profilo cliente</p>
+                <input type="email" id="email" class="input-cliente" placeholder="cliente@bistrobo.it">
+                <input type="password" id="pass" class="input-cliente" placeholder="Password">
+                <button class="btn-cliente" onclick="login()" style="background: #2196f3; color: white;">Entra nel Sistema</button>
+            </div>
         </div>
 
-        <div id="cassaDiv" class="box" style="display:none; max-width: 400px; margin: 50px auto; text-align: center;">
-            <h2 style="margin-top:0;">Collega Cassa</h2>
-            <p>Seleziona quale cassa proiettare:</p>
-            <select id="selectCassa" style="width:100%; padding:15px; margin:20px 0; border-radius:8px;"></select>
-            <button onclick="connettiCassa()" style="width: 100%; background: #4caf50; color: white; padding: 15px;">CONNETTI ORA</button>
+        <div id="cassaDiv" class="center-screen" style="display:none;">
+            <div class="box-cliente" style="width: 450px; text-align: center;">
+                <h2 style="margin-top:0; font-weight: 800;">Configura Display</h2>
+                <p>A quale postazione cassa vuoi collegarti?</p>
+                <select id="selectCassa" class="input-cliente"></select>
+                <button class="btn-cliente" onclick="connettiCassa()" style="background: #4caf50; color: white;">Attiva Proiezione</button>
+            </div>
         </div>
 
-        <div id="displayScreen" style="display:none; flex-direction: column; gap: 20px; flex: 1;">
-            <div id="areaLista" class="box lista-piatti-scroll">
-                <div style="text-align:center; margin-top:100px; opacity:0.3; font-size: 2em;">In attesa di articoli...</div>
+        <div id="displayScreen" style="display:none; flex-direction: column; gap: 25px; flex: 1;">
+            <div id="areaLista" class="box-cliente lista-piatti-scroll">
+                <div style="text-align:center; margin-top:120px; opacity:0.2; font-size: 2.5em; font-weight: 700;">IN ATTESA DI ARTICOLI...</div>
             </div>
 
             <div class="footer-monitor">
-                <div class="box" style="text-align: center;">
-                    <div style="opacity:0.6; text-transform:uppercase; font-size: 0.8em; font-weight: bold;">Pagato</div>
-                    <div style="color: #2196f3; font-size: 2.5em; font-weight: bold;" id="vPagato">€ 0.00</div>
+                <div class="box-cliente" style="text-align: center; padding: 15px;">
+                    <div style="opacity:0.5; text-transform:uppercase; font-size: 0.9em; font-weight: 700; letter-spacing: 1px;">Pagato</div>
+                    <div style="color: #2196f3; font-size: 2.8em; font-weight: 800;" id="vPagato">€ 0.00</div>
                 </div>
-                <div class="box" style="text-align: center;">
-                    <div style="opacity:0.6; text-transform:uppercase; font-size: 0.8em; font-weight: bold;">Resto</div>
-                    <div style="color: #4caf50; font-size: 2.5em; font-weight: bold;" id="vResto">€ 0.00</div>
+                <div class="box-cliente" style="text-align: center; padding: 15px;">
+                    <div style="opacity:0.5; text-transform:uppercase; font-size: 0.9em; font-weight: 700; letter-spacing: 1px;">Resto</div>
+                    <div style="color: #ff9800; font-size: 2.8em; font-weight: 800;" id="vResto">€ 0.00</div>
                 </div>
-                <div class="box" style="text-align: right; border-bottom: 5px solid #2196f3;">
-                    <div style="color: #2196f3; font-weight:bold; text-transform:uppercase; font-size: 0.8em;">Totale Ordine</div>
+                <div class="box-cliente" style="text-align: right; border-bottom: 8px solid #2e7d32;">
+                    <div style="color: #2e7d32; font-weight:800; text-transform:uppercase; font-size: 1em; letter-spacing: 1px;">Totale Ordine</div>
                     <div class="valore-tot" id="vTotale">€ 0.00</div>
                 </div>
             </div>
@@ -106,13 +187,14 @@
         function notify(msg, type = 'info') {
             const container = document.getElementById('notification-container');
             const n = document.createElement('div');
-            n.className = `notification notif-${type}`;
+            n.className = `notification`;
+            n.style.background = type === 'error' ? '#f44336' : type === 'warn' ? '#ff9800' : '#2196f3';
             n.innerText = msg;
             container.appendChild(n);
-            setTimeout(() => n.remove(), 3500);
+            setTimeout(() => { n.style.opacity = '0'; setTimeout(() => n.remove(), 500); }, 3500);
         }
 
-        // --- GESTIONE TEMA REALTIME ---
+        // --- TEMA REALTIME (Index Style) ---
         db.ref("impostazioni/tema").on("value", snap => {
             const tema = snap.val() || "default";
             document.body.classList.remove("tema-default","tema-scout","tema-inverno","tema-autunno","tema-primavera","tema-estate");
@@ -139,14 +221,14 @@
         function login() {
             const e = document.getElementById("email").value.trim();
             const p = document.getElementById("pass").value;
-            auth.signInWithEmailAndPassword(e, p)
-                .catch(() => notify("Credenziali errate", "error"));
+            if(!e || !p) return notify("Inserisci email e password", "warn");
+            auth.signInWithEmailAndPassword(e, p).catch(() => notify("Credenziali errate", "error"));
         }
 
         function caricaElencoCasse() {
             db.ref("utenti").once("value", snap => {
                 const sel = document.getElementById("selectCassa");
-                sel.innerHTML = '<option value="">-- Scegli Cassa --</option>';
+                sel.innerHTML = '<option value="">-- Seleziona Cassa --</option>';
                 snap.forEach(u => {
                     const d = u.val();
                     if((d.ruolo === 'cassa' || d.ruolo === 'admin') && d.approvato) {
@@ -160,7 +242,7 @@
 
         function connettiCassa() {
             const uid = document.getElementById("selectCassa").value;
-            if(!uid) return notify("Seleziona una cassa!", "error");
+            if(!uid) return notify("Seleziona una cassa!", "warn");
             localStorage.setItem("cassaMonitorata", uid);
             avviaMonitor(uid);
         }
@@ -169,29 +251,29 @@
             mostraSezione("displayScreen");
             document.getElementById("btnSwitch").style.display = "block";
             
-            // 1. Listener Dati Live
+            // 1. Dati Live Ordine
             db.ref("displayLive/" + uidCassa).on("value", snap => {
                 const data = snap.val();
                 if(!data || !data.piatti || data.piatti.length === 0) {
                     resetGrafica();
                     return;
                 }
-                document.getElementById("labelCassa").innerText = "(Cassa Collegata)";
+                document.getElementById("labelCassa").innerText = "(Collegato)";
                 document.getElementById("vTotale").innerText = "€ " + data.totale.toFixed(2);
                 document.getElementById("vPagato").innerText = "€ " + (data.pagato || 0).toFixed(2);
                 document.getElementById("vResto").innerText = "€ " + (data.resto || 0).toFixed(2);
                 document.getElementById("areaLista").innerHTML = data.piatti.map(p => `
                     <div class="riga-ordine">
-                        <span><b style="color:#2196f3">${p.quantita}x</b> &nbsp; ${p.nome}</span>
+                        <span><b style="color:#2196f3; font-weight: 800;">${p.quantita}x</b> &nbsp; ${p.nome}</span>
                         <span>€ ${(p.prezzo * p.quantita).toFixed(2)}</span>
                     </div>
                 `).join("");
             });
 
-            // 2. Listener Status Cassiere (Scollegamento automatico se fa logout)
+            // 2. Scollegamento se cassiere va offline
             db.ref("utenti/" + uidCassa + "/status/state").on("value", stateSnap => {
                 if (stateSnap.val() === "offline") {
-                    notify("Il cassiere si è disconnesso. Canale interrotto.", "warn");
+                    notify("Il cassiere si è disconnesso. Connessione interrotta.", "warn");
                     interrompiMonitoraggio(uidCassa);
                 }
             });
@@ -217,12 +299,14 @@
             document.getElementById("vTotale").innerText = "€ 0.00";
             document.getElementById("vPagato").innerText = "€ 0.00";
             document.getElementById("vResto").innerText = "€ 0.00";
-            document.getElementById("areaLista").innerHTML = '<div style="text-align:center; margin-top:100px; opacity:0.3; font-size: 2em;">In attesa di articoli...</div>';
+            document.getElementById("areaLista").innerHTML = '<div style="text-align:center; margin-top:120px; opacity:0.2; font-size: 2.5em; font-weight: 700;">IN ATTESA DI ARTICOLI...</div>';
         }
 
         function mostraSezione(id) {
             ["loginDiv", "cassaDiv", "displayScreen"].forEach(d => document.getElementById(d).style.display = "none");
-            document.getElementById(id).style.display = (id === "displayScreen") ? "flex" : "block";
+            const target = document.getElementById(id);
+            if(id === "displayScreen") target.style.display = "flex";
+            else target.style.display = "flex"; // center-screen usa flex
         }
 
         function eseguiLogout() {
