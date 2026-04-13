@@ -6,76 +6,83 @@
     <title>BistroBò - Schermo Cliente</title>
     
     <link rel="icon" type="image/x-icon" href="./favicon.ico">
+    <link rel="stylesheet" href="main/style.css">
     
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-    
-    <link rel="stylesheet" href="main/style.css">
-    
+
     <style>
-        /* NESSUN BACKGROUND FORZATO. Lasciamo che style.css metta i gradienti! */
-        .cliente-wrapper { max-width: 900px; margin: 30px auto; padding: 20px; display: flex; flex-direction: column; gap: 20px; }
+        /* Struttura specifica per il monitor, colori da style.css */
+        body { display: none; flex-direction: column; height: 100vh; margin: 0; }
+        body.tema-caricato { display: flex; }
         
-        .riga-ordine { display: flex; justify-content: space-between; font-size: 1.8em; padding: 15px 0; border-bottom: 1px dashed var(--border-color); }
-        .riga-ordine:last-child { border-bottom: none; }
+        .monitor-layout { flex: 1; display: flex; flex-direction: column; gap: 20px; padding: 20px; max-width: 1100px; margin: 0 auto; width: 100%; box-sizing: border-box; }
+        .lista-piatti-scroll { flex: 1; overflow-y: auto; padding: 20px; }
+        .riga-ordine { display: flex; justify-content: space-between; font-size: 2em; padding: 15px 0; border-bottom: 1px dashed var(--border-color); }
         
-        .griglia-totali { display: grid; grid-template-columns: 1fr 1fr 1.5fr; gap: 15px; }
-        .valore-gigante { font-size: 3em; font-weight: bold; margin-top: 10px; }
+        .footer-monitor { display: grid; grid-template-columns: 1fr 1fr 1.5fr; gap: 20px; }
+        .valore-tot { font-size: 3.5em; font-weight: bold; line-height: 1.1; }
         
-        .input-display { width: 100%; padding: 15px; margin-bottom: 15px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-color); font-size: 1.1em; box-sizing: border-box; }
-        .btn-display { width: 100%; padding: 15px; font-weight: bold; font-size: 1.2em; background: var(--primary-color); color: white; border: none; border-radius: 8px; cursor: pointer; transition: filter 0.2s; }
-        .btn-display:hover { filter: brightness(0.9); }
-        
-        /* Nasconde il loader default del tuo style.css in attesa del tema */
-        #loader { display: none !important; }
+        /* Sistema notifiche tipo preordini */
+        #notification-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+        .notification { padding: 15px 25px; border-radius: 8px; color: white; font-weight: bold; animation: slideIn 0.3s ease-out; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        .notif-success { background: #4caf50; }
+        .notif-error { background: #f44336; }
+        .notif-info { background: #2196f3; }
+        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
     </style>
 </head>
-<body> <div class="topBar" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; position: relative; z-index: 999;">
+<body>
+
+    <div id="notification-container"></div>
+
+    <div class="topBar">
         <div style="display: flex; align-items: center; gap: 15px;">
-            <img src="icon-192.png" alt="Logo" class="logo" style="width: 40px; height: 40px; margin: 0;">
-            <h2 style="margin: 0; color: var(--text-color);">Display <span id="numComandaDisplay" style="color: var(--primary-color);"></span></h2>
+            <img src="icon-192.png" alt="Logo" style="width: 40px;">
+            <h1 style="margin: 0; font-size: 1.5em; color: var(--text-color);">Display Cliente <span id="labelCassa" style="opacity: 0.5; font-size: 0.7em;"></span></h1>
         </div>
-        <button id="logoutBtn" onclick="auth.signOut().then(() => location.reload())" style="display: none; background: transparent; border: 1px solid var(--text-color); color: var(--text-color); padding: 8px 15px; border-radius: 5px; cursor: pointer;">Esci</button>
+        <div style="display: flex; gap: 10px;">
+            <button onclick="cambiaCassa()" id="btnSwitch" style="display:none; background: var(--bg-element); color: var(--text-color); border: 1px solid var(--border-color); padding: 5px 15px; border-radius: 5px; cursor: pointer;">Cambia Cassa</button>
+            <button onclick="eseguiLogout()" id="btnLogout" style="display:none; background: var(--primary-color); color: white; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer;">Esci</button>
+        </div>
     </div>
 
-    <div class="cliente-wrapper">
+    <div class="monitor-layout">
         
-        <div id="loginDiv" class="box" style="display: none; max-width: 400px; margin: 40px auto; text-align: center; width: 100%;">
+        <div id="loginDiv" class="box" style="display:none; max-width: 400px; margin: 50px auto; text-align: center;">
             <h2 style="margin-top:0;">Accesso Display</h2>
-            <input type="email" id="loginEmail" class="input-display" placeholder="cliente@bistrobo.it">
-            <input type="password" id="loginPassword" class="input-display" placeholder="Password">
-            <button onclick="eseguiLogin()" class="btn-display">ACCEDI AL MONITOR</button>
+            <input type="email" id="email" class="input-display" placeholder="cliente@bistrobo.it" style="width:100%; padding:15px; margin:10px 0; background:var(--bg-color); color:var(--text-color); border:1px solid var(--border-color); border-radius:8px;">
+            <input type="password" id="pass" class="input-display" placeholder="Password" style="width:100%; padding:15px; margin:10px 0; background:var(--bg-color); color:var(--text-color); border:1px solid var(--border-color); border-radius:8px;">
+            <button onclick="login()" class="btn" style="width: 100%; background: var(--primary-color); color: white; font-weight: bold; padding: 15px;">ENTRA</button>
         </div>
 
-        <div id="cassaDiv" class="box" style="display: none; max-width: 400px; margin: 40px auto; text-align: center; width: 100%;">
-            <h2 style="margin-top:0;">Configura Display</h2>
-            <p style="opacity: 0.8; margin-bottom: 20px;">Quale dispositivo devi seguire?</p>
-            <select id="selectCassa" class="input-display"></select>
-            <button onclick="avviaDisplay()" class="btn-display" style="background: #4caf50;">CONNETTI</button>
+        <div id="cassaDiv" class="box" style="display:none; max-width: 400px; margin: 50px auto; text-align: center;">
+            <h2 style="margin-top:0;">Collega Cassa</h2>
+            <p>Seleziona quale cassa proiettare:</p>
+            <select id="selectCassa" style="width:100%; padding:15px; margin:20px 0; background:var(--bg-color); color:var(--text-color); border:1px solid var(--border-color); border-radius:8px;"></select>
+            <button onclick="connettiCassa()" class="btn" style="width: 100%; background: #4caf50; color: white; font-weight: bold; padding: 15px;">CONNETTI ORA</button>
         </div>
 
-        <div id="displayScreen" style="display: none; flex-direction: column; gap: 20px;">
-            
-            <div class="box" id="listaPiatti" style="min-height: 300px; overflow-y: auto;">
-                <div style="text-align:center; margin-top:100px; opacity:0.5; font-size: 1.5em;">In attesa di articoli...</div>
+        <div id="displayScreen" style="display:none; flex-direction: column; gap: 20px; flex: 1;">
+            <div id="areaLista" class="box lista-piatti-scroll">
+                <div style="text-align:center; margin-top:100px; opacity:0.3; font-size: 2em;">In attesa di articoli...</div>
             </div>
 
-            <div class="griglia-totali">
+            <div class="footer-monitor">
                 <div class="box" style="text-align: center;">
-                    <div style="text-transform: uppercase; font-weight: bold; opacity: 0.8;">Pagato</div>
-                    <div class="valore-gigante" style="color: #4fc3f7;" id="pagato">€ 0.00</div>
+                    <div style="opacity:0.6; text-transform:uppercase; font-size: 0.8em; font-weight: bold;">Pagato</div>
+                    <div style="color: #2196f3; font-size: 2.5em; font-weight: bold;" id="vPagato">€ 0.00</div>
                 </div>
                 <div class="box" style="text-align: center;">
-                    <div style="text-transform: uppercase; font-weight: bold; opacity: 0.8;">Resto</div>
-                    <div class="valore-gigante" style="color: #81c784;" id="resto">€ 0.00</div>
+                    <div style="opacity:0.6; text-transform:uppercase; font-size: 0.8em; font-weight: bold;">Resto</div>
+                    <div style="color: #4caf50; font-size: 2.5em; font-weight: bold;" id="vResto">€ 0.00</div>
                 </div>
-                <div class="box" style="text-align: right; border: 2px solid var(--primary-color);">
-                    <div style="text-transform: uppercase; font-weight: bold; color: var(--primary-color);">Totale Dovuto</div>
-                    <div class="valore-gigante" id="totale">€ 0.00</div>
+                <div class="box" style="text-align: right; border-bottom: 5px solid var(--primary-color);">
+                    <div style="color: var(--primary-color); font-weight:bold; text-transform:uppercase; font-size: 0.8em;">Totale Ordine</div>
+                    <div class="valore-tot" id="vTotale">€ 0.00</div>
                 </div>
             </div>
-
         </div>
     </div>
 
@@ -93,106 +100,123 @@
         const db = firebase.database();
         const auth = firebase.auth();
 
-        // 1. GESTIONE TEMA (Sblocca il CSS di BistroBò)
-        db.ref("impostazioni/tema").on("value", snap => {
-            const tema = snap.val() || "default";
+        // --- SISTEMA NOTIFICHE (Identico a Preordini) ---
+        function notify(msg, type = 'info') {
+            const container = document.getElementById('notification-container');
+            const n = document.createElement('div');
+            n.className = `notification notif-${type}`;
+            n.innerText = msg;
+            container.appendChild(n);
+            setTimeout(() => n.remove(), 3500);
+        }
 
-            document.body.classList.remove(
-                "tema-default", "tema-scout", "tema-inverno",
-                "tema-autunno", "tema-primavera", "tema-estate"
-            );
+        // --- GESTIONE TEMA (Identico a Preordini) ---
+        db.ref("impostazioni").on("value", snap => {
+            const settings = snap.val() || {};
+            const tema = settings.tema || "default";
+            document.body.classList.remove("tema-default","tema-scout","tema-inverno","tema-autunno","tema-primavera","tema-estate");
             document.body.classList.add("tema-" + tema);
             document.documentElement.setAttribute('data-theme', tema);
-
-            // Questo è il segreto: sblocca lo schermo e carica il gradiente!
+            if(settings.colori) {
+                for(let key in settings.colori) document.documentElement.style.setProperty(`--${key}`, settings.colori[key]);
+            }
             document.body.classList.add("tema-caricato");
         });
 
-        // Applica i colori custom se presenti
-        db.ref("impostazioni/colori").on("value", snap => {
-            const col = snap.val();
-            if(col) {
-                const root = document.documentElement;
-                for(let key in col) root.style.setProperty(`--${key}`, col[key]);
-            }
-        });
-
-        // 2. GESTIONE ACCESSO E VISTE
-        auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
-        
+        // --- LOGICA ACCESSO E MEMORIA ---
         auth.onAuthStateChanged(user => {
             if (user && user.email === "cliente@bistrobo.it") {
-                document.getElementById("logoutBtn").style.display = "block";
-                caricaCasse();
+                document.getElementById("btnLogout").style.display = "block";
+                // Controlla se c'è una cassa salvata
+                const cassaSalvata = localStorage.getItem("cassaMonitorata");
+                if (cassaSalvata) {
+                    avviaMonitor(cassaSalvata);
+                } else {
+                    mostraSezione("cassaDiv");
+                    caricaElencoCasse();
+                }
             } else {
                 if(user) auth.signOut();
-                document.getElementById("logoutBtn").style.display = "none";
                 mostraSezione("loginDiv");
             }
         });
 
-        function eseguiLogin() {
-            const e = document.getElementById("loginEmail").value.trim().toLowerCase();
-            const p = document.getElementById("loginPassword").value;
-            
-            if (e !== "cliente@bistrobo.it") return alert("Accesso riservato all'account Display Cliente.");
-            auth.signInWithEmailAndPassword(e, p).catch(err => alert("Errore login: Controlla la password."));
+        function login() {
+            const e = document.getElementById("email").value.trim();
+            const p = document.getElementById("pass").value;
+            auth.signInWithEmailAndPassword(e, p)
+                .then(() => notify("Accesso effettuato", "success"))
+                .catch(err => notify("Credenziali errate", "error"));
         }
 
-        function mostraSezione(id) {
-            document.getElementById("loginDiv").style.display = "none";
-            document.getElementById("cassaDiv").style.display = "none";
-            document.getElementById("displayScreen").style.display = "none";
-            document.getElementById(id).style.display = (id === "displayScreen") ? "flex" : "block";
-        }
-
-        // 3. SINCRONIZZAZIONE RICEZIONE LIVE
-        function caricaCasse() {
-            mostraSezione("cassaDiv");
+        function caricaElencoCasse() {
             db.ref("utenti").once("value", snap => {
                 const sel = document.getElementById("selectCassa");
-                sel.innerHTML = '<option value="">-- Seleziona Dispositivo --</option>';
-                snap.forEach(s => {
-                    const u = s.val();
-                    if(u.ruolo === 'cassa' || u.ruolo === 'admin') {
+                sel.innerHTML = '<option value="">-- Scegli Cassa --</option>';
+                snap.forEach(u => {
+                    const d = u.val();
+                    if(d.ruolo === 'cassa' || d.ruolo === 'admin') {
                         let opt = document.createElement("option");
-                        opt.value = s.key; opt.textContent = u.username || u.email;
+                        opt.value = u.key; opt.textContent = d.username || d.email;
                         sel.appendChild(opt);
                     }
                 });
             });
         }
 
-        function avviaDisplay() {
-            const uidCassa = document.getElementById("selectCassa").value;
-            if(!uidCassa) return alert("Scegli una cassa dall'elenco!");
-            
+        function connettiCassa() {
+            const uid = document.getElementById("selectCassa").value;
+            if(!uid) return notify("Seleziona una cassa!", "error");
+            localStorage.setItem("cassaMonitorata", uid);
+            avviaMonitor(uid);
+        }
+
+        function cambiaCassa() {
+            localStorage.removeItem("cassaMonitorata");
+            location.reload();
+        }
+
+        function avviaMonitor(uidCassa) {
             mostraSezione("displayScreen");
+            document.getElementById("btnSwitch").style.display = "block";
             
+            // Listener real-time: non si scollega mai se non chiudi la pagina
             db.ref("displayLive/" + uidCassa).on("value", snap => {
                 const data = snap.val();
-                
                 if(!data || !data.piatti || data.piatti.length === 0) {
-                    document.getElementById("numComandaDisplay").innerText = "";
-                    document.getElementById("totale").innerText = "€ 0.00";
-                    document.getElementById("pagato").innerText = "€ 0.00";
-                    document.getElementById("resto").innerText = "€ 0.00";
-                    document.getElementById("listaPiatti").innerHTML = '<div style="text-align:center; margin-top:100px; opacity:0.5; font-size: 1.5em;">Pronto per il prossimo ordine!</div>';
+                    resetGrafica();
                     return;
                 }
                 
-                document.getElementById("numComandaDisplay").innerText = "- #" + (data.numeroComanda || "---");
-                document.getElementById("totale").innerText = "€ " + (data.totale || 0).toFixed(2);
-                document.getElementById("pagato").innerText = "€ " + (data.pagato || 0).toFixed(2);
-                document.getElementById("resto").innerText = "€ " + (data.resto || 0).toFixed(2);
+                document.getElementById("labelCassa").innerText = "(Cassa Collegata)";
+                document.getElementById("vTotale").innerText = "€ " + data.totale.toFixed(2);
+                document.getElementById("vPagato").innerText = "€ " + (data.pagato || 0).toFixed(2);
+                document.getElementById("vResto").innerText = "€ " + (data.resto || 0).toFixed(2);
                 
-                document.getElementById("listaPiatti").innerHTML = data.piatti.map(p => `
+                document.getElementById("areaLista").innerHTML = data.piatti.map(p => `
                     <div class="riga-ordine">
-                        <span><b style="color:var(--primary-color);">${p.quantita}x</b> &nbsp; <span>${p.nome}</span></span>
+                        <span><b style="color:var(--primary-color)">${p.quantita}x</b> &nbsp; ${p.nome}</span>
                         <span>€ ${(p.prezzo * p.quantita).toFixed(2)}</span>
                     </div>
                 `).join("");
             });
+        }
+
+        function resetGrafica() {
+            document.getElementById("vTotale").innerText = "€ 0.00";
+            document.getElementById("vPagato").innerText = "€ 0.00";
+            document.getElementById("vResto").innerText = "€ 0.00";
+            document.getElementById("areaLista").innerHTML = '<div style="text-align:center; margin-top:100px; opacity:0.3; font-size: 2em;">Pronto per l\'ordine!</div>';
+        }
+
+        function mostraSezione(id) {
+            ["loginDiv", "cassaDiv", "displayScreen"].forEach(d => document.getElementById(d).style.display = "none");
+            document.getElementById(id).style.display = (id === "displayScreen") ? "flex" : "block";
+        }
+
+        function eseguiLogout() {
+            localStorage.removeItem("cassaMonitorata");
+            auth.signOut().then(() => location.reload());
         }
     </script>
 </body>
