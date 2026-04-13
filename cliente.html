@@ -13,71 +13,75 @@
     <link rel="stylesheet" href="main/style.css">
 
     <style>
-        /* Layout per tenere tutto centrato usando le variabili del tuo tema */
-        .cliente-wrapper { max-width: 850px; margin: 30px auto; padding: 20px; flex: 1; display: flex; flex-direction: column; }
+        /* Struttura della griglia basata al 100% sui colori di style.css */
+        .cliente-wrapper { max-width: 900px; margin: 30px auto; padding: 20px; flex: 1; display: flex; flex-direction: column; }
         
-        .box-centrato { background: var(--bg-element, #fff); padding: 30px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 20px; border: 1px solid var(--border-color, #eee); }
-        .row-piatto { display: flex; justify-content: space-between; font-size: 1.8em; padding: 15px 0; border-bottom: 1px dashed var(--border-color, #ccc); color: var(--text-color, #000); }
+        .box-centrato { background: var(--bg-element, rgba(255,255,255,0.05)); padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); margin-bottom: 20px; border: 1px solid var(--border-color, rgba(255,255,255,0.1)); backdrop-filter: blur(10px); }
+        .row-piatto { display: flex; justify-content: space-between; font-size: 1.8em; padding: 15px 0; border-bottom: 1px dashed var(--border-color, #ccc); color: var(--text-color, #fff); }
         .row-piatto:last-child { border-bottom: none; }
         .totali-grid { display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 15px; }
         
-        .valore-testo { font-size: 2.5em; font-weight: bold; margin-top: 5px; }
-        .valore-totale { font-size: 3.5em; font-weight: bold; line-height: 1; margin-top: 5px; }
+        .valore-testo { font-size: 2.8em; font-weight: bold; margin-top: 5px; }
+        .valore-totale { font-size: 4em; font-weight: bold; line-height: 1; margin-top: 5px; }
         
-        .cliente-input { width: 100%; padding: 15px; margin-bottom: 15px; font-size: 1.1em; border-radius: 5px; border: 1px solid var(--border-color, #ccc); background: var(--bg-color, #fff); color: var(--text-color, #000); box-sizing: border-box; }
-        .cliente-btn { width: 100%; padding: 15px; font-size: 1.2em; font-weight: bold; background: var(--primary-color, #d32f2f); color: white; border: none; border-radius: 5px; cursor: pointer; transition: 0.2s; }
-        .cliente-btn:hover { filter: brightness(0.9); }
+        .cliente-input { width: 100%; padding: 15px; margin-bottom: 15px; font-size: 1.1em; border-radius: 8px; border: 1px solid var(--border-color, #ccc); background: var(--bg-color, #000); color: var(--text-color, #fff); box-sizing: border-box; }
+        .cliente-btn { width: 100%; padding: 15px; font-size: 1.2em; font-weight: bold; background: var(--primary-color, #d32f2f); color: white; border: none; border-radius: 8px; cursor: pointer; transition: 0.2s; }
+        
+        /* Header personalizzato per non richiamare il "Panino" dell'Hamburger Menu di topBar */
+        .header-display { display: flex; justify-content: space-between; align-items: center; padding: 15px 30px; background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--border-color); color: var(--text-color); }
     </style>
 </head>
 
 <body>
 
-    <div class="topBar">
-        <img src="icon-192.png" alt="Logo" class="logo">
-        <h2 class="preordine-title" style="margin: 0; font-size: 1.5em; color: var(--text-color, #000);">Display <span id="numComandaDisplay"></span></h2>
-        <button id="logoutBtn" onclick="eseguiLogout()" style="padding: 8px 15px; cursor: pointer; display: none; background: transparent; border: 1px solid var(--border-color); color: var(--text-color); border-radius: 5px;">Esci</button>
+    <div class="header-display">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <img src="icon-192.png" alt="Logo" style="width: 45px;">
+            <h1 style="margin: 0; font-size: 1.8em; letter-spacing: 1px;">Display <span id="numComandaDisplay" style="color: var(--primary-color);"></span></h1>
+        </div>
+        <button id="logoutBtn" onclick="eseguiLogout()" style="padding: 8px 15px; cursor: pointer; display: none; background: transparent; border: 1px solid var(--text-color); color: var(--text-color); border-radius: 5px;">Chiudi</button>
     </div>
 
     <div class="cliente-wrapper">
         
         <div id="loaderArea" style="text-align: center; margin-top: 100px;">
-            <img src="icon-192.png" alt="Logo" style="width: 80px; animation: pulse 1.5s infinite;">
-            <h2 style="color: var(--text-color, #000);">Sincronizzazione Tema...</h2>
+            <img src="icon-192.png" alt="Logo" style="width: 90px; animation: pulse 1.5s infinite;">
+            <h2 style="color: var(--text-color, #fff); margin-top: 20px;">Applicazione Tema...</h2>
         </div>
 
         <div id="loginDiv" class="box-centrato" style="display:none; max-width: 400px; margin: 40px auto; width: 100%; box-sizing: border-box;">
-            <h2 style="text-align: center; color: var(--text-color, #000); margin-top:0;">Accesso Display</h2>
-            <p style="text-align: center; color: var(--primary-color, red); font-weight:bold; margin-bottom: 20px;">Utilizza l'account cliente.</p>
+            <h2 style="text-align: center; color: var(--text-color, #fff); margin-top:0;">Accesso Display</h2>
+            <p style="text-align: center; color: #ff5252; font-weight:bold; margin-bottom: 20px;">Utilizza l'account cliente.</p>
             <input type="email" id="loginEmail" class="cliente-input" placeholder="cliente@bistrobo.it">
             <input type="password" id="loginPassword" class="cliente-input" placeholder="Password">
             <button onclick="eseguiLogin()" class="cliente-btn">ACCEDI AL MONITOR</button>
         </div>
 
         <div id="cassaDiv" class="box-centrato" style="display:none; max-width: 400px; margin: 40px auto; width: 100%; box-sizing: border-box;">
-            <h2 style="text-align: center; color: var(--text-color, #000); margin-top:0;">Configura Display</h2>
-            <p style="text-align: center; margin-bottom: 20px; color: var(--text-color, #000); opacity: 0.8;">Quale dispositivo cassa vuoi mostrare?</p>
+            <h2 style="text-align: center; color: var(--text-color, #fff); margin-top:0;">Configura Display</h2>
+            <p style="text-align: center; margin-bottom: 20px; color: var(--text-color, #fff); opacity: 0.8;">Quale dispositivo cassa vuoi mostrare?</p>
             <select id="selectCassa" class="cliente-input"></select>
             <button onclick="avviaDisplay()" class="cliente-btn" style="background: #4caf50;">COLLEGA CASSA</button>
         </div>
 
         <div id="displayScreen" style="display:none; flex-direction: column; gap: 20px; flex: 1;">
             
-            <div class="box-centrato" id="listaPiatti" style="flex: 1; min-height: 250px; overflow-y:auto; border-top: 4px solid var(--primary-color, #d32f2f); padding: 20px;">
-                <div style="text-align:center; margin-top:80px; font-size: 1.5em; opacity:0.5; color: var(--text-color, #000);">In attesa di articoli...</div>
+            <div class="box-centrato" id="listaPiatti" style="flex: 1; min-height: 250px; overflow-y:auto;">
+                <div style="text-align:center; margin-top:80px; font-size: 1.5em; opacity:0.5; color: var(--text-color, #fff);">In attesa di articoli...</div>
             </div>
 
             <div class="totali-grid">
-                <div class="box-centrato" style="text-align: center; margin: 0; padding: 20px;">
-                    <div style="font-size: 1.1em; opacity: 0.8; color: var(--text-color, #000); text-transform: uppercase; font-weight: bold;">Pagato</div>
-                    <div class="valore-testo" style="color: #2196f3;" id="pagato">€ 0.00</div>
+                <div class="box-centrato" style="text-align: center; margin: 0; padding: 25px;">
+                    <div style="font-size: 1.1em; opacity: 0.8; color: var(--text-color, #fff); text-transform: uppercase; font-weight: bold; letter-spacing: 1px;">Pagato</div>
+                    <div class="valore-testo" style="color: #4fc3f7;" id="pagato">€ 0.00</div>
                 </div>
-                <div class="box-centrato" style="text-align: center; margin: 0; padding: 20px;">
-                    <div style="font-size: 1.1em; opacity: 0.8; color: var(--text-color, #000); text-transform: uppercase; font-weight: bold;">Resto</div>
-                    <div class="valore-testo" style="color: #4caf50;" id="resto">€ 0.00</div>
+                <div class="box-centrato" style="text-align: center; margin: 0; padding: 25px;">
+                    <div style="font-size: 1.1em; opacity: 0.8; color: var(--text-color, #fff); text-transform: uppercase; font-weight: bold; letter-spacing: 1px;">Resto</div>
+                    <div class="valore-testo" style="color: #81c784;" id="resto">€ 0.00</div>
                 </div>
-                <div class="box-centrato" style="text-align: right; margin: 0; padding: 20px; border: 2px solid var(--primary-color, #d32f2f);">
-                    <div style="font-size: 1.1em; font-weight: bold; color: var(--primary-color, #d32f2f); text-transform: uppercase;">Totale Dovuto</div>
-                    <div class="valore-totale" style="color: var(--primary-color, #d32f2f);" id="totale">€ 0.00</div>
+                <div class="box-centrato" style="text-align: right; margin: 0; padding: 25px; border: 2px solid var(--primary-color, #d32f2f);">
+                    <div style="font-size: 1.2em; font-weight: bold; color: var(--primary-color, #d32f2f); text-transform: uppercase; letter-spacing: 1px;">Totale Dovuto</div>
+                    <div class="valore-totale" style="color: var(--text-color, #fff);" id="totale">€ 0.00</div>
                 </div>
             </div>
         </div>
@@ -99,33 +103,31 @@
         const auth = firebase.auth();
 
         // ================================================================
-        // 🔹 1️⃣ GESTIONE TEMA GLOBALE (Copia esatta di preordini!)
+        // 🔹 1️⃣ GESTIONE TEMA (Identica e precisa a preordini.html)
         // ================================================================
-        function listenTemaRealtime() {
-            db.ref("impostazioni/tema").on("value", snap => {
-                const tema = snap.val() || "default";
+        db.ref("impostazioni/tema").on("value", snap => {
+            const tema = snap.val() || "default";
 
-                document.body.classList.remove(
-                    "tema-default", "tema-scout", "tema-inverno",
-                    "tema-autunno", "tema-primavera", "tema-estate"
-                );
-                document.body.classList.add("tema-" + tema);
+            document.body.classList.remove(
+                "tema-default", "tema-scout", "tema-inverno",
+                "tema-autunno", "tema-primavera", "tema-estate"
+            );
+            document.body.classList.add("tema-" + tema);
+            document.documentElement.setAttribute('data-theme', tema);
 
-                // 🌟 IL TRUCCO È QUI: sblocca la visibilità del body!
-                document.body.classList.add("tema-caricato");
-                
-                // Aggiorna titolo
-                const titolo = document.getElementById("numComandaDisplay");
-                if(titolo && tema !== "default") {
-                    titolo.style.color = "var(--primary-color)";
-                }
+            // SBLOCCA LA VISIBILITÀ DEL BODY
+            document.body.classList.add("tema-caricato");
+            document.getElementById("loaderArea").style.display = "none";
+        });
 
-                // Chiudi loader
-                document.getElementById("loaderArea").style.display = "none";
-            });
-        }
-        
-        listenTemaRealtime(); // Avvio il tema
+        // Applica i colori custom salvati
+        db.ref("impostazioni/colori").on("value", snap => {
+            const col = snap.val();
+            if(col) {
+                const root = document.documentElement;
+                for(let key in col) root.style.setProperty(`--${key}`, col[key]);
+            }
+        });
 
         // ================================================================
         // 🔹 2️⃣ GESTIONE LOGICA E LOGIN
@@ -137,7 +139,7 @@
                 document.getElementById("logoutBtn").style.display = "block";
                 caricaCasse();
             } else {
-                if(user) auth.signOut(); // Kick se profilo sbagliato
+                if(user) auth.signOut();
                 document.getElementById("logoutBtn").style.display = "none";
                 mostraSezione("loginDiv");
             }
@@ -203,18 +205,18 @@
                     document.getElementById("totale").innerText = "€ 0.00";
                     document.getElementById("pagato").innerText = "€ 0.00";
                     document.getElementById("resto").innerText = "€ 0.00";
-                    document.getElementById("listaPiatti").innerHTML = '<div style="text-align:center; margin-top:80px; font-size: 1.5em; opacity:0.5; color: var(--text-color, #000);">In attesa di articoli...</div>';
+                    document.getElementById("listaPiatti").innerHTML = '<div style="text-align:center; margin-top:80px; font-size: 1.5em; opacity:0.5; color: var(--text-color, #fff);">In attesa di articoli...</div>';
                     return;
                 }
                 
-                document.getElementById("numComandaDisplay").innerText = "- #" + (data.numeroComanda || "---");
+                document.getElementById("numComandaDisplay").innerText = "#" + (data.numeroComanda || "---");
                 document.getElementById("totale").innerText = "€ " + (data.totale || 0).toFixed(2);
                 document.getElementById("pagato").innerText = "€ " + (data.pagato || 0).toFixed(2);
                 document.getElementById("resto").innerText = "€ " + (data.resto || 0).toFixed(2);
                 
                 document.getElementById("listaPiatti").innerHTML = data.piatti.map(p => `
                     <div class="row-piatto">
-                        <span><b style="color:var(--primary-color, #d32f2f);">${p.quantita}x</b> &nbsp; <span style="color:var(--text-color, #000);">${p.nome}</span></span>
+                        <span><b style="color:var(--primary-color, #d32f2f);">${p.quantita}x</b> &nbsp; <span style="color:var(--text-color, #fff);">${p.nome}</span></span>
                         <span>€ ${(p.prezzo * p.quantita).toFixed(2)}</span>
                     </div>
                 `).join("");
