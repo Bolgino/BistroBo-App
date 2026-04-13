@@ -29,21 +29,22 @@
             display: flex; 
             flex-direction: column; 
             gap: 20px; 
-            padding: 20px 30px 30px 30px; 
+            padding: 10px 30px 30px 30px; 
             max-width: 1200px; 
             margin: 0 auto; 
             width: 100%; 
-            box-sizing: border-box; 
+            box-sizing: border-box;
+            min-height: 0; /* Fondamentale per far funzionare lo scroll interno */
         }
 
-        /* Top Bar Trasparente */
         .topBar-cliente { 
             background: transparent; 
-            padding: 20px 40px; 
+            padding: 15px 40px; 
             display: flex; 
             justify-content: space-between; 
             align-items: center; 
             border: none;
+            flex-shrink: 0;
         }
         .topBar-cliente h1 {
             margin: 0; 
@@ -53,7 +54,7 @@
             text-shadow: 2px 2px 4px rgba(255,255,255,0.8);
         }
 
-        /* Liste Live */
+        /* Liste Live con Slider (Scroll) */
         .lista-piatti-scroll { 
             flex: 1; 
             overflow-y: auto; 
@@ -61,7 +62,14 @@
             border-radius: 20px;
             background: rgba(255, 255, 255, 0.9);
             box-shadow: inset 0 2px 10px rgba(0,0,0,0.05);
+            min-height: 0; /* Permette al box di ridursi invece di espandersi */
         }
+
+        /* Scrollbar (Slider) più visibile */
+        .lista-piatti-scroll::-webkit-scrollbar { width: 12px; }
+        .lista-piatti-scroll::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); border-radius: 10px; }
+        .lista-piatti-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 10px; border: 3px solid rgba(255,255,255,0.9); background-clip: content-box; }
+
         .riga-ordine { 
             display: flex; 
             justify-content: space-between; 
@@ -71,19 +79,22 @@
             font-weight: 600;
         }
         
-        .footer-monitor { display: grid; grid-template-columns: 1fr 1fr 1.5fr; gap: 20px; }
+        .footer-monitor { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr 1.5fr; 
+            gap: 20px; 
+            flex-shrink: 0; /* Impedisce al footer di sparire */
+        }
         .valore-tot { font-size: 4em; font-weight: 800; line-height: 1; }
         
-        /* Box Live Ordine */
         .box-live { 
             background: rgba(255, 255, 255, 0.95); 
             border-radius: 20px; 
-            padding: 30px; 
+            padding: 25px; 
             box-shadow: 0 15px 35px rgba(0,0,0,0.1); 
             backdrop-filter: blur(10px);
         }
 
-        /* Centratura Accesso SENZA Box Bianco */
         .center-screen {
             display: flex;
             align-items: center;
@@ -91,23 +102,7 @@
             min-height: 75vh;
             text-align: center;
         }
-        .access-content {
-            width: 100%;
-            max-width: 450px;
-        }
-        .access-content h2 {
-            font-size: 2.5em;
-            font-weight: 800;
-            margin-bottom: 10px;
-            text-shadow: 0 2px 10px rgba(255,255,255,0.5);
-        }
-        .access-content p {
-            font-size: 1.1em;
-            opacity: 0.8;
-            margin-bottom: 30px;
-        }
-
-        /* Input stilizzati per accesso */
+        .access-content { width: 100%; max-width: 450px; }
         .input-access {
             width: 100%;
             padding: 18px;
@@ -117,8 +112,7 @@
             background: rgba(255,255,255,0.8);
             font-size: 1.1em;
             box-sizing: border-box;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            font-family: 'Poppins', sans-serif;
+            font-family: inherit;
         }
 
         #notification-container { position: fixed; top: 20px; right: 20px; z-index: 10000; }
@@ -142,14 +136,14 @@
     <div class="monitor-layout">
         <div id="disabledDiv" class="center-screen" style="display:none;">
             <div class="access-content" style="color: #f44336;">
-                <h2 style="text-shadow: 0 2px 15px rgba(0,0,0,0.1);">Scheda Clienti Disabilitata</h2>
+                <h2 style="font-size:2.5em; font-weight:800;">Scheda Clienti Disabilitata</h2>
                 <p style="color: #333; font-weight: 600;">per attivarla contattare l'amministratore</p>
             </div>
         </div>
 
         <div id="loginDiv" class="center-screen" style="display:none;">
             <div class="access-content">
-                <h2>Accesso Monitor</h2>
+                <h2 style="font-size:2.5em; font-weight:800;">Accesso Monitor</h2>
                 <p>Inserisci le credenziali autorizzate</p>
                 <input type="email" id="email" class="input-access" placeholder="Email">
                 <input type="password" id="pass" class="input-access" placeholder="Password">
@@ -159,14 +153,14 @@
 
         <div id="cassaDiv" class="center-screen" style="display:none;">
             <div class="access-content">
-                <h2>Configura Monitor</h2>
-                <p>A quale postazione vuoi collegarti?</p>
+                <h2 style="font-size:2.5em; font-weight:800;">Configura Monitor</h2>
+                <p>Seleziona una cassa attiva (online):</p>
                 <select id="selectCassa" class="input-access" style="cursor: pointer;"></select>
                 <button onclick="connettiCassa()" style="width: 100%; padding: 20px; font-size: 1.2em; border-radius: 15px;">AVVIA PROIEZIONE</button>
             </div>
         </div>
 
-        <div id="displayScreen" style="display:none; flex-direction: column; gap: 20px; flex: 1;">
+        <div id="displayScreen" style="display:none; flex-direction: column; gap: 20px; flex: 1; min-height: 0;">
             <div id="areaLista" class="lista-piatti-scroll">
                 <div style="text-align:center; margin-top:150px; opacity:0.15; font-size: 2.5em; font-weight: 800;">IN ATTESA DI ARTICOLI...</div>
             </div>
@@ -214,14 +208,12 @@
             setTimeout(() => { n.style.opacity = '0'; setTimeout(() => n.remove(), 500); }, 3500);
         }
 
-        // Controllo Abilitazione Live
         db.ref("impostazioni/displayClienteAbilitato").on("value", snap => {
             monitorAbilitato = snap.val() ?? true;
             if (!monitorAbilitato) mostraSezione("disabledDiv");
             else refreshStatus();
         });
 
-        // Tema Live
         db.ref("impostazioni/tema").on("value", snap => {
             const tema = snap.val() || "default";
             document.body.className = "tema-" + tema + " tema-caricato";
@@ -272,12 +264,16 @@
                 sel.innerHTML = '<option value="">-- Seleziona Postazione --</option>';
                 snap.forEach(u => {
                     const d = u.val();
-                    if((d.ruolo === 'cassa' || d.ruolo === 'admin') && d.approvato) {
+                    // Filtra solo utenti online, approvati e con ruolo cassa/admin
+                    const isOnline = d.status && d.status.state === 'online';
+                    if((d.ruolo === 'cassa' || d.ruolo === 'admin') && d.approvato && isOnline) {
                         let opt = document.createElement("option");
-                        opt.value = u.key; opt.textContent = d.username;
+                        opt.value = u.key; 
+                        opt.textContent = d.username;
                         sel.appendChild(opt);
                     }
                 });
+                if(sel.options.length === 1) notify("Nessun cassiere online al momento", "warn");
             });
         }
 
