@@ -13,79 +13,75 @@
     <link rel="stylesheet" href="main/style.css">
 
     <style>
-        /* Struttura della griglia basata al 100% sui colori di style.css */
-        .cliente-wrapper { max-width: 900px; margin: 30px auto; padding: 20px; flex: 1; display: flex; flex-direction: column; }
+        /* Solo layout strutturale, i colori e gli sfondi sono gestiti al 100% da style.css */
+        .schermo-layout { max-width: 900px; margin: 20px auto; padding: 15px; display: flex; flex-direction: column; gap: 20px; flex: 1; }
         
-        .box-centrato { background: var(--bg-element, rgba(255,255,255,0.05)); padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); margin-bottom: 20px; border: 1px solid var(--border-color, rgba(255,255,255,0.1)); backdrop-filter: blur(10px); }
-        .row-piatto { display: flex; justify-content: space-between; font-size: 1.8em; padding: 15px 0; border-bottom: 1px dashed var(--border-color, #ccc); color: var(--text-color, #fff); }
-        .row-piatto:last-child { border-bottom: none; }
-        .totali-grid { display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 15px; }
+        .riga-ordine { display: flex; justify-content: space-between; font-size: 1.8em; padding: 15px 0; border-bottom: 1px dashed var(--border-color); }
+        .riga-ordine:last-child { border-bottom: none; }
         
-        .valore-testo { font-size: 2.8em; font-weight: bold; margin-top: 5px; }
-        .valore-totale { font-size: 4em; font-weight: bold; line-height: 1; margin-top: 5px; }
+        .griglia-totali { display: grid; grid-template-columns: 1fr 1fr 1.5fr; gap: 15px; }
+        .valore-gigante { font-size: 3.2em; font-weight: bold; line-height: 1.2; margin-top: 10px; }
         
-        .cliente-input { width: 100%; padding: 15px; margin-bottom: 15px; font-size: 1.1em; border-radius: 8px; border: 1px solid var(--border-color, #ccc); background: var(--bg-color, #000); color: var(--text-color, #fff); box-sizing: border-box; }
-        .cliente-btn { width: 100%; padding: 15px; font-size: 1.2em; font-weight: bold; background: var(--primary-color, #d32f2f); color: white; border: none; border-radius: 8px; cursor: pointer; transition: 0.2s; }
-        
-        /* Header personalizzato per non richiamare il "Panino" dell'Hamburger Menu di topBar */
-        .header-display { display: flex; justify-content: space-between; align-items: center; padding: 15px 30px; background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--border-color); color: var(--text-color); }
+        /* Stile input standard BistroBò */
+        .input-display { width: 100%; padding: 15px; margin-bottom: 15px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-color); font-size: 1.1em; box-sizing: border-box; }
+        .btn-display { width: 100%; padding: 15px; font-weight: bold; font-size: 1.2em; background: var(--primary-color); color: white; border: none; border-radius: 8px; cursor: pointer; }
     </style>
 </head>
 
 <body>
 
-    <div class="header-display">
+    <div class="topBar" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px;">
         <div style="display: flex; align-items: center; gap: 15px;">
-            <img src="icon-192.png" alt="Logo" style="width: 45px;">
-            <h1 style="margin: 0; font-size: 1.8em; letter-spacing: 1px;">Display <span id="numComandaDisplay" style="color: var(--primary-color);"></span></h1>
+            <img src="icon-192.png" alt="Logo" class="logo" style="width: 40px; height: 40px; margin: 0;">
+            <h2 style="margin: 0;">Display <span id="numComandaDisplay" style="color: var(--primary-color);"></span></h2>
         </div>
-        <button id="logoutBtn" onclick="eseguiLogout()" style="padding: 8px 15px; cursor: pointer; display: none; background: transparent; border: 1px solid var(--text-color); color: var(--text-color); border-radius: 5px;">Chiudi</button>
+        <button id="logoutBtn" onclick="eseguiLogout()" style="display: none; background: transparent; border: 1px solid var(--text-color); color: var(--text-color); padding: 8px 15px; border-radius: 5px; cursor: pointer;">Esci</button>
     </div>
 
-    <div class="cliente-wrapper">
+    <div id="loaderArea" style="text-align: center; margin-top: 100px;">
+        <img src="icon-192.png" alt="Logo" style="width: 80px; animation: pulse 1.5s infinite;">
+        <h2>Caricamento Display...</h2>
+    </div>
+
+    <div class="schermo-layout">
         
-        <div id="loaderArea" style="text-align: center; margin-top: 100px;">
-            <img src="icon-192.png" alt="Logo" style="width: 90px; animation: pulse 1.5s infinite;">
-            <h2 style="color: var(--text-color, #fff); margin-top: 20px;">Applicazione Tema...</h2>
+        <div id="loginDiv" class="box" style="display: none; max-width: 400px; margin: 0 auto; text-align: center; width: 100%;">
+            <h2 style="margin-top:0;">Accesso Riservato</h2>
+            <p style="color: var(--primary-color); font-weight: bold; margin-bottom: 20px;">Accedi come schermo cliente.</p>
+            <input type="email" id="loginEmail" class="input-display" placeholder="cliente@bistrobo.it">
+            <input type="password" id="loginPassword" class="input-display" placeholder="Password">
+            <button onclick="eseguiLogin()" class="btn-display">ACCEDI AL MONITOR</button>
         </div>
 
-        <div id="loginDiv" class="box-centrato" style="display:none; max-width: 400px; margin: 40px auto; width: 100%; box-sizing: border-box;">
-            <h2 style="text-align: center; color: var(--text-color, #fff); margin-top:0;">Accesso Display</h2>
-            <p style="text-align: center; color: #ff5252; font-weight:bold; margin-bottom: 20px;">Utilizza l'account cliente.</p>
-            <input type="email" id="loginEmail" class="cliente-input" placeholder="cliente@bistrobo.it">
-            <input type="password" id="loginPassword" class="cliente-input" placeholder="Password">
-            <button onclick="eseguiLogin()" class="cliente-btn">ACCEDI AL MONITOR</button>
+        <div id="cassaDiv" class="box" style="display: none; max-width: 400px; margin: 0 auto; text-align: center; width: 100%;">
+            <h2 style="margin-top:0;">Configura Display</h2>
+            <p style="opacity: 0.8; margin-bottom: 20px;">Seleziona la cassa da mostrare:</p>
+            <select id="selectCassa" class="input-display"></select>
+            <button onclick="avviaDisplay()" class="btn-display" style="background: #4caf50;">COLLEGA CASSA</button>
         </div>
 
-        <div id="cassaDiv" class="box-centrato" style="display:none; max-width: 400px; margin: 40px auto; width: 100%; box-sizing: border-box;">
-            <h2 style="text-align: center; color: var(--text-color, #fff); margin-top:0;">Configura Display</h2>
-            <p style="text-align: center; margin-bottom: 20px; color: var(--text-color, #fff); opacity: 0.8;">Quale dispositivo cassa vuoi mostrare?</p>
-            <select id="selectCassa" class="cliente-input"></select>
-            <button onclick="avviaDisplay()" class="cliente-btn" style="background: #4caf50;">COLLEGA CASSA</button>
-        </div>
-
-        <div id="displayScreen" style="display:none; flex-direction: column; gap: 20px; flex: 1;">
+        <div id="displayScreen" style="display: none; flex-direction: column; gap: 20px;">
             
-            <div class="box-centrato" id="listaPiatti" style="flex: 1; min-height: 250px; overflow-y:auto;">
-                <div style="text-align:center; margin-top:80px; font-size: 1.5em; opacity:0.5; color: var(--text-color, #fff);">In attesa di articoli...</div>
+            <div class="box" id="listaPiatti" style="min-height: 300px; overflow-y: auto;">
+                <div style="text-align:center; margin-top:100px; opacity:0.5; font-size: 1.5em;">In attesa di articoli...</div>
             </div>
 
-            <div class="totali-grid">
-                <div class="box-centrato" style="text-align: center; margin: 0; padding: 25px;">
-                    <div style="font-size: 1.1em; opacity: 0.8; color: var(--text-color, #fff); text-transform: uppercase; font-weight: bold; letter-spacing: 1px;">Pagato</div>
-                    <div class="valore-testo" style="color: #4fc3f7;" id="pagato">€ 0.00</div>
+            <div class="griglia-totali">
+                <div class="box" style="text-align: center;">
+                    <div style="text-transform: uppercase; font-weight: bold; opacity: 0.8;">Pagato</div>
+                    <div class="valore-gigante" style="color: #4fc3f7;" id="pagato">€ 0.00</div>
                 </div>
-                <div class="box-centrato" style="text-align: center; margin: 0; padding: 25px;">
-                    <div style="font-size: 1.1em; opacity: 0.8; color: var(--text-color, #fff); text-transform: uppercase; font-weight: bold; letter-spacing: 1px;">Resto</div>
-                    <div class="valore-testo" style="color: #81c784;" id="resto">€ 0.00</div>
+                <div class="box" style="text-align: center;">
+                    <div style="text-transform: uppercase; font-weight: bold; opacity: 0.8;">Resto</div>
+                    <div class="valore-gigante" style="color: #81c784;" id="resto">€ 0.00</div>
                 </div>
-                <div class="box-centrato" style="text-align: right; margin: 0; padding: 25px; border: 2px solid var(--primary-color, #d32f2f);">
-                    <div style="font-size: 1.2em; font-weight: bold; color: var(--primary-color, #d32f2f); text-transform: uppercase; letter-spacing: 1px;">Totale Dovuto</div>
-                    <div class="valore-totale" style="color: var(--text-color, #fff);" id="totale">€ 0.00</div>
+                <div class="box" style="text-align: right; border: 2px solid var(--primary-color);">
+                    <div style="text-transform: uppercase; font-weight: bold; color: var(--primary-color);">Totale Dovuto</div>
+                    <div class="valore-gigante" id="totale">€ 0.00</div>
                 </div>
             </div>
+
         </div>
-
     </div>
 
     <script>
@@ -103,11 +99,12 @@
         const auth = firebase.auth();
 
         // ================================================================
-        // 🔹 1️⃣ GESTIONE TEMA (Identica e precisa a preordini.html)
+        // 1. GESTIONE TEMA (Identica a preordini.js)
         // ================================================================
         db.ref("impostazioni/tema").on("value", snap => {
             const tema = snap.val() || "default";
 
+            // Rimuove classi vecchie e aggiunge il nuovo tema
             document.body.classList.remove(
                 "tema-default", "tema-scout", "tema-inverno",
                 "tema-autunno", "tema-primavera", "tema-estate"
@@ -115,12 +112,14 @@
             document.body.classList.add("tema-" + tema);
             document.documentElement.setAttribute('data-theme', tema);
 
-            // SBLOCCA LA VISIBILITÀ DEL BODY
+            // Sblocca la pagina rendendola visibile (fondamentale in BistroBò)
             document.body.classList.add("tema-caricato");
+            
+            // Nasconde il loader iniziale
             document.getElementById("loaderArea").style.display = "none";
         });
 
-        // Applica i colori custom salvati
+        // Applica colori custom se presenti nel database
         db.ref("impostazioni/colori").on("value", snap => {
             const col = snap.val();
             if(col) {
@@ -130,7 +129,7 @@
         });
 
         // ================================================================
-        // 🔹 2️⃣ GESTIONE LOGICA E LOGIN
+        // 2. GESTIONE AUTENTICAZIONE E VISTE
         // ================================================================
         auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
         
@@ -149,7 +148,7 @@
             const e = document.getElementById("loginEmail").value.trim().toLowerCase();
             const p = document.getElementById("loginPassword").value;
             
-            if (e !== "cliente@bistrobo.it") return alert("Devi usare l'account cliente@bistrobo.it");
+            if (e !== "cliente@bistrobo.it") return alert("Accesso riservato all'account Display Cliente.");
 
             document.getElementById("loginDiv").style.display = "none";
             document.getElementById("loaderArea").style.display = "block";
@@ -157,7 +156,7 @@
             auth.signInWithEmailAndPassword(e, p).catch(err => {
                 document.getElementById("loaderArea").style.display = "none";
                 document.getElementById("loginDiv").style.display = "block";
-                alert("Errore login: Controlla la password!");
+                alert("Errore login: Password errata.");
             });
         }
 
@@ -173,7 +172,7 @@
         }
 
         // ================================================================
-        // 🔹 3️⃣ GESTIONE DISPLAY LIVE
+        // 3. MOTORE DI RICEZIONE LIVE
         // ================================================================
         function caricaCasse() {
             mostraSezione("cassaDiv");
@@ -205,7 +204,7 @@
                     document.getElementById("totale").innerText = "€ 0.00";
                     document.getElementById("pagato").innerText = "€ 0.00";
                     document.getElementById("resto").innerText = "€ 0.00";
-                    document.getElementById("listaPiatti").innerHTML = '<div style="text-align:center; margin-top:80px; font-size: 1.5em; opacity:0.5; color: var(--text-color, #fff);">In attesa di articoli...</div>';
+                    document.getElementById("listaPiatti").innerHTML = '<div style="text-align:center; margin-top:100px; opacity:0.5; font-size: 1.5em;">In attesa di articoli...</div>';
                     return;
                 }
                 
@@ -215,8 +214,8 @@
                 document.getElementById("resto").innerText = "€ " + (data.resto || 0).toFixed(2);
                 
                 document.getElementById("listaPiatti").innerHTML = data.piatti.map(p => `
-                    <div class="row-piatto">
-                        <span><b style="color:var(--primary-color, #d32f2f);">${p.quantita}x</b> &nbsp; <span style="color:var(--text-color, #fff);">${p.nome}</span></span>
+                    <div class="riga-ordine">
+                        <span><b style="color:var(--primary-color);">${p.quantita}x</b> &nbsp; <span>${p.nome}</span></span>
                         <span>€ ${(p.prezzo * p.quantita).toFixed(2)}</span>
                     </div>
                 `).join("");
