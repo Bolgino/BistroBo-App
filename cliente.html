@@ -34,7 +34,7 @@
             margin: 0 auto; 
             width: 100%; 
             box-sizing: border-box;
-            min-height: 0; /* Fondamentale per far funzionare lo scroll interno */
+            min-height: 0; /* Permette lo scroll interno */
         }
 
         .topBar-cliente { 
@@ -62,13 +62,13 @@
             border-radius: 20px;
             background: rgba(255, 255, 255, 0.9);
             box-shadow: inset 0 2px 10px rgba(0,0,0,0.05);
-            min-height: 0; /* Permette al box di ridursi invece di espandersi */
+            min-height: 0; 
         }
 
-        /* Scrollbar (Slider) più visibile */
+        /* Scrollbar (Slider) personalizzato */
         .lista-piatti-scroll::-webkit-scrollbar { width: 12px; }
         .lista-piatti-scroll::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); border-radius: 10px; }
-        .lista-piatti-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 10px; border: 3px solid rgba(255,255,255,0.9); background-clip: content-box; }
+        .lista-piatti-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.3); border-radius: 10px; border: 3px solid rgba(255,255,255,0.9); background-clip: content-box; }
 
         .riga-ordine { 
             display: flex; 
@@ -83,7 +83,7 @@
             display: grid; 
             grid-template-columns: 1fr 1fr 1.5fr; 
             gap: 20px; 
-            flex-shrink: 0; /* Impedisce al footer di sparire */
+            flex-shrink: 0; 
         }
         .valore-tot { font-size: 4em; font-weight: 800; line-height: 1; }
         
@@ -112,7 +112,14 @@
             background: rgba(255,255,255,0.8);
             font-size: 1.1em;
             box-sizing: border-box;
-            font-family: inherit;
+        }
+
+        /* Toast Persistente */
+        .toast.persistent {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
         }
 
         #notification-container { position: fixed; top: 20px; right: 20px; z-index: 10000; }
@@ -154,7 +161,7 @@
         <div id="cassaDiv" class="center-screen" style="display:none;">
             <div class="access-content">
                 <h2 style="font-size:2.5em; font-weight:800;">Configura Monitor</h2>
-                <p>Seleziona una cassa attiva (online):</p>
+                <p>Seleziona una postazione attiva (online):</p>
                 <select id="selectCassa" class="input-access" style="cursor: pointer;"></select>
                 <button onclick="connettiCassa()" style="width: 100%; padding: 20px; font-size: 1.2em; border-radius: 15px;">AVVIA PROIEZIONE</button>
             </div>
@@ -197,6 +204,9 @@
         const auth = firebase.auth();
 
         let monitorAbilitato = true;
+        let onlineKnown = new Set();
+        let isFirstLoadCasse = true;
+        let utentiListener = null;
 
         function notify(msg, type = 'info') {
             const container = document.getElementById('notification-container');
@@ -208,10 +218,19 @@
             setTimeout(() => { n.style.opacity = '0'; setTimeout(() => n.remove(), 500); }, 3500);
         }
 
+        function showPersistentToast(msg, type = 'info') {
+            const container = document.getElementById('notification-container');
+            const n = document.createElement('div');
+            n.className = `toast ${type} persistent`;
+            n.style.opacity = "1";
+            n.innerHTML = `<span>${msg}</span><span onclick="this.parentElement.remove()" style="cursor:pointer; font-weight:800; padding:0 5px; margin-left:10px;">✕</span>`;
+            container.appendChild(n);
+        }
+
         db.ref("impostazioni/displayClienteAbilitato").on("value", snap => {
             monitorAbilitato = snap.val() ?? true;
             if (!monitorAbilitato) mostraSezione("disabledDiv");
-            else refreshStatus();
+            else refreshStatus(auth.currentUser);
         });
 
         db.ref("impostazioni/tema").on("value", snap => {
@@ -220,13 +239,41 @@
             document.getElementById("themeBackground").style.display = "block";
         });
 
-        function refreshStatus() {
+        function monitoraCasse() {
+            if (utentiListener) return;
+            utentiListener = db.ref("utenti").on("value", snap => {
+                const sel = document.getElementById("selectCassa");
+                if (!sel) return;
+                const currentSelection = sel.value;
+                sel.innerHTML = '<option value="">-- Seleziona Postazione --</option>';
+                
+                snap.forEach(u => {
+                    const d = u.val();
+                    const isOnline = d.status && d.status.state === 'online';
+                    if ((d.ruolo === 'cassa' || d.ruolo === 'admin') && d.approvato && isOnline) {
+                        let opt = document.createElement("option");
+                        opt.value = u.key; opt.textContent = d.username;
+                        sel.appendChild(opt);
+
+                        if (!onlineKnown.has(u.key)) {
+                            if (!isFirstLoadCasse) showPersistentToast(`La cassa "${d.username}" è ora ONLINE`, "info");
+                            onlineKnown.add(u.key);
+                        }
+                    } else {
+                        onlineKnown.delete(u.key);
+                    }
+                });
+                sel.value = currentSelection;
+                isFirstLoadCasse = false;
+            });
+        }
+
+        function refreshStatus(user) {
             if (!monitorAbilitato) return;
             if (sessionStorage.getItem("logout_manuale_cliente") === "true") {
                 mostraSezione("loginDiv");
                 return;
             }
-            const user = auth.currentUser;
             if (user) {
                 db.ref("utenti/" + user.uid).once("value", snap => {
                     const userData = snap.val();
@@ -236,7 +283,7 @@
                         if (cassaSalvata) avviaMonitor(cassaSalvata);
                         else {
                             mostraSezione("cassaDiv");
-                            caricaElencoCasse();
+                            monitoraCasse();
                         }
                     } else {
                         auth.signOut();
@@ -248,7 +295,7 @@
             }
         }
 
-        auth.onAuthStateChanged(() => refreshStatus());
+        auth.onAuthStateChanged(user => refreshStatus(user));
 
         function login() {
             const e = document.getElementById("email").value.trim();
@@ -256,25 +303,6 @@
             auth.signInWithEmailAndPassword(e, p).then(() => {
                 sessionStorage.removeItem("logout_manuale_cliente");
             }).catch(() => notify("Credenziali errate", "error"));
-        }
-
-        function caricaElencoCasse() {
-            db.ref("utenti").once("value", snap => {
-                const sel = document.getElementById("selectCassa");
-                sel.innerHTML = '<option value="">-- Seleziona Postazione --</option>';
-                snap.forEach(u => {
-                    const d = u.val();
-                    // Filtra solo utenti online, approvati e con ruolo cassa/admin
-                    const isOnline = d.status && d.status.state === 'online';
-                    if((d.ruolo === 'cassa' || d.ruolo === 'admin') && d.approvato && isOnline) {
-                        let opt = document.createElement("option");
-                        opt.value = u.key; 
-                        opt.textContent = d.username;
-                        sel.appendChild(opt);
-                    }
-                });
-                if(sel.options.length === 1) notify("Nessun cassiere online al momento", "warn");
-            });
         }
 
         function connettiCassa() {
@@ -322,7 +350,7 @@
             resetGrafica();
             document.getElementById("btnSwitch").style.display = "none";
             mostraSezione("cassaDiv");
-            caricaElencoCasse();
+            monitoraCasse();
         }
 
         function cambiaCassa() {
