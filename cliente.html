@@ -216,18 +216,15 @@
         let onlineKnown = new Set();
         let isFirstLoadCasse = true;
         let utentiListener = null;
-        const db = firebase.database();
-            const auth = firebase.auth();
-    
-            // AGGIUNGI QUESTE DUE FUNZIONI
-            function showLoader() {
-                const loader = document.getElementById("loader");
-                if (loader) loader.classList.remove("hidden");
-            }
-            function hideLoader() {
-                const loader = document.getElementById("loader");
-                if (loader) loader.classList.add("hidden");
-            }
+        // AGGIUNGI QUESTE DUE FUNZIONI
+        function showLoader() {
+            const loader = document.getElementById("loader");
+            if (loader) loader.classList.remove("hidden");
+        }
+        function hideLoader() {
+            const loader = document.getElementById("loader");
+            if (loader) loader.classList.add("hidden");
+        }            
         function notify(msg, type = 'info') {
             const container = document.getElementById('notification-container');
             const n = document.createElement('div');
