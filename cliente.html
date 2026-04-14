@@ -216,7 +216,18 @@
         let onlineKnown = new Set();
         let isFirstLoadCasse = true;
         let utentiListener = null;
-
+        const db = firebase.database();
+            const auth = firebase.auth();
+    
+            // AGGIUNGI QUESTE DUE FUNZIONI
+            function showLoader() {
+                const loader = document.getElementById("loader");
+                if (loader) loader.classList.remove("hidden");
+            }
+            function hideLoader() {
+                const loader = document.getElementById("loader");
+                if (loader) loader.classList.add("hidden");
+            }
         function notify(msg, type = 'info') {
             const container = document.getElementById('notification-container');
             const n = document.createElement('div');
@@ -279,7 +290,11 @@
 
         function refreshStatus(user) {
             if (!monitorAbilitato) return;
+            
+            showLoader(); // Mostra il loader mentre controlla lo stato
+            
             if (sessionStorage.getItem("logout_manuale_cliente") === "true") {
+                hideLoader();
                 mostraSezione("loginDiv");
                 return;
             }
@@ -289,18 +304,23 @@
                     if (user.email === "cliente@bistrobo.it" || (userData && userData.approvato)) {
                         document.getElementById("btnLogout").style.display = "block";
                         const cassaSalvata = localStorage.getItem("cassaMonitorata");
-                        if (cassaSalvata) avviaMonitor(cassaSalvata);
-                        else {
+                        if (cassaSalvata) {
+                            avviaMonitor(cassaSalvata);
+                            hideLoader();
+                        } else {
                             mostraSezione("cassaDiv");
                             monitoraCasse();
+                            hideLoader();
                         }
                     } else {
                         auth.signOut();
                         mostraSezione("loginDiv");
+                        hideLoader();
                     }
                 });
             } else {
                 mostraSezione("loginDiv");
+                hideLoader();
             }
         }
 
@@ -309,9 +329,20 @@
         function login() {
             const e = document.getElementById("email").value.trim();
             const p = document.getElementById("pass").value;
+            
+            if(!e || !p) {
+                return notify("Inserisci email e password", "warn");
+            }
+
+            showLoader(); // Mostra il loader quando premi il tasto
+            
             auth.signInWithEmailAndPassword(e, p).then(() => {
                 sessionStorage.removeItem("logout_manuale_cliente");
-            }).catch(() => notify("Credenziali errate", "error"));
+                refreshStatus(auth.currentUser); // Forza il refresh immediato senza aspettare il listener
+            }).catch(() => {
+                hideLoader(); // Nascondi il loader se c'è un errore
+                notify("Credenziali errate", "error");
+            });
         }
 
         function connettiCassa() {
