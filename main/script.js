@@ -1893,22 +1893,33 @@ document.getElementById("registraBtn").onclick = async () => {
     if(!email || !password){ notify("Compila tutti i campi", "warn"); return; }
 
     try{
-        const res = await auth.createUserWithEmailAndPassword(email,password);
+        // 1. Creiamo un'app Firebase secondaria al volo per non perdere la sessione Admin
+        const secondaryApp = firebase.initializeApp(firebaseConfig, "Secondary");
+        
+        // 2. Creiamo l'utente sull'app secondaria
+        const res = await secondaryApp.auth().createUserWithEmailAndPassword(email, password);
         await res.user.sendEmailVerification();
+        
+        // 3. Salviamo i dati sul Database usando la NOSTRA app principale (db) che è ancora loggata come Admin
         await db.ref("utenti/"+res.user.uid).set({
-    		username: email,
-    		ruolo: ruoloNuovo,
-    		approvato: true,
+            username: email,
+            ruolo: ruoloNuovo,
+            approvato: true,
             attivo: true   
         });
+        
+        // 4. Facciamo il logout dall'app secondaria e la distruggiamo per fare pulizia
+        await secondaryApp.auth().signOut();
+        await secondaryApp.delete();
+
         notify("Utente creato con successo e approvato automaticamente!", "info");
         document.getElementById("newUsername").value = "";
         document.getElementById("newPass").value = "";
         document.getElementById("newRole").value = "";
     } catch(err){
-        notify(err.message, "warn");
+        notify("Errore: " + err.message, "warn");
     }
-caricaUtenti();
+    caricaUtenti();
 };
 
 // -------------------- LOGOUT --------------------
