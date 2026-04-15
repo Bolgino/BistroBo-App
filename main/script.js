@@ -1579,6 +1579,7 @@ function mostraSchermata() {
 
     document.getElementById("loginWrapper").style.display = "none";
     document.getElementById("logoutDiv").classList.remove("hidden");
+    document.getElementById("simulatoreRuoliDiv").style.display = "none"; 
     
     initImpostazioniToggle();
 
@@ -1597,6 +1598,7 @@ function mostraSchermata() {
     } else if (ruolo === "admin") {
         if (!checkOnline(true)) return;
         window.isLoggedInAdmin = true;
+		document.getElementById("simulatoreRuoliDiv").style.display = "flex";
         window.isLoggedInCassa = false;
         if (typeof initPreordiniInterni === "function") initPreordiniInterni();
         document.getElementById("adminDiv").classList.remove("hidden");
@@ -1808,7 +1810,7 @@ window.simulaRuolo = function(ruoloScelto) {
     document.getElementById("cucinaDiv").classList.add("hidden");
     document.getElementById("bereDiv").classList.add("hidden");
     document.getElementById("snackDiv").classList.add("hidden");
-
+	document.getElementById("simulatoreRuoliDiv").style.display = "none";
     // Imposta il bottone di ritorno in rosso in alto a destra
     passaBtn.style.display = "inline-block";
     passaBtn.style.background = "#d32f2f"; 
@@ -1854,7 +1856,7 @@ function mostraAdminDaSimulazione() {
     ruolo = "admin";
     window.isLoggedInAdmin = true;
     window.isLoggedInCassa = false;
-
+	document.getElementById("simulatoreRuoliDiv").style.display = "flex";
     // Nascondi tutte le aree
     document.getElementById("cassaDiv").classList.add("hidden");
     document.getElementById("cucinaDiv").classList.add("hidden");
