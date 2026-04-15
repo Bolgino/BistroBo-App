@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BistroBo - Verifica il tuo Profilo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+        body { font-family: 'Poppins', sans-serif; }
+        .sandwich-bounce { animation: bounce 2s infinite; }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex items-center justify-center p-4">
+
+    <div class="bg-gray-800 p-8 rounded-3xl shadow-2xl max-w-md w-full text-center border-t-8 border-orange-500">
+        <div class="mb-6">
+            <div class="text-6xl sandwich-bounce mb-2">🥪</div>
+            <h1 class="text-3xl font-bold text-orange-500 tracking-tight">BistroBo</h1>
+            <p class="text-gray-400 text-sm uppercase tracking-widest">Controllo Qualità</p>
+        </div>
+
+        <div id="content-pre">
+            <h2 class="text-xl font-semibold mb-4 text-white">Il tuo profilo è in cottura!</h2>
+            <p class="text-gray-300 mb-8">
+                Per assicurarci che sia proprio tu, clicca il pulsante qui sotto. È l'ingrediente finale per attivare il tuo account.
+            </p>
+            
+            <button id="btnVerifica" class="bg-orange-600 hover:bg-orange-500 text-white font-bold py-4 px-8 rounded-2xl transition-all transform hover:scale-105 shadow-lg w-full mb-4">
+                👨‍🍳 Conferma la mia Email
+            </button>
+        </div>
+
+        <div id="status-container" class="hidden">
+            <div id="icon-status" class="text-5xl mb-4"></div>
+            <p id="messaggio" class="text-lg font-medium px-2"></p>
+        </div>
+        
+        <div class="mt-8 pt-6 border-t border-gray-700">
+            <a href="index.html" class="text-orange-400 hover:text-orange-300 font-semibold transition-colors flex items-center justify-center gap-2">
+                <span>←</span> Torna al Login di BistroBo
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // --- INSERISCI QUI LA TUA CONFIGURAZIONE FIREBASE ---
+        const firebaseConfig = {
+            apiKey: "LA_TUA_API_KEY",
+            authDomain: "tuo-progetto.firebaseapp.com",
+            databaseURL: "https://tuo-progetto.firebaseio.com",
+            projectId: "tuo-progetto",
+            storageBucket: "tuo-progetto.appspot.com",
+            messagingSenderId: "...",
+            appId: "..."
+        };
+        // ----------------------------------------------------
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const actionCode = urlParams.get('oobCode');
+
+        const btnVerifica = document.getElementById('btnVerifica');
+        const contentPre = document.getElementById('content-pre');
+        const statusContainer = document.getElementById('status-container');
+        const messaggio = document.getElementById('messaggio');
+        const iconStatus = document.getElementById('icon-status');
+
+        btnVerifica.addEventListener('click', async () => {
+            if(!actionCode) {
+                showStatus("❌", "Codice non trovato. Controlla il link nella mail.", "text-red-400");
+                return;
+            }
+
+            try {
+                btnVerifica.disabled = true;
+                btnVerifica.innerText = "Verifica in corso...";
+
+                // Applica il codice di verifica
+                await auth.applyActionCode(actionCode);
+                
+                showStatus("✅", "Ottimo Chef! Email verificata. Ora l'Admin può approvare il tuo profilo.", "text-green-400");
+
+            } catch (error) {
+                console.error(error);
+                showStatus("⚠️", "Questo link è scaduto o è già stato servito. Prova a fare il login!", "text-yellow-400");
+            }
+        });
+
+        function showStatus(icon, text, colorClass) {
+            contentPre.classList.add('hidden');
+            statusContainer.classList.remove('hidden');
+            iconStatus.innerText = icon;
+            messaggio.innerText = text;
+            messaggio.className = "text-lg font-medium " + colorClass;
+        }
+    </script>
+</body>
+</html>
