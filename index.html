@@ -347,6 +347,13 @@
 	<!-- ================= ADMIN ================= -->
 	<div id="adminDiv" class="hidden">
 		<h2>Admin</h2>
+		<div style="background: #e3f2fd; padding: 10px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #bbdefb; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+			<b style="color: #0d47a1;">Simula Ruolo:</b>
+			<button onclick="simulaRuolo('cassa')" class="tabBtn" style="background: white; border: 1px solid #90caf9;">Cassa</button>
+			<button onclick="simulaRuolo('cucina')" class="tabBtn" style="background: white; border: 1px solid #90caf9;">Cucina</button>
+			<button onclick="simulaRuolo('bere')" class="tabBtn" style="background: white; border: 1px solid #90caf9;">Bere</button>
+			<button onclick="simulaRuolo('snack')" class="tabBtn" style="background: white; border: 1px solid #90caf9;">Snack</button>
+		</div>
 		<div>
 			<button class="tabBtn" data-tab="comandeTab">Comande</button>
 			<button class="tabBtn" data-tab="preordiniAdminTab">Preordini</button>
@@ -461,6 +468,13 @@
 		<!-- Impostazioni -->
 		<div id="impostazioniTab" class="tabContent">
 			<h3>Impostazioni</h3>
+			<div class="settingItem" style="border-left: 4px solid #f44336; background: #ffebee;">
+				<div class="settingLabel">
+					<span style="color: #d32f2f; font-weight: bold;">Modalità Manutenzione 🛠️</span>
+					<small>Blocca l'accesso al personale (tranne admin) e chiude la pagina pubblica ai clienti.</small>
+				</div>
+				<button id="toggleManutenzioneBtn" class="toggleBtn">OFF</button>
+			</div>
 			<div class="settingItem">
 				<div class="settingLabel">
 					<span>Nome Stand</span>
