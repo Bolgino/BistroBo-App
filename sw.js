@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bistrobo-cache-v5';
+const CACHE_NAME = 'bistrobo-cache-v5'; // <-- Versione aggiornata
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -10,7 +10,6 @@ const ASSETS_TO_CACHE = [
   './favicon.ico',
   './icon-192.png',
   './icon-512.png',
-  // Aggiungi qui anche le immagini delle monete/banconote se vuoi che carichino all'istante
   './img/banconota50.png',
   './img/banconota20.png',
   './img/banconota10.png',
@@ -18,6 +17,7 @@ const ASSETS_TO_CACHE = [
 ];
 
 self.addEventListener('install', (event) => {
+  self.skipWaiting(); // Forza l'installazione immediata del nuovo Service Worker
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(ASSETS_TO_CACHE);
@@ -25,16 +25,32 @@ self.addEventListener('install', (event) => {
   );
 });
 
+// NUOVO: Elimina le versioni vecchie della cache
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          if (cacheName !== CACHE_NAME) {
+            console.log('Eliminazione vecchia cache:', cacheName);
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    }).then(() => self.clients.claim())
+  );
+});
+
 self.addEventListener('fetch', (event) => {
-  // Ignora le richieste al database di Firebase per non bloccare i dati in tempo reale
+  // Ignora le richieste al database di Firebase
   if (event.request.url.includes('firebasedatabase.app')) {
     return;
   }
 
-  // Cache-First strategy per i file statici
+  // NUOVO: Strategia "Network-First" (Rete prima, Cache come fallback)
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      return cachedResponse || fetch(event.request);
+    fetch(event.request).catch(() => {
+      return caches.match(event.request);
     })
   );
 });
