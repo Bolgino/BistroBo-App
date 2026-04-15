@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bistrobo-cache-v5'; // <-- Versione aggiornata
+const CACHE_NAME = 'bistrobo-cache-v6'; 
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
