@@ -1677,38 +1677,28 @@ function ruoloCapitalizzato() {
   if (!ruolo) return "";
   return ruolo.charAt(0).toUpperCase() + ruolo.slice(1);
 }
+
 function initChat() {
-  let chatContainer, chatInput, chatSendBtn;
+  // 1. SPEGNE LA CHAT VECCHIA -> Evita che il sistema "si inchiodi"
+  db.ref("chat/messaggi").off("value");
 
-  // 🔹 Caso normale: usa i div del ruolo corrente
-  chatContainer = document.getElementById(`chatContainer${ruoloCapitalizzato()}`);
-  chatInput = document.getElementById(`chatInput${ruoloCapitalizzato()}`);
-  chatSendBtn = document.getElementById(`chatSend${ruoloCapitalizzato()}Btn`);
+  // 2. TROVA I DIV IN MODO DINAMICO -> Funziona in Cucina, Bere, Snack, ecc. (Senza usare adminInCassa!)
+  const ruoloCap = ruoloCapitalizzato();
+  const chatContainer = document.getElementById(`chatContainer${ruoloCap}`);
+  const chatInput = document.getElementById(`chatInput${ruoloCap}`);
+  const chatSendBtn = document.getElementById(`chatSend${ruoloCap}Btn`);
 
-  // 🔹 Caso speciale: Admin dentro la sezione Cassa
-  const adminInCassa = 
-      ruolo === "admin" && 
-      !document.getElementById("adminDiv").classList.contains("hidden") === false &&
-      !document.getElementById("cassaDiv").classList.contains("hidden");
-
-  if (adminInCassa) {
-    chatContainer = document.getElementById("chatContainerCassa");
-    chatInput = document.getElementById("chatInputCassa");
-    chatSendBtn = document.getElementById("chatSendCassaBtn");
-  }
-
+  // Se i div non esistono a schermo, fermati senza dare errori
   if (!chatContainer || !chatInput || !chatSendBtn) return;
 
-
   const chatRef = db.ref("chat/messaggi");
-    // Recupera dal localStorage i messaggi già notificati per l'utente corrente
-    const notificati = new Set(JSON.parse(localStorage.getItem("chatNotificati_" + uid) || "[]"));
+  const notificati = new Set(JSON.parse(localStorage.getItem("chatNotificati_" + uid) || "[]"));
 
-
-  // 🔹 Mostra e aggiorna sempre gli ultimi 10 messaggi
+  // 3. CARICA MESSAGGI
   chatRef.limitToLast(10).on("value", snap => {
     const data = snap.val() || {};
     chatContainer.innerHTML = ""; // pulisci tutto
+    
     Object.values(data)
       .sort((a, b) => a.timestamp - b.timestamp)
       .forEach(msg => {
@@ -1726,30 +1716,26 @@ function initChat() {
         div.appendChild(text);
         chatContainer.appendChild(div);
       });
-        // 🔔 Notifica tutti i messaggi nuovi che non sono miei e non ancora notificati
-        Object.values(data)
-        .forEach(msg => {
-            const msgKey = `${msg.uid}_${msg.timestamp}`;
-            if (msg.uid !== uid && !notificati.has(msgKey)) {
 
-                // Chat disabilitata → ignora tutto
-                if (!window.settings.chatAbilitata) return;
+    // 4. NOTIFICHE
+    Object.values(data).forEach(msg => {
+        const msgKey = `${msg.uid}_${msg.timestamp}`;
+        if (msg.uid !== uid && !notificati.has(msgKey)) {
+            if (!window.settings.chatAbilitata) return;
 
-                if (window.settings.suonoChat) riproduciSuonoNotifica();
-                notify(`💬 Nuovo messaggio da: ${msg.email} (${msg.ruolo})`, "info");
+            if (window.settings.suonoChat) riproduciSuonoNotifica();
+            notify(`💬 Nuovo messaggio da: ${msg.email} (${msg.ruolo})`, "info");
 
-                notificati.add(msgKey); // ✅ segna come notificato
-                localStorage.setItem("chatNotificati_" + uid, JSON.stringify([...notificati])); // salva persistente
-
-            }
-        });
+            notificati.add(msgKey); 
+            localStorage.setItem("chatNotificati_" + uid, JSON.stringify([...notificati])); 
+        }
+    });
     chatContainer.scrollTop = chatContainer.scrollHeight;
   });
 
-  // 🔹 Invio messaggio
+  // 5. INVIO MESSAGGIO CON RUOLO REALE
+  chatSendBtn.onclick = null; // Pulisce click precedenti
   chatSendBtn.onclick = async () => {
-
-    // 🔹 BLOCCO CHAT DISABILITATA
     if (!window.settings.chatAbilitata) {
         notify("💬 La chat è disabilitata dall'amministratore.", "warn");
         return;
@@ -1757,45 +1743,37 @@ function initChat() {
     const testo = chatInput.value.trim();
     if (!testo) return;
 
+    // Questa chiamata assicura che tu sia sempre "admin" se il tuo account è admin
     const userSnap = await db.ref("utenti/" + uid).once("value");
     const user = userSnap.val() || {};
 
     const newMsg = {
       testo,
-      ruolo: user.ruolo || ruolo || "sconosciuto",
+      ruolo: user.ruolo || ruolo || "sconosciuto", 
       email: user.username || "anonimo",
       uid: uid,
       timestamp: Date.now()
     };
 
-    // Invia messaggio
     await chatRef.push(newMsg);
     chatInput.value = "";
 
-    // 🔹 Subito dopo l’invio, elimina i messaggi più vecchi
+    // PULIZIA VECCHI MESSAGGI DAL DATABASE
     const snap = await chatRef.once("value");
     const data = snap.val() || {};
     const keys = Object.keys(data);
     if (keys.length > 10) {
-    const toDelete = keys
-        .sort((a, b) => data[a].timestamp - data[b].timestamp)
-        .slice(0, keys.length - 10);
+      const toDelete = keys
+          .sort((a, b) => data[a].timestamp - data[b].timestamp)
+          .slice(0, keys.length - 10);
 
-    toDelete.forEach(k => {
-        chatRef.child(k).remove(); // elimina dal DB
-
-        // 🔹 rimuovi dal Set e localStorage
-        const msg = data[k];
-        if (msg) {
-        const msgKey = `${msg.uid}_${msg.timestamp}`;
-        notificati.delete(msgKey);
-        }
-    });
-
-    // 🔹 aggiorna localStorage
-    localStorage.setItem("chatNotificati_" + uid, JSON.stringify([...notificati]));
+      toDelete.forEach(k => {
+          chatRef.child(k).remove();
+          const msg = data[k];
+          if (msg) notificati.delete(`${msg.uid}_${msg.timestamp}`);
+      });
+      localStorage.setItem("chatNotificati_" + uid, JSON.stringify([...notificati]));
     }
-
   };
 }
 // --- SIMULAZIONE RUOLI DA ADMIN ---
@@ -1811,18 +1789,20 @@ window.simulaRuolo = function(ruoloScelto) {
     document.getElementById("bereDiv").classList.add("hidden");
     document.getElementById("snackDiv").classList.add("hidden");
 	document.getElementById("simulatoreRuoliDiv").style.display = "none";
-    // Imposta il bottone di ritorno in rosso in alto a destra
+    
+    // Imposta il bottone di ritorno
     passaBtn.style.display = "inline-block";
     passaBtn.style.background = "#d32f2f"; 
     passaBtn.style.color = "white";
     passaBtn.innerText = "🔙 Torna ad Admin";
     passaBtn.onclick = mostraAdminDaSimulazione;
 
-    // Spegni i listener di Admin per non sovraccaricare
+    // Spegni i listener di Admin inclusa la chat precedente
     db.ref("ingredienti").off();
     db.ref("comande").off();
     db.ref("menu").off();
     db.ref("utenti").off();
+    db.ref("chat/messaggi").off("value");
 
     // Override temporaneo delle variabili globali
     ruolo = ruoloScelto; 
@@ -1834,7 +1814,6 @@ window.simulaRuolo = function(ruoloScelto) {
         caricaMenuCassa();
         caricaComandeCassa();
         initIngredientiCriticiListeners(true);
-        initChat();
         initTickNoteDestinazioni();
         document.querySelector("#cassaDiv .tabBtn:first-child").click();
     } else {
@@ -1847,6 +1826,9 @@ window.simulaRuolo = function(ruoloScelto) {
         }
         initRuoloTab(ruoloScelto);
     }
+
+    // INIZIALIZZA LA CHAT NELLA SCHERMATA SIMULATA
+    initChat();
 };
 
 function mostraAdminDaSimulazione() {
@@ -1857,6 +1839,7 @@ function mostraAdminDaSimulazione() {
     window.isLoggedInAdmin = true;
     window.isLoggedInCassa = false;
 	document.getElementById("simulatoreRuoliDiv").style.display = "flex";
+    
     // Nascondi tutte le aree
     document.getElementById("cassaDiv").classList.add("hidden");
     document.getElementById("cucinaDiv").classList.add("hidden");
@@ -1873,7 +1856,7 @@ function mostraAdminDaSimulazione() {
     db.ref("comande").off();
     db.ref("ingredienti").off();
     db.ref("menu").off();
-    db.ref("chat/messaggi").off(); 
+    db.ref("chat/messaggi").off("value"); // Chiudi la chat della simulazione
 
     // Ricarica dati Admin
     caricaIngredienti();
@@ -1881,6 +1864,9 @@ function mostraAdminDaSimulazione() {
     caricaStatistiche();
     caricaMenuAdmin();
     caricaUtenti();
+
+    // RIATTIVA LA CHAT ADMIN
+    initChat();
     
     document.querySelector("#adminDiv .tabBtn:first-child").click();
 }
