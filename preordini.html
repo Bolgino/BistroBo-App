@@ -22,6 +22,37 @@
 
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
+    // --- BLOCCO MANUTENZIONE SITO ---
+  const divManutenzione = document.createElement("div");
+  divManutenzione.id = "schermataManutenzione";
+  divManutenzione.style.cssText = "display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; z-index: 99999; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px;";
+  divManutenzione.innerHTML = `
+      <h1 style="font-size: 4em; margin-bottom: 10px;">🛠️</h1>
+      <h2 style="color: #d32f2f; font-family: sans-serif;">Sito in Manutenzione</h2>
+      <p style="font-size: 1.2em; color: #555; font-family: sans-serif;">Stiamo lavorando per migliorare l'App.<br>Il menù e le ordinazioni non sono temporaneamente disponibili.<br>Riprova più tardi!</p>
+  `;
+  document.addEventListener("DOMContentLoaded", () => {
+      document.body.appendChild(divManutenzione);
+  });
+  
+  // Ascolta in tempo reale se il sito va in manutenzione
+  db.ref("impostazioni/manutenzione").on("value", snap => {
+      const manutenzioneAttiva = snap.exists() && snap.val() === true;
+      
+      if (manutenzioneAttiva) {
+          // Nasconde il resto della pagina e mostra l'avviso
+          Array.from(document.body.children).forEach(child => {
+              if (child.id !== "schermataManutenzione") child.style.display = "none";
+          });
+          divManutenzione.style.display = "flex";
+      } else {
+          // Toglie la manutenzione
+          divManutenzione.style.display = "none";
+          if (divManutenzione.dataset.wasActive === "true") location.reload();
+      }
+      divManutenzione.dataset.wasActive = manutenzioneAttiva;
+  });
+  // ---------------------------------
   </script>
 
   <!-- Script preordini -->
