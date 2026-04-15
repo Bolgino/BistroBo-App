@@ -323,9 +323,19 @@ document.getElementById("regBtn").onclick = async () => {
 };
 
 // -------------------- IMPOSTAZIONI TOGGLE SICURE --------------------
+// -------------------- IMPOSTAZIONI TOGGLE SICURE --------------------
 function initImpostazioniToggle() {
-    // APPROVAZIONE AUTOMATICA
+    // MANUTENZIONE
     if (!checkOnline(true)) return;
+    const toggleManutenzioneBtn = document.getElementById("toggleManutenzioneBtn");
+    const manutenzioneRef = db.ref("impostazioni/manutenzione");
+    if (toggleManutenzioneBtn) {
+        initToggle(toggleManutenzioneBtn, manutenzioneRef, {on: "ATTIVA ⛔", off: "OFF"}, false, val => {
+            window.settings.manutenzione = val;
+        });
+    }
+
+    // APPROVAZIONE AUTOMATICA
     const toggleApprovazioneBtn = document.getElementById("toggleApprovazioneBtn");
     const approvazioneRef = db.ref("impostazioni/approvazioneAutomatica");
 
@@ -1157,6 +1167,16 @@ document.getElementById("loginBtn").addEventListener("click", async () => {
             return;
         }
 
+        // NUOVO: CONTROLLO MANUTENZIONE
+        const snapManutenzione = await db.ref("impostazioni/manutenzione").once("value");
+        const manutenzioneAttiva = snapManutenzione.exists() && snapManutenzione.val() === true;
+
+        if (manutenzioneAttiva && userData.ruolo !== "admin") {
+            notify("🛠️ Il sistema è attualmente in MANUTENZIONE. L'accesso è consentito solo agli amministratori.", "error");
+            await auth.signOut();
+            return;
+        }
+
         // se tutto ok -> login completato
         ruolo = userData.ruolo;
         mostraSchermata();
@@ -1588,8 +1608,7 @@ function mostraSchermata() {
         document.getElementById("comandeTab").classList.add("active");
 
         const passaBtn = document.getElementById("passaACassaBtn");
-        passaBtn.style.display = "inline-block";
-        passaBtn.onclick = mostraCassaDaAdmin;
+        passaBtn.style.display = "none"; // Nascosto di default, si mostra solo in simulazione
 
         let utentiVisti = {};
         db.ref("utenti").once("value").then(snap => {
@@ -1777,53 +1796,91 @@ function initChat() {
 
   };
 }
-// --- PULSANTE PASSA A CASSA / TORNA AD ADMIN ---
+// --- SIMULAZIONE RUOLI DA ADMIN ---
 const passaBtn = document.getElementById("passaACassaBtn");
-function mostraCassaDaAdmin() {
-    if (!checkOnline(true)) return;
-    document.getElementById("adminDiv").classList.add("hidden");
-    document.getElementById("cassaDiv").classList.remove("hidden");
 
-    // Rimuove listener attivi di admin prima di passare a cassa
+window.simulaRuolo = function(ruoloScelto) {
+    if (!checkOnline(true)) return;
+
+    // Nascondi tutto
+    document.getElementById("adminDiv").classList.add("hidden");
+    document.getElementById("cassaDiv").classList.add("hidden");
+    document.getElementById("cucinaDiv").classList.add("hidden");
+    document.getElementById("bereDiv").classList.add("hidden");
+    document.getElementById("snackDiv").classList.add("hidden");
+
+    // Imposta il bottone di ritorno in rosso in alto a destra
+    passaBtn.style.display = "inline-block";
+    passaBtn.style.background = "#d32f2f"; 
+    passaBtn.style.color = "white";
+    passaBtn.innerText = "🔙 Torna ad Admin";
+    passaBtn.onclick = mostraAdminDaSimulazione;
+
+    // Spegni i listener di Admin per non sovraccaricare
     db.ref("ingredienti").off();
     db.ref("comande").off();
     db.ref("menu").off();
-    db.ref("utenti").off();    
+    db.ref("utenti").off();
 
-    // Carica funzioni cassa anche per admin
-    caricaMenuCassa();
-    caricaComandeCassa();
-    initIngredientiCriticiListeners(true);
-    initChat();
-    initTickNoteDestinazioni(); 
-    // forza l'inizializzazione
-    // Cambia testo e click del pulsante
-    passaBtn.innerText = "Torna ad Admin";
-    passaBtn.onclick = mostraAdminDaCassa;
-    document.querySelector("#cassaDiv .tabBtn:first-child").click();
-}
-function mostraAdminDaCassa() {
+    // Override temporaneo delle variabili globali
+    ruolo = ruoloScelto; 
+    window.isLoggedInAdmin = false; 
+
+    if (ruoloScelto === "cassa") {
+        window.isLoggedInCassa = true;
+        document.getElementById("cassaDiv").classList.remove("hidden");
+        caricaMenuCassa();
+        caricaComandeCassa();
+        initIngredientiCriticiListeners(true);
+        initChat();
+        initTickNoteDestinazioni();
+        document.querySelector("#cassaDiv .tabBtn:first-child").click();
+    } else {
+        window.isLoggedInCassa = false;
+        // Se snack è disattivato globalmente, blocca la simulazione
+        if (ruoloScelto === "snack" && !window.settings.snackAbilitato) {
+            notify("⚠️ Il profilo Snack è disattivato nelle impostazioni globali.", "warn");
+            mostraAdminDaSimulazione();
+            return;
+        }
+        initRuoloTab(ruoloScelto);
+    }
+};
+
+function mostraAdminDaSimulazione() {
     if (!checkOnline(true)) return;
+    
+    // Ripristina variabili globali
+    ruolo = "admin";
     window.isLoggedInAdmin = true;
     window.isLoggedInCassa = false;
-     document.getElementById("cassaDiv").classList.add("hidden");
-     document.getElementById("adminDiv").classList.remove("hidden");
 
-     // Rimuove TUTTI i listener realtime non necessari
-     db.ref("ingredienti").off();
-     db.ref("comande").off();
-     db.ref("menu").off();
-     db.ref("utenti").off();
+    // Nascondi tutte le aree
+    document.getElementById("cassaDiv").classList.add("hidden");
+    document.getElementById("cucinaDiv").classList.add("hidden");
+    document.getElementById("bereDiv").classList.add("hidden");
+    document.getElementById("snackDiv").classList.add("hidden");
 
-     caricaIngredienti();
-     caricaGestioneComandeAdmin()
-     caricaStatistiche();
-     caricaMenuAdmin();
-     caricaUtenti();
-     // Ripristina pulsante per tornare a cassa 
-     passaBtn.innerText = "Passa a Cassa";
-     passaBtn.onclick = mostraCassaDaAdmin;
-     document.querySelector("#adminDiv .tabBtn:first-child").click();
+    // Mostra Admin e nascondi il bottone di ritorno
+    document.getElementById("adminDiv").classList.remove("hidden");
+    passaBtn.style.display = "none";
+    passaBtn.style.background = ""; // reset
+    passaBtn.style.color = ""; // reset
+
+    // Pulisci tutti i listener delle simulazioni
+    db.ref("comande").off();
+    db.ref("ingredienti").off();
+    db.ref("menu").off();
+    db.ref("chat/messaggi").off(); 
+
+    // Ricarica dati Admin
+    caricaIngredienti();
+    caricaGestioneComandeAdmin();
+    caricaStatistiche();
+    caricaMenuAdmin();
+    caricaUtenti();
+    
+    document.querySelector("#adminDiv .tabBtn:first-child").click();
 }
 // REGISTRAZIONE utenti da admin
 document.getElementById("registraBtn").onclick = async () => {
