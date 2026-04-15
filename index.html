@@ -475,13 +475,6 @@
 		<!-- Impostazioni -->
 		<div id="impostazioniTab" class="tabContent">
 			<h3>Impostazioni</h3>
-			<div class="settingItem" style="border-left: 4px solid #f44336; background: #ffebee;">
-				<div class="settingLabel">
-					<span style="color: #d32f2f; font-weight: bold;">Modalità Manutenzione 🛠️</span>
-					<small>Blocca l'accesso al personale (tranne admin) e chiude la pagina pubblica ai clienti.</small>
-				</div>
-				<button id="toggleManutenzioneBtn" class="toggleBtn">OFF</button>
-			</div>
 			<div class="settingItem">
 				<div class="settingLabel">
 					<span>Nome Stand</span>
@@ -653,7 +646,14 @@
 					<input type="file" id="restoreDbFile" style="display:none;">
 				</div>
 			</div>
-
+			<div class="settingItem" style="border-left: 4px solid #f44336; background: #ffebee;">
+				<div class="settingLabel">
+					<span style="color: #d32f2f; font-weight: bold;">Modalità Manutenzione 🛠️</span>
+					<small>Blocca l'accesso al personale (tranne admin) e chiude la pagina pubblica ai clienti.</small>
+				</div>
+				<button id="toggleManutenzioneBtn" class="toggleBtn">OFF</button>
+			</div>
+			
 			<div class="settingItem">
 				<div class="settingLabel">
 					<span>Cancella comande inserite</span>
@@ -661,7 +661,7 @@
 				</div>
 				<button id="cancellaComandeBtn" class="toggleBtn">ELIMINA</button>
 			</div>
-
+			
 
 		</div>
 	</div>
