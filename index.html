@@ -65,12 +65,26 @@
 	</div>
 
 	<!-- ================= LOGOUT ================= -->
-	<div id="logoutDiv" class="hidden">
-		<button id="passaACassaBtn" style="display:none; margin-left:10px;">Passa a Cassa</button>
-		<button id="logoutBtn">Logout</button>
+	<div id="logoutDiv" class="hidden" style="padding-bottom: 10px;">
+		<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+			
+			<div id="simulatoreRuoliDiv" style="display: none; align-items: center; flex-wrap: wrap; background: rgba(255,255,255,0.2); padding: 5px 10px; border-radius: 6px; border: 1px solid rgba(0,0,0,0.1);">
+				<b style="font-size: 0.9em; margin-right: 8px;">Simula:</b>
+				<button onclick="simulaRuolo('cassa')" style="padding: 4px 8px; font-size: 0.85em; margin-right: 4px;">Cassa</button>
+				<button onclick="simulaRuolo('cucina')" style="padding: 4px 8px; font-size: 0.85em; margin-right: 4px;">Cucina</button>
+				<button onclick="simulaRuolo('bere')" style="padding: 4px 8px; font-size: 0.85em; margin-right: 4px;">Bere</button>
+				<button onclick="simulaRuolo('snack')" style="padding: 4px 8px; font-size: 0.85em;">Snack</button>
+			</div>
+
+			<div style="display: flex; gap: 10px; align-items: center; justify-content: flex-end; flex: 1;">
+				<button id="passaACassaBtn" style="display:none;"></button>
+				<button id="logoutBtn">Logout</button>
+			</div>
+		</div>
+
 		<div id="orologioDiv" 
 			style="text-align:right; 
-					margin-top:10px;
+					margin-top:8px;
 					font-weight:bold; 
 					font-size:1.3em; 
 					color:#000000;">
@@ -347,13 +361,6 @@
 	<!-- ================= ADMIN ================= -->
 	<div id="adminDiv" class="hidden">
 		<h2>Admin</h2>
-		<div style="background: #e3f2fd; padding: 10px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #bbdefb; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-			<b style="color: #0d47a1;">Simula Ruolo:</b>
-			<button onclick="simulaRuolo('cassa')" class="tabBtn" style="background: white; border: 1px solid #90caf9;">Cassa</button>
-			<button onclick="simulaRuolo('cucina')" class="tabBtn" style="background: white; border: 1px solid #90caf9;">Cucina</button>
-			<button onclick="simulaRuolo('bere')" class="tabBtn" style="background: white; border: 1px solid #90caf9;">Bere</button>
-			<button onclick="simulaRuolo('snack')" class="tabBtn" style="background: white; border: 1px solid #90caf9;">Snack</button>
-		</div>
 		<div>
 			<button class="tabBtn" data-tab="comandeTab">Comande</button>
 			<button class="tabBtn" data-tab="preordiniAdminTab">Preordini</button>
