@@ -280,9 +280,10 @@ document.getElementById("regBtn").onclick = async () => {
         // crea account Firebase
         const res = await auth.createUserWithEmailAndPassword(email, password);
 		        // Definiamo dove devono atterrare gli utenti
+		// Definiamo dove devono atterrare gli utenti
 		const actionCodeSettings = {
-		    url: 'https://bolgino.github.io/BistroBo-App/verifica.html',
-		    handleCodeInApp: false
+			url: 'https://bolgino.github.io/BistroBo-App/verifica.html',
+			handleCodeInApp: true // <-- CAMBIATO IN TRUE! Fondamentale!
 		};
 		
 		// Inviamo la mail passando le impostazioni
