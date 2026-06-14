@@ -121,7 +121,7 @@ input:focus, select:focus {
     justify-content: center;
     min-height: 80vh;
 }
-#loginDiv, #registerDiv {
+#loginDiv, #registerDiv, #forgotPasswordDiv {
     position: relative;
     max-width: 400px;
     margin: 0 auto;
@@ -130,7 +130,8 @@ input:focus, select:focus {
     border-radius: 15px;
     box-shadow: 0 8px 20px rgba(0,0,0,0.15);
 }
-#loginDiv button, #registerDiv button {
+
+#loginDiv button, #registerDiv button, #forgotPasswordDiv button {
     color: #1b3a2d; /* verde scuro testo */
     border-radius: 10px;
     border: none;
@@ -140,7 +141,8 @@ input:focus, select:focus {
     font-weight: 600;
     transition: 0.3s;
 }
-#loginDiv button:hover, #registerDiv button:hover { 
+
+#loginDiv button:hover, #registerDiv button:hover, #forgotPasswordDiv button:hover { 
     opacity: 0.9; 
 }
 
