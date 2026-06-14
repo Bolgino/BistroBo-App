@@ -280,16 +280,8 @@ document.getElementById("regBtn").onclick = async () => {
         // 1. Crea account Firebase
         const res = await auth.createUserWithEmailAndPassword(email, password);
 		
-        // 2. Diciamo a Firebase dove deve comparire il tasto "Continua"
-        const actionCodeSettings = {
-            url: 'https://bolgino.github.io/BistroBo-App/index.html', // La tua pagina di login
-            handleCodeInApp: false // IMPORTANTE: fa fare la verifica alla pagina grigia di Firebase
-        };
-		
-        // 3. Inviamo la mail
-        await res.user.sendEmailVerification(actionCodeSettings);
-
         const ruoloUtente = approvAuto ? regRoleSelect.value : "utente";
+        
         // Se snack è selezionato ma disattivato, correggi in "utente"
         if (ruoloUtente === "snack") {
             const snapSnack = await db.ref("impostazioni/snackAbilitato").once("value");
@@ -300,13 +292,23 @@ document.getElementById("regBtn").onclick = async () => {
             }
         }
 
-
-        // salva utente su DB
+        // 2. Salva utente su DB includendo "email_verificata: false"
         await db.ref("utenti/" + res.user.uid).set({
             username: email,
             ruolo: ruoloUtente,
             approvato: approvAuto,
-            attivo: true
+            attivo: true,
+            email_verificata: false // <--- NUOVO CAMPO
+        });
+
+        // 3. Invia l'email personalizzata tramite EmailJS
+        const linkMagico = `https://bolgino.github.io/BistroBo-App/verifica.html?uid=${res.user.uid}`;
+        
+        emailjs.send("service_6fay1q3", "template_45c9nal", {
+            to_email: email,
+            link_verifica: linkMagico
+        }).catch((err) => {
+            console.error("Errore invio EmailJS:", err);
         });
 
         // notifiche
@@ -1145,13 +1147,6 @@ document.getElementById("loginBtn").addEventListener("click", async () => {
         const res = await auth.signInWithEmailAndPassword(email, password);
         uid = res.user.uid;
 
-        // controllo email verificata
-        if (!res.user.emailVerified) {
-            notify("📧 Devi prima verificare la tua email.\n👉 Controlla anche nella cartella SPAM.", "warn");
-            await auth.signOut();
-            return;
-        }
-
         // controllo esistenza dati utente in DB
         const snap = await db.ref("utenti/" + uid).once("value");
         if (!snap.exists()) {
@@ -1161,6 +1156,13 @@ document.getElementById("loginBtn").addEventListener("click", async () => {
         }
 
         const userData = snap.val();
+
+        // NUOVO CONTROLLO: Leggiamo la verifica dal nostro Database
+        if (userData.email_verificata === false) {
+            notify("📧 Devi prima verificare la tua email.\n👉 Clicca sul link che ti abbiamo inviato per email.", "warn");
+            await auth.signOut();
+            return;
+        }
         if (userData.attivo === false) {
             notify("❌ Il tuo account è temporaneamente disattivato.", "error");
             await auth.signOut();
@@ -1892,14 +1894,15 @@ document.getElementById("registraBtn").onclick = async () => {
         
         // 2. Creiamo l'utente sull'app secondaria
         const res = await secondaryApp.auth().createUserWithEmailAndPassword(email, password);
-        await res.user.sendEmailVerification();
+        // NIENTE INVIO EMAIL
         
-        // 3. Salviamo i dati sul Database usando la NOSTRA app principale (db) che è ancora loggata come Admin
+        // 3. Salviamo i dati sul Database 
         await db.ref("utenti/"+res.user.uid).set({
             username: email,
             ruolo: ruoloNuovo,
             approvato: true,
-            attivo: true   
+            attivo: true,
+            email_verificata: true // <--- Essendo creato dall'admin, è già verificato!
         });
         
         // 4. Facciamo il logout dall'app secondaria e la distruggiamo per fare pulizia
