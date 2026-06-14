@@ -197,7 +197,6 @@ function abilitaIncrementoDinamico(input) {
 // --- RECUPERO PASSWORD (CON GRAFICA BISTROBO) ---
 const forgotPasswordBtn = document.getElementById("forgotPasswordBtn");
 const forgotPasswordDiv = document.getElementById("forgotPasswordDiv");
-const loginDiv = document.getElementById("loginDiv");
 const tornaLoginDaResetBtn = document.getElementById("tornaLoginDaResetBtn");
 const sendResetBtn = document.getElementById("sendResetBtn");
 const forgotEmail = document.getElementById("forgotEmail");
