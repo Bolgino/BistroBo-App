@@ -226,46 +226,47 @@ if (tornaLoginDaResetBtn) {
     });
 }
 
-// 3. Invia la mail
-if (sendResetBtn) {
-    sendResetBtn.addEventListener("click", async () => {
-        const emailValue = forgotEmail.value.trim();
-        
-        if (!emailValue) {
-            forgotMsg.style.color = "red";
-            forgotMsg.innerText = "❌ Inserisci un'email valida.";
-            return;
-        }
-
-        try {
-            sendResetBtn.disabled = true;
-            sendResetBtn.innerText = "Invio in corso...";
-            
-            // Invio mail nativa Firebase
-            await auth.sendPasswordResetEmail(emailValue);
-            
-            forgotMsg.style.color = "green";
-            forgotMsg.innerHTML = "✅ Email inviata con successo!<br><span style='font-size:0.85em; color:gray;'>Controlla la posta (anche nello Spam).</span>";
-            
-            sendResetBtn.disabled = false;
-            sendResetBtn.innerText = "Invia Email";
-            
-        } catch (error) {
-            console.error("Errore reset password:", error);
-            forgotMsg.style.color = "red";
-            
-            if (error.code === 'auth/user-not-found') {
-                forgotMsg.innerText = "❌ Nessun account trovato con questa email.";
-            } else if (error.code === 'auth/invalid-email') {
-                forgotMsg.innerText = "❌ Formato email non valido.";
-            } else {
-                forgotMsg.innerText = "❌ Errore: " + error.message;
-            }
-            
-            sendResetBtn.disabled = false;
-            sendResetBtn.innerText = "Invia Email";
-        }
-    });
+	// 3. Invia la mail
+	if (sendResetBtn) {
+	    sendResetBtn.addEventListener("click", async () => {
+	        const emailValue = forgotEmail.value.trim();
+	        
+	        if (!emailValue) {
+	            forgotMsg.className = "mt-4 text-base font-medium text-red-400";
+	            forgotMsg.innerText = "❌ Inserisci un'email valida.";
+	            return;
+	        }
+	
+	        try {
+	            sendResetBtn.disabled = true;
+	            sendResetBtn.innerText = "Invio in corso...";
+	            
+	            // Invio mail nativa Firebase
+	            await auth.sendPasswordResetEmail(emailValue);
+	            
+	            forgotMsg.className = "mt-4 text-base font-medium text-green-400";
+	            forgotMsg.innerHTML = "✅ Email inviata con successo!<br><span class='text-sm text-gray-400'>Controlla la posta (anche nello Spam).</span>";
+	            
+	            sendResetBtn.disabled = false;
+	            sendResetBtn.innerHTML = "📩 Invia Email";
+	            
+	        } catch (error) {
+	            console.error("Errore reset password:", error);
+	            forgotMsg.className = "mt-4 text-base font-medium text-red-400";
+	            
+	            if (error.code === 'auth/user-not-found') {
+	                forgotMsg.innerText = "❌ Nessun account trovato con questa email.";
+	            } else if (error.code === 'auth/invalid-email') {
+	                forgotMsg.innerText = "❌ Formato email non valido.";
+	            } else {
+	                forgotMsg.innerText = "❌ Errore: " + error.message;
+	            }
+	            
+	            sendResetBtn.disabled = false;
+	            sendResetBtn.innerHTML = "📩 Invia Email";
+	        }
+	    });
+	}
 }
 // -------------------- REGISTRAZIONE UTENTE --------------------
 document.getElementById("vaiRegBtn").onclick = async () => {
