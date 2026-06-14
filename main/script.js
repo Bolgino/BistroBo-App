@@ -279,15 +279,9 @@ document.getElementById("regBtn").onclick = async () => {
     try {
         // crea account Firebase
         const res = await auth.createUserWithEmailAndPassword(email, password);
-		        // Definiamo dove devono atterrare gli utenti
-		// Definiamo dove devono atterrare gli utenti
-		const actionCodeSettings = {
-			url: 'https://bolgino.github.io/BistroBo-App/verifica.html',
-			handleCodeInApp: true // <-- CAMBIATO IN TRUE! Fondamentale!
-		};
 		
-		// Inviamo la mail passando le impostazioni
-		await res.user.sendEmailVerification(actionCodeSettings);
+		// Lasciamo fare tutto a Firebase in automatico!
+		await res.user.sendEmailVerification();
 
         const ruoloUtente = approvAuto ? regRoleSelect.value : "utente";
         // Se snack è selezionato ma disattivato, correggi in "utente"
