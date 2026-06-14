@@ -23,7 +23,7 @@
 
         <div id="content-pre">
             <h2 class="text-xl font-semibold mb-4 text-white">Il tuo profilo è in cottura!</h2>
-            <button id="btnVerifica" class="bg-orange-600 hover:bg-orange-500 text-white font-bold py-4 px-8 rounded-2xl w-full mb-4">
+            <button id="btnVerifica" class="bg-orange-600 hover:bg-orange-500 text-white font-bold py-4 px-8 rounded-2xl w-full mb-4 transition-all">
                 👨‍🍳 Conferma Operazione
             </button>
         </div>
@@ -31,10 +31,11 @@
         <div id="status-container" class="hidden">
             <div id="icon-status" class="text-5xl mb-4"></div>
             <p id="messaggio" class="text-lg font-medium px-2"></p>
+            <button id="btnTorna" class="mt-6 bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-xl w-full hidden transition-all" onclick="window.location.href='index.html'">Vai al Login</button>
         </div>
         
-        <div class="mt-8 pt-6 border-t border-gray-700">
-            <a href="index.html" class="text-orange-400 font-semibold">← Torna al Login</a>
+        <div class="mt-8 pt-6 border-t border-gray-700" id="footer-links">
+            <a href="index.html" class="text-orange-400 font-semibold">← Torna alla Home</a>
         </div>
     </div>
 
@@ -51,30 +52,38 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // Prende l'UID dal link di EmailJS
+        // Prende UID e TOKEN dal link magico
         const urlParams = new URLSearchParams(window.location.search);
         const uid = urlParams.get('uid'); 
+        const token = urlParams.get('token'); 
 
         const btnVerifica = document.getElementById('btnVerifica');
         const contentPre = document.getElementById('content-pre');
         const statusContainer = document.getElementById('status-container');
         const messaggio = document.getElementById('messaggio');
+        const btnTorna = document.getElementById('btnTorna');
 
         btnVerifica.addEventListener('click', async () => {
-            if(!uid) {
-                showStatus("❌", "Impossibile trovare il codice utente.", "text-red-400");
+            if(!uid || !token) {
+                showStatus("❌", "Link non valido o scaduto.", "text-red-400");
                 return;
             }
             try {
                 btnVerifica.disabled = true;
                 btnVerifica.innerText = "Cottura in corso...";
 
-                // Sblocca utente nel database
-                await db.ref("utenti/" + uid).update({ email_verificata: true });
+                // Sblocca l'utente inviando il token di sicurezza
+                await db.ref("utenti/" + uid).update({ 
+                    email_verificata: true,
+                    token_inserito: token 
+                });
 
-                showStatus("✅", "Ottimo Chef! Email verificata con successo. Ora puoi effettuare il login.", "text-green-400");
+                showStatus("✅", "Ottimo Chef! Email verificata con successo. Ora puoi accedere.", "text-green-400");
+                btnTorna.classList.remove('hidden');
+                document.getElementById('footer-links').classList.add('hidden');
+
             } catch (error) {
-                showStatus("⚠️", "Errore: " + error.message, "text-yellow-400");
+                showStatus("⚠️", "Impossibile verificare l'account. Il codice potrebbe essere errato o già utilizzato.", "text-yellow-400");
             }
         });
 
