@@ -277,11 +277,17 @@ document.getElementById("regBtn").onclick = async () => {
     }
 
     try {
-        // crea account Firebase
+        // 1. Crea account Firebase
         const res = await auth.createUserWithEmailAndPassword(email, password);
 		
-		// Lasciamo fare tutto a Firebase in automatico!
-		await res.user.sendEmailVerification();
+        // 2. Diciamo a Firebase dove deve comparire il tasto "Continua"
+        const actionCodeSettings = {
+            url: 'https://bolgino.github.io/BistroBo-App/index.html', // La tua pagina di login
+            handleCodeInApp: false // IMPORTANTE: fa fare la verifica alla pagina grigia di Firebase
+        };
+		
+        // 3. Inviamo la mail
+        await res.user.sendEmailVerification(actionCodeSettings);
 
         const ruoloUtente = approvAuto ? regRoleSelect.value : "utente";
         // Se snack è selezionato ma disattivato, correggi in "utente"
