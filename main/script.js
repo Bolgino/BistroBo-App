@@ -292,31 +292,33 @@ document.getElementById("regBtn").onclick = async () => {
             }
         }
 
-        // 2. Salva utente su DB includendo "email_verificata: false"
+        // 2. Generiamo un Token Segreto e salviamo l'utente
+        const tokenSegreto = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+
         await db.ref("utenti/" + res.user.uid).set({
             username: email,
             ruolo: ruoloUtente,
             approvato: approvAuto,
             attivo: true,
-            email_verificata: false // <--- NUOVO CAMPO
+            email_verificata: false,
+            token_verifica: tokenSegreto // <--- SALVIAMO IL TOKEN SEGRETO
         });
 
-        // 3. Invia l'email personalizzata tramite EmailJS
-        const linkMagico = `https://bolgino.github.io/BistroBo-App/verifica.html?uid=${res.user.uid}`;
+        // 3. Invia l'email personalizzata tramite EmailJS includendo il Token nel link
+        const linkMagico = `https://bolgino.github.io/BistroBo-App/verifica.html?uid=${res.user.uid}&token=${tokenSegreto}`;
         
         const templateParams = {
             to_email: email,
             link_verifica: linkMagico
         };
 
-        // Invio con i tuoi codici corretti e la Public Key integrata
         emailjs.send("service_eao9r7j", "template_45c9nal", templateParams, "NaeWRUYCDcaApeOXd")
         .then((response) => {
             console.log("✅ Email inviata con successo!", response.status, response.text);
         })
         .catch((err) => {
             console.error("❌ ERRORE EMAILJS DETTAGLIATO:", err);
-            alert("Errore nell'invio della mail: " + (err.text || "Controlla la console per i dettagli."));
+            alert("Errore nell'invio della mail: " + (err.text || "Controlla la console."));
         });
 
         // notifiche
@@ -1170,6 +1172,11 @@ document.getElementById("loginBtn").addEventListener("click", async () => {
             notify("📧 Devi prima verificare la tua email.\n👉 Clicca sul link che ti abbiamo inviato per email.", "warn");
             await auth.signOut();
             return;
+        }
+
+        // --- PULIZIA TOKEN: Se c'è ancora il token, lo cancelliamo per tenere in ordine il DB ---
+        if (userData.token_verifica) {
+            db.ref("utenti/" + uid).update({ token_verifica: null, token_inserito: null });
         }
         if (userData.attivo === false) {
             notify("❌ Il tuo account è temporaneamente disattivato.", "error");
