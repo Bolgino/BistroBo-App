@@ -194,28 +194,77 @@ function abilitaIncrementoDinamico(input) {
 
     aggiornaStep(); // inizializza subito
 }
-// --- RECUPERO PASSWORD ---
+// --- RECUPERO PASSWORD (CON GRAFICA BISTROBO) ---
 const forgotPasswordBtn = document.getElementById("forgotPasswordBtn");
+const forgotPasswordDiv = document.getElementById("forgotPasswordDiv");
+const loginDiv = document.getElementById("loginDiv");
+const tornaLoginDaResetBtn = document.getElementById("tornaLoginDaResetBtn");
+const sendResetBtn = document.getElementById("sendResetBtn");
+const forgotEmail = document.getElementById("forgotEmail");
+const forgotMsg = document.getElementById("forgotMsg");
+
+// 1. Mostra schermata recupero quando si clicca "Hai dimenticato la password?"
 if (forgotPasswordBtn) {
-    forgotPasswordBtn.addEventListener("click", async (e) => {
+    forgotPasswordBtn.addEventListener("click", (e) => {
         e.preventDefault();
+        loginDiv.classList.add("hidden");
+        forgotPasswordDiv.classList.remove("hidden");
         
-        // Cerchiamo l'elemento in modo sicuro
-        const loginEmailInput = document.getElementById("loginEmail");
-        let emailValue = loginEmailInput ? loginEmailInput.value.trim() : "";
+        // Chicca: se aveva già scritto l'email nel login, gliela compiliamo in automatico
+        const emailGiaScritta = document.getElementById("username").value.trim();
+        if (emailGiaScritta) forgotEmail.value = emailGiaScritta;
         
-        // Se non trova il valore, lo chiediamo con prompt
+        forgotMsg.innerText = ""; // Pulisce messaggi precedenti
+    });
+}
+
+// 2. Torna al login annullando
+if (tornaLoginDaResetBtn) {
+    tornaLoginDaResetBtn.addEventListener("click", () => {
+        forgotPasswordDiv.classList.add("hidden");
+        loginDiv.classList.remove("hidden");
+        forgotEmail.value = "";
+    });
+}
+
+// 3. Invia la mail
+if (sendResetBtn) {
+    sendResetBtn.addEventListener("click", async () => {
+        const emailValue = forgotEmail.value.trim();
+        
         if (!emailValue) {
-            emailValue = prompt("Chef, inserisci la tua email per recuperare la password:");
+            forgotMsg.style.color = "red";
+            forgotMsg.innerText = "❌ Inserisci un'email valida.";
+            return;
         }
 
-        if (emailValue) {
-            try {
-                await auth.sendPasswordResetEmail(emailValue);
-                alert("✅ Ti abbiamo inviato un'email sicura per reimpostare la password.");
-            } catch (error) {
-                alert("❌ Errore: " + error.message);
+        try {
+            sendResetBtn.disabled = true;
+            sendResetBtn.innerText = "Invio in corso...";
+            
+            // Invio mail nativa Firebase
+            await auth.sendPasswordResetEmail(emailValue);
+            
+            forgotMsg.style.color = "green";
+            forgotMsg.innerHTML = "✅ Email inviata con successo!<br><span style='font-size:0.85em; color:gray;'>Controlla la posta (anche nello Spam).</span>";
+            
+            sendResetBtn.disabled = false;
+            sendResetBtn.innerText = "Invia Email";
+            
+        } catch (error) {
+            console.error("Errore reset password:", error);
+            forgotMsg.style.color = "red";
+            
+            if (error.code === 'auth/user-not-found') {
+                forgotMsg.innerText = "❌ Nessun account trovato con questa email.";
+            } else if (error.code === 'auth/invalid-email') {
+                forgotMsg.innerText = "❌ Formato email non valido.";
+            } else {
+                forgotMsg.innerText = "❌ Errore: " + error.message;
             }
+            
+            sendResetBtn.disabled = false;
+            sendResetBtn.innerText = "Invia Email";
         }
     });
 }
