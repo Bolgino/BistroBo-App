@@ -194,6 +194,38 @@ function abilitaIncrementoDinamico(input) {
 
     aggiornaStep(); // inizializza subito
 }
+// --- RECUPERO PASSWORD (Tramite Firebase Nativo) ---
+const forgotPasswordBtn = document.getElementById("forgotPasswordBtn");
+if (forgotPasswordBtn) {
+    forgotPasswordBtn.addEventListener("click", async (e) => {
+        e.preventDefault();
+        
+        // Cerca di prendere l'email se l'utente l'ha già scritta nel campo di login
+        let emailValue = document.getElementById("loginEmail").value.trim();
+        
+        // Se è vuota, gliela chiede con un comodo popup
+        if (!emailValue) {
+            emailValue = prompt("Chef, inserisci la tua email per recuperare la password:");
+        }
+
+        if (emailValue) {
+            try {
+                // Questo comando nativo dice a Firebase di mandare l'email di recupero
+                await auth.sendPasswordResetEmail(emailValue);
+                alert("✅ Ti abbiamo inviato un'email sicura per reimpostare la password.\n(Controlla anche nella cartella Spam!)");
+            } catch (error) {
+                console.error("Errore reset password:", error);
+                if (error.code === 'auth/user-not-found') {
+                    alert("❌ Nessun account trovato con questa email.");
+                } else if (error.code === 'auth/invalid-email') {
+                    alert("❌ Formato email non valido.");
+                } else {
+                    alert("❌ Errore: " + error.message);
+                }
+            }
+        }
+    });
+}
 // -------------------- REGISTRAZIONE UTENTE --------------------
 document.getElementById("vaiRegBtn").onclick = async () => {
     loginDiv.classList.add("hidden");
