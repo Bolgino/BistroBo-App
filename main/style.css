@@ -1580,3 +1580,15 @@ body.tema-estate button {
     opacity: 1;
 }
 
+.link-recupero {
+    font-size: 0.75rem; /* Molto piccolo */
+    color: #6b7280;    /* Grigio (gray-500) */
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.link-recupero:hover {
+    color: #9ca3af;    /* Grigio più chiaro al passaggio del mouse */
+    text-decoration: underline;
+}
+
