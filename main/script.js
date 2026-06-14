@@ -304,11 +304,19 @@ document.getElementById("regBtn").onclick = async () => {
         // 3. Invia l'email personalizzata tramite EmailJS
         const linkMagico = `https://bolgino.github.io/BistroBo-App/verifica.html?uid=${res.user.uid}`;
         
-        emailjs.send("service_6fay1q3", "template_45c9nal", {
+        const templateParams = {
             to_email: email,
             link_verifica: linkMagico
-        }).catch((err) => {
-            console.error("Errore invio EmailJS:", err);
+        };
+
+        // Invio con i tuoi codici corretti e la Public Key integrata
+        emailjs.send("service_eao9r7j", "template_45c9nal", templateParams, "NaeWRUYCDcaApeOXd")
+        .then((response) => {
+            console.log("✅ Email inviata con successo!", response.status, response.text);
+        })
+        .catch((err) => {
+            console.error("❌ ERRORE EMAILJS DETTAGLIATO:", err);
+            alert("Errore nell'invio della mail: " + (err.text || "Controlla la console per i dettagli."));
         });
 
         // notifiche
