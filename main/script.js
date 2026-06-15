@@ -31,22 +31,23 @@ let menuData = {};
 
 // --- GLOBAL SETTINGS (unica fonte di verità per i toggle) ---
 window.settings = {
-  suono: true,
-  approvazioneAutomatica: false,
-  nuoveInAltoCucina: true,
-  nuoveInAltoBere: true,
-  suonoCassa: true,
-  suonoChat: true, 
-  stampaAutomaticaComande: false,
-  letteraPreordini: "D",
-  suonoPreordini: true,
-  ordinaPreordini: true,
-  nuoveInAltoSnack: false,
-  preordiniRichiediInfo: false,
-  nomeStand: "BistroBò",
-  displayClienteAbilitato: false,
-  comandeProgressive: false,
-  contatoreComande: 0
+	suono: true,
+	approvazioneAutomatica: false,
+	nuoveInAltoCucina: true,
+	nuoveInAltoBere: true,
+	suonoCassa: true,
+	suonoChat: true, 
+	stampaAutomaticaComande: false,
+	letteraPreordini: "D",
+	suonoPreordini: true,
+	ordinaPreordini: true,
+	nuoveInAltoSnack: false,
+	preordiniRichiediInfo: false,
+	nomeStand: "BistroBò",
+	displayClienteAbilitato: false,
+	comandeProgressive: false,
+	contatoreComande: 0,
+	letteraComandaAbilitata: true
 };
 
 //Ingredienti Critici
@@ -490,7 +491,6 @@ function initImpostazioniToggle() {
             }
         });
     }
-
     // ================= RESET CONTATORE PROGRESSIVO =================
     const resetContatoreBtn = document.getElementById("resetContatoreBtn");
     if (resetContatoreBtn) {
@@ -510,6 +510,25 @@ function initImpostazioniToggle() {
                 }
             });
         };
+    }
+	// ================= LETTERA COMANDA ABILITATA =================
+    const toggleLetteraComandaBtn = document.getElementById("toggleLetteraComandaBtn");
+    const letteraComandaRef = db.ref("impostazioni/letteraComandaAbilitata");
+
+    if (toggleLetteraComandaBtn) {
+        initToggle(toggleLetteraComandaBtn, letteraComandaRef, {on: "ON", off: "OFF"}, true, val => {
+            window.settings.letteraComandaAbilitata = val;
+            
+            // Mostra o nascondi la casella di input della lettera in Cassa
+            const letteraInput = document.getElementById("letteraComanda");
+            if (letteraInput) {
+                letteraInput.style.display = val ? "inline-block" : "none";
+                if (!val) letteraInput.value = ""; // Svuota la lettera se la nascondiamo
+            }
+            
+            // Forza l'aggiornamento del pulsante di invio
+            if (typeof aggiornaStatoInvio === "function") aggiornaStatoInvio(); 
+        });
     }
     // SUONO GLOBALE
     const toggleSuonoBtn = document.getElementById("toggleSuonoBtn");
@@ -2472,8 +2491,11 @@ function aggiornaStatoInvio() {
     // Se il sistema progressivo è attivo, non serve controllare che 'num' sia compilato
     const numOk = window.settings.comandeProgressive ? true : !!num;
 
-    // disabilita se manca numero (se manuale), lettera o piatti
-    inviaBtn.disabled = !(numOk && lettera && /^[A-Z]$/.test(lettera) && hasPiattiValidi);
+    // Se la lettera è disabilitata nelle impostazioni, saltiamo il controllo
+    const letteraOk = window.settings.letteraComandaAbilitata ? (lettera && /^[A-Z]$/.test(lettera)) : true;
+
+    // disabilita se manca numero, lettera (se abilitata) o piatti
+    inviaBtn.disabled = !(numOk && letteraOk && hasPiattiValidi);
 
     // Aggiorna stile visivo
     if (inviaBtn.disabled) {
@@ -5370,27 +5392,22 @@ function mostraFormSconto(piatto, id, containerRow) {
 
     formDiv.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
-//invio comanda di ogni tipo in fondo per evitare errori
-document.addEventListener("DOMContentLoaded", () => {
-    const inviaBtn = document.getElementById("inviaComandaBtn");
-    if (!inviaBtn) return; // sicurezza
-    
-    // Recuperiamo gli elementi in sicurezza
-    const numInput = document.getElementById("numComanda");
-    const letteraInput = document.getElementById("letteraComanda");
-    const noteInput = document.getElementById("noteComanda");
 
-    inviaBtn.addEventListener("click", async () => {
+inviaBtn.addEventListener("click", async () => {
         const num = numInput ? numInput.value.trim() : "";
-        const lettera = letteraInput ? letteraInput.value.trim().toUpperCase() : "";
+        let lettera = letteraInput ? letteraInput.value.trim().toUpperCase() : "";
 
-        // 1. La lettera è sempre obbligatoria
-        if (!lettera || !/^[A-Z]$/.test(lettera)) {
-            notify("Inserisci una lettera valida!", "error");
-            return;
+        // 1. Controllo Lettera (Obbligatoria SOLO se abilitata dalle impostazioni)
+        if (window.settings.letteraComandaAbilitata) {
+            if (!lettera || !/^[A-Z]$/.test(lettera)) {
+                notify("Inserisci una lettera valida!", "error");
+                return;
+            }
+        } else {
+            lettera = ""; // Svuotiamo forzatamente la lettera se il sistema l'ha disattivata
         }
 
-        // 2. Il numero è obbligatorio SOLO se il sistema progressivo è disattivato
+        // 2. Controllo Numero (Obbligatorio SOLO se il sistema progressivo è disattivato)
         if (!window.settings.comandeProgressive && !num) {
             notify("Inserisci un numero comanda valido!", "error");
             return;
@@ -5441,7 +5458,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     });
 
                     if (res.committed) {
-                        numeroComandaFinale = res.snapshot.val() + lettera;
+                        numeroComandaFinale = String(res.snapshot.val()) + lettera;
                         
                         // Controlla se questo numero esiste già nel database
                         const existing = await db.ref("comande").orderByChild("numero").equalTo(numeroComandaFinale).once("value");
@@ -5464,7 +5481,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 
             } else {
                 // SISTEMA MANUALE TRADIZIONALE
-                numeroComandaFinale = num + lettera;
+                numeroComandaFinale = String(num) + lettera;
                 const existing = await db.ref("comande").orderByChild("numero").equalTo(numeroComandaFinale).once("value");
                 
                 if (existing.exists()) {
