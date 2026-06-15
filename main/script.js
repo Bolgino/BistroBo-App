@@ -5393,7 +5393,16 @@ function mostraFormSconto(piatto, id, containerRow) {
     formDiv.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
-inviaBtn.addEventListener("click", async () => {
+//invio comanda di ogni tipo in fondo per evitari errori
+document.addEventListener("DOMContentLoaded", () => {
+    const inviaBtn = document.getElementById("inviaComandaBtn");
+    if (!inviaBtn) return; // sicurezza
+    
+    const numInput = document.getElementById("numComanda");
+    const letteraInput = document.getElementById("letteraComanda");
+    const noteInput = document.getElementById("noteComanda");
+
+    inviaBtn.addEventListener("click", async () => {
         const num = numInput ? numInput.value.trim() : "";
         let lettera = letteraInput ? letteraInput.value.trim().toUpperCase() : "";
 
@@ -5498,9 +5507,8 @@ inviaBtn.addEventListener("click", async () => {
 
             if (!resIng.success) {
                 notify("Impossibile inviare comanda: " + (resIng.message || "errore ingredienti"), "error");
-                inviaBtn.disabled = false;
-                inviaBtn.innerText = "Invia Comanda";
-                return;
+                // Tolto return, il finally sblocca
+                throw new Error(resIng.message || "errore ingredienti"); 
             }
 
             // --- 6. COSTRUZIONE OGGETTO COMANDA (MANTENUTO) ---
