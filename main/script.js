@@ -521,9 +521,16 @@ function initImpostazioniToggle() {
             
             // Mostra o nascondi la casella di input della lettera in Cassa
             const letteraInput = document.getElementById("letteraComanda");
+            const labelNumeroLettera = document.getElementById("labelNumeroLettera"); // <--- Aggiunto
+            
             if (letteraInput) {
                 letteraInput.style.display = val ? "inline-block" : "none";
                 if (!val) letteraInput.value = ""; // Svuota la lettera se la nascondiamo
+            }
+            
+            // <--- Aggiunto questo blocco che cambia la scritta
+            if (labelNumeroLettera) {
+                labelNumeroLettera.innerText = val ? "Numero e Lettera Comanda:" : "Numero Comanda:";
             }
             
             // Forza l'aggiornamento del pulsante di invio
