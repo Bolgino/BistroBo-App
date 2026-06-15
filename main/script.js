@@ -44,7 +44,9 @@ window.settings = {
   nuoveInAltoSnack: false,
   preordiniRichiediInfo: false,
   nomeStand: "BistroBò",
-	displayClienteAbilitato: false
+  displayClienteAbilitato: false,
+  comandeProgressive: false,
+  contatoreComande: 0
 };
 
 //Ingredienti Critici
@@ -457,6 +459,58 @@ function initImpostazioniToggle() {
     initToggle(toggleStampaBtn, stampaRef, {on: "ON", off: "OFF"}, true, val => {
         window.settings.stampaAutomaticaComande = val;
     });
+	// ================= COMANDE PROGRESSIVE =================
+    const toggleComandeProgressiveBtn = document.getElementById("toggleComandeProgressiveBtn");
+    const comandeProgressiveRef = db.ref("impostazioni/comandeProgressive");
+    const settingResetContatore = document.getElementById("settingResetContatore");
+
+    if (toggleComandeProgressiveBtn) {
+        initToggle(toggleComandeProgressiveBtn, comandeProgressiveRef, {on: "ON", off: "OFF"}, false, val => {
+            window.settings.comandeProgressive = val;
+            
+            // Mostra o nascondi il tasto Reset Contatore
+            if (settingResetContatore) {
+                settingResetContatore.style.display = val ? "flex" : "none";
+            }
+
+            // Aggiorna la grafica dell'input numero in Cassa
+            const numInput = document.getElementById("numComanda");
+            if (numInput) {
+                if (val) {
+                    numInput.value = "";
+                    numInput.placeholder = "Auto";
+                    numInput.disabled = true;
+                    numInput.style.backgroundColor = "#e0e0e0";
+                } else {
+                    numInput.placeholder = "";
+                    numInput.disabled = false;
+                    numInput.style.backgroundColor = "";
+                }
+                aggiornaStatoInvio(); // Forza l'aggiornamento del bottone invio
+            }
+        });
+    }
+
+    // ================= RESET CONTATORE PROGRESSIVO =================
+    const resetContatoreBtn = document.getElementById("resetContatoreBtn");
+    if (resetContatoreBtn) {
+        resetContatoreBtn.onclick = () => {
+            if (!checkOnline(true)) return;
+            disonotify("⚠️ Vuoi davvero azzerare il contatore delle comande? La prossima ripartirà da 1.", {
+                confirmText: "Azzera",
+                showCancel: true,
+                cancelText: "Annulla",
+                onConfirm: async () => {
+                    try {
+                        await db.ref("impostazioni/contatoreComande").set(0);
+                        notify("✅ Contatore azzerato con successo!", "info");
+                    } catch (err) {
+                        notify("❌ Errore durante l'azzeramento: " + err.message, "error");
+                    }
+                }
+            });
+        };
+    }
     // SUONO GLOBALE
     const toggleSuonoBtn = document.getElementById("toggleSuonoBtn");
     const suonoRef = db.ref("impostazioni/suono");
@@ -516,14 +570,16 @@ function initImpostazioniToggle() {
                 onConfirm: async () => {
                     try {
                         await db.ref("comande").remove();
-                        notify("✅ Tutte le comande sono state eliminate con successo!", "info");
+                        // ---> AGGIUNGI QUESTA RIGA PER RESETTARE ANCHE IL CONTATORE <---
+                        await db.ref("impostazioni/contatoreComande").set(0); 
+                        
+                        notify("✅ Tutte le comande sono state eliminate e il contatore azzerato!", "info");
 
-                        // Aggiorna la lista comande admin se visibile
                         const listaComandeAdmin = document.getElementById("listaComandeAdmin");
                         if (listaComandeAdmin) listaComandeAdmin.innerHTML = "";
                     } catch (err) {
                         console.error(err);
-                        notify("❌ Errore durante l'eliminazione delle comande: " + err.message, "error");
+                        notify("❌ Errore durante l'eliminazione: " + err.message, "error");
                     }
                 },
                 onCancel: () => {
@@ -2413,8 +2469,11 @@ function aggiornaStatoInvio() {
     // verifica che ci sia almeno un piatto con quantità > 0
     const hasPiattiValidi = comandaCorrente.some(p => p.quantita > 0);
 
-    // disabilita se manca numero, lettera o piatti
-    inviaBtn.disabled = !(num && lettera && /^[A-Z]$/.test(lettera) && hasPiattiValidi);
+    // Se il sistema progressivo è attivo, non serve controllare che 'num' sia compilato
+    const numOk = window.settings.comandeProgressive ? true : !!num;
+
+    // disabilita se manca numero (se manuale), lettera o piatti
+    inviaBtn.disabled = !(numOk && lettera && /^[A-Z]$/.test(lettera) && hasPiattiValidi);
 
     // Aggiorna stile visivo
     if (inviaBtn.disabled) {
@@ -5321,26 +5380,26 @@ document.addEventListener("DOMContentLoaded", () => {
         const num = numInput.value.trim();
         const lettera = letteraInput.value.trim().toUpperCase();
 
-        if (!num || !lettera || !/^[A-Z]$/.test(lettera)) {
-            notify("Inserisci numero e lettera della comanda validi!", "error");
+        // 1. La lettera è sempre obbligatoria
+        if (!lettera || !/^[A-Z]$/.test(lettera)) {
+            notify("Inserisci una lettera valida!", "error");
             return;
         }
 
-        const numeroComandaFinale = num + lettera;
+        // 2. Il numero è obbligatorio SOLO se il sistema progressivo è disattivato
+        if (!window.settings.comandeProgressive && !num) {
+            notify("Inserisci un numero comanda valido!", "error");
+            return;
+        }
+
         const piattiValidi = comandaCorrente.filter(p => p.quantita > 0);
 
         if (!piattiValidi.length) {
             notify("Inserisci almeno un piatto con quantità maggiore di 0!", "error");
             return;
         }
-        // controllo duplicati (numero + lettera insieme)
-        const existing = await db.ref("comande").orderByChild("numero").equalTo(numeroComandaFinale).once("value");
-        if (existing.exists()) {
-            notify("❌ Comanda " + numeroComandaFinale + " già presente! Non è possibile inviarne un'altra identica.", "error");
-            return;
-        }
 
-        // ✅ prendi il valore delle note prima di svuotare il campo
+        // ✅ prendi il valore delle note prima di svuotare il campo (MANTENUTO DAL TUO CODICE)
         const note = noteInput.value.trim();
         // 🔹 Controllo: se il campo note è compilato, deve esserci almeno un tick attivo
         if (note && window.settings.noteDestinazioniAbilitate) {
@@ -5362,15 +5421,49 @@ document.addEventListener("DOMContentLoaded", () => {
             inviaBtn.disabled = true;
             inviaBtn.innerText = "Invio in corso...";
 
-            const richieste = calcolaRichiesteDaPiatti(piattiValidi);
-            const res = await applicaDecrementiIngredienti(richieste);
+            let numeroComandaFinale = "";
 
-            if (!res.success) {
-                notify("Impossibile inviare comanda: " + (res.message || "errore ingredienti"), "error");
+            // --- SISTEMA PROGRESSIVO AUTOMATICO CON TRANSAZIONE (SICURO MULTI-CASSA) ---
+            if (window.settings.comandeProgressive) {
+                const counterRef = db.ref("impostazioni/contatoreComande");
+                const res = await counterRef.transaction(corrente => {
+                    return (corrente || 0) + 1;
+                });
+
+                if (res.committed) {
+                    numeroComandaFinale = res.snapshot.val() + lettera;
+                } else {
+                    throw new Error("Transazione contatore fallita, riprova.");
+                }
+            } 
+            // --- SISTEMA MANUALE VECCHIO ---
+            else {
+                numeroComandaFinale = num + lettera;
+                // Controllo duplicati solo in manuale
+                const existing = await db.ref("comande").orderByChild("numero").equalTo(numeroComandaFinale).once("value");
+                if (existing.exists()) {
+                    notify("❌ Comanda " + numeroComandaFinale + " già presente! Non è possibile inviarne un'altra identica.", "error");
+                    inviaBtn.disabled = false;
+                    inviaBtn.innerText = "Invia Comanda";
+                    return;
+                }
+            }
+
+            // 3. Controllo disponibilità ingredienti e scalo
+            const richieste = calcolaRichiesteDaPiatti(piattiValidi);
+            const resIng = await applicaDecrementiIngredienti(richieste);
+
+            if (!resIng.success) {
+                notify("Impossibile inviare comanda: " + (resIng.message || "errore ingredienti"), "error");
+                inviaBtn.disabled = false;
+                inviaBtn.innerText = "Invia Comanda";
                 return;
             }
+
+            // --- DA QUI IN POI IL CODICE E' QUELLO ORIGINALE ---
             const orario = new Date().toLocaleTimeString("it-IT", { hour12: false });
             const ref = db.ref("comande").push();
+            
             // ✅ controlla se il toggle Asporto è attivo e la casella spuntata
             const checkAsporto = document.getElementById("checkAsporto");
             let commentoAsporto = "";
@@ -5379,22 +5472,20 @@ document.addEventListener("DOMContentLoaded", () => {
             }
             const metodoPagamento = document.getElementById("metodoPagamento").value; // "contanti" o "pos"
 
-            // ✅ invio comanda con il campo "commento"
-            const note = noteInput.value.trim();
             let noteDestinazioni = [];
 
             if (window.settings.noteDestinazioniAbilitate) {
-            if (document.getElementById("tickCucina").checked) noteDestinazioni.push("cucina");
-            if (document.getElementById("tickBere").checked) noteDestinazioni.push("bere");
-            const tickSnack = document.getElementById("tickSnack");
-            if (tickSnack && tickSnack.checked) noteDestinazioni.push("snack");
+                if (document.getElementById("tickCucina").checked) noteDestinazioni.push("cucina");
+                if (document.getElementById("tickBere").checked) noteDestinazioni.push("bere");
+                const tickSnack = document.getElementById("tickSnack");
+                if (tickSnack && tickSnack.checked) noteDestinazioni.push("snack");
             } else {
-            // default classico: note a cucina e (se attivo) anche a snack
-            noteDestinazioni = ["cucina"];
-            if (window.settings.snackAbilitato) noteDestinazioni.push("snack");
+                // default classico: note a cucina e (se attivo) anche a snack
+                noteDestinazioni = ["cucina"];
+                if (window.settings.snackAbilitato) noteDestinazioni.push("snack");
             }
 
-            // Crea l’oggetto comanda
+            // Crea l’oggetto comanda (usa il numeroComandaFinale generato sopra)
             const nuovaComanda = {
                 numero: numeroComandaFinale,
                 piatti: piattiValidi,
@@ -5402,7 +5493,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 statoBere: piattiValidi.some(i => i.categoria === "bevande") ? "da fare" : "completato",
                 timestamp: Date.now(),
                 orario: orario,
-                note: note,
+                note: note, // note è già stato estratto sopra
                 noteDestinazioni: noteDestinazioni,
                 commento: commentoAsporto || null, 
                 metodoPagamento: metodoPagamento
@@ -5416,33 +5507,35 @@ document.addEventListener("DOMContentLoaded", () => {
             // Salva la comanda su Firebase
             await ref.set(nuovaComanda);
 
-
             const piattiDaStampare = [...comandaCorrente];
             const noteDaStampare = noteInput.value.trim();
             const numeroComandaDaStampare = numeroComandaFinale;
+            
             // ✅ reset dopo l’invio
             comandaCorrente = [];
             aggiornaComandaCorrente();
-			sincronizzaDisplayLive();
+            sincronizzaDisplayLive();
             noteInput.value = ""; 
-            numInput.value = "";
+            if (!window.settings.comandeProgressive) {
+                numInput.value = ""; // Svuota il numero solo se manuale
+            }
             letteraInput.value = "";
             totalePagato = 0;
             totalePagatoSpan.innerText = "0.00";
             restoDovutoSpan.innerText = "0.00";
             aggiornaSuggerimentoResto();
+            
             // 🔹 Reset casella Asporto
             if (checkAsporto) checkAsporto.checked = false;
 
-            // eventuale alert di conferma
+            // eventuale alert di conferma e stampa automatica
             if(!window.settings.stampaAutomaticaComande) {
                 notify("✅ Comanda " + numeroComandaFinale + " inviata con successo!", "info");
-            } else if(window.settings.stampaAutomaticaComande) {
+            } else {
                 notify("✅ Comanda " + numeroComandaFinale + " inviata con successo!, apertura schermata di stampa...", "info");
-                if(window.settings.stampaAutomaticaComande) {
-                    stampaComanda(piattiDaStampare, numeroComandaDaStampare, noteDaStampare);
-                }
+                stampaComanda(piattiDaStampare, numeroComandaDaStampare, noteDaStampare);
             }
+
         } catch (err) {
             console.error("Errore invio comanda:", err);
             notify("Errore invio comanda: " + (err.message || err), "error");
