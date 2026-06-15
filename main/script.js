@@ -5399,8 +5399,9 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        // ✅ prendi il valore delle note prima di svuotare il campo (MANTENUTO DAL TUO CODICE)
+        // ✅ prendi il valore delle note prima di svuotare il campo
         const note = noteInput.value.trim();
+        
         // 🔹 Controllo: se il campo note è compilato, deve esserci almeno un tick attivo
         if (note && window.settings.noteDestinazioniAbilitate) {
             const tickCucina = document.getElementById("tickCucina");
@@ -5418,6 +5419,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         try {
+            // Blocca il tasto per evitare doppi click accidentali
             inviaBtn.disabled = true;
             inviaBtn.innerText = "Invio in corso...";
 
@@ -5425,15 +5427,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // --- SISTEMA PROGRESSIVO AUTOMATICO CON TRANSAZIONE (SICURO MULTI-CASSA) ---
             if (window.settings.comandeProgressive) {
+                let numeroTrovato = false;
                 const counterRef = db.ref("impostazioni/contatoreComande");
-                const res = await counterRef.transaction(corrente => {
-                    return (corrente || 0) + 1;
-                });
+                
+                // Ciclo intelligente: continua a generare finché non trova un numero libero
+                while (!numeroTrovato) {
+                    const res = await counterRef.transaction(corrente => {
+                        return (corrente || 0) + 1;
+                    });
 
-                if (res.committed) {
-                    numeroComandaFinale = res.snapshot.val() + lettera;
-                } else {
-                    throw new Error("Transazione contatore fallita, riprova.");
+                    if (res.committed) {
+                        numeroComandaFinale = res.snapshot.val() + lettera;
+                        
+                        // Controllo anti-duplicato nel database
+                        const existing = await db.ref("comande").orderByChild("numero").equalTo(numeroComandaFinale).once("value");
+                        
+                        if (!existing.exists()) {
+                            numeroTrovato = true; // Numero libero! Usciamo dal ciclo
+                        } else {
+                            console.warn(`Comanda ${numeroComandaFinale} già presente. Salto al numero successivo...`);
+                            // Il ciclo riparte e incrementa ancora il contatore in automatico
+                        }
+                    } else {
+                        throw new Error("Transazione contatore fallita, riprova.");
+                    }
                 }
             } 
             // --- SISTEMA MANUALE VECCHIO ---
@@ -5460,7 +5477,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
-            // --- DA QUI IN POI IL CODICE E' QUELLO ORIGINALE ---
+            // --- CREAZIONE OGGETTO COMANDA ---
             const orario = new Date().toLocaleTimeString("it-IT", { hour12: false });
             const ref = db.ref("comande").push();
             
@@ -5485,7 +5502,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (window.settings.snackAbilitato) noteDestinazioni.push("snack");
             }
 
-            // Crea l’oggetto comanda (usa il numeroComandaFinale generato sopra)
+            // Crea l’oggetto comanda
             const nuovaComanda = {
                 numero: numeroComandaFinale,
                 piatti: piattiValidi,
@@ -5493,7 +5510,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 statoBere: piattiValidi.some(i => i.categoria === "bevande") ? "da fare" : "completato",
                 timestamp: Date.now(),
                 orario: orario,
-                note: note, // note è già stato estratto sopra
+                note: note,
                 noteDestinazioni: noteDestinazioni,
                 commento: commentoAsporto || null, 
                 metodoPagamento: metodoPagamento
@@ -5511,13 +5528,15 @@ document.addEventListener("DOMContentLoaded", () => {
             const noteDaStampare = noteInput.value.trim();
             const numeroComandaDaStampare = numeroComandaFinale;
             
-            // ✅ reset dopo l’invio
+            // ✅ reset dell'interfaccia dopo l’invio
             comandaCorrente = [];
             aggiornaComandaCorrente();
             sincronizzaDisplayLive();
             noteInput.value = ""; 
+            
+            // Se in manuale, svuota il campo. Se in Auto, lascialo inattivo.
             if (!window.settings.comandeProgressive) {
-                numInput.value = ""; // Svuota il numero solo se manuale
+                numInput.value = ""; 
             }
             letteraInput.value = "";
             totalePagato = 0;
@@ -5528,7 +5547,7 @@ document.addEventListener("DOMContentLoaded", () => {
             // 🔹 Reset casella Asporto
             if (checkAsporto) checkAsporto.checked = false;
 
-            // eventuale alert di conferma e stampa automatica
+            // eventuale alert di conferma o avvio stampa automatica
             if(!window.settings.stampaAutomaticaComande) {
                 notify("✅ Comanda " + numeroComandaFinale + " inviata con successo!", "info");
             } else {
@@ -5540,6 +5559,7 @@ document.addEventListener("DOMContentLoaded", () => {
             console.error("Errore invio comanda:", err);
             notify("Errore invio comanda: " + (err.message || err), "error");
         } finally {
+            // Riabilita il bottone a prescindere dall'esito
             inviaBtn.disabled = false;
             inviaBtn.innerText = "Invia Comanda";
             aggiornaStatoInvio();
