@@ -1305,4 +1305,3 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error("Errore nel recupero del nome stand:", error);
         });
 });
-
