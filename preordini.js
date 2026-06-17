@@ -1291,4 +1291,18 @@ function playSound(nome) {
         });
     }
 }
+document.addEventListener('DOMContentLoaded', () => {
+    const standDisplay = document.getElementById('nome-stand-display');
+
+    firebase.database().ref('impostazioni/nomeStand').once('value')
+        .then((snapshot) => {
+            const nomeStand = snapshot.val();
+            if (nomeStand && standDisplay) {
+                standDisplay.textContent = nomeStand;
+            }
+        })
+        .catch((error) => {
+            console.error("Errore nel recupero del nome stand:", error);
+        });
+});
 
