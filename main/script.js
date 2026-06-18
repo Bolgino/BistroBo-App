@@ -1995,6 +1995,9 @@ window.simulaRuolo = function(ruoloScelto) {
         caricaComandeCassa();
         initIngredientiCriticiListeners(true);
         initTickNoteDestinazioni();
+		if (typeof renderPreordiniCassa === "function") {
+            db.ref("preordini").once("value").then(snap => renderPreordiniCassa(snap.val() || {}));
+        }
         document.querySelector("#cassaDiv .tabBtn:first-child").click();
     } else {
         window.isLoggedInCassa = false;
@@ -2044,6 +2047,9 @@ function mostraAdminDaSimulazione() {
     caricaStatistiche();
     caricaMenuAdmin();
     caricaUtenti();
+	if (typeof renderPreordiniAdmin === "function") {
+        db.ref("preordini").once("value").then(snap => renderPreordiniAdmin(snap.val() || {}));
+    }
 
     // RIATTIVA LA CHAT ADMIN
     initChat();
