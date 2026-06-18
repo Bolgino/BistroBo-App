@@ -99,7 +99,7 @@ db.ref("impostazioni/preordiniAbilitati").on("value", snap => {
         btn.disabled = !val;
     });
 });
-
+/*
 document.getElementById("passaACassaBtn")?.addEventListener("click", async () => {
     // Sto simulando la cassa → l’admin NON deve essere considerato admin ora
     isLoggedInCassa = true;
@@ -139,7 +139,7 @@ document.getElementById("passaAAdminBtn")?.addEventListener("click", async () =>
     const data = snap.val() || {};
     renderPreordiniAdmin(data);
 
-});
+}); */
 function initPreordiniInterni() {
     if (typeof checkOnline === "function" && !checkOnline(true)) return;
 
