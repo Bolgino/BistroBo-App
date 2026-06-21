@@ -199,11 +199,14 @@
 			<div id="totaleDiv" class="stickyBar" style="margin-top:15px;">
 				<div class="stickyLeft">
 					<b style="color:red;">Totale: €<span id="totale">0.00</span></b>
-					<b style="color:green;">Pagato: €<span id="totalePagato">0.00</span></b>
-					<b>
-						Resto: €<span id="restoDovuto">0.00</span>
-						<span id="suggerimentoResto" style="font-size:0.9em; color:blue;"></span>
-					</b>
+
+					<span id="rigaRestoPagato">
+					    <b style="color:green;">Pagato: €<span id="totalePagato">0.00</span></b>
+					    <b>
+					        Resto: €<span id="restoDovuto">0.00</span>
+					        <span id="suggerimentoResto" style="font-size:0.9em; color:blue;"></span>
+					    </b>
+					</span>
 					<!-- Metodo pagamento -->
 					<div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
 						<label for="metodoPagamento" style="margin:0;"><b>Metodo pagamento:</b></label>
@@ -219,8 +222,8 @@
 
 				</div>
 
-				<div class="stickyRight">
-					<div id="banconoteDiv" style="display:flex; gap:10px; flex-wrap:wrap;"></div>
+				<div id="pannelloSoldiDestra" class="stickyRight">
+				    <div id="banconoteDiv" style="display:flex; gap:10px; flex-wrap:wrap;"></div>
 					<div id="moneteDiv" style="display:flex; gap:10px; flex-wrap:wrap;"></div>
 					<button id="resetSoldiBtn">Reset Soldi</button>
 				</div>
@@ -554,6 +557,13 @@
 					<small>Se disattivato, scompare il menu a tendina e ogni click sui piatti aggiunge +1 in automatico alla comanda.</small>
 				</div>
 				<button id="toggleSelettoreQuantitaBtn" class="toggleBtn">ON</button>
+			</div>
+			<div class="settingItem">
+			    <div class="settingLabel">
+			        <span>Gestione Resto e Soldi in Cassa</span>
+			        <small>Se disattivato, nasconde la calcolatrice dei soldi, le banconote e il calcolo del resto in Cassa.</small>
+			    </div>
+			    <button id="toggleGestioneSoldiBtn" class="toggleBtn">ON</button>
 			</div>
 			<!-- ================= PREORDINI ================= -->
 			<div class="settingItem">
