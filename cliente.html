@@ -172,19 +172,23 @@
                 <div style="text-align:center; margin-top:150px; opacity:0.15; font-size: 2.5em; font-weight: 800;">IN ATTESA DI ARTICOLI...</div>
             </div>
 
-            <div class="footer-monitor">
-                <div class="box-live" style="text-align: center; padding: 15px;">
-                    <div style="opacity:0.6; text-transform:uppercase; font-size: 0.9em; font-weight: 800;">Pagato</div>
+            <div id="footerMonitorCliente" class="footer-monitor" style="display: grid; grid-template-columns: 1fr 1fr 1.5fr; gap: 20px; flex-shrink: 0; align-items: stretch;">
+    
+                <div id="boxPagatoCliente" style="background: rgba(255, 255, 255, 0.95); border-radius: 20px; padding: 15px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
+                    <div style="opacity:0.6; font-weight: 800;">PAGATO</div>
                     <div style="color: #2196f3; font-size: 3em; font-weight: 900;" id="vPagato">€ 0.00</div>
                 </div>
-                <div class="box-live" style="text-align: center; padding: 15px;">
-                    <div style="opacity:0.6; text-transform:uppercase; font-size: 0.9em; font-weight: 800;">Resto</div>
+                
+                <div id="boxRestoCliente" style="background: rgba(255, 255, 255, 0.95); border-radius: 20px; padding: 15px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
+                    <div style="opacity:0.6; font-weight: 800;">RESTO</div>
                     <div style="color: #ff9800; font-size: 3em; font-weight: 900;" id="vResto">€ 0.00</div>
                 </div>
-                <div class="box-live" style="text-align: right; border-bottom: 8px solid; padding: 15px; border-color: inherit;">
-                    <div style="opacity:0.8; font-weight:900; text-transform:uppercase; font-size: 1em;">Totale Ordine</div>
-                    <div class="valore-tot" id="vTotale">€ 0.00</div>
+                
+                <div id="boxTotaleCliente" style="text-align: right; border-bottom: 8px solid #333; padding: 15px; background: rgba(255, 255, 255, 0.95); border-radius: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); display: flex; flex-direction: column; justify-content: center;">
+                    <div style="opacity:0.8; font-weight:900;">TOTALE ORDINE</div>
+                    <div style="font-size: 4em; font-weight: 800; line-height: 1;" id="vTotale">€ 0.00</div>
                 </div>
+            
             </div>
         </div>
     </div>
