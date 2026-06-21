@@ -5075,17 +5075,10 @@ async function generaExcel() {
     sheet1.getCell('F5').numFmt = '€#,##0.00';
     sheet1.getCell('F6').numFmt = '€#,##0.00';
 
-    // Stile blu e grassetto come prima
-    ['E4','F4','E5','F5'].forEach(addr => {
+    // Stile blu e grassetto per tutti i totali inferiori
+    ['E4','F4','E5','F5','E6','F6'].forEach(addr => {
     const cell = sheet1.getCell(addr);
     cell.fill = { type:'pattern', pattern:'solid', fgColor:{argb:'00B0F0'} };
-    cell.font = { bold:true };
-    });
-
-    // Stile Arancione per Asporto
-    ['E6','F6'].forEach(addr => {
-    const cell = sheet1.getCell(addr);
-    cell.fill = { type:'pattern', pattern:'solid', fgColor:{argb:'FFB74D'} };
     cell.font = { bold:true };
     });
 
@@ -5178,13 +5171,9 @@ function generaPdf() {
   doc.text(`Incasso POS: €${totalePos.toFixed(2)}`, xLeft, y);
     y += 6;
     doc.text(`Incasso Contanti: €${totaleContanti.toFixed(2)}`, xLeft, y);
-    y += 8;
-	 doc.setFont(undefined, 'bold');
-	 doc.setTextColor(230, 81, 0); // Arancione
-	 doc.text(`Di cui Asporto: €${incassoAsporto.toFixed(2)}`, xLeft, y);
-	 doc.setFont(undefined, 'normal');
-	 doc.setTextColor(0, 0, 0);
-	    y += 10;
+    y += 10;
+    doc.text(`Di cui Asporto: €${incassoAsporto.toFixed(2)}`, xLeft, y);
+    y += 10;
 	
 	
 	  // Tabella: Piatti per quantità
