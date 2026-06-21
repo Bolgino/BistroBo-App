@@ -260,7 +260,7 @@
                         sel.appendChild(opt);
 
                         if (!onlineKnown.has(u.key)) {
-                            if (!isFirstLoadCasse) showPersistentToast(`La cassa "${d.username}" è ora ONLINE`, "info");
+                            if (!isFirstLoadCasse) notify(`La cassa "${d.username}" è ora ONLINE`, "success");
                             onlineKnown.add(u.key);
                         }
                     } else {
@@ -386,6 +386,30 @@
                 auth.signOut().then(() => location.reload());
             }
         }
+        // =============================================================
+        // ASCOLTO TOGGLE SOLDI PER SCHERMO CLIENTE
+        // =============================================================
+        db.ref("impostazioni/gestioneSoldiCassa").on("value", snap => {
+            const mostraSoldi = snap.val() ?? true;
+            
+            const boxPagato = document.getElementById("boxPagatoCliente");
+            const boxResto = document.getElementById("boxRestoCliente");
+            const footerMonitor = document.getElementById("footerMonitorCliente");
+            const boxTotale = document.getElementById("boxTotaleCliente");
+        
+            if (mostraSoldi) {
+                if (boxPagato) boxPagato.style.display = "block";
+                if (boxResto) boxResto.style.display = "block";
+                if (footerMonitor) footerMonitor.style.gridTemplateColumns = "1fr 1fr 1.5fr";
+                if (boxTotale) boxTotale.style.textAlign = "right";
+            } else {
+                // Se il toggle è OFF, nascondi Pagato e Resto e allarga il Totale!
+                if (boxPagato) boxPagato.style.display = "none";
+                if (boxResto) boxResto.style.display = "none";
+                if (footerMonitor) footerMonitor.style.gridTemplateColumns = "1fr"; // Griglia a singola colonna
+                if (boxTotale) boxTotale.style.textAlign = "center"; // Centriamo la scritta
+            }
+        });
     </script>
 </body>
 </html>
