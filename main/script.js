@@ -4980,18 +4980,18 @@ async function caricaStatistiche() {
   const ingrByQuantita = Object.entries(ingrMap).sort((a,b) => b[1] - a[1]);
   const ingrIncassiArray = Object.entries(incassiIngredienti).map(([n,i]) => ({ nome: n, incasso: i }));
 
-  // salvo per gli export
-    // salvo per gli export
-    window.statistiche = {
-    totaleComande,
-    totaleIncasso,
-    totalePos,
-    totaleContanti,
-    incassoAsporto,
-    piattiByQuantita,
-    ingrIncassiArray,
-    listaComande
-    };
+  window.statistiche = {
+      totaleComande,
+      totaleIncasso,
+      totalePos,
+      totaleContanti,
+      incassoAsporto,
+      piattiByQuantita,
+      piattiByIncasso,
+      ingrByQuantita,
+      ingrIncassiArray,
+      listaComande
+  };
 
   // RIEPILOGO IN-APP: esattamente Piatto | Quantità venduta | Incasso (nient'altro)
   const rows = piattiByQuantita.map(([nome, v]) =>
@@ -5004,7 +5004,7 @@ async function caricaStatistiche() {
     <p><b>Incasso totale:</b> €${totaleIncasso.toFixed(2)}</p>
     <p><b>Incasso POS:</b> €${totalePos.toFixed(2)}</p>
     <p><b>Incasso Contanti:</b> €${totaleContanti.toFixed(2)}</p>
-    <p><b style="color:#e65100;">Di cui Asporto:</b> €${incassoAsporto.toFixed(2)}</p>
+    <p><b>Di cui Asporto:</b> €${incassoAsporto.toFixed(2)}</p>
     <table border="0" style="width:100%; border-collapse:collapse;">
         <thead>
         <tr style="border-bottom:2px solid #444;">
