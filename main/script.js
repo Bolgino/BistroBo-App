@@ -47,7 +47,8 @@ window.settings = {
 	displayClienteAbilitato: false,
 	comandeProgressive: false,
 	contatoreComande: 0,
-	letteraComandaAbilitata: true
+	letteraComandaAbilitata: true,
+	selettoreQuantitaCassa: true
 };
 
 //Ingredienti Critici
@@ -418,7 +419,6 @@ document.getElementById("regBtn").onclick = async () => {
     
 };
 
-// -------------------- IMPOSTAZIONI TOGGLE SICURE --------------------
 // -------------------- IMPOSTAZIONI TOGGLE SICURE --------------------
 function initImpostazioniToggle() {
     // MANUTENZIONE
@@ -903,7 +903,25 @@ function initImpostazioniToggle() {
         if (suonoChatSetting) suonoChatSetting.style.display = val ? "flex" : "none";
         if (resetChatSetting) resetChatSetting.style.display = val ? "flex" : "none";
     });
+	// ================= SELETTORE QUANTITÀ CASSA =================
+    const toggleSelettoreQuantitaBtn = document.getElementById("toggleSelettoreQuantitaBtn");
+    const selettoreQuantitaRef = db.ref("impostazioni/selettoreQuantitaCassa");
 
+    if (toggleSelettoreQuantitaBtn) {
+        initToggle(toggleSelettoreQuantitaBtn, selettoreQuantitaRef, {on: "ON", off: "OFF"}, true, val => {
+            window.settings.selettoreQuantitaCassa = val;
+            
+            // Cerca il contenitore della quantità in cassa per nasconderlo/mostrarlo
+            const divQuantita = document.getElementById("quantitaContainer");
+            if (divQuantita) {
+                divQuantita.style.display = val ? "inline-block" : "none";
+            }
+            
+            // Se disattivato, resettiamo il valore a 1 per evitare bug
+            const quantitaInput = document.getElementById("quantita");
+            if (!val && quantitaInput) quantitaInput.value = 1;
+        });
+    }
 }
 function initTickNoteDestinazioni() {
     // 🔹 Mostra/nasconde i tick destinazioni note in base all'impostazione
@@ -2197,9 +2215,14 @@ async function caricaMenuCassa() {
 
                 // Click aggiungi comanda
                 btn.onclick = () => {
-                    const quantVal = document.getElementById("quantita").value;
-                    const quant = parseInt(quantVal);
-                    if (!quant || quant <= 0) { notify("Seleziona prima la quantità!", "warn"); return; }
+                    let quant = 1; // Se il selettore è OFF, ogni click vale 1
+
+                    // Se il selettore è ON, leggiamo la quantità dal campo
+                    if (window.settings.selettoreQuantitaCassa) {
+                        const quantVal = document.getElementById("quantita").value;
+                        quant = parseInt(quantVal);
+                        if (!quant || quant <= 0) { notify("Seleziona prima la quantità!", "warn"); return; }
+                    }
 
                     const esiste = comandaCorrente.find(i => i.nome === item.nome);
                     if (esiste) {
