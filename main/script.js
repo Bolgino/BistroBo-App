@@ -4922,6 +4922,7 @@ async function caricaStatistiche() {
   let totaleIncasso = 0;
     let totalePos = 0;
     let totaleContanti = 0;
+	let incassoAsporto = 0;
   const piattiMap = {};            // { nome: { quantita, incasso } }
   const ingrMap = {};              // { nome: quantita }
   const incassiIngredienti = {};   // { nome: incasso } (come prima, somma del prezzo del piatto)
@@ -4957,6 +4958,9 @@ async function caricaStatistiche() {
     } else {
     totaleContanti += totaleComanda;
     }
+  if (c.commento && c.commento.includes("ASPORTO")) {
+		incassoAsporto += totaleComanda;
+	}
     totaleIncasso += totaleComanda;
 
 
@@ -4977,14 +4981,14 @@ async function caricaStatistiche() {
   const ingrIncassiArray = Object.entries(incassiIngredienti).map(([n,i]) => ({ nome: n, incasso: i }));
 
   // salvo per gli export
+    // salvo per gli export
     window.statistiche = {
     totaleComande,
     totaleIncasso,
     totalePos,
     totaleContanti,
+    incassoAsporto,
     piattiByQuantita,
-    piattiByIncasso,
-    ingrByQuantita,
     ingrIncassiArray,
     listaComande
     };
@@ -5000,6 +5004,7 @@ async function caricaStatistiche() {
     <p><b>Incasso totale:</b> €${totaleIncasso.toFixed(2)}</p>
     <p><b>Incasso POS:</b> €${totalePos.toFixed(2)}</p>
     <p><b>Incasso Contanti:</b> €${totaleContanti.toFixed(2)}</p>
+    <p><b style="color:#e65100;">Di cui Asporto:</b> €${incassoAsporto.toFixed(2)}</p>
     <table border="0" style="width:100%; border-collapse:collapse;">
         <thead>
         <tr style="border-bottom:2px solid #444;">
@@ -5029,8 +5034,7 @@ async function generaExcel() {
   const s = window.statistiche;
   if (!s) { notify("Nessuna statistica disponibile","warn"); return; }
 
-  const { piattiByIncasso, piattiByQuantita, ingrByQuantita, totaleComande, totaleIncasso, totalePos, totaleContanti } = s;
-
+ const { piattiByIncasso, piattiByQuantita, ingrByQuantita, totaleComande, totaleIncasso, totalePos, totaleContanti, incassoAsporto } = s;
   const workbook = new ExcelJS.Workbook();
 
   // ----------------- Scheda 1: Piatti x Incasso -----------------
@@ -5062,15 +5066,26 @@ async function generaExcel() {
     sheet1.getCell('F4').value = totalePos;
     sheet1.getCell('E5').value = "Incasso Contanti (€)";
     sheet1.getCell('F5').value = totaleContanti;
+    
+    sheet1.getCell('E6').value = "Di cui Asporto (€)";
+    sheet1.getCell('F6').value = incassoAsporto;
 
     // Formatta come valuta
     sheet1.getCell('F4').numFmt = '€#,##0.00';
     sheet1.getCell('F5').numFmt = '€#,##0.00';
+    sheet1.getCell('F6').numFmt = '€#,##0.00';
 
     // Stile blu e grassetto come prima
     ['E4','F4','E5','F5'].forEach(addr => {
     const cell = sheet1.getCell(addr);
     cell.fill = { type:'pattern', pattern:'solid', fgColor:{argb:'00B0F0'} };
+    cell.font = { bold:true };
+    });
+
+    // Stile Arancione per Asporto
+    ['E6','F6'].forEach(addr => {
+    const cell = sheet1.getCell(addr);
+    cell.fill = { type:'pattern', pattern:'solid', fgColor:{argb:'FFB74D'} };
     cell.font = { bold:true };
     });
 
@@ -5137,7 +5152,7 @@ function generaPdf() {
   const s = window.statistiche;
   if (!s) { notify("Nessuna statistica disponibile. Apri la tab Incassi prima.","warn"); return; }
 
-  const { totaleComande, totaleIncasso, totalePos, totaleContanti, piattiByQuantita, piattiByIncasso, ingrByQuantita, ingrIncassiArray, listaComande } = s;
+  const { totaleComande, totaleIncasso, totalePos, totaleContanti, incassoAsporto, piattiByQuantita, piattiByIncasso, ingrByQuantita, ingrIncassiArray, listaComande } = s;
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
   let y = 14;
@@ -5163,10 +5178,16 @@ function generaPdf() {
   doc.text(`Incasso POS: €${totalePos.toFixed(2)}`, xLeft, y);
     y += 6;
     doc.text(`Incasso Contanti: €${totaleContanti.toFixed(2)}`, xLeft, y);
-    y += 10;
-
-
-  // Tabella: Piatti per quantità
+    y += 8;
+	 doc.setFont(undefined, 'bold');
+	 doc.setTextColor(230, 81, 0); // Arancione
+	 doc.text(`Di cui Asporto: €${incassoAsporto.toFixed(2)}`, xLeft, y);
+	 doc.setFont(undefined, 'normal');
+	 doc.setTextColor(0, 0, 0);
+	    y += 10;
+	
+	
+	  // Tabella: Piatti per quantità
   doc.setFontSize(13);
   doc.setFont(undefined,'bold');
   doc.setTextColor(0,100,0); // verde
