@@ -969,8 +969,10 @@ function initTickNoteDestinazioni() {
     if (toggleCassaOttBtn) {
         initToggle(toggleCassaOttBtn, cassaOttRef, {on: "ON", off: "OFF"}, false, val => {
             window.settings.cassaOttimizzata = val;
-            // Ricarica la vista menu in Cassa all'istante quando l'Admin preme il pulsante
-            if (window.isLoggedInCassa) {
+            
+            // Forza lo svuotamento della cache dei bottoni e ridisegna!
+            if (window.isLoggedInCassa || (window.isLoggedInAdmin && !document.getElementById("cassaDiv").classList.contains("hidden"))) {
+                window.menuButtons = {}; // <--- FONADAMENTALE PER RICREARE I PULSANTI CON LE NUOVE DIMENSIONI
                 caricaMenuCassa();
             }
         });
@@ -2303,50 +2305,75 @@ async function caricaMenuCassa() {
                 : `€${item.prezzo.toFixed(2)}`;
             wrapper.appendChild(prezzoDiv);
 
-            // Mostriamo gli ingredienti SOLO se la cassa NON è ottimizzata
-            if (!window.settings.cassaOttimizzata && item.ingredienti && item.ingredienti.length) {
-                const ingDiv = document.createElement("div");
-                ingDiv.style.fontSize = "11px";
-                ingDiv.style.color = "#444";
-                ingDiv.style.marginTop = "4px";
-                ingDiv.textContent = "Ingredienti: " + item.ingredienti.map(ing => ing.nome || ing.id).join(", ");
-                wrapper.appendChild(ingDiv);
-            }
-
-            btn.innerHTML = "";
-            btn.appendChild(wrapper);
-
+            btn.innerHTML = ""; // Puliamo per sicurezza
+            
             // LOGICA STILE GRAFICO (Pulsantoni Ottimizzati vs Lista Normale)
             if (window.settings.cassaOttimizzata) {
+                // MODALITÀ COMPATTA E STRETTA
+                // Impostiamo il contenitore madre (Cibi/Bevande/Snack) per usare Flexbox
+                const parentDiv = btn.parentElement;
+                if (parentDiv && parentDiv.style.display !== "flex") {
+                    parentDiv.style.display = "flex";
+                    parentDiv.style.flexWrap = "wrap";
+                    parentDiv.style.justifyContent = "space-between"; // Mantiene i bottoni ai lati
+                    parentDiv.style.gap = "4px"; // Spazio tra i bottoni ridotto al minimo
+                    parentDiv.style.padding = "0 5px";
+                }
+
+                // Disegno il bottone "stretto" (Senza ingredienti)
+                wrapper.style.display = "flex";
+                wrapper.style.flexDirection = "column";
+                wrapper.style.justifyContent = "center";
+                wrapper.style.alignItems = "center";
+                wrapper.style.lineHeight = "1.1";
+                nomeDiv.style.fontSize = "0.95em"; // Nome un pelo più piccolo
+                prezzoDiv.style.fontSize = "0.85em";
+
+                btn.appendChild(wrapper);
+
                 Object.assign(btn.style, {
-                    display: "inline-flex",
-                    flexDirection: "column",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    width: "calc(50% - 8px)", // Due pulsanti perfetti per riga affiancati
-                    height: "75px",           // Altezza da pulsantone touch
-                    margin: "4px",
-                    padding: "5px",
-                    borderRadius: "8px",      // Bordo morbido
-                    border: "2px solid #ccc", // Bordo marcato
-                    background: "#fdfdfd",
-                    boxShadow: "0 2px 5px rgba(0,0,0,0.1)", // Piccolo effetto sollevato
+                    flex: "0 0 calc(50% - 4px)", // 50% esatto dello spazio meno il gap
+                    height: "55px",              // Altezza molto più ridotta
+                    margin: "0",
+                    padding: "2px",
+                    borderRadius: "6px",
+                    border: "1px solid #999",
+                    background: "#f9f9f9",
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
                     cursor: "pointer",
                     color: "#000",
-                    verticalAlign: "top",
                     boxSizing: "border-box"
                 });
             } else {
+                // MODALITÀ NORMALE (LISTA CON INGREDIENTI)
+                const parentDiv = btn.parentElement;
+                if (parentDiv) {
+                    parentDiv.style.display = "block"; // Riportiamo a display a blocchi
+                }
+
+                if (item.ingredienti && item.ingredienti.length) {
+                    const ingDiv = document.createElement("div");
+                    ingDiv.style.fontSize = "11px";
+                    ingDiv.style.color = "#444";
+                    ingDiv.style.marginTop = "4px";
+                    ingDiv.textContent = "Ingredienti: " + item.ingredienti.map(ing => ing.nome || ing.id).join(", ");
+                    wrapper.appendChild(ingDiv);
+                }
+
+                btn.appendChild(wrapper);
+
                 Object.assign(btn.style, {
                     display: "block",
                     width: "90%",
                     margin: "0 auto 5px auto",
-                    padding: "3px 5px",
+                    padding: "6px 5px",
                     borderRadius: "4px",
                     border: "1px solid #aaa",
                     background: "#f5f5f5",
                     cursor: "pointer",
-                    color: "#000"
+                    color: "#000",
+                    height: "auto",
+                    boxShadow: "none"
                 });
             }
         });
