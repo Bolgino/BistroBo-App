@@ -152,15 +152,17 @@
 						</label>
 					</div>
 
-					Quantità: 
-					<select id="quantita" class="selectQty">
-						<option value="">--</option>
-						<script>
-							for(let i=1;i<=20;i++){
-								document.write(`<option value="${i}">${i}</option>`);
-							}
-						</script>
-					</select>
+					<span id="quantitaContainer">
+						Quantità: 
+						<select id="quantita" class="selectQty">
+							<option value="">--</option>
+							<script>
+								for(let i=1;i<=20;i++){
+									document.write(`<option value="${i}">${i}</option>`);
+								}
+							</script>
+						</select>
+					</span>
 
 					<!-- Riquadro con comanda corrente -->
 					<div id="comandaCorrente" 
@@ -545,6 +547,13 @@
 					<small>Mostra la casella “Asporto” in Cassa per etichettare le comande con "Asporto" (sia normali sia preordini)</small>
 				</div>
 				<button id="toggleAsportoBtn" class="toggleBtn">OFF</button>
+			</div>
+			<div class="settingItem">
+				<div class="settingLabel">
+					<span>Selettore quantità in Cassa</span>
+					<small>Se disattivato, scompare il menu a tendina e ogni click sui piatti aggiunge +1 in automatico alla comanda.</small>
+				</div>
+				<button id="toggleSelettoreQuantitaBtn" class="toggleBtn">ON</button>
 			</div>
 			<!-- ================= PREORDINI ================= -->
 			<div class="settingItem">
