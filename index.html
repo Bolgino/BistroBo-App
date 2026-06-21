@@ -165,25 +165,19 @@
 					</span>
 
 					<!-- Riquadro con comanda corrente -->
-					<div id="comandaCorrente" 
-						 style="height:250px; padding:5px; 
-								border:1px solid #ccc; border-radius:5px; overflow-y:auto; margin-bottom:15px;">
+					<div id="comandaCorrente" style="height:140px; padding:5px; border:1px solid #ccc; border-radius:5px; overflow-y:auto; margin-bottom:8px;"></div>
+					
+					<label for="noteComanda" style="font-size:0.95em;"><b>Note:</b></label><br>
+					<div id="noteDestinazioniDiv" style="display:none; margin-bottom:4px; font-size:0.95em;">
+					    <label><input type="checkbox" id="tickCucina" checked> Cucina</label>
+					    <label style="margin-left:10px;"><input type="checkbox" id="tickBere"> Bere</label>
+					    <label id="tickSnackLabel" style="margin-left:10px; display:none;">
+					            <input type="checkbox" id="tickSnack"> Snack
+					    </label>
 					</div>
-
-          <!-- Spazio note comanda -->
-          <label for="noteComanda"><b>Note:</b></label><br>
-		  <!-- 🔹 Tick destinazioni note (visibili solo se impostazione attiva) -->
-			<div id="noteDestinazioniDiv" style="display:none; margin-bottom:6px;">
-				<label><input type="checkbox" id="tickCucina" checked> Cucina</label>
-				<label style="margin-left:10px;"><input type="checkbox" id="tickBere"> Bere</label>
-				<label id="tickSnackLabel" style="margin-left:10px; display:none;">
-						<input type="checkbox" id="tickSnack"> Snack
-				</label>
-			</div>
-
-          <textarea id="noteComanda" 
-                    placeholder="Note comanda (es. allergie, richieste)" 
-                    style="width:98%; height:150px; resize:vertical; border:1px solid #ccc; border-radius:3px; padding-top:8px; padding-bottom:8px; padding-left:0px; padding-right:5px; text-align:left;"></textarea>
+					
+					<textarea id="noteComanda" placeholder="Note comanda (es. allergie, richieste)" 
+					    style="width:98%; height:65px; resize:none; border:1px solid #ccc; border-radius:4px; padding:6px; text-align:left; font-size:0.95em;"></textarea>
 				</div>
 
 
@@ -564,6 +558,13 @@
 			        <small>Se disattivato, nasconde la calcolatrice dei soldi, le banconote e il calcolo del resto in Cassa.</small>
 			    </div>
 			    <button id="toggleGestioneSoldiBtn" class="toggleBtn">ON</button>
+			</div>
+			<div class="settingItem">
+			    <div class="settingLabel">
+			        <span>Attiva Cassa Ottimizzata</span>
+			        <small>Trasforma i piatti in grandi pulsanti affiancati e nasconde gli ingredienti per ottimizzare gli spazi in Cassa.</small>
+			    </div>
+			    <button id="toggleCassaOttBtn" class="toggleBtn">OFF</button>
 			</div>
 			<!-- ================= PREORDINI ================= -->
 			<div class="settingItem">
