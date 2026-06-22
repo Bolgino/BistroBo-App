@@ -3277,7 +3277,6 @@ async function caricaIngredienti() {
         qtyInput.style.width = "70px";
         qtyInput.step = "any";
 
-       
         const statoSpan = document.createElement("span");
         statoSpan.style.fontWeight = "bold";
         const isEsaurito = (ing.rimanente === 0);
@@ -3289,13 +3288,6 @@ async function caricaIngredienti() {
         btnDisp.onclick = async () => {
           await db.ref(`ingredienti/${ing.id}`).update({ rimanente: null, disponibile: true });
           await caricaIngredienti();
-        };
-
-        const btnEs = document.createElement("button");
-        btnEs.innerText = "Esaurito";
-        btnEs.onclick = async () => {
-          await db.ref(`ingredienti/${ing.id}`).update({ rimanente: 0, disponibile: false });
-            await caricaIngredienti();
         };
 
         const btnEs = document.createElement("button");
