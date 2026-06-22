@@ -3829,9 +3829,9 @@ function modificaComanda(id, comanda) {
             btnMinus.innerText = "-";
             btnMinus.onclick = async () => {
                 if (p.quantita > 1) {
-                    // restituisco 1 unità per ingredienti del piatto
-                    (p.ingredienti || []).forEach(async i => {
-                        const qty = i.qtyPerUnit || 1;
+                    // 🟢 SOSTITUZIONE APPLICATA QUI SOTTO: Usciamo getIngredientiEffettivi
+                    getIngredientiEffettivi(p).forEach(async i => {
+                        const qty = i.qty || 1; // <-- Cambiato da qtyPerUnit a qty
                         if (i.id) { await applicaIncrementoSingolo(i.id, qty); subReserved(i.id, qty); }
                         else {
                             const nameLow = (i.nome||"").trim().toLowerCase();
@@ -3841,9 +3841,9 @@ function modificaComanda(id, comanda) {
                     });
                     p.quantita--;
                 } else {
-                    // p.quantita === 1 -> rimuovo e restituisco tutto
-                    (p.ingredienti || []).forEach(async i => {
-                        const qty = (i.qtyPerUnit || 1) * 1;
+                    // 🟢 SOSTITUZIONE APPLICATA QUI SOTTO
+                    getIngredientiEffettivi(p).forEach(async i => {
+                        const qty = (i.qty || 1) * 1; // <-- Cambiato
                         if (i.id) { await applicaIncrementoSingolo(i.id, qty); subReserved(i.id, qty); }
                         else {
                             const nameLow = (i.nome||"").trim().toLowerCase();
@@ -3860,18 +3860,21 @@ function modificaComanda(id, comanda) {
             btnPlus.style.marginLeft = "6px";
             btnPlus.onclick = async () => {
                 const delta = 1;
-                const richiesteDelta = calcolaRichiesteDaPiatti([ { ingredienti: p.ingredienti || [], quantita: delta } ]);
+                // 🟢 SOSTITUZIONE APPLICATA QUI SOTTO: Inserito p.varianti
+                const richiesteDelta = calcolaRichiesteDaPiatti([ { ingredienti: p.ingredienti || [], varianti: p.varianti || [], quantita: delta } ]);
                 btnPlus.disabled = true;
                 const r = await applicaDecrementiIngredienti(richiesteDelta);
                 btnPlus.disabled = false;
                 if (!r.success) { notify("Non c'è abbastanza disponibilità per aumentare la quantità: " + (r.message||""), "error"); return; }
                 p.quantita++;
-                (p.ingredienti || []).forEach(i => {
-                    if (i.id) addReserved(i.id, i.qtyPerUnit || 1);
+                
+                // 🟢 SOSTITUZIONE APPLICATA QUI SOTTO (Ho sistemato anche questo per riservare anche le aggiunte!)
+                getIngredientiEffettivi(p).forEach(i => {
+                    if (i.id) addReserved(i.id, i.qty || 1); // <-- Cambiato
                     else {
                         const nameLow = (i.nome||"").trim().toLowerCase();
                         const mapped = Object.keys(ingredientData).find(k => (ingredientData[k].nome||"").trim().toLowerCase() === nameLow);
-                        if (mapped) addReserved(mapped, i.qtyPerUnit || 1);
+                        if (mapped) addReserved(mapped, i.qty || 1); // <-- Cambiato
                     }
                 });
                 aggiornaLista();
@@ -3881,8 +3884,9 @@ function modificaComanda(id, comanda) {
             btnRemove.innerText = "❌";
             btnRemove.style.marginLeft = "6px";
             btnRemove.onclick = async () => {
-                (p.ingredienti || []).forEach(async i => {
-                    const qty = (i.qtyPerUnit || 1) * (p.quantita || 1);
+                // 🟢 SOSTITUZIONE APPLICATA QUI SOTTO
+                getIngredientiEffettivi(p).forEach(async i => {
+                    const qty = (i.qty || 1) * (p.quantita || 1); // <-- Cambiato
                     if (i.id) { await applicaIncrementoSingolo(i.id, qty); subReserved(i.id, qty); }
                     else {
                         const nameLow = (i.nome||"").trim().toLowerCase();
@@ -4075,7 +4079,6 @@ function modificaComanda(id, comanda) {
         console.error("menu load error:", err);
     });
 
-
     // --- Pulsanti Salva e Annulla ---
     const azioniDiv = document.createElement("div");
     azioniDiv.style.marginTop = "10px";
@@ -4154,7 +4157,6 @@ function modificaComanda(id, comanda) {
         caricaGestioneComandeAdmin();
     };
 
-
     azioniDiv.appendChild(btnSalva);
     azioniDiv.appendChild(btnAnnulla);
     divAdmin.appendChild(azioniDiv);
@@ -4165,9 +4167,7 @@ function modificaComanda(id, comanda) {
     } else {
         tab.appendChild(divAdmin); // fallback
     }
-
 }
-// pulsante e cambio categoria
 document.getElementById("mostraOpzioniIngredientiBtn").onclick = () => {
     const container = document.getElementById("piattoIngredientiContainer");
     if(container.style.display === "none" || container.style.display === "") {
