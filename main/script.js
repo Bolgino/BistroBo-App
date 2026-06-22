@@ -3917,9 +3917,12 @@ function modificaComanda(id, comanda) {
             };
 
             const btnRemove = document.createElement("button");
-            btnRemove.innerText = "❌";
+            btnRemove.innerText = "X";
+			btnRemove.style.marginLeft = "6px";
+			btnRemove.style.color = "#000000"; // Nero
+			btnRemove.style.fontWeight = "900"; // Grassetto marcato
+			btnRemove.style.backgroundColor = "#ffcccc"; // Sfondo rosso chiaro per contrasto
             btnRemove.className = "tabBtn";
-            btnRemove.style.marginLeft = "6px";
             btnRemove.onclick = async () => {
                 getIngredientiEffettivi(p).forEach(async i => {
                     const qty = (i.qty || 1) * (p.quantita || 1);
