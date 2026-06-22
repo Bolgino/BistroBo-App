@@ -1869,43 +1869,8 @@ function mostraSchermata() {
         window.isLoggedInCassa = true;
         window.isLoggedInAdmin = false;
         
-        // 🔹 RICHIESTA FONDO CASSA AL PRIMO ACCESSO
-        db.ref("impostazioni/fondoCassa").once("value").then(snap => {
-            if (!snap.exists() || snap.val() === "") {
-                const overlay = document.createElement("div");
-                overlay.className = "modal-overlay";
-                overlay.style.zIndex = "10005";
-
-                const modal = document.createElement("div");
-                modal.className = "modal-varianti";
-                modal.style.textAlign = "center";
-
-                modal.innerHTML = `
-                    <h3 style="margin-bottom: 15px; color: #333;">Fondo Cassa Iniziale</h3>
-                    <p style="font-size: 0.9em; color: #555; margin-bottom: 15px;">Inserisci l'importo di partenza presente in cassa.</p>
-                    <input type="number" step="0.01" id="inputFondoCassa" value="50.00" 
-                           style="width: 100%; box-sizing: border-box; padding: 10px; margin-bottom: 20px; border: 1px solid #ccc; border-radius: 6px; font-size: 1.1rem; text-align: center;">
-                    <div class="modal-actions">
-                        <button class="btn-salva" id="btnSalvaFondo" style="width: 100%;">Conferma Fondo Cassa</button>
-                    </div>
-                `;
-
-                overlay.appendChild(modal);
-                document.body.appendChild(overlay);
-
-                document.getElementById("btnSalvaFondo").onclick = () => {
-                    let valStr = document.getElementById("inputFondoCassa").value.replace(",", ".");
-                    const fondo = parseFloat(valStr);
-                    if (!isNaN(fondo) && fondo >= 0) {
-                        db.ref("impostazioni/fondoCassa").set(fondo);
-                        overlay.remove();
-                        notify("Fondo cassa impostato: €" + fondo.toFixed(2), "success");
-                    } else {
-                        notify("Inserisci un importo valido", "error");
-                    }
-                };
-            }
-        });
+        // 🔹 RICHIESTA FONDO CASSA (Globale per tutte le casse)
+        if (typeof gestisciFondoCassa === "function") gestisciFondoCassa(false);
 
         if (typeof initPreordiniInterni === "function") initPreordiniInterni();
         document.getElementById("cassaDiv").classList.remove("hidden");
@@ -1991,6 +1956,75 @@ function mostraSchermata() {
         }
     }, 200);
 }
+// ================= GESTIONE FONDO CASSA GLOBALE E ADMIN =================
+function gestisciFondoCassa(forzaModifica = false) {
+    db.ref("impostazioni/fondoCassa").once("value").then(snap => {
+        const fondoAttuale = snap.exists() ? snap.val() : "";
+        
+        // Se il fondo c'è già nel database e NON stiamo cliccando da Admin, esci e lascia lavorare la Cassa
+        if (!forzaModifica && snap.exists() && fondoAttuale !== "") return;
+
+        // Sicurezza: Evita di aprire modali doppi
+        if (document.getElementById("modaleFondoCassa")) return;
+
+        const overlay = document.createElement("div");
+        overlay.className = "modal-overlay";
+        overlay.id = "modaleFondoCassa";
+        overlay.style.zIndex = "10005";
+
+        const modal = document.createElement("div");
+        modal.className = "modal-varianti";
+        modal.style.textAlign = "center";
+
+        modal.innerHTML = `
+            <h3 style="margin-bottom: 15px; color: #333;">Fondo Cassa Iniziale</h3>
+            <p style="font-size: 0.9em; color: #555; margin-bottom: 15px;">
+                ${forzaModifica ? "Modifica l'importo attuale o azzera il fondo." : "Inserisci l'importo di partenza presente in cassa per la giornata."}
+            </p>
+            <input type="number" step="0.01" id="inputFondoCassa" value="${fondoAttuale !== "" ? fondoAttuale : "50.00"}" 
+                   style="width: 100%; box-sizing: border-box; padding: 10px; margin-bottom: 20px; border: 1px solid #ccc; border-radius: 6px; font-size: 1.1rem; text-align: center;">
+            <div class="modal-actions">
+                ${forzaModifica ? `<button class="btn-chiudi" id="btnChiudiFondo">Annulla</button>` : ""}
+                <button class="btn-salva" id="btnSalvaFondo" style="${forzaModifica ? '' : 'width: 100%;'}">Conferma Fondo</button>
+            </div>
+            ${forzaModifica ? `<button id="btnAzzeraFondo" style="width: 100%; margin-top: 15px; padding: 10px; background: #f44336; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">Resetta (Verrà chiesto in Cassa)</button>` : ""}
+        `;
+
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+
+        // Se siamo in Admin, abilitiamo il tasto di chiusura e di reset
+        if (forzaModifica) {
+            document.getElementById("btnChiudiFondo").onclick = () => overlay.remove();
+            document.getElementById("btnAzzeraFondo").onclick = () => {
+                db.ref("impostazioni/fondoCassa").remove();
+                overlay.remove();
+                notify("Fondo azzerato. Verrà richiesto al prossimo accesso in Cassa.", "info");
+            };
+        }
+
+        // Tasto di salvataggio (usato sia dalla Cassa che dall'Admin)
+        document.getElementById("btnSalvaFondo").onclick = () => {
+            let valStr = document.getElementById("inputFondoCassa").value.replace(",", ".");
+            const fondo = parseFloat(valStr);
+            if (!isNaN(fondo) && fondo >= 0) {
+                db.ref("impostazioni/fondoCassa").set(fondo);
+                overlay.remove();
+                notify("Fondo cassa salvato: €" + fondo.toFixed(2), "success");
+            } else {
+                notify("Inserisci un importo numerico valido", "error");
+            }
+        };
+    });
+}
+
+// Ascoltatore per il bottone nelle Impostazioni dell'Admin
+document.addEventListener("DOMContentLoaded", () => {
+    const btnAdminFondo = document.getElementById("impostaFondoCassaBtn");
+    if (btnAdminFondo) {
+        btnAdminFondo.onclick = () => gestisciFondoCassa(true);
+    }
+});
 // ================== CHAT INTERNA GLOBALE ==================
 function ruoloCapitalizzato() {
   if (!ruolo) return "";
