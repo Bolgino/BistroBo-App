@@ -970,10 +970,11 @@ function initTickNoteDestinazioni() {
         initToggle(toggleCassaOttBtn, cassaOttRef, {on: "ON", off: "OFF"}, false, val => {
             window.settings.cassaOttimizzata = val;
             
-            // Forza lo svuotamento della cache dei bottoni e ridisegna!
-            if (window.isLoggedInCassa || (window.isLoggedInAdmin && !document.getElementById("cassaDiv").classList.contains("hidden"))) {
-                window.menuButtons = {}; // <--- FONADAMENTALE PER RICREARE I PULSANTI CON LE NUOVE DIMENSIONI
-                caricaMenuCassa();
+            // Applica o rimuove la classe istantaneamente senza far sparire i bottoni!
+            const cassaContainer = document.getElementById("aggiungiComandaTab");
+            if (cassaContainer) {
+                if (val) cassaContainer.classList.add("cassa-ottimizzata");
+                else cassaContainer.classList.remove("cassa-ottimizzata");
             }
         });
     }
@@ -2227,189 +2228,99 @@ async function caricaMenuCassa() {
     if (!checkOnline(true)) return;
     showLoader();
 
-    window.menuButtons = {}; // Salva tutti i bottoni
+    // Applica subito il layout se l'opzione è attiva
+    const cassaContainer = document.getElementById("aggiungiComandaTab");
+    if (cassaContainer) {
+        if (window.settings.cassaOttimizzata) cassaContainer.classList.add("cassa-ottimizzata");
+        else cassaContainer.classList.remove("cassa-ottimizzata");
+    }
 
     const menuCibiDiv = document.getElementById("menuCibi");
     const menuBevandeDiv = document.getElementById("menuBevande");
     const menuSnackDiv = document.getElementById("menuSnack");
-
     const menuRef = db.ref("menu");
     const ingredientiRef = db.ref("ingredienti");
 
-    // --- CREA BOTTONI UNA SOLA VOLTA ---
     function renderMenuCassa() {
         if (!window.menuData || !window.ingredientData) return;
 
-        menuCibiDiv.innerHTML = "<h3>Cibi</h3>";
-        menuBevandeDiv.innerHTML = "<h3>Bevande</h3>";
-        menuSnackDiv.innerHTML = "<h3>Snack</h3>";
+        // Disegna le griglie
+        menuCibiDiv.innerHTML = "<h3 style='margin: 0 0 10px 0; text-align:center;'>Cibi</h3><div class='menu-grid' id='grid-cibi'></div>";
+        menuBevandeDiv.innerHTML = "<h3 style='margin: 15px 0 10px 0; text-align:center;'>Bevande</h3><div class='menu-grid' id='grid-bevande'></div>";
+        menuSnackDiv.innerHTML = "<h3 style='margin: 15px 0 10px 0; text-align:center;'>Snack</h3><div class='menu-grid' id='grid-snack'></div>";
 
         Object.entries(window.menuData || {}).forEach(([id, item]) => {
-            let btn = window.menuButtons[id];
+            // Creo il bottone sempre nuovo (evita il bug della sparizione!)
+            let btn = document.createElement("button");
+            btn.className = "piatto-btn";
+            btn.dataset.menuId = id;
 
-            if (!btn) {
-                btn = document.createElement("button");
-                btn.dataset.menuId = id;
+            btn.onclick = () => {
+                let quant = 1; 
+                if (window.settings.selettoreQuantitaCassa) {
+                    const quantVal = document.getElementById("quantita").value;
+                    quant = parseInt(quantVal);
+                    if (!quant || quant <= 0) { notify("Seleziona prima la quantità!", "warn"); return; }
+                }
+                const esiste = comandaCorrente.find(i => i.nome === item.nome);
+                if (esiste) {
+                    esiste.quantita += quant;
+                    esiste.sconto = item.sconto || null;
+                    esiste.prezzo = item.prezzo;
+                } else {
+                    comandaCorrente.push({
+                        nome: item.nome, prezzo: item.prezzo, quantita: quant, categoria: item.categoria,
+                        ingredienti: item.ingredienti || [], sconto: item.sconto || null
+                    });
+                }
+                aggiornaComandaCorrente();
+            };
 
-
-                // Click aggiungi comanda
-                btn.onclick = () => {
-                    let quant = 1; // Se il selettore è OFF, ogni click vale 1
-
-                    // Se il selettore è ON, leggiamo la quantità dal campo
-                    if (window.settings.selettoreQuantitaCassa) {
-                        const quantVal = document.getElementById("quantita").value;
-                        quant = parseInt(quantVal);
-                        if (!quant || quant <= 0) { notify("Seleziona prima la quantità!", "warn"); return; }
-                    }
-
-                    const esiste = comandaCorrente.find(i => i.nome === item.nome);
-                    if (esiste) {
-                        esiste.quantita += quant;
-                        esiste.sconto = item.sconto || null;
-                        esiste.prezzo = item.prezzo;
-                    } else {
-                        comandaCorrente.push({
-                            nome: item.nome,
-                            prezzo: item.prezzo,
-                            quantita: quant,
-                            categoria: item.categoria,
-                            ingredienti: item.ingredienti || [],
-                            sconto: item.sconto || null
-                        });
-                    }
-                    aggiornaComandaCorrente();
-                };
-                window.menuButtons[id] = btn;
-
-                // Append al DOM
-                const categoria = (item.categoria || "").toLowerCase();
-                if (categoria === "cibi") menuCibiDiv.appendChild(btn);
-                else if (categoria === "bevande") menuBevandeDiv.appendChild(btn);
-                else if (categoria === "snack") menuSnackDiv.appendChild(btn);
-            }
-
-           // Aggiorno sempre contenuto e stili
             const wrapper = document.createElement("div");
-            wrapper.style.textAlign = "center";
             wrapper.style.width = "100%";
-
+            
             const nomeDiv = document.createElement("div");
+            nomeDiv.className = "piatto-nome";
             nomeDiv.textContent = item.nome;
-            nomeDiv.style.fontWeight = "bold";
             wrapper.appendChild(nomeDiv);
 
             const prezzoDiv = document.createElement("div");
-            prezzoDiv.innerText = item.sconto 
-                ? `€${calcolaPrezzoConSconto(item).toFixed(2)}`
-                : `€${item.prezzo.toFixed(2)}`;
+            prezzoDiv.className = "piatto-prezzo";
+            prezzoDiv.innerText = item.sconto ? `€${calcolaPrezzoConSconto(item).toFixed(2)}` : `€${item.prezzo.toFixed(2)}`;
             wrapper.appendChild(prezzoDiv);
 
-            btn.innerHTML = ""; // Puliamo per sicurezza
-            
-            // LOGICA STILE GRAFICO (Pulsantoni Ottimizzati vs Lista Normale)
-            if (window.settings.cassaOttimizzata) {
-                // MODALITÀ COMPATTA E STRETTA
-                // Impostiamo il contenitore madre (Cibi/Bevande/Snack) per usare Flexbox
-                const parentDiv = btn.parentElement;
-                if (parentDiv && parentDiv.style.display !== "flex") {
-                    parentDiv.style.display = "flex";
-                    parentDiv.style.flexWrap = "wrap";
-                    parentDiv.style.justifyContent = "space-between"; // Mantiene i bottoni ai lati
-                    parentDiv.style.gap = "4px"; // Spazio tra i bottoni ridotto al minimo
-                    parentDiv.style.padding = "0 5px";
-                }
-
-                // Disegno il bottone "stretto" (Senza ingredienti)
-                wrapper.style.display = "flex";
-                wrapper.style.flexDirection = "column";
-                wrapper.style.justifyContent = "center";
-                wrapper.style.alignItems = "center";
-                wrapper.style.lineHeight = "1.1";
-                nomeDiv.style.fontSize = "0.95em"; // Nome un pelo più piccolo
-                prezzoDiv.style.fontSize = "0.85em";
-
-                btn.appendChild(wrapper);
-
-                Object.assign(btn.style, {
-                    flex: "0 0 calc(50% - 4px)", // 50% esatto dello spazio meno il gap
-                    height: "55px",              // Altezza molto più ridotta
-                    margin: "0",
-                    padding: "2px",
-                    borderRadius: "6px",
-                    border: "1px solid #999",
-                    background: "#f9f9f9",
-                    boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-                    cursor: "pointer",
-                    color: "#000",
-                    boxSizing: "border-box"
-                });
-            } else {
-                // MODALITÀ NORMALE (LISTA CON INGREDIENTI)
-                const parentDiv = btn.parentElement;
-                if (parentDiv) {
-                    parentDiv.style.display = "block"; // Riportiamo a display a blocchi
-                }
-
-                if (item.ingredienti && item.ingredienti.length) {
-                    const ingDiv = document.createElement("div");
-                    ingDiv.style.fontSize = "11px";
-                    ingDiv.style.color = "#444";
-                    ingDiv.style.marginTop = "4px";
-                    ingDiv.textContent = "Ingredienti: " + item.ingredienti.map(ing => ing.nome || ing.id).join(", ");
-                    wrapper.appendChild(ingDiv);
-                }
-
-                btn.appendChild(wrapper);
-
-                Object.assign(btn.style, {
-                    display: "block",
-                    width: "90%",
-                    margin: "0 auto 5px auto",
-                    padding: "6px 5px",
-                    borderRadius: "4px",
-                    border: "1px solid #aaa",
-                    background: "#f5f5f5",
-                    cursor: "pointer",
-                    color: "#000",
-                    height: "auto",
-                    boxShadow: "none"
-                });
+            if (item.ingredienti && item.ingredienti.length) {
+                const ingDiv = document.createElement("div");
+                ingDiv.className = "piatto-ing";
+                ingDiv.textContent = "Ing: " + item.ingredienti.map(ing => ing.nome || ing.id).join(", ");
+                wrapper.appendChild(ingDiv);
             }
+
+            btn.appendChild(wrapper);
+
+            const categoria = (item.categoria || "").toLowerCase();
+            if (categoria === "cibi") document.getElementById("grid-cibi").appendChild(btn);
+            else if (categoria === "bevande") document.getElementById("grid-bevande").appendChild(btn);
+            else if (categoria === "snack") document.getElementById("grid-snack").appendChild(btn);
         });
 
         hideLoader();
     }
-    // Caricamento iniziale ingredienti + menu
-    Promise.all([
-        ingredientiRef.once("value"),
-        menuRef.once("value")
-    ]).then(([snapIng, snapMenu]) => {
+
+    Promise.all([ingredientiRef.once("value"), menuRef.once("value")]).then(([snapIng, snapMenu]) => {
         window.ingredientData = snapIng.val() || {};
         window.menuData = snapMenu.val() || {};
-
         renderMenuCassa();
         aggiornaBottoniBloccati();
 
-        // Listener ingredienti
-        ingredientiRef.on("value", snap => {
-            window.ingredientData = snap.val() || {};
-            // ❌ NON riscrivere menuData qui!
-            // Aggiorna solo lo stato dei bottoni
-            aggiornaBottoniBloccati();
-        });
+        // Elimina vecchi listener per evitare bug di caricamento doppio
+        ingredientiRef.off("value");
+        menuRef.off("value");
 
-
-        // Listener menu
-        menuRef.on("value", snap => {
-            window.menuData = snap.val() || {};
-            aggiornaBottoniBloccati();
-        });
-
-        // Listener blocco piatti manuale
+        ingredientiRef.on("value", snap => { window.ingredientData = snap.val() || {}; aggiornaBottoniBloccati(); });
+        menuRef.on("value", snap => { window.menuData = snap.val() || {}; aggiornaBottoniBloccati(); });
         initBloccoPiattiListener();
     });
-
 }
 function initBloccoPiattiListener() {
     console.log(" [initBloccoPiattiListener] INIZIO");
