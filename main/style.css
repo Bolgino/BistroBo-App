@@ -1792,4 +1792,32 @@ body.tema-estate button {
     margin-top: 4px !important;
     width: fit-content !important; /* Il bottone si adatta al testo senza "esplodere" */
 }
+/* ================= COMPATTAMENTO SPAZIO IN ALTO (TUTTI I PROFILI) ================= */
 
+/* 1. Azzera lo spazio extra sotto l'orologio e il pulsante di Logout */
+#logoutDiv {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+    margin-top: 0 !important; /* Avvicina il logout al bordo superiore */
+}
+
+/* 2. Riduce drasticamente lo spazio sopra e sotto il titolo della pagina (es. "Cassa", "Cucina") */
+h2 {
+    margin-top: 5px !important;
+    margin-bottom: 8px !important;
+    line-height: 1 !important;
+}
+
+/* 3. Riduce lo spazio vuoto sotto la riga dei bottoni Tab (Aggiungi comanda, Menu, ecc.) forzando il margine */
+#cassaDiv > div:nth-of-type(1),
+#cucinaDiv > div:nth-of-type(1),
+#bereDiv > div:nth-of-type(1),
+#snackDiv > div:nth-of-type(1),
+#adminDiv > div:nth-of-type(1) {
+    margin-bottom: 8px !important;
+}
+
+/* 4. Rimpicciolisce il margine inferiore dei singoli bottoni grigi (Tab) */
+.tabBtn {
+    margin-bottom: 4px !important;
+}
