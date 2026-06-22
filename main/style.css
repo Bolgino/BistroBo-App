@@ -1610,24 +1610,23 @@ body.tema-estate button {
     border: 1px solid #aaa;
     background: #f5f5f5;
     cursor: pointer;
-    color: #000;
+    color: #000 !important; /* <--- FORZA IL NERO */
     text-align: center;
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
-.piatto-nome { font-weight: bold; font-size: 1.1rem; }
-.piatto-prezzo { font-size: 1rem; margin-top: 4px; color: #333; }
-.piatto-ing { font-size: 0.8rem; color: #555; margin-top: 4px; }
+.piatto-nome { font-weight: bold; font-size: 1.1rem; color: #000 !important; /* <--- FORZA IL NERO */ }
+.piatto-prezzo { font-size: 1rem; margin-top: 4px; color: #333 !important; }
+.piatto-ing { font-size: 0.8rem; color: #555 !important; margin-top: 4px; }
 
 
 /* ================= CASSA OTTIMIZZATA ================= */
 .cassa-ottimizzata .menu-grid {
-    /* MAGIA: Crea fino a 6 colonne in base allo spazio, minimo 70px l'una */
     grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); 
     gap: 5px;
 }
 
 .cassa-ottimizzata .piatto-btn {
-    height: 75px; /* Quadrato super compatto */
+    height: 75px; 
     padding: 4px;
     display: flex;
     flex-direction: column;
@@ -1636,20 +1635,22 @@ body.tema-estate button {
     border: 2px solid #999;
     background: #fefefe;
     border-radius: 8px;
+    color: #000 !important; /* <--- FORZA IL NERO */
 }
 
 .cassa-ottimizzata .piatto-nome {
-    font-size: 0.70rem; /* Molto piccolo */
+    font-size: 0.70rem; 
     font-weight: 900;
     line-height: 1.1;
     text-align: center;
-    white-space: pre-wrap; /* Manda a capo i nomi (es: Panino \n Pastin) */
+    white-space: pre-wrap; 
     width: 100%;
+    color: #000 !important; /* <--- FORZA IL NERO */
 }
 
 .cassa-ottimizzata .piatto-prezzo {
     font-size: 0.80rem;
-    color: #b71c1c; /* Rosso scuro per spiccare */
+    color: #b71c1c !important; /* Rosso scuro per spiccare */
     font-weight: bold;
     margin-top: 3px;
 }
