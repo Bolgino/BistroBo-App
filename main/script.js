@@ -3284,21 +3284,45 @@ async function caricaIngredienti() {
         btnExtra.title = "Imposta Prezzo e Quantità per Aggiunte";
         btnExtra.style.marginLeft = "5px";
         btnExtra.onclick = () => {
-            const defP = ing.prezzoExtra !== undefined ? ing.prezzoExtra : 0.50;
-            const defQ = ing.qtyExtra !== undefined ? ing.qtyExtra : 1;
-            const res = prompt(`Imposta [Prezzo Extra] e [Quantità] che verranno scalate aggiungendo ${ing.nome}.\nScrivili separati da virgola (es. 0.25,1):`, `${defP},${defQ}`);
-            if (res) {
-                const parts = res.split(",");
-                const pExtra = parseFloat(parts[0]);
-                const qExtra = parseFloat(parts[1]);
-                if (!isNaN(pExtra) && !isNaN(qExtra)) {
-                    db.ref(`ingredienti/${ing.id}`).update({ prezzoExtra: pExtra, qtyExtra: qExtra });
-                    notify("Opzioni extra salvate!", "info");
-                } else {
-                    notify("Formato non valido", "error");
-                }
-            }
-        };
+		    const defP = ing.prezzoExtra || 0.50;
+		    const defQ = ing.qtyExtra || 1;
+		
+		    // Overlay (sfondo scuro)
+		    const overlay = document.createElement("div");
+		    overlay.className = "modal-overlay";
+		    
+		    // Contenitore modale
+		    const modal = document.createElement("div");
+		    modal.className = "modal-varianti";
+		    
+		    modal.innerHTML = `
+		        <h3>Impostazioni: ${ing.nome}</h3>
+		        <div style="margin-bottom:15px;">
+		            <label>Prezzo Extra (€):</label>
+		            <input type="number" step="0.01" id="valPrezzo" value="${defP}" style="width:100%; padding:8px;">
+		        </div>
+		        <div style="margin-bottom:15px;">
+		            <label>Quantità scalata:</label>
+		            <input type="number" step="0.1" id="valQty" value="${defQ}" style="width:100%; padding:8px;">
+		        </div>
+		        <div class="modal-actions">
+		            <button class="btn-chiudi" id="closeModal">Annulla</button>
+		            <button class="btn-salva" id="saveModal">Salva</button>
+		        </div>
+		    `;
+		    
+		    overlay.appendChild(modal);
+		    document.body.appendChild(overlay);
+		
+		    document.getElementById("closeModal").onclick = () => overlay.remove();
+		    document.getElementById("saveModal").onclick = () => {
+		        const p = parseFloat(document.getElementById("valPrezzo").value);
+		        const q = parseFloat(document.getElementById("valQty").value);
+		        db.ref(`ingredienti/${ing.id}`).update({ prezzoExtra: p, qtyExtra: q });
+		        overlay.remove();
+		        notify("Modifiche salvate!", "success");
+		    };
+		};
         row.appendChild(btnExtra);
 
         qtyInput.onchange = async (e) => {
