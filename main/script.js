@@ -50,7 +50,13 @@ window.settings = {
 	letteraComandaAbilitata: true,
 	selettoreQuantitaCassa: true,
 	gestioneSoldiCassa: true,
-	cassaOttimizzata: false
+	cassaOttimizzata: false,
+	magazzinoCucina: true,
+	magazzinoBere: true,
+	magazzinoSnack: true,
+	menuCucina: true,
+	menuBere: true,
+	menuSnack: true
 };
 
 //Ingredienti Critici
@@ -962,6 +968,31 @@ function initImpostazioniToggle() {
             }
         });
     }
+	// ================= VISIBILITÀ TAB INGREDIENTI E MENU =================
+    const configTabs = [
+        { btnId: "toggleMagazzinoCucinaBtn", ref: "impostazioni/magazzinoCucina", setting: "magazzinoCucina", tabId: "cucinaIngredientiTabBtn" },
+        { btnId: "toggleMagazzinoBereBtn", ref: "impostazioni/magazzinoBere", setting: "magazzinoBere", tabId: "bereIngredientiTabBtn" },
+        { btnId: "toggleMagazzinoSnackBtn", ref: "impostazioni/magazzinoSnack", setting: "magazzinoSnack", tabId: "snackIngredientiTabBtn" },
+        { btnId: "toggleMenuCucinaBtn", ref: "impostazioni/menuCucina", setting: "menuCucina", tabId: "cucinaMenuTabBtn" },
+        { btnId: "toggleMenuBereBtn", ref: "impostazioni/menuBere", setting: "menuBere", tabId: "bereMenuTabBtn" },
+        { btnId: "toggleMenuSnackBtn", ref: "impostazioni/menuSnack", setting: "menuSnack", tabId: "snackMenuTabBtn" }
+    ];
+
+    configTabs.forEach(cfg => {
+        const toggleBtn = document.getElementById(cfg.btnId);
+        const dbRef = db.ref(cfg.ref);
+        if (toggleBtn) {
+            initToggle(toggleBtn, dbRef, {on: "ON", off: "OFF"}, true, val => {
+                window.settings[cfg.setting] = val;
+                
+                // Cerca la tab nell'HTML e la nasconde/mostra in tempo reale
+                const tabHtml = document.getElementById(cfg.tabId);
+                if (tabHtml) {
+                    tabHtml.style.display = val ? "inline-block" : "none";
+                }
+            });
+        }
+    });
 }
 function initTickNoteDestinazioni() {
     // 🔹 Mostra/nasconde i tick destinazioni note in base all'impostazione
