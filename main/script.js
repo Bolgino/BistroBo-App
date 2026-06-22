@@ -925,28 +925,43 @@ function initImpostazioniToggle() {
         });
     }
 	// ================= GESTIONE RESTO E SOLDI CASSA =================
-const toggleGestioneSoldiBtn = document.getElementById("toggleGestioneSoldiBtn");
-const gestioneSoldiRef = db.ref("impostazioni/gestioneSoldiCassa");
-
-if (toggleGestioneSoldiBtn) {
-    initToggle(toggleGestioneSoldiBtn, gestioneSoldiRef, {on: "ON", off: "OFF"}, true, val => {
-        window.settings.gestioneSoldiCassa = val;
-        
-        // Prendiamo i due blocchi che abbiamo creato in HTML
-        const rigaResto = document.getElementById("rigaRestoPagato");
-        const pannelloSoldi = document.getElementById("pannelloSoldiDestra");
-        
-        // Li mostriamo o li nascondiamo in base al toggle
-        if (rigaResto) rigaResto.style.display = val ? "" : "none";
-        if (pannelloSoldi) pannelloSoldi.style.display = val ? "" : "none";
-        
-        // Se viene spento, clicchiamo automaticamente su "Reset Soldi" in modo da azzerare calcoli pendenti
-        if (!val) {
-            const btnReset = document.getElementById("resetSoldiBtn");
-            if (btnReset) btnReset.click();
-        }
-    });
-}
+	const toggleGestioneSoldiBtn = document.getElementById("toggleGestioneSoldiBtn");
+	const gestioneSoldiRef = db.ref("impostazioni/gestioneSoldiCassa");
+	
+	if (toggleGestioneSoldiBtn) {
+	    initToggle(toggleGestioneSoldiBtn, gestioneSoldiRef, {on: "ON", off: "OFF"}, true, val => {
+	        window.settings.gestioneSoldiCassa = val;
+	        
+	        // Prendiamo i due blocchi che abbiamo creato in HTML
+	        const rigaResto = document.getElementById("rigaRestoPagato");
+	        const pannelloSoldi = document.getElementById("pannelloSoldiDestra");
+	        
+	        // Li mostriamo o li nascondiamo in base al toggle
+	        if (rigaResto) rigaResto.style.display = val ? "" : "none";
+	        if (pannelloSoldi) pannelloSoldi.style.display = val ? "" : "none";
+	        
+	        // Se viene spento, clicchiamo automaticamente su "Reset Soldi" in modo da azzerare calcoli pendenti
+	        if (!val) {
+	            const btnReset = document.getElementById("resetSoldiBtn");
+	            if (btnReset) btnReset.click();
+	        }
+	    });
+	}
+	// ================= CASSA OTTIMIZZATA =================
+    const toggleCassaOttBtn = document.getElementById("toggleCassaOttBtn");
+    const cassaOttRef = db.ref("impostazioni/cassaOttimizzata");
+    if (toggleCassaOttBtn) {
+        initToggle(toggleCassaOttBtn, cassaOttRef, {on: "ON", off: "OFF"}, false, val => {
+            window.settings.cassaOttimizzata = val;
+            
+            // Applica o rimuove la classe istantaneamente senza far sparire i bottoni!
+            const cassaContainer = document.getElementById("aggiungiComandaTab");
+            if (cassaContainer) {
+                if (val) cassaContainer.classList.add("cassa-ottimizzata");
+                else cassaContainer.classList.remove("cassa-ottimizzata");
+            }
+        });
+    }
 }
 function initTickNoteDestinazioni() {
     // 🔹 Mostra/nasconde i tick destinazioni note in base all'impostazione
@@ -963,21 +978,6 @@ function initTickNoteDestinazioni() {
         const labelSnack = document.getElementById("tickSnackLabel");
         if (labelSnack) labelSnack.style.display = snackOn ? "inline" : "none";
     });
-	// ================= CASSA OTTIMIZZATA =================
-    const toggleCassaOttBtn = document.getElementById("toggleCassaOttBtn");
-    const cassaOttRef = db.ref("impostazioni/cassaOttimizzata");
-    if (toggleCassaOttBtn) {
-        initToggle(toggleCassaOttBtn, cassaOttRef, {on: "ON", off: "OFF"}, false, val => {
-            window.settings.cassaOttimizzata = val;
-            
-            // Applica o rimuove la classe istantaneamente senza far sparire i bottoni!
-            const cassaContainer = document.getElementById("aggiungiComandaTab");
-            if (cassaContainer) {
-                if (val) cassaContainer.classList.add("cassa-ottimizzata");
-                else cassaContainer.classList.remove("cassa-ottimizzata");
-            }
-        });
-    }
 }
 function aggiornaTickSnackPreordini() {
     // Aggiorna tick destinazioni note in Admin e Cassa
