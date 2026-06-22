@@ -1594,191 +1594,48 @@ body.tema-estate button {
     text-decoration: underline;
 }
 
-/* ================= GRIGLIA MENU CASSA ================= */
-.menu-grid {
-    display: grid;
-    grid-template-columns: 1fr; /* 1 colonna in modalità normale */
-    gap: 6px;
-    margin-bottom: 20px;
-}
-
-/* MODALITÀ NORMALE (Lista) */
-.piatto-btn {
-    width: 100%;
-    padding: 5px 8px; /* Padding ridotto */
-    border-radius: 6px;
-    border: 1px solid #aaa;
-    background: #f5f5f5;
-    cursor: pointer;
-    color: #000 !important;
-    text-align: center;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    min-height: 45px; /* Evita che si schiaccino troppo se non ci sono ingredienti */
-}
-.piatto-nome { font-weight: bold; font-size: 0.95rem; color: #000 !important; } /* Ridotto da 1.1rem */
-.piatto-prezzo { font-size: 0.85rem; margin-top: 2px; color: #333 !important; } /* Ridotto da 1rem */
-.piatto-ing { font-size: 0.75rem; color: #555 !important; margin-top: 2px; } /* Ridotto da 0.8rem */
-
-/* ================= CASSA OTTIMIZZATA ================= */
-.cassa-ottimizzata .menu-grid {
-    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); 
-    gap: 5px;
-}
-
-.cassa-ottimizzata .piatto-btn {
-    height: 75px; 
-    padding: 4px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    border: 2px solid #999;
-    background: #fefefe;
-    border-radius: 8px;
-    color: #000 !important; /* <--- FORZA IL NERO */
-}
-
-.cassa-ottimizzata .piatto-nome {
-    font-size: 0.70rem; 
-    font-weight: 900;
-    line-height: 1.1;
-    text-align: center;
-    white-space: pre-wrap; 
-    width: 100%;
-    color: #000 !important; /* <--- FORZA IL NERO */
-}
-
-.cassa-ottimizzata .piatto-prezzo {
-    font-size: 0.80rem;
-    color: #b71c1c !important; /* Rosso scuro per spiccare */
-    font-weight: bold;
-    margin-top: 3px;
-}
-
-.cassa-ottimizzata .piatto-ing {
-    display: none; /* Nasconde ingredienti */
-}
-/* ================= REVISIONE LAYOUT CASSA OTTIMIZZATA ================= */
-
-/* 1. Proporzioni Rigide tramite Grid: Scontrino (1/3) e Menu (2/3) */
-.cassa-ottimizzata #aggiungiComandaTab > div:first-child {
-    display: grid !important;
-    grid-template-columns: 1fr 2fr !important; /* 1 colonna a sinistra, 2 colonne a destra = 1/3 e 2/3 */
-    gap: 15px !important;
-    align-items: start !important;
-}
-
-/* Disattiva il flexbox inline che bloccava le proporzioni */
-.cassa-ottimizzata #aggiungiComandaTab > div:first-child > div {
-    max-width: 100% !important;
-    width: 100% !important;
-	/* OPZIONALE MA CONSIGLIATO: Se hai tanti piatti, fa scorrere solo il menu
-       lasciando lo scontrino e la barra di invio sempre fermi e visibili */
-    max-height: 550px !important; 
-    overflow-y: auto !important; 
-}
-
-/* 2. Scontrino molto più piccolo */
-.cassa-ottimizzata #comandaCorrente {
-    height: 160px !important; /* Riduzione drastica dell'altezza */
-    margin-bottom: 8px !important;
-}
-
-/* 3. Box Note schiacciato per farlo stare appena sopra la linea */
-.cassa-ottimizzata #noteComanda {
-    height: 50px !important; /* Spazio appena sufficiente per 2 righe */
-    min-height: 50px !important;
-    margin-bottom: 0 !important;
-}
-
-/* Riduciamo lo spazio dei bottoncini Cucina/Bere per compattare ancora */
-.cassa-ottimizzata #noteDestinazioniDiv {
-    margin-bottom: 4px !important;
-    font-size: 0.9em !important;
-}
-
-/* 4. Barra Totali sotto e statica (quella che fa da "linea" di confine) */
-.cassa-ottimizzata .stickyBar {
-    position: static !important;
-    box-shadow: none !important;
-    border: 1px solid #ccc !important;
-    border-radius: 8px !important;
-    margin-top: 10px !important; /* Distanza dalla colonna dello scontrino */
-    padding: 10px 15px !important;
-    background: #f8f9fa !important;
-    width: 100% !important;
-    box-sizing: border-box !important;
-}
-#rigaRestoPagato {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    margin-top: 4px;
-}
-/* ================= PROPORZIONI 1/3 (SCONTRINO) E 2/3 (MENU) PER TUTTE LE CASSE ================= */
-
-/* Contenitore principale delle due colonne (Scontrino a sx, Menu a dx) */
+/* --- PROPORZIONI 1/3 (SX) e 2/3 (DX) PER TUTTE LE MODALITÀ --- */
 #aggiungiComandaTab > div:first-child {
     display: flex !important;
     flex-direction: row !important;
     flex-wrap: nowrap !important;
-    align-items: flex-start !important; 
-    gap: 2% !important; /* Lascia un piccolo margine tra le due aree */
+    gap: 15px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important; /* Impedisce lo scroll orizzontale */
 }
 
-/* Colonna 1: Scontrino e Note (Forzato a 1/3) */
+/* Colonna Sinistra (Scontrino/Note) - 33% */
 #aggiungiComandaTab > div:first-child > div:nth-child(1) {
-    flex: 0 0 32% !important; /* Occupa il 32% dello spazio totale */
-    max-width: 32% !important;
-    min-width: 0 !important; /* Salvavita: impedisce che contenuti lunghi spacchino la colonna */
+    flex: 0 0 33% !important;
+    max-width: 33% !important;
+    overflow: hidden !important;
 }
 
-/* Colonna 2: Menu Piatti (Forzato a 2/3) */
+/* Colonna Destra (Menu) - 66% */
 #aggiungiComandaTab > div:first-child > div:nth-child(2) {
-    flex: 0 0 66% !important; /* Occupa il 66% dello spazio totale */
+    flex: 0 0 66% !important;
     max-width: 66% !important;
-    min-width: 0 !important; /* Salvavita */
 }
 
-/* ================= CASSA NORMALE: MENU A 2 COLONNE ================= */
-
-/* Applica la griglia a 2 colonne affiancate SOLO quando non sei in cassa ottimizzata */
+/* --- GRIGLIA 2 COLONNE IN CASSA NORMALE --- */
 body:not(.cassa-ottimizzata) .menu-grid {
     display: grid !important;
-    grid-template-columns: 1fr 1fr !important; /* Forza esattamente due colonne uguali */
-    gap: 10px !important; /* Spazio tra i bottoni */
-}
-/* --- FORZATURA TOTALE PROPORZIONI (1/3 e 2/3) --- */
-#aggiungiComandaTab > div:first-child {
-    display: flex !important;
-    flex-direction: row !important;
-    gap: 15px !important;
-}
-
-/* Colonna Sinistra: 33% */
-#aggiungiComandaTab > div:first-child > div:nth-child(1) {
-    flex: 0 0 33.33% !important;
-    max-width: 33.33% !important;
-}
-
-/* Colonna Destra: 66% */
-#aggiungiComandaTab > div:first-child > div:nth-child(2) {
-    flex: 0 0 66.66% !important;
-    max-width: 66.66% !important;
-}
-
-/* --- FORZATURA GRIGLIA 2 COLONNE IN CASSA NORMALE --- */
-/* Usiamo un selettore molto forte per battere le altre regole */
-#aggiungiComandaTab:not(.cassa-ottimizzata) .menu-grid {
-    display: grid !important;
     grid-template-columns: 1fr 1fr !important;
-    gap: 10px !important;
+    gap: 8px !important;
 }
 
-/* --- PULIZIA CASSA OTTIMIZZATA (Rimpicciolisce scontrino e note) --- */
+/* --- OTTIMIZZAZIONE SPAZI PC (Previene lo scroll orizzontale) --- */
+@media (min-width: 1024px) {
+    body { padding: 10px !important; }
+    #aggiungiComandaTab { width: 100% !important; }
+}
+
+/* --- PULIZIA CASSA OTTIMIZZATA (Per far stare tutto a video) --- */
 body.cassa-ottimizzata #comandaCorrente {
-    height: 120px !important; /* Molto compatto */
+    height: 120px !important; 
+    font-size: 0.9em !important;
 }
 body.cassa-ottimizzata #noteComanda {
-    height: 40px !important; /* Molto compatto */
+    height: 40px !important;
 }
