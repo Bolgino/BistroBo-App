@@ -6721,15 +6721,26 @@ async function stampaComanda(items, numeroComanda, note = "") {
         doc.text(`${titolo}:`, 10, y); y += 6;
         doc.setFontSize(10);
         piatti.forEach(p => {
+            // Stampa il piatto principale (il totale in euro include già i costi extra)
             doc.text(`  ${p.quantita}x ${p.nome} - €${calcolaPrezzoConSconto(p).toFixed(2)}`, 10, y);
-			if (p.varianti && p.varianti.length > 0) {
+            y += 5;
+            
+            // 🔹 NOVITÀ: Stampa le varianti e il loro singolo costo extra!
+            if (p.varianti && p.varianti.length > 0) {
                 p.varianti.forEach(v => {
-                    let txt = v.tipo === "aggiunta" ? `    + ${v.nome}` : `    - Senza ${v.nome}`;
+                    let txt = "";
+                    if (v.tipo === "aggiunta") {
+                        // Se c'è un costo extra, lo scriviamo. Es: "    + Peperoni  €0.50"
+                        let costoExtraStr = (v.prezzo && v.prezzo > 0) ? `  +€${Number(v.prezzo).toFixed(2)}` : "";
+                        txt = `    + ${v.nome}${costoExtraStr}`;
+                    } else {
+                        // Se è una rimozione, ovviamente non ha prezzo
+                        txt = `    - Senza ${v.nome}`;
+                    }
                     doc.text(txt, 10, y);
-                    y += 5;
+                    y += 5; // va a capo
                 });
             }
-            y += 5;
         });
         if (note) {
             y += 3;
