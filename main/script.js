@@ -688,15 +688,15 @@ function initImpostazioniToggle() {
         aggiornaTickSnackPreordini(); // 🔹 Aggiorna tick note destinazioni subito
     });
 
-    // 🔹 TOGGLE NUOVE COMANDE IN ALTO SNACK
+    // 🔹 TOGGLE IMPOSTAZIONI DIPENDENTI DA SNACK
     const toggleNuoveInAltoSnackBtn = document.getElementById("toggleNuoveInAltoSnackBtn");
-    const divNuoveSnack = document.getElementById("settingNuoveInAltoSnack");
+    const snackDependentSettings = document.getElementById("snackDependentSettings");
     const nuoveInAltoSnackRef = db.ref("impostazioni/nuoveInAltoSnack");
 
-    // Funzione per mostrare/nascondere il toggle secondo snackAbilitato
+    // Funzione per mostrare/nascondere il blocco in Admin
     function aggiornaVisibilitaToggleSnack() {
-        if (!divNuoveSnack) return;
-        divNuoveSnack.style.display = window.settings.snackAbilitato ? "flex" : "none";
+        if (!snackDependentSettings) return;
+        snackDependentSettings.style.display = window.settings.snackAbilitato ? "block" : "none";
     }
     aggiornaVisibilitaToggleSnack();
 
@@ -970,12 +970,12 @@ function initImpostazioniToggle() {
     }
 	// ================= VISIBILITÀ TAB INGREDIENTI E MENU =================
     const configTabs = [
-        { btnId: "toggleMagazzinoCucinaBtn", ref: "impostazioni/magazzinoCucina", setting: "magazzinoCucina", tabId: "cucinaIngredientiTabBtn" },
-        { btnId: "toggleMagazzinoBereBtn", ref: "impostazioni/magazzinoBere", setting: "magazzinoBere", tabId: "bereIngredientiTabBtn" },
-        { btnId: "toggleMagazzinoSnackBtn", ref: "impostazioni/magazzinoSnack", setting: "magazzinoSnack", tabId: "snackIngredientiTabBtn" },
-        { btnId: "toggleMenuCucinaBtn", ref: "impostazioni/menuCucina", setting: "menuCucina", tabId: "cucinaMenuTabBtn" },
-        { btnId: "toggleMenuBereBtn", ref: "impostazioni/menuBere", setting: "menuBere", tabId: "bereMenuTabBtn" },
-        { btnId: "toggleMenuSnackBtn", ref: "impostazioni/menuSnack", setting: "menuSnack", tabId: "snackMenuTabBtn" }
+        { btnId: "toggleMagazzinoCucinaBtn", ref: "impostazioni/magazzinoCucina", setting: "magazzinoCucina", tabSelector: "button[data-tab='ingredientiCucinaTab']" },
+        { btnId: "toggleMenuCucinaBtn", ref: "impostazioni/menuCucina", setting: "menuCucina", tabSelector: "button[data-tab='menuCucinaTab']" },
+        { btnId: "toggleMagazzinoBereBtn", ref: "impostazioni/magazzinoBere", setting: "magazzinoBere", tabSelector: "button[data-tab='ingredientiBereTab']" },
+        { btnId: "toggleMenuBereBtn", ref: "impostazioni/menuBere", setting: "menuBere", tabSelector: "button[data-tab='menuBereTab']" },
+        { btnId: "toggleMagazzinoSnackBtn", ref: "impostazioni/magazzinoSnack", setting: "magazzinoSnack", tabSelector: "button[data-tab='ingredientiSnackTab']" },
+        { btnId: "toggleMenuSnackBtn", ref: "impostazioni/menuSnack", setting: "menuSnack", tabSelector: "button[data-tab='menuSnackTab']" }
     ];
 
     configTabs.forEach(cfg => {
@@ -985,10 +985,18 @@ function initImpostazioniToggle() {
             initToggle(toggleBtn, dbRef, {on: "ON", off: "OFF"}, true, val => {
                 window.settings[cfg.setting] = val;
                 
-                // Cerca la tab nell'HTML e la nasconde/mostra in tempo reale
-                const tabHtml = document.getElementById(cfg.tabId);
-                if (tabHtml) {
-                    tabHtml.style.display = val ? "inline-block" : "none";
+                // Cerca il bottone della tab in HTML usando il data-tab (perché non hanno un ID)
+                const tabBtnHtml = document.querySelector(cfg.tabSelector);
+                if (tabBtnHtml) {
+                    tabBtnHtml.style.display = val ? "inline-block" : "none";
+                    
+                    // Se stiamo spegnendo la tab e l'utente ci si trova sopra in questo momento,
+                    // lo riportiamo di prepotenza alla tab "Da fare" principale
+                    if (!val && tabBtnHtml.classList.contains("active")) {
+                        const divPadre = tabBtnHtml.parentElement;
+                        const defaultTab = divPadre.querySelector("button[data-tab^='da']");
+                        if (defaultTab) defaultTab.click();
+                    }
                 }
             });
         }
