@@ -1196,17 +1196,18 @@ function initIngredientiCriticiListeners(force=false) {
 }
 // ---------------- Helper per scalare ingredienti ----------------
 function calcolaRichiesteDaPiatti(piatti) {
-    if (!checkOnline(true)) return;
+  if (!checkOnline(true)) return;
   const byId = {};
   const byName = {};
   (piatti || []).forEach(p => {
     const q = p.quantita || 1;
-    (p.ingredienti || []).forEach(ing => {
+    // Usiamo il nuovo cervello!
+    getIngredientiEffettivi(p).forEach(ing => {
       if (ing.id) {
-        byId[ing.id] = (parseFloat(byId[ing.id]) || 0) + (parseFloat(ing.qtyPerUnit || 1) * parseFloat(q || 1));
+        byId[ing.id] = (parseFloat(byId[ing.id]) || 0) + (ing.qty * q);
       } else if (ing.nome) {
         const n = (ing.nome || "").trim().toLowerCase();
-        byName[n] = (parseFloat(byName[n]) || 0) + (parseFloat(ing.qtyPerUnit || 1) * parseFloat(q || 1));
+        byName[n] = (parseFloat(byName[n]) || 0) + (ing.qty * q);
       }
     });
   });
@@ -2437,13 +2438,13 @@ function aggiornaComandaCorrente(){
         d.style.display="flex"; d.style.justifyContent="space-between"; d.style.alignItems="center"; d.style.marginBottom="5px";
 
         const span = document.createElement("span");
-        span.style.cursor = "pointer"; // Fa capire che si può cliccare
+        span.style.cursor = "pointer"; 
         span.style.flex = "1";
-        span.title = "Clicca per aggiungere/rimuovere ingredienti";
         
-        // Formatta le varianti in piccolo sotto al nome
         const testoVarianti = (i.varianti && i.varianti.length > 0) 
-            ? `<br><small style="color:#d32f2f; font-weight:bold;">${i.varianti.join("<br>")}</small>` 
+            ? `<br><small style="font-weight:bold;">` + i.varianti.map(v => 
+                v.tipo === "aggiunta" ? `<span style="color:green">+ ${v.nome}</span>` : `<span style="color:red">- Senza ${v.nome}</span>`
+              ).join("<br>") + `</small>` 
             : "";
 
         const prezzoPiattoAttuale = (i.prezzo + (i.extraPrezzo || 0));
@@ -2462,7 +2463,6 @@ function aggiornaComandaCorrente(){
             span.innerHTML = `<b style="color:#0056b3;">${i.quantita}x ${i.nome}</b> (€${prezzoPiattoAttuale.toFixed(2)})` + testoVarianti;
         }
 
-        // Apre il popup delle modifiche quando si clicca sul testo
         span.onclick = () => apriPopupVarianti(idx);
 
 
@@ -2642,6 +2642,161 @@ function apriPopupVarianti(idx) {
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
 }
+// ================= CALCOLO INGREDIENTI EFFETTIVI (CON VARIANTI) =================
+function getIngredientiEffettivi(p) {
+    let mappa = {}; 
+    // Aggiungiamo base
+    (p.ingredienti || []).forEach(i => {
+        mappa[i.id] = { id: i.id, nome: i.nome, qty: parseFloat(i.qtyPerUnit || 1) };
+    });
+    // Applichiamo le varianti (+ o -)
+    (p.varianti || []).forEach(v => {
+        if (v.tipo === "aggiunta") {
+            if (mappa[v.id]) mappa[v.id].qty += parseFloat(v.qty || 1);
+            else mappa[v.id] = { id: v.id, nome: v.nome, qty: parseFloat(v.qty || 1) };
+        } else if (v.tipo === "rimozione") {
+            if (mappa[v.id]) {
+                const baseQty = p.ingredienti.find(i => i.id === v.id)?.qtyPerUnit || 1;
+                mappa[v.id].qty = Math.max(0, mappa[v.id].qty - baseQty);
+                if (mappa[v.id].qty === 0) delete mappa[v.id];
+            }
+        }
+    });
+    return Object.values(mappa);
+}
+
+// ================= POPUP VARIANTI =================
+function apriPopupVarianti(idx) {
+    const piatto = comandaCorrente[idx];
+    
+    // DIVISIONE AUTOMATICA: Se la quantità > 1, stacchiamo un singolo piatto e apriamo il popup su di lui
+    if (piatto.quantita > 1) {
+        piatto.quantita -= 1;
+        const piattoSingolo = JSON.parse(JSON.stringify(piatto));
+        piattoSingolo.quantita = 1;
+        piattoSingolo.varianti = [];
+        piattoSingolo.extraPrezzo = 0;
+        
+        comandaCorrente.splice(idx + 1, 0, piattoSingolo);
+        aggiornaComandaCorrente();
+        apriPopupVarianti(idx + 1); // Riapriamo il popup sul nuovo piatto
+        return;
+    }
+
+    if (!piatto.varianti) piatto.varianti = [];
+    if (!piatto.extraPrezzo) piatto.extraPrezzo = 0;
+
+    let tempVarianti = JSON.parse(JSON.stringify(piatto.varianti));
+    let tempExtraPrezzo = piatto.extraPrezzo;
+
+    const overlay = document.createElement("div");
+    overlay.className = "modal-overlay";
+
+    const modal = document.createElement("div");
+    modal.className = "modal-varianti";
+    
+    const titolo = document.createElement("h3");
+    titolo.innerText = `Modifica: ${piatto.nome}`;
+    modal.appendChild(titolo);
+
+    const listaDiv = document.createElement("div");
+
+    function renderListaIngredienti() {
+        listaDiv.innerHTML = "";
+        const baseIds = (piatto.ingredienti || []).map(i => i.id);
+
+        Object.entries(window.ingredientData || {}).forEach(([id, ing]) => {
+            const row = document.createElement("div");
+            row.className = "variante-row";
+            
+            const nomeSpan = document.createElement("span");
+            nomeSpan.innerText = ing.nome;
+            
+            const btnContainer = document.createElement("div");
+
+            // RIMOZIONE
+            if (baseIds.includes(id)) {
+                const btnRemove = document.createElement("button");
+                const isRimosso = tempVarianti.some(v => v.tipo === "rimozione" && v.id === id);
+                if (isRimosso) {
+                    btnRemove.className = "variante-btn disabled";
+                    btnRemove.innerText = "Annulla";
+                    btnRemove.onclick = () => {
+                        tempVarianti = tempVarianti.filter(v => !(v.tipo === "rimozione" && v.id === id));
+                        renderListaIngredienti();
+                    };
+                } else {
+                    btnRemove.className = "variante-btn remove";
+                    btnRemove.innerText = "- Rimuovi";
+                    btnRemove.onclick = () => {
+                        tempVarianti.push({ tipo: "rimozione", id: id, nome: ing.nome });
+                        renderListaIngredienti();
+                    };
+                }
+                btnContainer.appendChild(btnRemove);
+            }
+
+            // AGGIUNTA
+            const btnAdd = document.createElement("button");
+            const costoExtra = ing.prezzoExtra !== undefined ? Number(ing.prezzoExtra) : 0.50; 
+            const qtyExtra = ing.qtyExtra !== undefined ? Number(ing.qtyExtra) : 1;
+            
+            const isAggiunto = tempVarianti.some(v => v.tipo === "aggiunta" && v.id === id);
+
+            if (isAggiunto) {
+                btnAdd.className = "variante-btn disabled";
+                btnAdd.innerText = "Annulla";
+                btnAdd.style.marginLeft = "5px";
+                btnAdd.onclick = () => {
+                    tempVarianti = tempVarianti.filter(v => !(v.tipo === "aggiunta" && v.id === id));
+                    tempExtraPrezzo -= costoExtra;
+                    renderListaIngredienti();
+                };
+            } else {
+                btnAdd.className = "variante-btn add";
+                btnAdd.innerText = `+ Aggiungi (€${costoExtra.toFixed(2)})`;
+                btnAdd.style.marginLeft = "5px";
+                btnAdd.onclick = () => {
+                    tempVarianti.push({ tipo: "aggiunta", id: id, nome: ing.nome, qty: qtyExtra, prezzo: costoExtra });
+                    tempExtraPrezzo += costoExtra;
+                    renderListaIngredienti();
+                };
+            }
+
+            btnContainer.appendChild(btnAdd);
+            row.appendChild(nomeSpan);
+            row.appendChild(btnContainer);
+            listaDiv.appendChild(row);
+        });
+    }
+
+    renderListaIngredienti();
+    modal.appendChild(listaDiv);
+
+    const actionDiv = document.createElement("div");
+    actionDiv.className = "modal-actions";
+
+    const btnAnnulla = document.createElement("button");
+    btnAnnulla.className = "btn-chiudi";
+    btnAnnulla.innerText = "Annulla";
+    btnAnnulla.onclick = () => overlay.remove();
+
+    const btnSalva = document.createElement("button");
+    btnSalva.className = "btn-salva";
+    btnSalva.innerText = "Salva";
+    btnSalva.onclick = () => {
+        piatto.varianti = tempVarianti;
+        piatto.extraPrezzo = tempExtraPrezzo;
+        aggiornaComandaCorrente();
+        overlay.remove();
+    };
+
+    actionDiv.appendChild(btnAnnulla);
+    actionDiv.appendChild(btnSalva);
+    modal.appendChild(actionDiv);
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+}
 // --- INPUT E PULSANTE ---
 const numInput = document.getElementById("numComanda");
 const letteraInput = document.getElementById("letteraComanda");
@@ -2684,7 +2839,6 @@ document.getElementById("quantita").addEventListener("change", aggiornaStatoInvi
 function calcolaPrezzoConSconto(piatto){
     if (!checkOnline(true)) return;
     const q = piatto.quantita || 1;
-    // Aggiungiamo l'extraPrezzo (es. aggiunte) al prezzo base del piatto
     const prezzoBaseEExtra = piatto.prezzo + (piatto.extraPrezzo || 0);
 
     if(!piatto.sconto) return prezzoBaseEExtra * q;
@@ -2694,15 +2848,11 @@ function calcolaPrezzoConSconto(piatto){
     } else if(piatto.sconto.tipo === "x_paga_y"){
         const x = piatto.sconto.valore.x;
         const y = piatto.sconto.valore.y;
-        const gruppi = Math.floor(q / x);
-        const rimanenti = q % x;
-        return (gruppi * y + rimanenti) * prezzoBaseEExtra;
+        return (Math.floor(q / x) * y + (q % x)) * prezzoBaseEExtra;
     } else if(piatto.sconto.tipo === "x_paga_y_fisso"){ 
         const x = piatto.sconto.valore.x; 
         const y = piatto.sconto.valore.y; 
-        const gruppi = Math.floor(q / x);
-        const rimanenti = q % x;
-        return gruppi * y + rimanenti * prezzoBaseEExtra;
+        return Math.floor(q / x) * y + (q % x) * prezzoBaseEExtra;
     }
     return prezzoBaseEExtra * q;
 }
@@ -3129,6 +3279,27 @@ async function caricaIngredienti() {
                 onCancel: () => {}
             });
         };
+		  const btnExtra = document.createElement("button");
+        btnExtra.innerText = "⚙️ Extra";
+        btnExtra.title = "Imposta Prezzo e Quantità per Aggiunte";
+        btnExtra.style.marginLeft = "5px";
+        btnExtra.onclick = () => {
+            const defP = ing.prezzoExtra !== undefined ? ing.prezzoExtra : 0.50;
+            const defQ = ing.qtyExtra !== undefined ? ing.qtyExtra : 1;
+            const res = prompt(`Imposta [Prezzo Extra] e [Quantità] che verranno scalate aggiungendo ${ing.nome}.\nScrivili separati da virgola (es. 0.25,1):`, `${defP},${defQ}`);
+            if (res) {
+                const parts = res.split(",");
+                const pExtra = parseFloat(parts[0]);
+                const qExtra = parseFloat(parts[1]);
+                if (!isNaN(pExtra) && !isNaN(qExtra)) {
+                    db.ref(`ingredienti/${ing.id}`).update({ prezzoExtra: pExtra, qtyExtra: qExtra });
+                    notify("Opzioni extra salvate!", "info");
+                } else {
+                    notify("Formato non valido", "error");
+                }
+            }
+        };
+        row.appendChild(btnExtra);
 
         qtyInput.onchange = async (e) => {
         let newQty = e.target.value === "" ? null : parseFloat(e.target.value);
@@ -4122,7 +4293,13 @@ async function caricaComandePerRuolo(daFareDiv, storicoDiv, ruolo) {
             if(items.length === 0) listaDiv.innerText = "—";
             else items.forEach(i => {
                 const p = document.createElement("div");
-                p.innerText = `${i.quantita}x ${i.nome}`;
+                let variantiHtml = "";
+                if (i.varianti && i.varianti.length > 0) {
+                    variantiHtml = "<br>" + i.varianti.map(v => 
+                        v.tipo === "aggiunta" ? `<small style="color:green; font-weight:bold; margin-left:10px;">+ ${v.nome}</small>` : `<small style="color:red; font-weight:bold; margin-left:10px;">- Senza ${v.nome}</small>`
+                    ).join("<br>");
+                }
+                p.innerHTML = `<span>${i.quantita}x ${i.nome}</span>${variantiHtml}`;
 
                 if ((ruolo === "cucina" || ruolo === "bere" || (ruolo === "snack" && snackAbilitato)) && (c[statoKey] === "da fare" || c[statoKey] === "in elaborazione")) {
 
@@ -6371,6 +6548,13 @@ async function stampaComanda(items, numeroComanda, note = "") {
         doc.setFontSize(10);
         piatti.forEach(p => {
             doc.text(`  ${p.quantita}x ${p.nome} - €${calcolaPrezzoConSconto(p).toFixed(2)}`, 10, y);
+			if (p.varianti && p.varianti.length > 0) {
+                p.varianti.forEach(v => {
+                    let txt = v.tipo === "aggiunta" ? `    + ${v.nome}` : `    - Senza ${v.nome}`;
+                    doc.text(txt, 10, y);
+                    y += 5;
+                });
+            }
             y += 5;
         });
         if (note) {
