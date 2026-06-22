@@ -3277,17 +3277,37 @@ async function caricaIngredienti() {
         qtyInput.style.width = "70px";
         qtyInput.step = "any";
 
-        const statoSpan = document.createElement("span");
-        statoSpan.style.fontWeight = "bold";
-        const isEsaurito = (ing.rimanente === 0);
-        statoSpan.style.color = isEsaurito ? "red" : "green";
-        statoSpan.innerText = isEsaurito ? "Esaurito" : "Disponibile";
+        // Nuovo pulsante Toggle unico (ON/OFF)
+        const isEsaurito = (ing.rimanente === 0 || ing.disponibile === false);
 
-        const btnDisp = document.createElement("button");
-        btnDisp.innerText = "Disponibile";
-        btnDisp.onclick = async () => {
-          await db.ref(`ingredienti/${ing.id}`).update({ rimanente: null, disponibile: true });
-          await caricaIngredienti();
+        const btnToggle = document.createElement("button");
+        btnToggle.style.padding = "6px 12px";
+        btnToggle.style.borderRadius = "20px";
+        btnToggle.style.border = "none";
+        btnToggle.style.fontWeight = "bold";
+        btnToggle.style.cursor = "pointer";
+        btnToggle.style.color = "white";
+        btnToggle.style.width = "130px";
+        btnToggle.style.transition = "background-color 0.3s";
+        
+        if (isEsaurito) {
+            btnToggle.innerText = "OFF (Esaurito)";
+            btnToggle.style.backgroundColor = "#f44336"; // Rosso
+        } else {
+            btnToggle.innerText = "ON (Dispon.)";
+            btnToggle.style.backgroundColor = "#4CAF50"; // Verde
+        }
+
+        btnToggle.onclick = async () => {
+            btnToggle.disabled = true; // Previene doppi click accidentali
+            if (isEsaurito) {
+                // Se era esaurito, lo rendiamo disponibile (e quantità "illimitata")
+                await db.ref(`ingredienti/${ing.id}`).update({ rimanente: null, disponibile: true });
+            } else {
+                // Se era disponibile, forziamo a 0 e lo mettiamo esaurito
+                await db.ref(`ingredienti/${ing.id}`).update({ rimanente: 0, disponibile: false });
+            }
+            await caricaIngredienti();
         };
 
         const btnEs = document.createElement("button");
@@ -3391,9 +3411,7 @@ async function caricaIngredienti() {
         row.appendChild(nameSpan);
         row.appendChild(qtyInput);
         row.appendChild(selectUnita);
-        row.appendChild(statoSpan);
-        row.appendChild(btnDisp);
-        row.appendChild(btnEs);
+        row.appendChild(btnToggle); // <-- Sostituisce i vecchi 3 elementi
         row.appendChild(btnElimina);
         catDiv.appendChild(row);
         const hr = document.createElement("hr");
