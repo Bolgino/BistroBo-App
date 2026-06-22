@@ -1794,19 +1794,20 @@ body.tema-estate button {
 }
 /* ================= COMPATTAZIONE INTESTAZIONE EQUILIBRATA (TUTTI I PROFILI) ================= */
 
-/* 1. Blocco superiore: Simula a sinistra, Logout a destra, Orologio sotto a destra */
-#logoutDiv {
-    display: block !important; /* Ripristina il comportamento normale (orologio va a capo) */
+/* 1. Blocco superiore: Simula a sx, Logout a dx, Orologio sotto. 
+   Uso :not(.hidden) per NON farlo apparire nella schermata di login! */
+#logoutDiv:not(.hidden) {
+    display: block !important; 
     padding-bottom: 0 !important;
-    margin-bottom: 0 !important;
-    margin-top: 5px !important; /* Distanza dal bordo alto */
+    margin-bottom: 5px !important; /* Lascia un piccolo margine sotto */
+    margin-top: 5px !important; 
 }
 
 /* Orologio sotto al tasto Logout */
 #orologioDiv {
-    margin-top: 2px !important; /* Sta bello appiccicato sotto al logout */
+    margin-top: 2px !important; 
     margin-left: 0 !important;
-    text-align: right !important; /* Si allinea perfettamente a destra */
+    text-align: right !important; 
 }
 
 /* 2. Nascondiamo i grandi titoli (Cassa, Cucina, ecc.) che rubano spazio */
@@ -1818,10 +1819,10 @@ body.tema-estate button {
     display: none !important;
 }
 
-/* 3. Margini eleganti ma ridotti per la riga delle Tab */
+/* 3. Margini eleganti per la riga delle Tab con "un pelo di spazio in più" in alto */
 #cassaDiv > div:nth-of-type(1) {
     margin-bottom: 8px !important;
-    margin-top: 5px !important; /* Lascia giusto un pelo di respiro dall'orologio */
+    margin-top: 12px !important; /* <--- Più spazio tra la barra logout e le tab */
 }
 
 #cucinaDiv > div:first-of-type,
@@ -1829,7 +1830,7 @@ body.tema-estate button {
 #snackDiv > div:first-of-type,
 #adminDiv > div:first-of-type {
     margin-bottom: 8px !important;
-    margin-top: 5px !important;
+    margin-top: 15px !important; /* <--- Spazio extra per staccare le tab dal simulatore */
 }
 
 /* I bottoni grigi stessi */
