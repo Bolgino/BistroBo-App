@@ -137,91 +137,74 @@
 
 		<!-- Contenuto tab Aggiungi Comanda -->
 		<div id="aggiungiComandaTab" class="tabContent active">
-			<div style="display:flex; gap:20px;">
-				<!-- Lista Comanda -->
-				<div style="flex:1; border:1px solid #ccc; padding:10px;">
-				<h3>Comanda Corrente</h3>
-				<span id="labelNumeroLettera">Numero e Lettera Comanda:</span> 
-					<input type="number" id="numComanda" min="1" style="width:60px;">
-					<input type="text" id="letteraComanda" maxlength="1" style="width:40px;" pattern="[A-Za-z]"><br><br>
-					
-					<div id="asportoContainer" style="display:none; margin:8px 0;">
-						<label>
-							<input type="checkbox" id="checkAsporto">
-							<b class="asportoText">ASPORTO</b>
-						</label>
-					</div>
-
-					<span id="quantitaContainer">
-						Quantità: 
-						<select id="quantita" class="selectQty">
-							<option value="">--</option>
-							<script>
-								for(let i=1;i<=20;i++){
-									document.write(`<option value="${i}">${i}</option>`);
-								}
-							</script>
-						</select>
-					</span>
-
-					<!-- Riquadro con comanda corrente -->
-					<div id="comandaCorrente" style="height:140px; padding:5px; border:1px solid #ccc; border-radius:5px; overflow-y:auto; margin-bottom:8px;"></div>
-					
-					<label for="noteComanda" style="font-size:0.95em;"><b>Note:</b></label><br>
-					<div id="noteDestinazioniDiv" style="display:none; margin-bottom:4px; font-size:0.95em;">
-					    <label><input type="checkbox" id="tickCucina" checked> Cucina</label>
-					    <label style="margin-left:10px;"><input type="checkbox" id="tickBere"> Bere</label>
-					    <label id="tickSnackLabel" style="margin-left:10px; display:none;">
-					            <input type="checkbox" id="tickSnack"> Snack
-					    </label>
-					</div>
-					
-					<textarea id="noteComanda" placeholder="Note comanda (es. allergie, richieste)" 
-					    style="width:98%; height:65px; resize:none; border:1px solid #ccc; border-radius:4px; padding:6px; text-align:left; font-size:0.95em;"></textarea>
-				</div>
-
-
-				<!-- Menu da aggiungere -->
-				<div style="flex:1; border:1px solid #ccc; padding:10px;">
-					<div id="menuCibi"><h3>Cibi</h3></div>
-					<div id="menuBevande"><h3>Bevande</h3></div>
-					<div id="menuSnack"><h3>Snack</h3></div>
-				</div>
-			</div>
-
-			<!-- Totale e soldi (ora dentro la tab Aggiungi Comanda) -->
-			<div id="totaleDiv" class="stickyBar" style="margin-top:15px;">
-				<div class="stickyLeft">
-					<b style="color:red;">Totale: €<span id="totale">0.00</span></b>
-
-					<span id="rigaRestoPagato">
-					    <b style="color:green;">Pagato: €<span id="totalePagato">0.00</span></b>
-					    <b>
-					        Resto: €<span id="restoDovuto">0.00</span>
-					        <span id="suggerimentoResto" style="font-size:0.9em; color:blue;"></span>
-					    </b>
-					</span>
-					<!-- Metodo pagamento -->
-					<div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-						<label for="metodoPagamento" style="margin:0;"><b>Metodo pagamento:</b></label>
-						<select id="metodoPagamento" style="width:120px; height:28px;">
-							<option value="contanti" selected>Contanti</option>
-							<option value="pos">POS</option>
-						</select>
-					</div>
-
-					<!-- Pulsante Invio comanda grande a capo -->
-					<button id="inviaComandaBtn" class="stickyBtn">Invia Comanda</button>
-
-
-				</div>
-
-				<div id="pannelloSoldiDestra" class="stickyRight">
-				    <div id="banconoteDiv" style="display:flex; gap:10px; flex-wrap:wrap;"></div>
-					<div id="moneteDiv" style="display:flex; gap:10px; flex-wrap:wrap;"></div>
-					<button id="resetSoldiBtn">Reset Soldi</button>
-				</div>
-			</div>
+		    <div class="pos-layout">
+		        
+		        <div class="pos-left">
+		            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+		                <h3 style="margin:0;">Scontrino</h3>
+		                <div>
+		                    <input type="number" id="numComanda" min="1" style="width:45px;" placeholder="N°">
+		                    <input type="text" id="letteraComanda" maxlength="1" style="width:30px;" placeholder="L" pattern="[A-Za-z]">
+		                </div>
+		            </div>
+		
+		            <div id="asportoContainer" style="display:none; margin-bottom:5px;">
+		                <label><input type="checkbox" id="checkAsporto"> <b class="asportoText">ASPORTO</b></label>
+		            </div>
+		
+		            <div id="quantitaContainer" style="margin-bottom:5px; font-size: 0.9em;">
+		                Quantità: 
+		                <select id="quantita" class="selectQty" style="width:50px;">
+		                    <option value="">--</option>
+		                    <script>for(let i=1;i<=20;i++){document.write(`<option value="${i}">${i}</option>`);}</script>
+		                </select>
+		            </div>
+		
+		            <div id="comandaCorrente" class="pos-comanda-list"></div>
+		            
+		            <div class="pos-note-section">
+		                <div id="noteDestinazioniDiv" style="display:none; font-size:0.85em; margin-bottom:2px;">
+		                    <label><input type="checkbox" id="tickCucina" checked> Cucina</label>
+		                    <label style="margin-left:5px;"><input type="checkbox" id="tickBere"> Bere</label>
+		                    <label id="tickSnackLabel" style="margin-left:5px; display:none;"><input type="checkbox" id="tickSnack"> Snack</label>
+		                </div>
+		                <textarea id="noteComanda" placeholder="Note (es. allergie)" class="pos-note-textarea"></textarea>
+		            </div>
+		
+		            <div id="totaleDiv" class="pos-totale-section">
+		                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+		                    <b style="color:red; font-size:1.15em;">Totale: €<span id="totale">0.00</span></b>
+		                    <select id="metodoPagamento" style="width:90px; padding:2px;">
+		                        <option value="contanti" selected>Contanti</option>
+		                        <option value="pos">POS</option>
+		                    </select>
+		                </div>
+		                
+		                <span id="rigaRestoPagato" style="display:block; font-size:0.95em;">
+		                    <b style="color:green;">Pagato: €<span id="totalePagato">0.00</span></b> | 
+		                    <b>Resto: €<span id="restoDovuto">0.00</span></b>
+		                    <div id="suggerimentoResto" style="font-size:0.85em; color:blue; margin-top:2px;"></div>
+		                </span>
+		
+		                <button id="inviaComandaBtn" class="pos-invia-btn">INVIA COMANDA</button>
+		            </div>
+		        </div>
+		
+		        <div class="pos-right">
+		            <div class="pos-menu-scroll">
+		                <div id="menuCibi"></div>
+		                <div id="menuBevande"></div>
+		                <div id="menuSnack"></div>
+		            </div>
+		
+		            <div id="pannelloSoldiDestra" class="pos-soldi-section">
+		                <div id="banconoteDiv" style="display:flex; gap:4px; flex-wrap:wrap; justify-content:center;"></div>
+		                <div id="moneteDiv" style="display:flex; gap:4px; flex-wrap:wrap; justify-content:center; margin-top:4px;"></div>
+		                <button id="resetSoldiBtn" style="margin-top:6px; padding:4px; font-size:0.85em; width:100%;">Reset Soldi</button>
+		            </div>
+		        </div>
+		
+		    </div>
 		</div>
 		<!-- Tab Lista Comande -->
 		<div id="listaComandeTab" class="tabContent">
