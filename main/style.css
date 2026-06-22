@@ -1715,36 +1715,3 @@ body.tema-estate button {
     gap: 4px;
     margin-top: 4px;
 }
-/* ================= PROPORZIONI 1/3 (SCONTRINO) E 2/3 (MENU) PER TUTTE LE CASSE ================= */
-
-/* Contenitore principale delle due colonne (Scontrino a sx, Menu a dx) */
-#aggiungiComandaTab > div:first-child {
-    display: flex !important;
-    flex-direction: row !important;
-    flex-wrap: nowrap !important;
-    align-items: flex-start !important; 
-    gap: 2% !important; /* Lascia un piccolo margine tra le due aree */
-}
-
-/* Colonna 1: Scontrino e Note (Forzato a 1/3) */
-#aggiungiComandaTab > div:first-child > div:nth-child(1) {
-    flex: 0 0 32% !important; /* Occupa il 32% dello spazio totale */
-    max-width: 32% !important;
-    min-width: 0 !important; /* Salvavita: impedisce che contenuti lunghi spacchino la colonna */
-}
-
-/* Colonna 2: Menu Piatti (Forzato a 2/3) */
-#aggiungiComandaTab > div:first-child > div:nth-child(2) {
-    flex: 0 0 66% !important; /* Occupa il 66% dello spazio totale */
-    max-width: 66% !important;
-    min-width: 0 !important; /* Salvavita */
-}
-
-/* ================= CASSA NORMALE: MENU A 2 COLONNE ================= */
-
-/* Applica la griglia a 2 colonne affiancate SOLO quando non sei in cassa ottimizzata */
-body:not(.cassa-ottimizzata) .menu-grid {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr !important; /* Forza esattamente due colonne uguali */
-    gap: 10px !important; /* Spazio tra i bottoni */
-}
