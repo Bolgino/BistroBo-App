@@ -1597,8 +1597,8 @@ body.tema-estate button {
 /* ================= GRIGLIA MENU CASSA ================= */
 .menu-grid {
     display: grid;
-    grid-template-columns: 1fr; /* 1 colonna in modalità normale */
-    gap: 6px;
+    grid-template-columns: 1fr 1fr; /* Due colonne affiancate in cassa normale */
+    gap: 8px;
     margin-bottom: 20px;
 }
 
@@ -1660,21 +1660,34 @@ body.tema-estate button {
 }
 /* ================= REVISIONE LAYOUT CASSA OTTIMIZZATA ================= */
 
-/* 1. Proporzioni Rigide tramite Grid: Scontrino (1/3) e Menu (2/3) */
+/* 1. Proporzioni Rigide: Scontrino (30%) e Menu (70%) */
 .cassa-ottimizzata #aggiungiComandaTab > div:first-child {
-    display: grid !important;
-    grid-template-columns: 1fr 2fr !important; /* 1 colonna a sinistra, 2 colonne a destra = 1/3 e 2/3 */
-    gap: 15px !important;
-    align-items: start !important;
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: flex-start !important;
+    gap: 2% !important; /* Spazio tra le due colonne */
 }
 
-/* Disattiva il flexbox inline che bloccava le proporzioni */
-.cassa-ottimizzata #aggiungiComandaTab > div:first-child > div {
-    max-width: 100% !important;
-    width: 100% !important;
-	/* OPZIONALE MA CONSIGLIATO: Se hai tanti piatti, fa scorrere solo il menu
-       lasciando lo scontrino e la barra di invio sempre fermi e visibili */
-    max-height: 550px !important; 
+/* Colonna di Sinistra (Scontrino e Note) - Rigidamente 30% */
+.cassa-ottimizzata #aggiungiComandaTab > div:first-child > div:nth-child(1) {
+    flex: 0 0 30% !important;
+    max-width: 30% !important;
+    width: 30% !important;
+    min-width: 0 !important; /* CRITICO: Impedisce al contenuto interno di allargare la colonna */
+    padding: 8px !important;
+    box-sizing: border-box !important;
+}
+
+/* Colonna di Destra (Menu Cibi, Bevande, Snack) - Rigidamente 68% */
+.cassa-ottimizzata #aggiungiComandaTab > div:first-child > div:nth-child(2) {
+    flex: 0 0 68% !important;
+    max-width: 68% !important;
+    width: 68% !important;
+    min-width: 0 !important; /* CRITICO */
+    padding: 8px !important;
+    box-sizing: border-box !important;
+    max-height: 550px !important; /* Fa scorrere solo i pulsanti se sono tanti */
     overflow-y: auto !important; 
 }
 
@@ -1682,28 +1695,23 @@ body.tema-estate button {
 .cassa-ottimizzata #comandaCorrente {
     height: 160px !important; /* Riduzione drastica dell'altezza */
     margin-bottom: 8px !important;
+    overflow-y: auto !important;
 }
 
-/* 3. Box Note schiacciato per farlo stare appena sopra la linea */
+/* 3. Box Note schiacciato per incastrarsi in basso */
 .cassa-ottimizzata #noteComanda {
-    height: 50px !important; /* Spazio appena sufficiente per 2 righe */
+    height: 50px !important;
     min-height: 50px !important;
     margin-bottom: 0 !important;
 }
 
-/* Riduciamo lo spazio dei bottoncini Cucina/Bere per compattare ancora */
-.cassa-ottimizzata #noteDestinazioniDiv {
-    margin-bottom: 4px !important;
-    font-size: 0.9em !important;
-}
-
-/* 4. Barra Totali sotto e statica (quella che fa da "linea" di confine) */
+/* 4. Barra Totali sotto (linea di confine statica) */
 .cassa-ottimizzata .stickyBar {
     position: static !important;
     box-shadow: none !important;
     border: 1px solid #ccc !important;
     border-radius: 8px !important;
-    margin-top: 10px !important; /* Distanza dalla colonna dello scontrino */
+    margin-top: 10px !important;
     padding: 10px 15px !important;
     background: #f8f9fa !important;
     width: 100% !important;
