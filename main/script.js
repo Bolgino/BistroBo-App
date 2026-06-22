@@ -5669,12 +5669,14 @@ async function generaExcel() {
   a.click();
   URL.revokeObjectURL(url);
 }
+
 function generaPdf() {
     if (!checkOnline(true)) return;
   const s = window.statistiche;
   if (!s) { notify("Nessuna statistica disponibile. Apri la tab Incassi prima.","warn"); return; }
 
- const { totaleComande, totaleIncasso, totalePos, totaleContanti, incassoAsporto, piattiByQuantita, piattiByIncasso, ingrByQuantita, ingrIncassiArray, listaComande, fondoCassa } = s;
+  const { totaleComande, totaleIncasso, totalePos, totaleContanti, incassoAsporto, piattiByQuantita, piattiByIncasso, ingrByQuantita, ingrIncassiArray, listaComande, fondoCassa } = s;
+  const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
   let y = 14;
   const pageW = doc.internal.pageSize.getWidth();
