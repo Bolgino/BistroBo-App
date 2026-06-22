@@ -2436,20 +2436,34 @@ function aggiornaComandaCorrente(){
         const d=document.createElement("div");
         d.style.display="flex"; d.style.justifyContent="space-between"; d.style.alignItems="center"; d.style.marginBottom="5px";
 
-        const span=document.createElement("span");
+        const span = document.createElement("span");
+        span.style.cursor = "pointer"; // Fa capire che si può cliccare
+        span.style.flex = "1";
+        span.title = "Clicca per aggiungere/rimuovere ingredienti";
+        
+        // Formatta le varianti in piccolo sotto al nome
+        const testoVarianti = (i.varianti && i.varianti.length > 0) 
+            ? `<br><small style="color:#d32f2f; font-weight:bold;">${i.varianti.join("<br>")}</small>` 
+            : "";
+
+        const prezzoPiattoAttuale = (i.prezzo + (i.extraPrezzo || 0));
+
         if(i.sconto){
             if(i.sconto.tipo === "percentuale"){
-                span.innerHTML = `${i.quantita}x ${i.nome} 
-                    <span style="text-decoration: line-through; color:red;">€${i.prezzo.toFixed(2)}</span> 
-                    <span style="color:red;">€${calcolaPrezzoConSconto(i).toFixed(2)}</span>`;
+                span.innerHTML = `<b style="color:#0056b3;">${i.quantita}x ${i.nome}</b> 
+                    <span style="text-decoration: line-through; color:red;">€${prezzoPiattoAttuale.toFixed(2)}</span> 
+                    <span style="color:red;">€${(calcolaPrezzoConSconto(i)/i.quantita).toFixed(2)}</span>` + testoVarianti;
             } else if(i.sconto.tipo === "x_paga_y"){
-                span.innerText = `${i.quantita}x ${i.nome} (€${calcolaPrezzoConSconto(i).toFixed(2)})`;
+                span.innerHTML = `<b style="color:#0056b3;">${i.quantita}x ${i.nome}</b> (€${(calcolaPrezzoConSconto(i)/i.quantita).toFixed(2)})` + testoVarianti;
             } else {
-                span.innerText = `${i.quantita}x ${i.nome} (€${i.prezzo.toFixed(2)})`;
+                span.innerHTML = `<b style="color:#0056b3;">${i.quantita}x ${i.nome}</b> (€${prezzoPiattoAttuale.toFixed(2)})` + testoVarianti;
             }
         } else {
-            span.innerText = `${i.quantita}x ${i.nome} (€${i.prezzo.toFixed(2)})`;
+            span.innerHTML = `<b style="color:#0056b3;">${i.quantita}x ${i.nome}</b> (€${prezzoPiattoAttuale.toFixed(2)})` + testoVarianti;
         }
+
+        // Apre il popup delle modifiche quando si clicca sul testo
+        span.onclick = () => apriPopupVarianti(idx);
 
 
 
@@ -2512,6 +2526,122 @@ function aggiornaComandaCorrente(){
     aggiornaSuggerimentoResto();
 	sincronizzaDisplayLive();
 }
+// ================= POPUP VARIANTI (AGGIUNTE/RIMOZIONI) =================
+function apriPopupVarianti(idx) {
+    const piatto = comandaCorrente[idx];
+    
+    // Inizializza array e extra prezzo se non esistono
+    if (!piatto.varianti) piatto.varianti = [];
+    if (!piatto.extraPrezzo) piatto.extraPrezzo = 0;
+
+    // Crea un clone temporaneo per non modificare lo scontrino se premiamo "Annulla"
+    let tempVarianti = [...piatto.varianti];
+    let tempExtraPrezzo = piatto.extraPrezzo;
+
+    const overlay = document.createElement("div");
+    overlay.className = "modal-overlay";
+
+    const modal = document.createElement("div");
+    modal.className = "modal-varianti";
+    
+    const titolo = document.createElement("h3");
+    titolo.innerText = `Modifica: ${piatto.nome}`;
+    modal.appendChild(titolo);
+
+    const listaDiv = document.createElement("div");
+
+    // Funzione interna per ridisegnare la lista nel popup
+    function renderListaIngredienti() {
+        listaDiv.innerHTML = "";
+        
+        // Se non ci sono ingredienti nel DB, avvisa
+        if (Object.keys(window.ingredientData).length === 0) {
+            listaDiv.innerHTML = "<i>Nessun ingrediente configurato nel database Admin.</i>";
+            return;
+        }
+
+        // Iteriamo su tutto il database ingredienti
+        Object.entries(window.ingredientData).forEach(([id, ing]) => {
+            const row = document.createElement("div");
+            row.className = "variante-row";
+            
+            const nomeSpan = document.createElement("span");
+            nomeSpan.innerText = ing.nome;
+            
+            const btnContainer = document.createElement("div");
+
+            // LOGICA RIMOZIONE (Senza Cipolla)
+            const btnRemove = document.createElement("button");
+            const strSenza = "Senza " + ing.nome;
+            if (tempVarianti.includes(strSenza)) {
+                btnRemove.className = "variante-btn disabled";
+                btnRemove.innerText = "Già rimosso";
+            } else {
+                btnRemove.className = "variante-btn remove";
+                btnRemove.innerText = "- Rimuovi";
+                btnRemove.onclick = () => {
+                    tempVarianti.push(strSenza);
+                    renderListaIngredienti(); // Ridisegna per aggiornare i bottoni
+                };
+            }
+
+            // LOGICA AGGIUNTA (+ Peperoni, costo fisso 0.50€ per ora)
+            const btnAdd = document.createElement("button");
+            const strCon = "+ " + ing.nome;
+            const costoExtra = 0.50; // COSTO STANDARD PER AGGIUNTA
+
+            if (tempVarianti.includes(strCon)) {
+                btnAdd.className = "variante-btn disabled";
+                btnAdd.innerText = "Già aggiunto";
+            } else {
+                btnAdd.className = "variante-btn add";
+                btnAdd.innerText = `+ Aggiungi (0.50€)`;
+                btnAdd.onclick = () => {
+                    tempVarianti.push(strCon);
+                    tempExtraPrezzo += costoExtra;
+                    renderListaIngredienti();
+                };
+            }
+
+            btnContainer.appendChild(btnRemove);
+            btnContainer.appendChild(btnAdd);
+            
+            row.appendChild(nomeSpan);
+            row.appendChild(btnContainer);
+            listaDiv.appendChild(row);
+        });
+    }
+
+    renderListaIngredienti();
+    modal.appendChild(listaDiv);
+
+    // Bottoni di conferma/annulla
+    const actionDiv = document.createElement("div");
+    actionDiv.className = "modal-actions";
+
+    const btnAnnulla = document.createElement("button");
+    btnAnnulla.className = "btn-chiudi";
+    btnAnnulla.innerText = "Annulla";
+    btnAnnulla.onclick = () => overlay.remove();
+
+    const btnSalva = document.createElement("button");
+    btnSalva.className = "btn-salva";
+    btnSalva.innerText = "Salva";
+    btnSalva.onclick = () => {
+        // Applica le modifiche temporanee al piatto reale
+        piatto.varianti = tempVarianti;
+        piatto.extraPrezzo = tempExtraPrezzo;
+        aggiornaComandaCorrente(); // Ricarica lo scontrino
+        overlay.remove();
+    };
+
+    actionDiv.appendChild(btnAnnulla);
+    actionDiv.appendChild(btnSalva);
+    modal.appendChild(actionDiv);
+
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+}
 // --- INPUT E PULSANTE ---
 const numInput = document.getElementById("numComanda");
 const letteraInput = document.getElementById("letteraComanda");
@@ -2550,28 +2680,31 @@ function aggiornaStatoInvio() {
 numInput.addEventListener("input", aggiornaStatoInvio);
 letteraInput.addEventListener("input", aggiornaStatoInvio);
 document.getElementById("quantita").addEventListener("change", aggiornaStatoInvio);
-// --- FUNZIONE CALCOLO SCONTO ---
+// --- FUNZIONE CALCOLO SCONTO (AGGIORNATA PER VARIANTI) ---
 function calcolaPrezzoConSconto(piatto){
     if (!checkOnline(true)) return;
     const q = piatto.quantita || 1;
-    if(!piatto.sconto) return piatto.prezzo * q;
+    // Aggiungiamo l'extraPrezzo (es. aggiunte) al prezzo base del piatto
+    const prezzoBaseEExtra = piatto.prezzo + (piatto.extraPrezzo || 0);
+
+    if(!piatto.sconto) return prezzoBaseEExtra * q;
 
     if(piatto.sconto.tipo === "percentuale"){
-        return piatto.prezzo * q * (1 - piatto.sconto.valore/100);
+        return prezzoBaseEExtra * q * (1 - piatto.sconto.valore/100);
     } else if(piatto.sconto.tipo === "x_paga_y"){
         const x = piatto.sconto.valore.x;
         const y = piatto.sconto.valore.y;
         const gruppi = Math.floor(q / x);
         const rimanenti = q % x;
-        return (gruppi * y + rimanenti) * piatto.prezzo;
+        return (gruppi * y + rimanenti) * prezzoBaseEExtra;
     } else if(piatto.sconto.tipo === "x_paga_y_fisso"){ 
-        const x = piatto.sconto.valore.x;  // numero di articoli per gruppo
-        const y = piatto.sconto.valore.y;  // prezzo totale del gruppo in €
+        const x = piatto.sconto.valore.x; 
+        const y = piatto.sconto.valore.y; 
         const gruppi = Math.floor(q / x);
         const rimanenti = q % x;
-        return gruppi * y + rimanenti * piatto.prezzo;
+        return gruppi * y + rimanenti * prezzoBaseEExtra;
     }
-    return piatto.prezzo * q;
+    return prezzoBaseEExtra * q;
 }
 
 // -------------------- SOLDI --------------------
