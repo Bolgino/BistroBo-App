@@ -604,10 +604,11 @@ function initImpostazioniToggle() {
                 onConfirm: async () => {
                     try {
                         await db.ref("comande").remove();
-                        // ---> AGGIUNGI QUESTA RIGA PER RESETTARE ANCHE IL CONTATORE <---
                         await db.ref("impostazioni/contatoreComande").set(0); 
+                        // 🔹 AZZERA IL FONDO CASSA A FINE SERATA
+                        await db.ref("impostazioni/fondoCassa").remove(); 
                         
-                        notify("✅ Tutte le comande sono state eliminate e il contatore azzerato!", "info");
+                        notify("✅ Tutte le comande sono state eliminate e il fondo cassa azzerato!", "info");
 
                         const listaComandeAdmin = document.getElementById("listaComandeAdmin");
                         if (listaComandeAdmin) listaComandeAdmin.innerHTML = "";
@@ -1862,12 +1863,52 @@ function mostraSchermata() {
     initImpostazioniToggle();
 
     // Mostra schermata in base al ruolo
+    // Mostra schermata in base al ruolo
     if (ruolo === "cassa") { 
         if (!checkOnline(true)) return;
         window.isLoggedInCassa = true;
         window.isLoggedInAdmin = false;
+        
+        // 🔹 RICHIESTA FONDO CASSA AL PRIMO ACCESSO
+        db.ref("impostazioni/fondoCassa").once("value").then(snap => {
+            if (!snap.exists() || snap.val() === "") {
+                const overlay = document.createElement("div");
+                overlay.className = "modal-overlay";
+                overlay.style.zIndex = "10005";
+
+                const modal = document.createElement("div");
+                modal.className = "modal-varianti";
+                modal.style.textAlign = "center";
+
+                modal.innerHTML = `
+                    <h3 style="margin-bottom: 15px; color: #333;">Fondo Cassa Iniziale</h3>
+                    <p style="font-size: 0.9em; color: #555; margin-bottom: 15px;">Inserisci l'importo di partenza presente in cassa.</p>
+                    <input type="number" step="0.01" id="inputFondoCassa" value="50.00" 
+                           style="width: 100%; box-sizing: border-box; padding: 10px; margin-bottom: 20px; border: 1px solid #ccc; border-radius: 6px; font-size: 1.1rem; text-align: center;">
+                    <div class="modal-actions">
+                        <button class="btn-salva" id="btnSalvaFondo" style="width: 100%;">Conferma Fondo Cassa</button>
+                    </div>
+                `;
+
+                overlay.appendChild(modal);
+                document.body.appendChild(overlay);
+
+                document.getElementById("btnSalvaFondo").onclick = () => {
+                    let valStr = document.getElementById("inputFondoCassa").value.replace(",", ".");
+                    const fondo = parseFloat(valStr);
+                    if (!isNaN(fondo) && fondo >= 0) {
+                        db.ref("impostazioni/fondoCassa").set(fondo);
+                        overlay.remove();
+                        notify("Fondo cassa impostato: €" + fondo.toFixed(2), "success");
+                    } else {
+                        notify("Inserisci un importo valido", "error");
+                    }
+                };
+            }
+        });
+
         if (typeof initPreordiniInterni === "function") initPreordiniInterni();
-        document.getElementById("cassaDiv").classList.remove("hidden"); 
+        document.getElementById("cassaDiv").classList.remove("hidden");
         caricaMenuCassa();
         caricaComandeCassa();
         initIngredientiCriticiListeners();
@@ -5375,97 +5416,97 @@ async function caricaStatistiche() {
   }
   const contenuto = document.getElementById("contenutoStatistiche");
 
-  const snap = await db.ref("comande").once("value");
-  const comande = snap.val() || {};
+    // 🔹 LEGGI IL FONDO CASSA DAL DATABASE
+    const snapFondo = await db.ref("impostazioni/fondoCassa").once("value");
+    const fondoCassa = parseFloat(snapFondo.val()) || 0;
 
-  let totaleComande = 0;
-  let totaleIncasso = 0;
+    const snap = await db.ref("comande").once("value");
+    const comande = snap.val() || {};
+    let totaleComande = 0;
+    let totaleIncasso = 0;
     let totalePos = 0;
     let totaleContanti = 0;
-	let incassoAsporto = 0;
-  const piattiMap = {};            // { nome: { quantita, incasso } }
-  const ingrMap = {};              // { nome: quantita }
-  const incassiIngredienti = {};   // { nome: incasso } (come prima, somma del prezzo del piatto)
+    let incassoAsporto = 0;
+    const piattiMap = {}; 
+    const ingrMap = {}; 
+    const incassiIngredienti = {}; 
+    const listaComande = [];
 
-  const listaComande = [];
+    for (const id in comande) {
+        // [IL CICLO FOR RIMANE UGUALE, NON CAMBIA NULLA]
+        const c = comande[id];
+        totaleComande++;
+        let totaleComanda = 0;
+        (c.piatti || []).forEach(p => {
+            const q = Number(p.quantita || 0);
+            const prezzoTot = calcolaPrezzoConSconto(p);
+            totaleComanda += prezzoTot;
+            
+            if (!piattiMap[p.nome]) piattiMap[p.nome] = { quantita: 0, incasso: 0 };
+            piattiMap[p.nome].quantita += q;
+            piattiMap[p.nome].incasso += prezzoTot;
+            
+            (p.ingredienti || []).forEach(ing => {
+                const qty = (Number(ing.qtyPerUnit) || 1) * q;
+                ingrMap[ing.nome] = (ingrMap[ing.nome] || 0) + qty;
+                incassiIngredienti[ing.nome] = (incassiIngredienti[ing.nome] || 0) + prezzoTot;
+            });
+        });
+        
+        if (c.metodoPagamento === "pos") {
+            totalePos += totaleComanda;
+        } else {
+            totaleContanti += totaleComanda;
+        }
+        
+        totaleIncasso += totaleComanda;
+        if (c.commento) incassoAsporto += totaleComanda;
 
-  for (const id in comande) {
-    const c = comande[id];
-    totaleComande++;
-    let totaleComanda = 0;
-
-    (c.piatti || []).forEach(p => {
-    const q = Number(p.quantita || 0);
-    const prezzoTot = calcolaPrezzoConSconto(p);
-    totaleComanda += prezzoTot;
-
-    // Piatti
-    if (!piattiMap[p.nome]) piattiMap[p.nome] = { quantita: 0, incasso: 0 };
-    piattiMap[p.nome].quantita += q;
-    piattiMap[p.nome].incasso += prezzoTot;
-
-    // Ingredienti
-    (p.ingredienti || []).forEach(ing => {
-        const qty = (Number(ing.qtyPerUnit) || 1) * q;
-        ingrMap[ing.nome] = (ingrMap[ing.nome] || 0) + qty;
-        incassiIngredienti[ing.nome] = (incassiIngredienti[ing.nome] || 0) + prezzoTot;
-    });
-    });
-
-    // ⚡ Aggiorna totale POS/Contanti solo una volta per comanda
-    if (c.metodoPagamento === "pos") {
-    totalePos += totaleComanda;
-    } else {
-    totaleContanti += totaleComanda;
+        listaComande.push({
+            id,
+            numero: c.numero,
+            lettera: c.lettera,
+            totale: totaleComanda,
+            piatti: (c.piatti || []).map(p => p.quantita + "x " + p.nome).join(", "),
+            data: c.timestamp
+        });
     }
-  if (c.commento && c.commento.includes("ASPORTO")) {
-		incassoAsporto += totaleComanda;
-	}
-    totaleIncasso += totaleComanda;
 
+    const piattiByQuantita = Object.entries(piattiMap).sort((a,b) => b[1].quantita - a[1].quantita);
+    const piattiByIncasso = Object.entries(piattiMap).sort((a,b) => b[1].incasso - a[1].incasso);
+    const ingrByQuantita = Object.entries(ingrMap).sort((a,b) => b[1] - a[1]);
+    const ingrIncassiArray = Object.entries(incassiIngredienti).map(([n,i]) => ({ nome: n, incasso: i }));
 
-    // uso il campo "numero" che viene salvato al push della comanda (es. "12A")
-    listaComande.push({
-      id,
-      numero: c.numero || "",             // correzione: leggi 'numero' direttamente dal DB
-      totale: totaleComanda.toFixed(2),
-      timestamp: c.timestamp || 0
-    });
-  }
+    window.statistiche = {
+        totaleComande,
+        totaleIncasso,
+        totalePos,
+        totaleContanti,
+        incassoAsporto,
+        piattiByQuantita,
+        piattiByIncasso,
+        ingrByQuantita,
+        ingrIncassiArray,
+        listaComande,
+        fondoCassa // 🔹 SALVO IL FONDO CASSA IN MEMORIA PER EXCEL E PDF
+    };
 
-  // ORDINAMENTI
-  listaComande.sort((a,b) => (a.timestamp || 0) - (b.timestamp || 0)); // cronologico
-  const piattiByQuantita = Object.entries(piattiMap).sort((a,b) => b[1].quantita - a[1].quantita);
-  const piattiByIncasso = Object.entries(piattiMap).sort((a,b) => b[1].incasso - a[1].incasso);
-  const ingrByQuantita = Object.entries(ingrMap).sort((a,b) => b[1] - a[1]);
-  const ingrIncassiArray = Object.entries(incassiIngredienti).map(([n,i]) => ({ nome: n, incasso: i }));
-
-  window.statistiche = {
-      totaleComande,
-      totaleIncasso,
-      totalePos,
-      totaleContanti,
-      incassoAsporto,
-      piattiByQuantita,
-      piattiByIncasso,
-      ingrByQuantita,
-      ingrIncassiArray,
-      listaComande
-  };
-
-  // RIEPILOGO IN-APP: esattamente Piatto | Quantità venduta | Incasso (nient'altro)
-  const rows = piattiByQuantita.map(([nome, v]) =>
-    `<tr><td style="text-align:left; padding:6px;">${nome}</td><td style="text-align:center; padding:6px;">${v.quantita}</td><td style="text-align:right; padding:6px;">€${v.incasso.toFixed(2)}</td></tr>`
-  ).join("");
+    const rows = piattiByQuantita.map(([nome, v]) => 
+        `<tr><td style="text-align:left; padding:6px;">${nome}</td><td style="text-align:center; padding:6px;">${v.quantita}</td><td style="text-align:right; padding:6px;">€${v.incasso.toFixed(2)}</td></tr>`
+    ).join("");
 
     contenuto.innerHTML = `
-    <h3 style="color:blue;">Statistiche Vendite</h3>
-    <p><b>Numero totale comande:</b> ${totaleComande}</p>
-    <p><b>Incasso totale:</b> €${totaleIncasso.toFixed(2)}</p>
-    <p><b>Incasso POS:</b> €${totalePos.toFixed(2)}</p>
-    <p><b>Incasso Contanti:</b> €${totaleContanti.toFixed(2)}</p>
-    <p><b>Di cui Asporto:</b> €${incassoAsporto.toFixed(2)}</p>
-    <table border="0" style="width:100%; border-collapse:collapse;">
+        <h3 style="color:blue;">Statistiche Vendite</h3>
+        <p><b>Numero totale comande:</b> ${totaleComande}</p>
+        <p><b>Fondo Cassa Iniziale:</b> €${fondoCassa.toFixed(2)}</p>
+        <p><b>Incasso POS:</b> €${totalePos.toFixed(2)}</p>
+        <p><b>Incasso Contanti:</b> €${totaleContanti.toFixed(2)}</p>
+        <p><b>Di cui Asporto:</b> €${incassoAsporto.toFixed(2)}</p>
+        <hr style="margin:15px 0; border: 1px solid #ccc;">
+        <p style="font-size: 1.1em;"><b>SOLDI TOTALI IN CASSA (Fondo + Contanti):</b> <span style="color:green; font-weight:bold;">€${(fondoCassa + totaleContanti).toFixed(2)}</span></p>
+        <p style="font-size: 1.1em;"><b>GUADAGNO (tolto fondo cassa):</b> <span style="color:blue; font-weight:bold;">€${totaleIncasso.toFixed(2)}</span></p>
+        
+        <table border="0" style="width:100%; border-collapse:collapse; margin-top:20px;">
         <thead>
         <tr style="border-bottom:2px solid #444;">
             <th style="text-align:left; padding:6px;">Piatto</th>
@@ -5494,7 +5535,7 @@ async function generaExcel() {
   const s = window.statistiche;
   if (!s) { notify("Nessuna statistica disponibile","warn"); return; }
 
- const { piattiByIncasso, piattiByQuantita, ingrByQuantita, totaleComande, totaleIncasso, totalePos, totaleContanti, incassoAsporto } = s;
+ const { piattiByIncasso, piattiByQuantita, ingrByQuantita, totaleComande, totaleIncasso, totalePos, totaleContanti, incassoAsporto, fondoCassa } = s;
   const workbook = new ExcelJS.Workbook();
 
   // ----------------- Scheda 1: Piatti x Incasso -----------------
@@ -5518,42 +5559,36 @@ async function generaExcel() {
   });
 
   // Totali a fianco (colonne E/F)
+  // Totali a fianco (colonne E/F)
   sheet1.getCell('E2').value = "Numero totale comande";
-  sheet1.getCell('F2').value = totaleComande;      // rimane numero semplice
-  sheet1.getCell('E3').value = "Incasso totale (€)";
-  sheet1.getCell('F3').value = totaleIncasso;      // formato valuta
+  sheet1.getCell('F2').value = totaleComande;
+  sheet1.getCell('E3').value = "Fondo Cassa Iniziale (€)";
+  sheet1.getCell('F3').value = fondoCassa || 0;
   sheet1.getCell('E4').value = "Incasso POS (€)";
-    sheet1.getCell('F4').value = totalePos;
-    sheet1.getCell('E5').value = "Incasso Contanti (€)";
-    sheet1.getCell('F5').value = totaleContanti;
-    
-    sheet1.getCell('E6').value = "Di cui Asporto (€)";
-    sheet1.getCell('F6').value = incassoAsporto;
+  sheet1.getCell('F4').value = totalePos;
+  sheet1.getCell('E5').value = "Incasso Contanti (€)";
+  sheet1.getCell('F5').value = totaleContanti;
+  sheet1.getCell('E6').value = "Di cui Asporto (€)";
+  sheet1.getCell('F6').value = incassoAsporto;
+  sheet1.getCell('E7').value = "SOLDI TOTALI IN CASSA (€)";
+  sheet1.getCell('F7').value = (fondoCassa || 0) + totaleContanti;
+  sheet1.getCell('E8').value = "GUADAGNO REALE (€)";
+  sheet1.getCell('F8').value = totaleIncasso;
 
-    // Formatta come valuta
-    sheet1.getCell('F4').numFmt = '€#,##0.00';
-    sheet1.getCell('F5').numFmt = '€#,##0.00';
-    sheet1.getCell('F6').numFmt = '€#,##0.00';
-
-    // Stile blu e grassetto per tutti i totali inferiori
-    ['E4','F4','E5','F5','E6','F6'].forEach(addr => {
-    const cell = sheet1.getCell(addr);
-    cell.fill = { type:'pattern', pattern:'solid', fgColor:{argb:'00B0F0'} };
-    cell.font = { bold:true };
-    });
-
-
-  // Totali blu e grassetto
-  ['E2','F2','E3','F3'].forEach(addr => {
-    const cell = sheet1.getCell(addr);
-    cell.fill = { type:'pattern', pattern:'solid', fgColor:{argb:'00B0F0'} };
-    cell.font = { bold:true };
+  // Formatta tutti gli incassi come valuta
+  ['F3','F4','F5','F6','F7','F8'].forEach(addr => {
+      sheet1.getCell(addr).numFmt = '€#,##0.00';
   });
-  // Formatta solo il totale incasso in € (F3)
-  sheet1.getCell('F3').numFmt = '€#,##0.00';
+
+  // Stile blu, testo bianco e grassetto per tutto il riquadro
+  ['E2','F2','E3','F3','E4','F4','E5','F5','E6','F6','E7','F7','E8','F8'].forEach(addr => {
+      const cell = sheet1.getCell(addr);
+      cell.fill = { type:'pattern', pattern:'solid', fgColor:{argb:'00B0F0'} };
+      cell.font = { bold:true, color:{argb:'FFFFFF'} };
+  });
 
   // Adatta larghezza colonne dei totali
-  sheet1.getColumn(5).width = 25; // colonna E
+  sheet1.getColumn(5).width = 30; // colonna E allargata per i nuovi testi
   sheet1.getColumn(6).width = 15; // colonna F
 
   // ----------------- Scheda 2: Piatti x Quantità -----------------
@@ -5605,8 +5640,7 @@ function generaPdf() {
   const s = window.statistiche;
   if (!s) { notify("Nessuna statistica disponibile. Apri la tab Incassi prima.","warn"); return; }
 
-  const { totaleComande, totaleIncasso, totalePos, totaleContanti, incassoAsporto, piattiByQuantita, piattiByIncasso, ingrByQuantita, ingrIncassiArray, listaComande } = s;
-  const { jsPDF } = window.jspdf;
+ const { totaleComande, totaleIncasso, totalePos, totaleContanti, incassoAsporto, piattiByQuantita, piattiByIncasso, ingrByQuantita, ingrIncassiArray, listaComande, fondoCassa } = s;
   const doc = new jsPDF();
   let y = 14;
   const pageW = doc.internal.pageSize.getWidth();
@@ -5626,14 +5660,27 @@ function generaPdf() {
   doc.setFontSize(12);
   doc.text(`Numero totale comande: ${totaleComande}`, xLeft, y);
   y += 6;
-  doc.text(`Incasso totale: €${totaleIncasso.toFixed(2)}`, xLeft, y);
-  y += 10;
+  doc.text(`Fondo Cassa Iniziale: €${(fondoCassa || 0).toFixed(2)}`, xLeft, y);
+  y += 6;
   doc.text(`Incasso POS: €${totalePos.toFixed(2)}`, xLeft, y);
-    y += 6;
-    doc.text(`Incasso Contanti: €${totaleContanti.toFixed(2)}`, xLeft, y);
-    y += 10;
-    doc.text(`Di cui Asporto: €${incassoAsporto.toFixed(2)}`, xLeft, y);
-    y += 10;
+  y += 6;
+  doc.text(`Incasso Contanti: €${totaleContanti.toFixed(2)}`, xLeft, y);
+  y += 6;
+  doc.text(`Di cui Asporto: €${incassoAsporto.toFixed(2)}`, xLeft, y);
+  y += 10;
+  
+  // Scritte in grassetto per i conti finali
+  doc.setFont(undefined, 'bold');
+  doc.setTextColor(0, 100, 0); // Verde scuro
+  doc.text(`SOLDI TOTALI IN CASSA (Fondo + Contanti): €${((fondoCassa || 0) + totaleContanti).toFixed(2)}`, xLeft, y);
+  y += 8;
+  doc.setTextColor(0, 0, 255); // Blu
+  doc.text(`GUADAGNO REALE (tolto fondo cassa): €${totaleIncasso.toFixed(2)}`, xLeft, y);
+  y += 12;
+  
+  // Resetta colore e font per le tabelle sottostanti
+  doc.setTextColor(0, 0, 0);
+  doc.setFont(undefined, 'normal');
 	
 	
 	  // Tabella: Piatti per quantità
