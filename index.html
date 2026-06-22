@@ -525,6 +525,25 @@
 				</div>
 				<button class="toggleBtn" id="toggleSuonoBtn">🔔 ON</button>
 			</div>
+			<div style="margin-top: 20px; margin-bottom: 20px; padding: 15px; border: 1px solid #ccc; border-radius: 8px; background: #f9f9f9;">
+		        <h3 style="margin-top: 0; color: #333;">Visibilità TAB per Mansione</h3>
+		        
+		        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+		            <div>
+		                <h4 style="margin-bottom: 5px;">Mostra Ingredienti in:</h4>
+		                <label><input type="checkbox" id="chkIngCassa" onchange="salvaImpostazioniTab()"> Cassa</label><br>
+		                <label><input type="checkbox" id="chkIngCucina" onchange="salvaImpostazioniTab()"> Cucina</label><br>
+		                <label><input type="checkbox" id="chkIngBere" onchange="salvaImpostazioniTab()"> Bere</label><br>
+		                <label><input type="checkbox" id="chkIngSnack" onchange="salvaImpostazioniTab()"> Snack</label><br>
+		            </div>
+		            <div>
+		                <h4 style="margin-bottom: 5px;">Mostra Menu in:</h4>
+		                <label><input type="checkbox" id="chkMenuCucina" onchange="salvaImpostazioniTab()"> Cucina</label><br>
+		                <label><input type="checkbox" id="chkMenuBere" onchange="salvaImpostazioniTab()"> Bere</label><br>
+		                <label><input type="checkbox" id="chkMenuSnack" onchange="salvaImpostazioniTab()"> Snack</label><br>
+		            </div>
+		        </div>
+		    </div>
 			<div class="settingItem">
 				<div class="settingLabel">
 					<span>Abilita Schermo Cliente Live</span>
