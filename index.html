@@ -493,6 +493,10 @@
 		<!-- Impostazioni -->
 		<div id="impostazioniTab" class="tabContent">
 			<h3>Impostazioni</h3>
+		
+			<!-- ================= GENERALI ================= -->
+			<h4 style="margin-top: 20px; border-bottom: 2px solid #ccc; padding-bottom: 5px;">Impostazioni Generali</h4>
+			
 			<div class="settingItem">
 				<div class="settingLabel">
 					<span>Nome Stand</span>
@@ -519,13 +523,6 @@
 			</div>
 			<div class="settingItem">
 				<div class="settingLabel">
-					<span>Suoni globali cassa</span>
-					<small>Abilita/disabilita tutti i suoni relativi alla Cassa</small>
-				</div>
-				<button id="toggleSuonoCassaBtn" class="toggleBtn">🔔 ON</button>
-			</div>
-			<div class="settingItem">
-				<div class="settingLabel">
 					<span>Suono nuove comande per i profili</span>
 					<small>Suona un avviso quando vengono arriva una nuova comanda. Valido per tutti i profili</small>
 				</div>
@@ -537,135 +534,6 @@
 					<small>Permette ai profili "Cliente" di vedere l'ordine in tempo reale </small>
 				</div>
 				<button id="toggleDisplayClienteBtn" class="toggleBtn">OFF</button>
-			</div>
-			<div class="settingItem">
-				<div class="settingLabel">
-					<span>Abilita casella “Asporto”</span>
-					<small>Mostra la casella “Asporto” in Cassa per etichettare le comande con "Asporto" (sia normali sia preordini)</small>
-				</div>
-				<button id="toggleAsportoBtn" class="toggleBtn">OFF</button>
-			</div>
-			<div class="settingItem">
-				<div class="settingLabel">
-					<span>Selettore quantità in Cassa</span>
-					<small>Se disattivato, scompare il menu a tendina e ogni click sui piatti aggiunge +1 in automatico alla comanda.</small>
-				</div>
-				<button id="toggleSelettoreQuantitaBtn" class="toggleBtn">ON</button>
-			</div>
-			<div class="settingItem">
-			    <div class="settingLabel">
-			        <span>Gestione Resto e Soldi in Cassa</span>
-			        <small>Se disattivato, nasconde la calcolatrice dei soldi, le banconote e il calcolo del resto in Cassa.</small>
-			    </div>
-			    <button id="toggleGestioneSoldiBtn" class="toggleBtn">ON</button>
-			</div>
-			<div class="settingItem">
-			    <div class="settingLabel">
-			        <span>Attiva Cassa Ottimizzata</span>
-			        <small>Trasforma i piatti in grandi pulsanti affiancati e nasconde gli ingredienti per ottimizzare gli spazi in Cassa.</small>
-			    </div>
-			    <button id="toggleCassaOttBtn" class="toggleBtn">OFF</button>
-			</div>
-			<!-- ================= PREORDINI ================= -->
-			<div class="settingItem">
-				<div class="settingLabel">
-					<span>Abilita sistema Preordini</span>
-					<small>Consente la gestione dei preordini (pagina clienti e scheda dedicata in Cassa e Admin)</small>
-				</div>
-				<button id="togglePreordiniBtn" class="toggleBtn">OFF</button>
-			</div>
-			<div class="settingItem" id="settingLetteraPreordini" style="display:none;">
-				<div class="settingLabel">
-					<span>Lettera preordini</span>
-					<small>Seleziona la lettera da usare nelle comande che derivano da un preordine</small>
-				</div>
-				<input type="text" id="inputLetteraPreordini" maxlength="1" style="width:40px;" pattern="[A-Za-z]">
-			</div>
-			<div class="settingItem" id="settingSuonoPreordini" style="display:none;">
-				<div class="settingLabel">
-					<span>Suoni Notifiche Preordini</span>
-					<small>Abilita/disabilita il suono dei preordini</small>
-				</div>
-				<button id="toggleSuonoPreordiniBtn" class="toggleBtn">🔔 ON</button>
-			</div>
-			<div class="settingItem" id="settingOrdinaPreordini" style="display:none;">
-				<div class="settingLabel">
-					<span>Nuovi Preordini in alto</span>
-					<small>I nuovi Preordini appariranno sempre in cima alla lista</small>
-				</div>
-				<button id="toggleOrdinaPreordiniBtn" class="toggleBtn">ON</button>
-			</div>
-			<div class="settingItem" id="settingPreordiniInfo" style="display:none;">
-				<div class="settingLabel">
-					<span>Richiedi Numero, Orario di Consegna e Posizione nei preordini</span>
-					<small>Se attivo, i clienti dovranno compilare numero di telefono, Orario di Consegna desiderato e posizione (Specifica San Matteo)</small>
-				</div>
-				<button id="togglePreordiniInfoBtn" class="toggleBtn">ON</button>
-			</div>
-
-			<div class="settingItem">
-				<div class="settingLabel">
-					<span>Invio note ai profili</span>
-					<small>Permetti alla cassa e, se abilitato, ai preordini di scegliere le destinazioni delle note nei vari profili</small>
-				</div>
-				<button id="toggleNoteDestinazioniBtn" class="toggleBtn">OFF</button>
-			</div>
-			<div class="settingItem">
-				<div class="settingLabel">
-					<span>Stampa automatica comande</span>
-					<small>Se attivato, le comande verranno stampate automaticamente all'invio dalla cassa e, se abilitato, all'aggiunta del preordine come comanda </small>
-				</div>
-				<button id="toggleStampaComande" class="toggleBtn">OFF</button>
-			</div>
-			<div class="settingItem">
-				<div class="settingLabel">
-					<span>Comande Progressive Auto</span>
-					<small>Assegna automaticamente il numero della comanda. Sicuro per l'uso con più casse simultanee.</small>
-				</div>
-				<button id="toggleComandeProgressiveBtn" class="toggleBtn">OFF</button>
-			</div>
-			<div class="settingItem">
-				<div class="settingLabel">
-					<span>Richiedi Lettera Comanda</span>
-					<small>Se disattivato, la cassa userà solo i numeri (es. Comanda 1, 2). I preordini manterranno comunque la loro lettera dedicata.</small>
-				</div>
-				<button id="toggleLetteraComandaBtn" class="toggleBtn">ON</button>
-			</div>
-			<div class="settingItem" id="settingResetContatore" style="display:none; border-left: 4px solid #f44336; background: #ffebee;">
-				<div class="settingLabel">
-					<span style="color: #d32f2f; font-weight: bold;">Reset Contatore Comande</span>
-					<small>Azzera il progressivo automatico. La prossima comanda ripartirà da 1.</small>
-				</div>
-				<button id="resetContatoreBtn" class="toggleBtn">Azzera</button>
-			</div>
-			<div class="settingItem">
-				<div class="settingLabel">
-					<span>Nuove comande in alto Cucina</span>
-					<small>Le nuove comande appariranno sempre in cima alla lista Cucina</small>
-				</div>
-				<button id="toggleNuoveInAltoCucinaBtn" class="toggleBtn">ON</button>
-			</div>
-			<div class="settingItem">
-				<div class="settingLabel">
-					<span>Nuove comande in alto Bere</span>
-					<small>Le nuove comande appariranno sempre in cima alla lista Bere</small>
-				</div>
-				<button id="toggleNuoveInAltoBereBtn" class="toggleBtn">ON</button>
-			</div>
-			<div class="settingItem">
-				<div class="settingLabel">
-					<span>Profilo Snack</span>
-					<small>Abilita o disabilita il profilo Snack. <b>Prima di disattivarlo o attivarlo, completare tutte le comande attive di Snack e di Cucina!</b></small>
-				</div>
-				<button id="toggleSnackBtn" class="toggleBtn">OFF</button>
-			</div>
-
-			<div class="settingItem" id="settingNuoveInAltoSnack" style="display:none;">
-				<div class="settingLabel">
-					<span>Nuove comande in alto Snack</span>
-					<small>Le nuove comande Snack appariranno in cima alla lista Snack</small>
-				</div>
-				<button id="toggleNuoveInAltoSnackBtn" class="toggleBtn">OFF</button>
 			</div>
 			<div class="settingItem">
 				<div class="settingLabel">
@@ -720,6 +588,156 @@
 				</div>
 				<button id="cancellaComandeBtn" class="toggleBtn">ELIMINA</button>
 			</div>
+		
+			<!-- ================= CASSA ================= -->
+			<h4 style="margin-top: 20px; border-bottom: 2px solid #ccc; padding-bottom: 5px;">Cassa</h4>
+			
+			<div class="settingItem">
+				<div class="settingLabel">
+					<span>Suoni globali cassa</span>
+					<small>Abilita/disabilita tutti i suoni relativi alla Cassa</small>
+				</div>
+				<button id="toggleSuonoCassaBtn" class="toggleBtn">🔔 ON</button>
+			</div>
+			<div class="settingItem">
+				<div class="settingLabel">
+					<span>Abilita casella “Asporto”</span>
+					<small>Mostra la casella “Asporto” in Cassa per etichettare le comande con "Asporto" (sia normali sia preordini)</small>
+				</div>
+				<button id="toggleAsportoBtn" class="toggleBtn">OFF</button>
+			</div>
+			<div class="settingItem">
+				<div class="settingLabel">
+					<span>Selettore quantità in Cassa</span>
+					<small>Se disattivato, scompare il menu a tendina e ogni click sui piatti aggiunge +1 in automatico alla comanda.</small>
+				</div>
+				<button id="toggleSelettoreQuantitaBtn" class="toggleBtn">ON</button>
+			</div>
+			<div class="settingItem">
+				<div class="settingLabel">
+					<span>Gestione Resto e Soldi in Cassa</span>
+					<small>Se disattivato, nasconde la calcolatrice dei soldi, le banconote e il calcolo del resto in Cassa.</small>
+				</div>
+				<button id="toggleGestioneSoldiBtn" class="toggleBtn">ON</button>
+			</div>
+			<div class="settingItem">
+				<div class="settingLabel">
+					<span>Attiva Cassa Ottimizzata</span>
+					<small>Trasforma i piatti in grandi pulsanti affiancati e nasconde gli ingredienti per ottimizzare gli spazi in Cassa.</small>
+				</div>
+				<button id="toggleCassaOttBtn" class="toggleBtn">OFF</button>
+			</div>
+			<div class="settingItem">
+				<div class="settingLabel">
+					<span>Invio note ai profili</span>
+					<small>Permetti alla cassa e, se abilitato, ai preordini di scegliere le destinazioni delle note nei vari profili</small>
+				</div>
+				<button id="toggleNoteDestinazioniBtn" class="toggleBtn">OFF</button>
+			</div>
+			<div class="settingItem">
+				<div class="settingLabel">
+					<span>Stampa automatica comande</span>
+					<small>Se attivato, le comande verranno stampate automaticamente all'invio dalla cassa e, se abilitato, all'aggiunta del preordine come comanda </small>
+				</div>
+				<button id="toggleStampaComande" class="toggleBtn">OFF</button>
+			</div>
+			<div class="settingItem">
+				<div class="settingLabel">
+					<span>Comande Progressive Auto</span>
+					<small>Assegna automaticamente il numero della comanda. Sicuro per l'uso con più casse simultanee.</small>
+				</div>
+				<button id="toggleComandeProgressiveBtn" class="toggleBtn">OFF</button>
+			</div>
+			<div class="settingItem">
+				<div class="settingLabel">
+					<span>Richiedi Lettera Comanda</span>
+					<small>Se disattivato, la cassa userà solo i numeri (es. Comanda 1, 2). I preordini manterranno comunque la loro lettera dedicata.</small>
+				</div>
+				<button id="toggleLetteraComandaBtn" class="toggleBtn">ON</button>
+			</div>
+			<div class="settingItem" id="settingResetContatore" style="display:none; border-left: 4px solid #f44336; background: #ffebee;">
+				<div class="settingLabel">
+					<span style="color: #d32f2f; font-weight: bold;">Reset Contatore Comande</span>
+					<small>Azzera il progressivo automatico. La prossima comanda ripartirà da 1.</small>
+				</div>
+				<button id="resetContatoreBtn" class="toggleBtn">Azzera</button>
+			</div>
+		
+			<!-- ================= CUCINA E BERE ================= -->
+			<h4 style="margin-top: 20px; border-bottom: 2px solid #ccc; padding-bottom: 5px;">Cucina & Bere</h4>
+		
+			<div class="settingItem">
+				<div class="settingLabel">
+					<span>Nuove comande in alto Cucina</span>
+					<small>Le nuove comande appariranno sempre in cima alla lista Cucina</small>
+				</div>
+				<button id="toggleNuoveInAltoCucinaBtn" class="toggleBtn">ON</button>
+			</div>
+			<div class="settingItem">
+				<div class="settingLabel">
+					<span>Nuove comande in alto Bere</span>
+					<small>Le nuove comande appariranno sempre in cima alla lista Bere</small>
+				</div>
+				<button id="toggleNuoveInAltoBereBtn" class="toggleBtn">ON</button>
+			</div>
+		
+			<!-- ================= SNACK ================= -->
+			<h4 style="margin-top: 20px; border-bottom: 2px solid #ccc; padding-bottom: 5px;">Snack</h4>
+		
+			<div class="settingItem">
+				<div class="settingLabel">
+					<span>Profilo Snack</span>
+					<small>Abilita o disabilita il profilo Snack. <b>Prima di disattivarlo o attivarlo, completare tutte le comande attive di Snack e di Cucina!</b></small>
+				</div>
+				<button id="toggleSnackBtn" class="toggleBtn">OFF</button>
+			</div>
+			<div class="settingItem" id="settingNuoveInAltoSnack" style="display:none;">
+				<div class="settingLabel">
+					<span>Nuove comande in alto Snack</span>
+					<small>Le nuove comande Snack appariranno in cima alla lista Snack</small>
+				</div>
+				<button id="toggleNuoveInAltoSnackBtn" class="toggleBtn">OFF</button>
+			</div>
+		
+			<!-- ================= PREORDINI ================= -->
+			<h4 style="margin-top: 20px; border-bottom: 2px solid #ccc; padding-bottom: 5px;">Preordini</h4>
+		
+			<div class="settingItem">
+				<div class="settingLabel">
+					<span>Abilita sistema Preordini</span>
+					<small>Consente la gestione dei preordini (pagina clienti e scheda dedicata in Cassa e Admin)</small>
+				</div>
+				<button id="togglePreordiniBtn" class="toggleBtn">OFF</button>
+			</div>
+			<div class="settingItem" id="settingLetteraPreordini" style="display:none;">
+				<div class="settingLabel">
+					<span>Lettera preordini</span>
+					<small>Seleziona la lettera da usare nelle comande che derivano da un preordine</small>
+				</div>
+				<input type="text" id="inputLetteraPreordini" maxlength="1" style="width:40px;" pattern="[A-Za-z]">
+			</div>
+			<div class="settingItem" id="settingSuonoPreordini" style="display:none;">
+				<div class="settingLabel">
+					<span>Suoni Notifiche Preordini</span>
+					<small>Abilita/disabilita il suono dei preordini</small>
+				</div>
+				<button id="toggleSuonoPreordiniBtn" class="toggleBtn">🔔 ON</button>
+			</div>
+			<div class="settingItem" id="settingOrdinaPreordini" style="display:none;">
+				<div class="settingLabel">
+					<span>Nuovi Preordini in alto</span>
+					<small>I nuovi Preordini appariranno sempre in cima alla lista</small>
+				</div>
+				<button id="toggleOrdinaPreordiniBtn" class="toggleBtn">ON</button>
+			</div>
+			<div class="settingItem" id="settingPreordiniInfo" style="display:none;">
+				<div class="settingLabel">
+					<span>Richiedi Numero, Orario di Consegna e Posizione nei preordini</span>
+					<small>Se attivo, i clienti dovranno compilare numero di telefono, Orario di Consegna desiderato e posizione (Specifica San Matteo)</small>
+				</div>
+				<button id="togglePreordiniInfoBtn" class="toggleBtn">ON</button>
+			</div>
+		
 		</div>
 	</div>
 
