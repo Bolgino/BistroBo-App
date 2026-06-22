@@ -1732,10 +1732,58 @@ body.tema-estate button {
     box-sizing: border-box !important;
 }
 
-/* Resto sotto al pagato (Vale per tutte le casse) */
-#rigaRestoPagato {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    margin-top: 4px;
+/* ================= RIORGANIZZAZIONE TOTALI E BOTTONE INVIA ================= */
+
+/* 1. Layout a Griglia per organizzare la sezione su tre righe */
+.stickyLeft {
+    display: grid !important;
+    grid-template-columns: auto 1fr !important; /* Colonna 1: Totale, Colonna 2: Pagato e Resto */
+    column-gap: 35px !important; /* Distanza tra Totale e Pagato */
+    row-gap: 12px !important;    /* Distanza verticale tra le righe */
+    align-items: center !important;
+    min-height: auto !important; 
 }
+
+/* 2. RIGA 1: Totale (a sinistra) */
+.stickyLeft > b:first-child {
+    grid-column: 1 !important;
+    font-size: 1.25rem !important;
+    white-space: nowrap !important;
+}
+
+/* 3. RIGA 1: Pagato e Resto (a destra, distanziati) */
+#rigaRestoPagato {
+    grid-column: 2 !important;
+    display: flex !important;
+    flex-direction: row !important; /* Li forza ad affiancarsi sulla stessa riga */
+    justify-content: flex-start !important;
+    gap: 40px !important; /* Spazio netto tra Pagato e Resto */
+    margin-top: 0 !important;
+    align-items: center !important;
+    font-size: 1.15rem !important;
+}
+
+/* Sistema il suggerimento delle monetine per non farlo accavallare */
+#suggerimentoResto {
+    position: static !important; 
+    transform: none !important;
+    display: inline-flex !important;
+    margin-left: 10px !important;
+}
+
+/* 4. RIGA 2: Metodo di Pagamento sotto ai totali */
+.stickyLeft > div:nth-of-type(1) { 
+    grid-column: 1 / -1 !important; /* Prende tutta la larghezza e va a capo */
+    margin-bottom: 0 !important;
+}
+
+/* 5. RIGA 3: Bottone Invia Comanda "Più Snello" */
+#inviaComandaBtn {
+    grid-column: 1 / -1 !important;
+    position: static !important; 
+    padding: 8px 32px !important; /* Riduce l'altezza (era 14px) per renderlo visivamente più magro */
+    font-size: 1.1rem !important;
+    margin-top: 4px !important;
+    width: fit-content !important; /* Il bottone si adatta al testo senza "esplodere" */
+}
+
