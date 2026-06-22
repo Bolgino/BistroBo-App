@@ -1754,13 +1754,19 @@ body.tema-estate button {
 /* 3. RIGA 1: Pagato e Resto (a destra, distanziati) */
 #rigaRestoPagato {
     grid-column: 2 !important;
-    display: flex !important;
-    flex-direction: row !important; /* Li forza ad affiancarsi sulla stessa riga */
+    display: flex; /* Rimosso !important per permettere a JS di nasconderlo */
+    flex-direction: row !important; 
     justify-content: flex-start !important;
-    gap: 40px !important; /* Spazio netto tra Pagato e Resto */
+    gap: 40px !important; 
     margin-top: 0 !important;
     align-items: center !important;
     font-size: 1.15rem !important;
+}
+
+/* Sicurezza aggiuntiva: se Javascript o le classi provano a nasconderlo, ha la precedenza */
+#rigaRestoPagato[style*="none"],
+#rigaRestoPagato.hidden {
+    display: none !important;
 }
 
 /* Sistema il suggerimento delle monetine per non farlo accavallare */
