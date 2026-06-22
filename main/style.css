@@ -1594,3 +1594,118 @@ body.tema-estate button {
     text-decoration: underline;
 }
 
+/* ================= POS LAYOUT (BLOCCA LO SCORRIMENTO DELLA PAGINA) ================= */
+/* Nasconde lo scrollbar principale del browser quando siamo in cassa */
+body:has(#aggiungiComandaTab.active) {
+    overflow: hidden; 
+}
+
+.pos-layout {
+    display: flex;
+    gap: 10px;
+    height: calc(100vh - 120px); /* Prende tutta l'altezza dello schermo meno la barra menu */
+    width: 100%;
+}
+
+/* SINISTRA: SCONTRINO E NOTE */
+.pos-left {
+    flex: 0 0 320px; /* Larghezza fissa dello scontrino */
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+}
+
+.pos-comanda-list {
+    flex: 1; /* Lo scontrino si allunga in automatico */
+    overflow-y: auto; /* Scorre solo lo scontrino */
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 5px;
+    background: #fdfdfd;
+    margin-bottom: 5px;
+}
+
+.pos-note-textarea {
+    width: 100%; height: 40px; resize: none; font-size: 0.9em;
+}
+
+.pos-totale-section {
+    background: #f8f9fa; padding: 6px; border-radius: 6px; border: 1px solid #ddd;
+}
+
+.pos-invia-btn {
+    width: 100%; padding: 12px; background: #2e7d32; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 5px;
+}
+
+/* DESTRA: MENU E SOLDI */
+.pos-right {
+    flex: 1; /* Il menu prende tutto il resto dello spazio */
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    overflow: hidden;
+}
+
+.pos-menu-scroll {
+    flex: 1; /* Il menu riempie lo spazio */
+    overflow-y: auto; /* Scorre solo il menu */
+    padding: 8px;
+}
+
+.pos-soldi-section {
+    background: #eee; padding: 6px; border-top: 1px solid #ccc; text-align: center;
+}
+.pos-soldi-section img { height: 35px !important; width: auto !important; }
+
+/* ================= GRIGLIA E BOTTONI ================= */
+.menu-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+/* MODALITÀ NORMALE (Lista a blocchi) */
+.piatto-btn {
+    display: block; width: 100%; margin-bottom: 4px; padding: 6px; border-radius: 4px; border: 1px solid #aaa; background: #f5f5f5;
+}
+
+/* MODALITÀ CASSA OTTIMIZZATA (6 IN FILA, TESTO IN COLONNA) */
+.cassa-ottimizzata .piatto-btn {
+    flex: 0 0 calc(16.66% - 4px); /* ESATTO: 6 bottoni per riga (Metti 20% se ne vuoi 5) */
+    height: 65px; /* Altezza super compatta */
+    margin: 0;
+    padding: 2px;
+    border-radius: 6px;
+    background: #fefefe;
+    border: 1px solid #999;
+    /* Struttura interna a colonna per impilare testi */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.cassa-ottimizzata .piatto-nome {
+    font-size: 0.70rem; /* Testo piccolo */
+    font-weight: 800;
+    line-height: 1.1;
+    text-align: center;
+    white-space: pre-wrap; /* MANDA A CAPO CORRETTAMENTE LE PAROLE LUNGHE */
+    width: 100%;
+}
+
+.cassa-ottimizzata .piatto-prezzo {
+    font-size: 0.75rem;
+    color: #b71c1c; /* Rosso scuro per spiccare sotto al nome */
+    margin-top: 2px;
+}
+
+.cassa-ottimizzata .piatto-ing {
+    display: none; /* Rimuove completamente gli ingredienti per salvare spazio */
+}
