@@ -1660,47 +1660,65 @@ body.tema-estate button {
 }
 /* ================= REVISIONE LAYOUT CASSA OTTIMIZZATA ================= */
 
-/* 1. Modifica delle proporzioni (1/3 Scontrino, 2/3 Menu) e allineamento in alto */
+/* 1. Proporzioni Rigide: Scontrino (1/3) e Menu (2/3) */
 .cassa-ottimizzata #aggiungiComandaTab > div:first-child {
-    /* Impedisce alle colonne di allungarsi inutilmente, spingendo le note in alto */
-    align-items: flex-start !important; 
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: flex-start !important; /* Mantiene gli elementi in alto */
+    gap: 2% !important; /* Spazio controllato tra le colonne */
 }
 
-/* Colonna di Sinistra (Scontrino e Note) */
+/* Colonna di Sinistra (Scontrino e Note) - Esattamente 1/3 */
 .cassa-ottimizzata #aggiungiComandaTab > div:first-child > div:nth-child(1) {
-    flex: 1 !important;
-    max-width: 35% !important; /* Occupa circa un terzo dello spazio */
+    flex: 0 0 32% !important;
+    max-width: 32% !important;
+    width: 32% !important;
+    padding: 8px !important;
+    box-sizing: border-box !important;
 }
 
-/* Colonna di Destra (Menu) */
+/* Colonna di Destra (Menu Cibi, Bevande, Snack) - Esattamente 2/3 */
 .cassa-ottimizzata #aggiungiComandaTab > div:first-child > div:nth-child(2) {
-    flex: 2 !important;
-    max-width: 65% !important; /* Occupa circa due terzi dello spazio */
+    flex: 0 0 66% !important;
+    max-width: 66% !important;
+    width: 66% !important;
+    padding: 8px !important;
+    box-sizing: border-box !important;
+    
+    /* OPZIONALE MA CONSIGLIATO: Se hai tanti piatti, fa scorrere solo il menu
+       lasciando lo scontrino e la barra di invio sempre fermi e visibili */
+    max-height: 550px !important; 
+    overflow-y: auto !important; 
 }
 
-/* 2. Ottimizzazione dell'area Scontrino e Note per farle salire */
+/* 2. Scontrino molto più piccolo */
 .cassa-ottimizzata #comandaCorrente {
-    height: 350px !important; /* Allunga leggermente la lista dei piatti... */
-    margin-bottom: 5px !important; /* Riduce lo spazio tra lista e note */
+    height: 160px !important; /* Riduzione drastica dell'altezza */
+    margin-bottom: 8px !important;
 }
 
+/* 3. Box Note schiacciato per farlo stare appena sopra la linea */
 .cassa-ottimizzata #noteComanda {
-    height: 70px !important; /* Rimpicciolisce il box note per recuperare spazio verticale */
+    height: 50px !important; /* Spazio appena sufficiente per 2 righe */
+    min-height: 50px !important;
+    margin-bottom: 0 !important;
 }
 
-/* 3. Rimuove l'effetto "Sticky/Floating" dalla barra dei totali e la incolla sotto */
+/* Riduciamo lo spazio dei bottoncini Cucina/Bere per compattare ancora */
+.cassa-ottimizzata #noteDestinazioniDiv {
+    margin-bottom: 4px !important;
+    font-size: 0.9em !important;
+}
+
+/* 4. Barra Totali sotto e statica (quella che fa da "linea" di confine) */
 .cassa-ottimizzata .stickyBar {
-    position: static !important; /* Toglie il float/sticky */
-    box-shadow: none !important; /* Rimuove l'ombra superiore da flottamento */
+    position: static !important;
+    box-shadow: none !important;
     border: 1px solid #ccc !important;
     border-radius: 8px !important;
-    margin-top: 20px !important; /* Mette un po' di spazio dal menu sopra */
+    margin-top: 10px !important; /* Distanza dalla colonna dello scontrino */
+    padding: 10px 15px !important;
     background: #f8f9fa !important;
-}
-
-/* OPZIONALE: Modifica i pulsanti "Invia Comanda" se il layout statico li scombina leggermente */
-.cassa-ottimizzata .stickyBtn {
-    position: static !important;
-    margin-top: 10px;
-    width: 100%; /* Rende il tasto Invia più grande e visibile sotto il totale */
+    width: 100% !important;
+    box-sizing: border-box !important;
 }
