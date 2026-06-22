@@ -1792,32 +1792,24 @@ body.tema-estate button {
     margin-top: 4px !important;
     width: fit-content !important; /* Il bottone si adatta al testo senza "esplodere" */
 }
-/* ================= COMPRESSIONE ESTREMA INTESTAZIONE (TUTTI I PROFILI) ================= */
+/* ================= COMPATTAZIONE INTESTAZIONE EQUILIBRATA (TUTTI I PROFILI) ================= */
 
-/* 1. Mettiamo l'orologio esattamente di fianco al pulsante di Logout sulla stessa riga */
+/* 1. Blocco superiore: Simula a sinistra, Logout a destra, Orologio sotto a destra */
 #logoutDiv {
-    display: flex !important;
-    flex-wrap: nowrap !important;
-    align-items: center !important;
-    padding-bottom: 5px !important; /* Pochissimo spazio sotto */
+    display: block !important; /* Ripristina il comportamento normale (orologio va a capo) */
+    padding-bottom: 0 !important;
     margin-bottom: 0 !important;
+    margin-top: 5px !important; /* Distanza dal bordo alto */
 }
 
-/* Fa in modo che il blocco del logout spinga l'orologio tutto a destra */
-#logoutDiv > div:first-child {
-    flex: 1 !important; 
-    margin-bottom: 0 !important;
-}
-
-/* L'orologio si incastra perfettamente a destra del tasto Logout */
+/* Orologio sotto al tasto Logout */
 #orologioDiv {
-    margin-top: 0 !important;
-    margin-left: 15px !important; /* Piccola distanza dal tasto Logout */
-    font-size: 1.2em !important;
-    white-space: nowrap !important;
+    margin-top: 2px !important; /* Sta bello appiccicato sotto al logout */
+    margin-left: 0 !important;
+    text-align: right !important; /* Si allinea perfettamente a destra */
 }
 
-/* 2. Disintegriamo i grandi titoli (Cassa, Cucina, ecc.) che rubano spazio inutile */
+/* 2. Nascondiamo i grandi titoli (Cassa, Cucina, ecc.) che rubano spazio */
 #cassaDiv > h2,
 #cucinaDiv > h2,
 #bereDiv > h2,
@@ -1826,21 +1818,21 @@ body.tema-estate button {
     display: none !important;
 }
 
-/* 3. Eliminiamo i grandi margini vuoti scritti nell'HTML sotto la riga delle Tab */
+/* 3. Margini eleganti ma ridotti per la riga delle Tab */
 #cassaDiv > div:nth-of-type(1) {
     margin-bottom: 8px !important;
+    margin-top: 5px !important; /* Lascia giusto un pelo di respiro dall'orologio */
 }
 
-/* Schiacciamo i bottoni Tab di tutti gli altri profili verso l'alto */
 #cucinaDiv > div:first-of-type,
 #bereDiv > div:first-of-type,
 #snackDiv > div:first-of-type,
 #adminDiv > div:first-of-type {
     margin-bottom: 8px !important;
-    margin-top: 0 !important;
+    margin-top: 5px !important;
 }
 
-/* Riduciamo l'ombra e lo spazio dei bottoncini grigi stessi */
+/* I bottoni grigi stessi */
 .tabBtn {
-    margin-bottom: 2px !important;
+    margin-bottom: 4px !important;
 }
