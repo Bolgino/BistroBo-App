@@ -2494,8 +2494,11 @@ function aggiornaComandaCorrente(){
 
         // pulsante elimina
         const btnDelete = document.createElement("button");
-        btnDelete.innerText = "❌";
-        btnDelete.style.marginLeft = "5px";
+		btnDelete.innerText = "X";
+		btnDelete.style.marginLeft = "6px";
+		btnDelete.style.color = "#000000"; // Nero
+		btnDelete.style.fontWeight = "900"; // Grassetto marcato
+		btnDelete.style.backgroundColor = "#ffcccc"; // Sfondo rosso chiaro per contrasto
         btnDelete.onclick = () => {
             comandaCorrente.splice(idx,1); 
             aggiornaComandaCorrente(); 
@@ -3767,44 +3770,46 @@ async function caricaGestioneComandeAdmin() {
     initRicercaComande("listaComandeAdmin", "cercaComandaAdmin");
     hideLoader();
 }
+// ================= MODIFICA COMANDA ADMIN (A MODALE) =================
 function modificaComanda(id, comanda) {
     if (!checkOnline(true)) return;
-    const tab = document.getElementById("comandeTab");
 
-    // se c'è già un pannello di modifica per questo id, scrolla lì
-    const existingEdit = tab.querySelector("#admin_edit_comanda_" + id);
-    if (existingEdit) {
-        existingEdit.scrollIntoView({ behavior: "smooth" });
-        return;
-    }
+    // Crea l'overlay per il modale della modifica comanda
+    const overlayEdit = document.createElement("div");
+    overlayEdit.className = "modal-overlay";
+    overlayEdit.style.zIndex = "9999"; // Sotto al modale delle varianti, ma sopra al resto
 
     const divAdmin = document.createElement("div");
-    divAdmin.style.border = "1px solid #ccc";
-    divAdmin.style.padding = "10px";
-    divAdmin.style.margin = "5px";
-    divAdmin.style.backgroundColor = "#f9f9f9";
+    divAdmin.className = "modal-varianti";
+    divAdmin.style.maxWidth = "700px"; // Più largo per contenere bene il menu
+    divAdmin.style.width = "95%";
+    divAdmin.style.maxHeight = "90vh";
+    divAdmin.style.overflowY = "auto";
+    divAdmin.style.textAlign = "left";
     divAdmin.id = "admin_edit_comanda_" + id;
 
-    // copia locale della comanda (modifiche rimangono locali finché non salvi)
+    // Copia locale della comanda (modifiche rimangono locali finché non salvi)
     let comandaTemp = JSON.parse(JSON.stringify(comanda));
 
-    // MAP per tenere traccia di quanto abbiamo già riservato su DB durante la modifica
-    // reserved: { ingredienteId: qtyRiservata }
-    const reserved = {}; // inizialmente vuoto
-
-    // utilità per accumulare in reserved
+    // Tracker del magazzino (per ripristino se clicchi Annulla)
+    const reserved = {}; 
     function addReserved(id, qty) { reserved[id] = (reserved[id] || 0) + qty; }
     function subReserved(id, qty) { reserved[id] = Math.max(0, (reserved[id] || 0) - qty); }
 
     // HEADER
-    const header = document.createElement("h4");
+    const header = document.createElement("h3");
     header.innerText = `Modifica Comanda #${comanda.numero}`;
+    header.style.textAlign = "center";
+    header.style.marginBottom = "15px";
     divAdmin.appendChild(header);
 
     // LISTA PIATTI + TOTALE
     const listaPiatti = document.createElement("div");
     divAdmin.appendChild(listaPiatti);
     const totDiv = document.createElement("div");
+    totDiv.style.fontSize = "1.2rem";
+    totDiv.style.textAlign = "right";
+    totDiv.style.marginBottom = "15px";
     divAdmin.appendChild(totDiv);
 
     const aggiornaLista = () => {
@@ -3817,45 +3822,53 @@ function modificaComanda(id, comanda) {
             r.style.display = "flex";
             r.style.justifyContent = "space-between";
             r.style.alignItems = "center";
-            r.style.marginBottom = "6px";
+            r.style.padding = "8px 0";
+            r.style.borderBottom = "1px solid #eee";
 
             const info = document.createElement("span");
-            // mostro anche eventuali ingredienti del piatto (se presenti)
+            info.style.flex = "1";
+            info.style.cursor = "pointer"; // Indica che è cliccabile per varianti
+            info.title = "Clicca per aggiungere/rimuovere varianti";
+
             let infoText;
+            const prezzoPiattoAttuale = (p.prezzo + (p.extraPrezzo || 0));
+
             if (p.sconto) {
                 if (p.sconto.tipo === "percentuale") {
-                    infoText = `${p.quantita}x ${p.nome} ` +
-                        `<span style="text-decoration: line-through; text-decoration-color:red; text-decoration-thickness: 2px; color:black;">€${p.prezzo.toFixed(2)}</span> ` +
-                        `<span style="color:red;">€${calcolaPrezzoConSconto(p).toFixed(2)}</span>`;
+                    infoText = `<b>${p.quantita}x ${p.nome}</b> ` +
+                        `<span style="text-decoration: line-through; color:red;">€${prezzoPiattoAttuale.toFixed(2)}</span> ` +
+                        `<span style="color:red;">€${(calcolaPrezzoConSconto(p)/p.quantita).toFixed(2)}</span>`;
                 } else if (p.sconto.tipo === "x_paga_y") {
-                    infoText = `${p.quantita}x ${p.nome} (€${calcolaPrezzoConSconto(p).toFixed(2)})`;
+                    infoText = `<b>${p.quantita}x ${p.nome}</b> (€${(calcolaPrezzoConSconto(p)/p.quantita).toFixed(2)})`;
                 } else {
-                    infoText = `${p.quantita}x ${p.nome} (€${p.prezzo.toFixed(2)})`;
+                    infoText = `<b>${p.quantita}x ${p.nome}</b> (€${prezzoPiattoAttuale.toFixed(2)})`;
                 }
             } else {
-                infoText = `${p.quantita}x ${p.nome} (€${p.prezzo.toFixed(2)})`;
-            }
-            // Sempre mostra ingredienti se presenti, anche per piatti già aggiunti
-            if (p.ingredienti && p.ingredienti.length) {
-                const ingTxt = p.ingredienti.map(i => {
-                    const nome = i.nome || (ingredientData[i.id]?.nome || "ingrediente sconosciuto");
-                    const qty = i.qtyPerUnit ? ` x${i.qtyPerUnit}` : "";
-                    return nome + qty;
-                }).join(", ");
-                infoText += ` — [${ingTxt}]`;
+                infoText = `<b>${p.quantita}x ${p.nome}</b> (€${prezzoPiattoAttuale.toFixed(2)})`;
             }
 
-            info.innerHTML = infoText;
+            // Aggiunta delle scritte colorate per le varianti
+            let variantiHtml = "";
+            if (p.varianti && p.varianti.length > 0) {
+                variantiHtml = "<br><small style='font-weight:bold;'>" + p.varianti.map(v => 
+                    v.tipo === "aggiunta" ? `<span style="color:green">+ ${v.nome}</span>` : `<span style="color:red">- Senza ${v.nome}</span>`
+                ).join("<br>") + "</small>";
+            }
+
+            info.innerHTML = infoText + variantiHtml;
+            // APRE IL POPUP DELLE VARIANTI!
+            info.onclick = () => apriPopupVariantiAdmin(idx, comandaTemp, reserved, aggiornaLista);
 
             const controls = document.createElement("span");
+            controls.style.marginLeft = "10px";
 
             const btnMinus = document.createElement("button");
             btnMinus.innerText = "-";
+            btnMinus.className = "tabBtn";
             btnMinus.onclick = async () => {
                 if (p.quantita > 1) {
-                    // 🟢 SOSTITUZIONE APPLICATA QUI SOTTO: Usciamo getIngredientiEffettivi
                     getIngredientiEffettivi(p).forEach(async i => {
-                        const qty = i.qty || 1; // <-- Cambiato da qtyPerUnit a qty
+                        const qty = i.qty || 1;
                         if (i.id) { await applicaIncrementoSingolo(i.id, qty); subReserved(i.id, qty); }
                         else {
                             const nameLow = (i.nome||"").trim().toLowerCase();
@@ -3865,9 +3878,8 @@ function modificaComanda(id, comanda) {
                     });
                     p.quantita--;
                 } else {
-                    // 🟢 SOSTITUZIONE APPLICATA QUI SOTTO
                     getIngredientiEffettivi(p).forEach(async i => {
-                        const qty = (i.qty || 1) * 1; // <-- Cambiato
+                        const qty = (i.qty || 1) * 1;
                         if (i.id) { await applicaIncrementoSingolo(i.id, qty); subReserved(i.id, qty); }
                         else {
                             const nameLow = (i.nome||"").trim().toLowerCase();
@@ -3879,26 +3891,26 @@ function modificaComanda(id, comanda) {
                 }
                 aggiornaLista();
             };
+
             const btnPlus = document.createElement("button");
             btnPlus.innerText = "+";
+            btnPlus.className = "tabBtn";
             btnPlus.style.marginLeft = "6px";
             btnPlus.onclick = async () => {
                 const delta = 1;
-                // 🟢 SOSTITUZIONE APPLICATA QUI SOTTO: Inserito p.varianti
                 const richiesteDelta = calcolaRichiesteDaPiatti([ { ingredienti: p.ingredienti || [], varianti: p.varianti || [], quantita: delta } ]);
                 btnPlus.disabled = true;
                 const r = await applicaDecrementiIngredienti(richiesteDelta);
                 btnPlus.disabled = false;
-                if (!r.success) { notify("Non c'è abbastanza disponibilità per aumentare la quantità: " + (r.message||""), "error"); return; }
+                if (!r.success) { notify("Non c'è abbastanza disponibilità: " + (r.message||""), "error"); return; }
                 p.quantita++;
                 
-                // 🟢 SOSTITUZIONE APPLICATA QUI SOTTO (Ho sistemato anche questo per riservare anche le aggiunte!)
                 getIngredientiEffettivi(p).forEach(i => {
-                    if (i.id) addReserved(i.id, i.qty || 1); // <-- Cambiato
+                    if (i.id) addReserved(i.id, i.qty || 1);
                     else {
                         const nameLow = (i.nome||"").trim().toLowerCase();
                         const mapped = Object.keys(ingredientData).find(k => (ingredientData[k].nome||"").trim().toLowerCase() === nameLow);
-                        if (mapped) addReserved(mapped, i.qty || 1); // <-- Cambiato
+                        if (mapped) addReserved(mapped, i.qty || 1);
                     }
                 });
                 aggiornaLista();
@@ -3906,11 +3918,11 @@ function modificaComanda(id, comanda) {
 
             const btnRemove = document.createElement("button");
             btnRemove.innerText = "❌";
+            btnRemove.className = "tabBtn";
             btnRemove.style.marginLeft = "6px";
             btnRemove.onclick = async () => {
-                // 🟢 SOSTITUZIONE APPLICATA QUI SOTTO
                 getIngredientiEffettivi(p).forEach(async i => {
-                    const qty = (i.qty || 1) * (p.quantita || 1); // <-- Cambiato
+                    const qty = (i.qty || 1) * (p.quantita || 1);
                     if (i.id) { await applicaIncrementoSingolo(i.id, qty); subReserved(i.id, qty); }
                     else {
                         const nameLow = (i.nome||"").trim().toLowerCase();
@@ -3938,15 +3950,14 @@ function modificaComanda(id, comanda) {
 
     aggiornaLista();
 
-    // --- Aggiungi area per inserire rapidamente piatti dal menu (con verifica ingredienti) ---
+    // MENU PICKER
     const menuPickDiv = document.createElement("div");
-    menuPickDiv.innerHTML = "<h4>Aggiungi dal Menu</h4>";
+    menuPickDiv.innerHTML = "<h4 style='margin-bottom:10px;'>Aggiungi dal Menu</h4>";
     const loading = document.createElement("div");
     loading.innerText = "Caricamento menu...";
     menuPickDiv.appendChild(loading);
     divAdmin.appendChild(menuPickDiv);
 
-    // helper: controlla se un menu item è disponibile dati gli ingredienti attuali (ingData)
     function verificaDisponibilitaMenuItem(item, ingData, qtyToAdd = 1) {
         if (!item.ingredienti || !item.ingredienti.length) return { available: true, reason: null };
         for (const req of item.ingredienti) {
@@ -3957,27 +3968,22 @@ function modificaComanda(id, comanda) {
                 const ing = ingData[matchKey];
                 if (ing.disponibile === false) return { available: false, reason: `${ing.nome} non disponibile` };
                 if (ing.rimanente !== null && ing.rimanente !== undefined && ing.rimanente < qtyNeeded) {
-                    return { available: false, reason: `${ing.nome} quantità insufficiente (${ing.rimanente} < ${qtyNeeded})` };
+                    return { available: false, reason: `${ing.nome} insuff. (${ing.rimanente})` };
                 }
             }
         }
         return { available: true, reason: null };
     }
 
-    // riferimento al menu e agli ingredienti
     const menuRef = db.ref("menu");
     const ingRef = db.ref("ingredienti");
-    const menuButtons = {}; // mappa menuId -> button
+    const menuButtons = {}; 
     divAdmin._ingredientiListener = null;
 
-    // carico il menu una volta
     menuRef.once("value").then(menuSnap => {
         const menuData = menuSnap.val() || {};
-
-        // ascolto ingredienti in realtime
         const ingListenerFn = ingRef.on("value", ingSnap => {
             const ingData = ingSnap.val() || {};
-
             if (loading.parentNode) loading.parentNode.removeChild(loading);
 
             for (const mid in menuData) {
@@ -3987,39 +3993,37 @@ function modificaComanda(id, comanda) {
                 let b = menuButtons[mid];
                 if (!b) {
                     b = document.createElement("button");
-                    b.style.marginRight = "6px";
-                    b.style.marginBottom = "6px";
-                    // 🔒 Se il piatto è bloccato, disabilitalo subito
+                    b.className = "piatto-btn";
+                    b.style.margin = "4px";
+                    b.style.display = "inline-block";
+                    b.style.width = "auto";
+                    b.style.padding = "8px 12px";
+
                     if (mp.bloccato === true) {
                         b.disabled = true;
                         b.style.opacity = 0.5;
-                        b.title = "Piatto bloccato, non ordinabile";
                     }
 
-                    // crea un div interno per gestire prezzo con sconto
                     const prezzoDiv = document.createElement("span");
+                    prezzoDiv.style.display = "block";
+                    prezzoDiv.style.fontSize = "0.85em";
+                    prezzoDiv.style.marginTop = "2px";
+                    
                     if (mp.sconto) {
                         if (mp.sconto.tipo === "percentuale") {
-                            prezzoDiv.innerHTML = `<span style="text-decoration: line-through; text-decoration-color:red; color:black;">€${mp.prezzo.toFixed(2)}</span> <span style="color:red;">€${calcolaPrezzoConSconto(mp).toFixed(2)}</span>`;
-                        } else if (mp.sconto.tipo === "x_paga_y") {
-                            prezzoDiv.innerText = `€${calcolaPrezzoConSconto(mp).toFixed(2)}`;
+                            prezzoDiv.innerHTML = `<span style="text-decoration: line-through;">€${mp.prezzo.toFixed(2)}</span> €${calcolaPrezzoConSconto(mp).toFixed(2)}`;
                         } else {
-                            prezzoDiv.innerText = `€${mp.prezzo.toFixed(2)}`;
+                            prezzoDiv.innerText = `€${calcolaPrezzoConSconto(mp).toFixed(2)}`;
                         }
                     } else {
                         prezzoDiv.innerText = `€${mp.prezzo.toFixed(2)}`;
                     }
-                    b.innerHTML = `${mp.nome} `;
+                    b.innerHTML = `<b>${mp.nome}</b>`;
                     b.appendChild(prezzoDiv);
 
                     b.onclick = async () => {
-                        // 🔒 doppia protezione: se piatto bloccato, non procedere
-                        if (mp.bloccato === true) {
-                            notify("Questo piatto è bloccato e non può essere aggiunto", "error");
-                            return;
-                        }
+                        if (mp.bloccato === true) { notify("Piatto bloccato", "error"); return; }
                         const qtyToAdd = 1;
-
                         const richiesteSingola = { byId: {}, byName: {} };
                         if (mp.ingredienti && mp.ingredienti.length) {
                             mp.ingredienti.forEach(ing => {
@@ -4031,27 +4035,18 @@ function modificaComanda(id, comanda) {
                         b.disabled = true;
                         const decRes = await applicaDecrementiIngredienti(richiesteSingola);
                         b.disabled = false;
-                        if (!decRes.success) {
-                            notify("Impossibile aggiungere dal menu: " + (decRes.message || "ingredienti"), "error");
-                            return;
-                        }
+                        if (!decRes.success) { notify("Impossibile aggiungere: " + (decRes.message || "ingredienti"), "error"); return; }
 
                         if (!comandaTemp.piatti) comandaTemp.piatti = [];
-                        const esiste = comandaTemp.piatti.find(p => p.nome === mp.nome);
+                        const esiste = comandaTemp.piatti.find(p => p.nome === mp.nome && (!p.varianti || p.varianti.length === 0));
                         if (esiste) { 
-                            // aggiungi la quantità e memorizza il prezzo corrente come nuova unità
                             if (!esiste.prezziSingoli) esiste.prezziSingoli = Array(esiste.quantita).fill(esiste.prezzo);
                             esiste.prezziSingoli.push(mp.prezzo);
                             esiste.quantita++;
-                            // sconto storico non viene toccato
                         } else {
                             comandaTemp.piatti.push({
-                                nome: mp.nome,
-                                prezzo: mp.prezzo,
-                                quantita: 1,
-                                prezziSingoli: [mp.prezzo],
-                                categoria: mp.categoria || "altro",
-                                sconto: mp.sconto || null,
+                                nome: mp.nome, prezzo: mp.prezzo, quantita: 1, prezziSingoli: [mp.prezzo],
+                                categoria: mp.categoria || "altro", sconto: mp.sconto || null,
                                 tipo: mp.tipo || (mp.categoria && mp.categoria.toLowerCase().includes("snack") ? "snack" : "cucina"),
                                 ingredienti: mp.ingredienti ? JSON.parse(JSON.stringify(mp.ingredienti)) : []
                             });
@@ -4065,7 +4060,6 @@ function modificaComanda(id, comanda) {
                                 if (mapped) addReserved(mapped, i.qtyPerUnit || 1);
                             }
                         });
-
                         aggiornaLista();
                     };
 
@@ -4073,124 +4067,238 @@ function modificaComanda(id, comanda) {
                     menuButtons[mid] = b;
                 }
 
-                const check = verificaDisponibilitaMenuItem(mp, ingData, 1);
-                // 🔒 blocco totale se piatto bloccato
                 if (mp.bloccato === true) {
-                    b.disabled = true;
-                    b.style.opacity = 0.5;
-                    b.title = "Piatto bloccato, non ordinabile";
-                }
-                // 🔧 blocco se ingredienti insufficienti
-                else {
+                    b.disabled = true; b.style.opacity = 0.5;
+                } else {
                     const check = verificaDisponibilitaMenuItem(mp, ingData, 1);
                     if (!check.available) {
-                        b.disabled = true;
-                        b.title = check.reason || "Ingrediente non disponibile";
-                        b.style.opacity = 0.6;
+                        b.disabled = true; b.style.opacity = 0.6;
                     } else {
-                        b.disabled = false;
-                        b.title = "";
-                        b.style.opacity = 1;
+                        b.disabled = false; b.style.opacity = 1;
                     }
                 }
-
             }
         });
 
         divAdmin._ingredientiListener = { ref: ingRef, fn: ingListenerFn };
-    }).catch(err => {
-        if (loading.parentNode) loading.innerText = "Errore caricamento menu";
-        console.error("menu load error:", err);
-    });
+    }).catch(err => console.error(err));
 
-    // --- Pulsanti Salva e Annulla ---
+    // AZIONI SALVA / ANNULLA
     const azioniDiv = document.createElement("div");
-    azioniDiv.style.marginTop = "10px";
+    azioniDiv.className = "modal-actions";
+    azioniDiv.style.marginTop = "25px";
 
-    const pulisciListenerIngredienti = () => {
-        if (divAdmin && divAdmin._ingredientiListener) {
-            try {
-                divAdmin._ingredientiListener.ref.off("value", divAdmin._ingredientiListener.fn);
-            } catch (e) { /* ignore */ }
-            divAdmin._ingredientiListener = null;
-        }
+    const btnAnnulla = document.createElement("button");
+    btnAnnulla.className = "btn-chiudi";
+    btnAnnulla.innerText = "Annulla";
+    btnAnnulla.onclick = async () => {
+        try {
+            if (Object.keys(reserved).length > 0) { await applicaIncrementiIngredienti(reserved); }
+        } catch (e) {}
+        overlayEdit.remove();
     };
 
     const btnSalva = document.createElement("button");
+    btnSalva.className = "btn-salva";
     btnSalva.innerText = "Salva";
     btnSalva.onclick = async () => {
         try {
-            // se la comanda è vuota, la eliminiamo
             if (!comandaTemp.piatti || comandaTemp.piatti.length === 0) {
                 await db.ref("comande/" + id).remove();
             } else {
-                // le transazioni di decremento sono già state applicate in corso di editing
                 const ciboNuovo = comandaTemp.piatti.some(p => p.categoria !== "bevande" && !p.categoria.toLowerCase().includes("snack"));
                 const bereNuovo = comandaTemp.piatti.some(p => p.categoria === "bevande");
-                const snackNuovo = comandaTemp.piatti.some(p =>
-                    (p.categoria && (p.categoria.toLowerCase().includes("snack") || p.categoria.toLowerCase().includes("fritti"))) ||
-                    (p.tipo && p.tipo.toLowerCase() === "snack")
-                );
+                const snackNuovo = comandaTemp.piatti.some(p => (p.categoria && (p.categoria.toLowerCase().includes("snack") || p.categoria.toLowerCase().includes("fritti"))) || (p.tipo && p.tipo.toLowerCase() === "snack"));
 
-                const updateData = {
-                    piatti: comandaTemp.piatti,
-                    statoCucina: ciboNuovo ? "da fare" : "completato",
-                    statoBere: bereNuovo ? "da fare" : "completato"
-                };
-
-                // 🔹 Aggiungi statoSnack solo se ci sono snack reali
-                if (snackNuovo) {
-                    updateData.statoSnack = "da fare";
-                } else {
-                    updateData.statoSnack = null; // cancellerà o sovrascriverà il campo vuoto
-                }
+                const updateData = { piatti: comandaTemp.piatti, statoCucina: ciboNuovo ? "da fare" : "completato", statoBere: bereNuovo ? "da fare" : "completato" };
+                if (snackNuovo) updateData.statoSnack = "da fare";
+                else updateData.statoSnack = null;
 
                 await db.ref("comande/" + id).update(updateData);
-
-                // 🔹 Se non ci sono snack, rimuovi completamente il campo da Firebase
-                if (!snackNuovo) {
-                    await db.ref("comande/" + id + "/statoSnack").remove();
-                }
-
+                if (!snackNuovo) await db.ref("comande/" + id + "/statoSnack").remove();
             }
-
-            // pannello chiuso (nessun revert necessario)
-            const panel = document.getElementById("admin_edit_comanda_" + id);
-            if (panel && panel.parentNode) panel.parentNode.removeChild(panel);
-
-            caricaGestioneComandeAdmin();
+            overlayEdit.remove();
+            notify("Comanda aggiornata!", "success");
         } catch(err){
             notify("Errore salvataggio: " + err.message, "error");
         }
     };
 
-    const btnAnnulla = document.createElement("button");
-    btnAnnulla.innerText = "Annulla";
-    btnAnnulla.style.marginLeft = "10px";
-    btnAnnulla.onclick = async () => {
-        try {
-            if (Object.keys(reserved).length > 0) {
-                await applicaIncrementiIngredienti(reserved);
-            }
-        } catch (e) {
-            console.error("Errore revert risorse:", e);
-        }
-
-        const panel = document.getElementById("admin_edit_comanda_" + id);
-        if (panel && panel.parentNode) panel.parentNode.removeChild(panel);
-        caricaGestioneComandeAdmin();
-    };
-
-    azioniDiv.appendChild(btnSalva);
     azioniDiv.appendChild(btnAnnulla);
+    azioniDiv.appendChild(btnSalva);
     divAdmin.appendChild(azioniDiv);
 
-    const comandaDiv = document.getElementById("admin_comanda_" + id);
-    if (comandaDiv && comandaDiv.parentNode) {
-        comandaDiv.insertAdjacentElement("afterend", divAdmin);
-    } else {
-        tab.appendChild(divAdmin); // fallback
+    overlayEdit.appendChild(divAdmin);
+    document.body.appendChild(overlayEdit);
+}
+
+
+// ================= POPUP VARIANTI ESCLUSIVO PER ADMIN =================
+function apriPopupVariantiAdmin(idx, comandaTemp, reserved, callback) {
+    const piatto = comandaTemp.piatti[idx];
+    
+    // DIVISIONE AUTOMATICA PER PIATTI MULTIPLI
+    if (piatto.quantita > 1) {
+        piatto.quantita -= 1;
+        const piattoSingolo = JSON.parse(JSON.stringify(piatto));
+        piattoSingolo.quantita = 1;
+        piattoSingolo.varianti = [];
+        piattoSingolo.extraPrezzo = 0;
+        comandaTemp.piatti.splice(idx + 1, 0, piattoSingolo);
+        callback();
+        apriPopupVariantiAdmin(idx + 1, comandaTemp, reserved, callback);
+        return;
     }
+
+    if (!piatto.varianti) piatto.varianti = [];
+    if (!piatto.extraPrezzo) piatto.extraPrezzo = 0;
+
+    let tempVarianti = JSON.parse(JSON.stringify(piatto.varianti));
+    let tempExtraPrezzo = piatto.extraPrezzo;
+
+    const overlay = document.createElement("div");
+    overlay.className = "modal-overlay";
+    overlay.style.zIndex = "10005"; // Si posiziona SOPRA al modale di modifica comanda!
+
+    const modal = document.createElement("div");
+    modal.className = "modal-varianti";
+    
+    const titolo = document.createElement("h3");
+    titolo.innerText = `Modifica: ${piatto.nome}`;
+    modal.appendChild(titolo);
+
+    const listaDiv = document.createElement("div");
+
+    function renderListaIngredienti() {
+        listaDiv.innerHTML = "";
+        const baseIds = (piatto.ingredienti || []).map(i => i.id);
+
+        Object.entries(window.ingredientData || {}).forEach(([id, ing]) => {
+            const row = document.createElement("div");
+            row.className = "variante-row";
+            
+            const nomeSpan = document.createElement("span");
+            nomeSpan.innerText = ing.nome;
+            
+            const btnContainer = document.createElement("div");
+
+            // RIMOZIONE
+            if (baseIds.includes(id)) {
+                const btnRemove = document.createElement("button");
+                const isRimosso = tempVarianti.some(v => v.tipo === "rimozione" && v.id === id);
+                if (isRimosso) {
+                    btnRemove.className = "variante-btn disabled";
+                    btnRemove.innerText = "Annulla";
+                    btnRemove.onclick = () => {
+                        tempVarianti = tempVarianti.filter(v => !(v.tipo === "rimozione" && v.id === id));
+                        renderListaIngredienti();
+                    };
+                } else {
+                    btnRemove.className = "variante-btn remove";
+                    btnRemove.innerText = "- Rimuovi";
+                    btnRemove.onclick = () => {
+                        tempVarianti.push({ tipo: "rimozione", id: id, nome: ing.nome });
+                        renderListaIngredienti();
+                    };
+                }
+                btnContainer.appendChild(btnRemove);
+            }
+
+            // AGGIUNTA
+            const btnAdd = document.createElement("button");
+            const costoExtra = ing.prezzoExtra !== undefined ? Number(ing.prezzoExtra) : 0.50; 
+            const qtyExtra = ing.qtyExtra !== undefined ? Number(ing.qtyExtra) : 1;
+            
+            const isAggiunto = tempVarianti.some(v => v.tipo === "aggiunta" && v.id === id);
+
+            if (isAggiunto) {
+                btnAdd.className = "variante-btn disabled";
+                btnAdd.innerText = "Annulla";
+                btnAdd.style.marginLeft = "5px";
+                btnAdd.onclick = () => {
+                    tempVarianti = tempVarianti.filter(v => !(v.tipo === "aggiunta" && v.id === id));
+                    tempExtraPrezzo -= costoExtra;
+                    renderListaIngredienti();
+                };
+            } else {
+                btnAdd.className = "variante-btn add";
+                btnAdd.innerText = `+ Aggiungi (€${costoExtra.toFixed(2)})`;
+                btnAdd.style.marginLeft = "5px";
+                btnAdd.onclick = () => {
+                    tempVarianti.push({ tipo: "aggiunta", id: id, nome: ing.nome, qty: qtyExtra, prezzo: costoExtra });
+                    tempExtraPrezzo += costoExtra;
+                    renderListaIngredienti();
+                };
+            }
+
+            btnContainer.appendChild(btnAdd);
+            row.appendChild(nomeSpan);
+            row.appendChild(btnContainer);
+            listaDiv.appendChild(row);
+        });
+    }
+
+    renderListaIngredienti();
+    modal.appendChild(listaDiv);
+
+    const actionDiv = document.createElement("div");
+    actionDiv.className = "modal-actions";
+
+    const btnAnnulla = document.createElement("button");
+    btnAnnulla.className = "btn-chiudi";
+    btnAnnulla.innerText = "Annulla";
+    btnAnnulla.onclick = () => overlay.remove();
+
+    const btnSalva = document.createElement("button");
+    btnSalva.className = "btn-salva";
+    btnSalva.innerText = "Salva";
+    btnSalva.onclick = async () => {
+        btnSalva.disabled = true;
+        btnSalva.innerText = "Attendere...";
+
+        // Calcoliamo la differenza esatta di magazzino causata da questo cambio varianti
+        const oldEff = getIngredientiEffettivi(piatto);
+        
+        const newPiattoMock = JSON.parse(JSON.stringify(piatto));
+        newPiattoMock.varianti = tempVarianti;
+        const newEff = getIngredientiEffettivi(newPiattoMock);
+
+        const deltaDb = {};
+        newEff.forEach(ing => {
+            const id = ing.id || Object.keys(window.ingredientData).find(k => (window.ingredientData[k].nome||"").trim().toLowerCase() === (ing.nome||"").trim().toLowerCase());
+            if (id) deltaDb[id] = (deltaDb[id] || 0) + (ing.qty * piatto.quantita);
+        });
+        oldEff.forEach(ing => {
+            const id = ing.id || Object.keys(window.ingredientData).find(k => (window.ingredientData[k].nome||"").trim().toLowerCase() === (ing.nome||"").trim().toLowerCase());
+            if (id) deltaDb[id] = (deltaDb[id] || 0) - (ing.qty * piatto.quantita);
+        });
+
+        // Applichiamo i cambiamenti al volo su Firebase
+        for (const [key, diff] of Object.entries(deltaDb)) {
+            if (diff > 0) {
+                const res = await applicaDecrementiIngredienti({ byId: { [key]: diff }, byName: {} });
+                if (!res.success) {
+                    notify("Disponibilità insufficiente per le varianti", "error");
+                    btnSalva.disabled = false; btnSalva.innerText = "Salva"; return;
+                }
+                reserved[key] = (reserved[key] || 0) + diff;
+            } else if (diff < 0) {
+                await applicaIncrementoSingolo(key, Math.abs(diff));
+                reserved[key] = Math.max(0, (reserved[key] || 0) - Math.abs(diff));
+            }
+        }
+
+        piatto.varianti = tempVarianti;
+        piatto.extraPrezzo = tempExtraPrezzo;
+        overlay.remove();
+        if (callback) callback();
+    };
+
+    actionDiv.appendChild(btnAnnulla);
+    actionDiv.appendChild(btnSalva);
+    modal.appendChild(actionDiv);
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
 }
 document.getElementById("mostraOpzioniIngredientiBtn").onclick = () => {
     const container = document.getElementById("piattoIngredientiContainer");
