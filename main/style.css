@@ -1658,57 +1658,81 @@ body.tema-estate button {
 .cassa-ottimizzata .piatto-ing {
     display: none; /* Nasconde ingredienti */
 }
-/* ================= REVISIONE LAYOUT CASSA OTTIMIZZATA ================= */
+/* ================= REVISIONE LAYOUT CASSA (NORMALE E OTTIMIZZATA) ================= */
 
-/* 1. Proporzioni Rigide tramite Grid: Scontrino (1/3) e Menu (2/3) */
-.cassa-ottimizzata #aggiungiComandaTab > div:first-child {
+/* 1. Proporzioni Rigide: 1/3 (Scontrino) e 2/3 (Menu) SEMPRE attive */
+#aggiungiComandaTab > div:first-child {
     display: grid !important;
-    grid-template-columns: 1fr 2fr !important; /* 1 colonna a sinistra, 2 colonne a destra = 1/3 e 2/3 */
+    grid-template-columns: 1fr 2fr !important; /* 1 colonna a sx, 2 colonne a dx */
     gap: 15px !important;
     align-items: start !important;
 }
 
-/* Disattiva il flexbox inline che bloccava le proporzioni */
-.cassa-ottimizzata #aggiungiComandaTab > div:first-child > div {
+/* Impedisce ai box di sbordare */
+#aggiungiComandaTab > div:first-child > div {
+    flex: none !important;
     max-width: 100% !important;
     width: 100% !important;
-	/* OPZIONALE MA CONSIGLIATO: Se hai tanti piatti, fa scorrere solo il menu
-       lasciando lo scontrino e la barra di invio sempre fermi e visibili */
+    min-width: 0 !important; /* CRITICO per le proporzioni */
+    box-sizing: border-box !important;
+}
+
+/* 2. Cassa Normale: Menu a 2 colonne per riga */
+.menu-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important; /* 2 piatti affiancati */
+    gap: 8px !important;
+}
+
+/* 3. Cassa Ottimizzata: Ripristina i "Pulsantoni" su tutta l'area dei 2/3 */
+.cassa-ottimizzata .menu-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)) !important; /* Tanti piccoli pulsantoni in fila */
+    gap: 5px !important;
+}
+
+
+/* ================= COMPATTAMENTO SPECIFICO SOLO PER CASSA OTTIMIZZATA ================= */
+
+/* Fa scorrere il menu dei pulsantoni */
+.cassa-ottimizzata #aggiungiComandaTab > div:first-child > div:nth-child(2) {
     max-height: 550px !important; 
     overflow-y: auto !important; 
 }
 
-/* 2. Scontrino molto più piccolo */
+/* Scontrino molto più piccolo per far salire le note */
 .cassa-ottimizzata #comandaCorrente {
-    height: 160px !important; /* Riduzione drastica dell'altezza */
+    height: 160px !important; 
     margin-bottom: 8px !important;
 }
 
-/* 3. Box Note schiacciato per farlo stare appena sopra la linea */
+/* Box Note schiacciato per incastrarsi sotto lo scontrino */
 .cassa-ottimizzata #noteComanda {
-    height: 50px !important; /* Spazio appena sufficiente per 2 righe */
+    height: 50px !important; 
     min-height: 50px !important;
     margin-bottom: 0 !important;
 }
 
-/* Riduciamo lo spazio dei bottoncini Cucina/Bere per compattare ancora */
+/* Testo check destinazioni più compatto */
 .cassa-ottimizzata #noteDestinazioniDiv {
     margin-bottom: 4px !important;
     font-size: 0.9em !important;
 }
 
-/* 4. Barra Totali sotto e statica (quella che fa da "linea" di confine) */
+/* Barra Totali statica incollata sotto (Senza float) */
 .cassa-ottimizzata .stickyBar {
     position: static !important;
     box-shadow: none !important;
     border: 1px solid #ccc !important;
     border-radius: 8px !important;
-    margin-top: 10px !important; /* Distanza dalla colonna dello scontrino */
+    margin-top: 10px !important; 
     padding: 10px 15px !important;
     background: #f8f9fa !important;
     width: 100% !important;
     box-sizing: border-box !important;
 }
+
+/* Resto sotto al pagato (Vale per tutte le casse) */
 #rigaRestoPagato {
     display: flex;
     flex-direction: column;
