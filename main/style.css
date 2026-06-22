@@ -1658,3 +1658,49 @@ body.tema-estate button {
 .cassa-ottimizzata .piatto-ing {
     display: none; /* Nasconde ingredienti */
 }
+/* ================= REVISIONE LAYOUT CASSA OTTIMIZZATA ================= */
+
+/* 1. Modifica delle proporzioni (1/3 Scontrino, 2/3 Menu) e allineamento in alto */
+.cassa-ottimizzata #aggiungiComandaTab > div:first-child {
+    /* Impedisce alle colonne di allungarsi inutilmente, spingendo le note in alto */
+    align-items: flex-start !important; 
+}
+
+/* Colonna di Sinistra (Scontrino e Note) */
+.cassa-ottimizzata #aggiungiComandaTab > div:first-child > div:nth-child(1) {
+    flex: 1 !important;
+    max-width: 35% !important; /* Occupa circa un terzo dello spazio */
+}
+
+/* Colonna di Destra (Menu) */
+.cassa-ottimizzata #aggiungiComandaTab > div:first-child > div:nth-child(2) {
+    flex: 2 !important;
+    max-width: 65% !important; /* Occupa circa due terzi dello spazio */
+}
+
+/* 2. Ottimizzazione dell'area Scontrino e Note per farle salire */
+.cassa-ottimizzata #comandaCorrente {
+    height: 350px !important; /* Allunga leggermente la lista dei piatti... */
+    margin-bottom: 5px !important; /* Riduce lo spazio tra lista e note */
+}
+
+.cassa-ottimizzata #noteComanda {
+    height: 70px !important; /* Rimpicciolisce il box note per recuperare spazio verticale */
+}
+
+/* 3. Rimuove l'effetto "Sticky/Floating" dalla barra dei totali e la incolla sotto */
+.cassa-ottimizzata .stickyBar {
+    position: static !important; /* Toglie il float/sticky */
+    box-shadow: none !important; /* Rimuove l'ombra superiore da flottamento */
+    border: 1px solid #ccc !important;
+    border-radius: 8px !important;
+    margin-top: 20px !important; /* Mette un po' di spazio dal menu sopra */
+    background: #f8f9fa !important;
+}
+
+/* OPZIONALE: Modifica i pulsanti "Invia Comanda" se il layout statico li scombina leggermente */
+.cassa-ottimizzata .stickyBtn {
+    position: static !important;
+    margin-top: 10px;
+    width: 100%; /* Rende il tasto Invia più grande e visibile sotto il totale */
+}
