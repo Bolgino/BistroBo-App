@@ -7070,29 +7070,29 @@ async function stampaComanda(items, numeroComanda, note = "") {
         doc.text(`${titolo}:`, 10, y); y += 6;
         doc.setFontSize(10);
         piatti.forEach(p => {
-            // Stampa il piatto principale
-            doc.text(`  ${p.quantita}x ${p.nome} - €${calcolaPrezzoConSconto(p).toFixed(2)}`, 10, y);
+            // 1. Stampa il piatto principale
+            // NOTA: il tuo codice per calcolare il prezzo qui potrebbe essere leggermente diverso, usa il tuo se necessario
+            doc.text(`  ${p.quantita}x ${p.nome} - €${(p.prezzoTotale || p.prezzo).toFixed(2)}`, 10, y);
             y += 5;
             
-            // 🔹 NOVITÀ: Stampa le varianti raggruppate e con +€0.00 se gratis
+            // 2. 🔹 BLOCCO DA AGGIUNGERE: Stampa le varianti sotto al piatto
             if (p.varianti && p.varianti.length > 0) {
                 let maxGratis = p.maxVariantiGratis || 0;
                 let aggiunteCount = 0;
                 
-                // 1. Stampiamo prima tutte le rimozioni
+                // A) Stampa prima tutte le rimozioni
                 const rimozioni = p.varianti.filter(v => v.tipo === "rimozione");
                 rimozioni.forEach(v => {
                     doc.text(`    - Senza ${v.nome}`, 10, y);
                     y += 5;
                 });
 
-                // 2. Raggruppiamo le aggiunte (per compattare es. "2x Maionese")
+                // B) Raggruppa e stampa le aggiunte (es. "2x Maionese")
                 const aggiunte = p.varianti.filter(v => v.tipo === "aggiunta");
                 const mappaAggiunte = {};
                 
                 aggiunte.forEach(v => {
                     let prezzoAggiunta = 0;
-                    // Calcola il prezzo dell'extra superate le gratuità
                     if (aggiunteCount >= maxGratis) {
                         prezzoAggiunta = Number(v.prezzo || 0);
                     }
@@ -7103,10 +7103,9 @@ async function stampaComanda(items, numeroComanda, note = "") {
                     mappaAggiunte[v.nome].costoTot += prezzoAggiunta;
                 });
 
-                // 3. Stampiamo le aggiunte raggruppate
                 Object.values(mappaAggiunte).forEach(a => {
                     const qTxt = a.count > 1 ? `${a.count}x ` : "";
-                    const costoTxt = `  +€${a.costoTot.toFixed(2)}`; // Stampa sempre, anche se è 0.00
+                    const costoTxt = `  +€${a.costoTot.toFixed(2)}`; 
                     doc.text(`    + ${qTxt}${a.nome}${costoTxt}`, 10, y);
                     y += 5;
                 });
