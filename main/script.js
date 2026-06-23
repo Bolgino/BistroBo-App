@@ -3367,17 +3367,21 @@ async function caricaIngredienti() {
         btnExtra.title = "Imposta Prezzo e Quantità per Aggiunte";
         btnExtra.style.marginLeft = "5px";
         btnExtra.onclick = () => {
-            const defP = ing.prezzoExtra !== undefined ? ing.prezzoExtra : 0.50;
-            const defQ = ing.qtyExtra !== undefined ? ing.qtyExtra : 1;
+            // 🔹 NOVITÀ: Peschiamo l'ingrediente aggiornato in tempo reale dal database locale
+            // Questo risolve il bug della spunta che salta se riapri la scheda!
+            const currentIng = window.ingredientData[id] || ing;
+
+            const defP = currentIng.prezzoExtra !== undefined ? currentIng.prezzoExtra : 0.50;
+            const defQ = currentIng.qtyExtra !== undefined ? currentIng.qtyExtra : 1;
             
             // Quali categorie ha già attive?
-            const cats = ing.categorieApplicabili || [ing.categoria || "cibi"];
+            const cats = currentIng.categorieApplicabili || [currentIng.categoria || "cibi"];
             const isCibi = cats.includes("cibi") ? "checked" : "";
             const isBevande = cats.includes("bevande") ? "checked" : "";
             const isSnack = cats.includes("snack") ? "checked" : "";
             
-            // NOVITÀ: Controllo se è usabile come extra
-            const isExtraChecked = ing.usabileComeExtra ? "checked" : "";
+            // Controllo se è usabile come extra (usando currentIng!)
+            const isExtraChecked = currentIng.usabileComeExtra ? "checked" : "";
 
             const overlay = document.createElement("div");
             overlay.className = "modal-overlay";
@@ -3619,6 +3623,122 @@ function initIngredientiAdminRealtime() {
         window.ingredientiRealtimeAttivo = true;
     }
 }
+window.apriModalCreaIngrediente = function() {
+    const overlay = document.createElement("div");
+    overlay.className = "modal-overlay";
+    overlay.style.zIndex = "10005";
+
+    const modal = document.createElement("div");
+    modal.className = "modal-varianti";
+    modal.innerHTML = `
+        <h3>Crea Nuovo Ingrediente</h3>
+        
+        <div style="margin-bottom:15px; text-align:left;">
+            <label><b>Nome Ingrediente:</b></label>
+            <input type="text" id="modIngNome" placeholder="Es. Maionese, Patatine..." style="width:100%; box-sizing:border-box; padding:8px; margin-top:5px; border-radius:6px; border:1px solid #ccc;">
+        </div>
+
+        <div style="margin-bottom:15px; text-align:left; display:flex; gap:10px;">
+            <div style="flex:1;">
+                <label><b>Categoria:</b></label>
+                <select id="modIngCat" style="width:100%; padding:8px; margin-top:5px; border-radius:6px; border:1px solid #ccc;">
+                    <option value="cibi">Cibi</option>
+                    <option value="bevande">Bevande</option>
+                    <option value="snack">Snack</option>
+                </select>
+            </div>
+            <div style="flex:1;">
+                <label><b>Unità di misura:</b></label>
+                <select id="modIngUnita" style="width:100%; padding:8px; margin-top:5px; border-radius:6px; border:1px solid #ccc;">
+                    <option value="">Nessuna</option>
+                    <option value="kg">kg</option>
+                    <option value="g">g</option>
+                    <option value="l">l</option>
+                    <option value="ml">ml</option>
+                    <option value="pz">pz</option>
+                    <option value="Lattina 33cl">Lattina 33cl</option>
+                </select>
+            </div>
+        </div>
+
+        <hr style="margin: 15px 0; border: 0; border-top: 1px solid #ddd;">
+
+        <div style="margin-bottom:15px; text-align:left; background: #e8f5e9; padding: 10px; border-radius: 6px; border: 1px solid #c8e6c9;">
+            <label style="cursor:pointer; display:flex; align-items:center;">
+                <input type="checkbox" id="modIngExtra" style="transform: scale(1.2); margin-right: 10px;"> 
+                <b>Utilizzabile come variante / aggiunta</b>
+            </label>
+        </div>
+
+        <div style="margin-bottom:15px; text-align:left; display:flex; gap:10px;">
+            <div style="flex:1;">
+                <label><b>Prezzo Extra (€):</b></label>
+                <input type="number" step="0.01" id="modIngPrezzoExtra" value="0.50" style="width:100%; box-sizing:border-box; padding:8px; margin-top:5px; border-radius:6px; border:1px solid #ccc;">
+            </div>
+            <div style="flex:1;">
+                <label><b>Qty scalata magazzino:</b></label>
+                <input type="number" step="0.1" id="modIngQtyExtra" value="1" style="width:100%; box-sizing:border-box; padding:8px; margin-top:5px; border-radius:6px; border:1px solid #ccc;">
+            </div>
+        </div>
+        
+        <div style="margin-bottom:20px; text-align:left;">
+            <label><b>Mostra come variante per i piatti in:</b></label><br>
+            <div style="margin-top:8px;">
+                <label style="margin-right:15px;"><input type="checkbox" class="mod-chk-cat" value="cibi" checked> Cibi</label>
+                <label style="margin-right:15px;"><input type="checkbox" class="mod-chk-cat" value="bevande"> Bevande</label>
+                <label><input type="checkbox" class="mod-chk-cat" value="snack"> Snack</label>
+            </div>
+        </div>
+        
+        <div class="modal-actions" style="display:flex; justify-content:flex-end; gap:10px;">
+            <button class="btn-chiudi" id="closeCreaIng">Annulla</button>
+            <button class="btn-salva" id="saveCreaIng">Crea Ingrediente</button>
+        </div>
+    `;
+    
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    document.getElementById("closeCreaIng").onclick = () => overlay.remove();
+    
+    document.getElementById("saveCreaIng").onclick = () => {
+        const nome = document.getElementById("modIngNome").value.trim();
+        const categoria = document.getElementById("modIngCat").value;
+        const unita = document.getElementById("modIngUnita").value;
+        
+        const usabileComeExtra = document.getElementById("modIngExtra").checked;
+        const prezzoExtra = parseFloat(document.getElementById("modIngPrezzoExtra").value) || 0;
+        const qtyExtra = parseFloat(document.getElementById("modIngQtyExtra").value) || 1;
+        
+        const selectedCats = [];
+        document.querySelectorAll(".mod-chk-cat:checked").forEach(cb => selectedCats.push(cb.value));
+        
+        if (!nome) {
+            alert("Devi inserire il nome dell'ingrediente!");
+            return;
+        }
+
+        // Salvataggio nel Database (Firebase)
+        const nuovoRef = db.ref("ingredienti").push();
+        nuovoRef.set({
+            id: nuovoRef.key,
+            nome: nome,
+            categoria: categoria,
+            unita: unita,
+            esaurito: false, // Appena creato, di default è disponibile
+            usabileComeExtra: usabileComeExtra,
+            prezzoExtra: prezzoExtra,
+            qtyExtra: qtyExtra,
+            categorieApplicabili: selectedCats.length > 0 ? selectedCats : [categoria]
+        }).then(() => {
+            overlay.remove();
+            if (typeof notify === "function") notify("Ingrediente creato con successo!", "success");
+        }).catch(err => {
+            console.error("Errore salvataggio ingrediente:", err);
+            alert("Errore durante il salvataggio.");
+        });
+    };
+};
 // GESTIONE comande admin
 async function caricaGestioneComandeAdmin() {
     if (!checkOnline(true)) return;
