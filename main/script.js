@@ -2826,6 +2826,18 @@ function apriPopupVarianti(idx) {
         const baseIds = (piatto.ingredienti || []).map(i => i.id);
 
         Object.entries(window.ingredientData || {}).forEach(([id, ing]) => {
+            // 🔹 FILTRO CATEGORIA (MODIFICA SCONTRINO):
+            // Cerchiamo di capire come si chiama la variabile del piatto in questa funzione (spesso 'item' o 'piatto')
+            const piattoCorrente = typeof item !== 'undefined' ? item : (typeof piatto !== 'undefined' ? piatto : {});
+            const catPiatto = (piattoCorrente.categoria || "cibi").toLowerCase();
+            
+            const catsApp = ing.categorieApplicabili || [ing.categoria || "cibi"];
+            
+            // Se l'ingrediente non è abilitato per questa categoria E non è un ingrediente base, nascondilo
+            if (!catsApp.includes(catPiatto) && !baseIds.includes(id)) {
+                return; 
+            }
+
             const row = document.createElement("div");
             row.className = "variante-row";
             
