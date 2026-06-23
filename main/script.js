@@ -2671,15 +2671,17 @@ function apriPopupVarianti(idx) {
     // Funzione interna per ridisegnare la lista nel popup
     function renderListaIngredienti() {
         listaDiv.innerHTML = "";
-        
-        // Se non ci sono ingredienti nel DB, avvisa
-        if (Object.keys(window.ingredientData).length === 0) {
-            listaDiv.innerHTML = "<i>Nessun ingrediente configurato nel database Admin.</i>";
-            return;
-        }
+        const baseIds = (piatto.ingredienti || []).map(i => i.id);
 
-        // Iteriamo su tutto il database ingredienti
-        Object.entries(window.ingredientData).forEach(([id, ing]) => {
+        Object.entries(window.ingredientData || {}).forEach(([id, ing]) => {
+            // 🔹 FILTRO CATEGORIA ADMIN:
+            const catsApp = ing.categorieApplicabili || [ing.categoria || "cibi"];
+            const catPiatto = (piatto.categoria || "cibi").toLowerCase();
+            
+            if (!catsApp.includes(catPiatto) && !baseIds.includes(id)) {
+                return; 
+            }
+
             const row = document.createElement("div");
             row.className = "variante-row";
             
@@ -3402,45 +3404,68 @@ async function caricaIngredienti() {
         btnExtra.title = "Imposta Prezzo e Quantità per Aggiunte";
         btnExtra.style.marginLeft = "5px";
         btnExtra.onclick = () => {
-		    const defP = ing.prezzoExtra || 0.50;
-		    const defQ = ing.qtyExtra || 1;
-		
-		    // Overlay (sfondo scuro)
-		    const overlay = document.createElement("div");
-		    overlay.className = "modal-overlay";
-		    
-		    // Contenitore modale
-		    const modal = document.createElement("div");
-		    modal.className = "modal-varianti";
-		    
-		    modal.innerHTML = `
-		        <h3>Impostazioni: ${ing.nome}</h3>
-		        <div style="margin-bottom:15px;">
-		            <label>Prezzo Extra (€):</label>
-		            <input type="number" step="0.01" id="valPrezzo" value="${defP}" style="width:100%; padding:8px;">
-		        </div>
-		        <div style="margin-bottom:15px;">
-		            <label>Quantità scalata:</label>
-		            <input type="number" step="0.1" id="valQty" value="${defQ}" style="width:100%; padding:8px;">
-		        </div>
-		        <div class="modal-actions">
-		            <button class="btn-chiudi" id="closeModal">Annulla</button>
-		            <button class="btn-salva" id="saveModal">Salva</button>
-		        </div>
-		    `;
-		    
-		    overlay.appendChild(modal);
-		    document.body.appendChild(overlay);
-		
-		    document.getElementById("closeModal").onclick = () => overlay.remove();
-		    document.getElementById("saveModal").onclick = () => {
-		        const p = parseFloat(document.getElementById("valPrezzo").value);
-		        const q = parseFloat(document.getElementById("valQty").value);
-		        db.ref(`ingredienti/${ing.id}`).update({ prezzoExtra: p, qtyExtra: q });
-		        overlay.remove();
-		        notify("Modifiche salvate!", "success");
-		    };
-		};
+            const defP = ing.prezzoExtra !== undefined ? ing.prezzoExtra : 0.50;
+            const defQ = ing.qtyExtra !== undefined ? ing.qtyExtra : 1;
+            
+            // Quali categorie ha già attive? (Default: quella principale dell'ingrediente)
+            const cats = ing.categorieApplicabili || [ing.categoria || "cibi"];
+            const isCibi = cats.includes("cibi") ? "checked" : "";
+            const isBevande = cats.includes("bevande") ? "checked" : "";
+            const isSnack = cats.includes("snack") ? "checked" : "";
+
+            const overlay = document.createElement("div");
+            overlay.className = "modal-overlay";
+            overlay.style.zIndex = "10005";
+
+            const modal = document.createElement("div");
+            modal.className = "modal-varianti";
+            modal.innerHTML = `
+                <h3>Impostazioni: ${ing.nome}</h3>
+                
+                <div style="margin-bottom:15px; text-align:left;">
+                    <label><b>Prezzo Extra (€):</b></label>
+                    <input type="number" step="0.01" id="valPrezzo" value="${defP}" style="width:100%; box-sizing:border-box; padding:8px; margin-top:5px;">
+                </div>
+                
+                <div style="margin-bottom:15px; text-align:left;">
+                    <label><b>Quantità scalata dal magazzino:</b></label>
+                    <input type="number" step="0.1" id="valQty" value="${defQ}" style="width:100%; box-sizing:border-box; padding:8px; margin-top:5px;">
+                </div>
+                
+                <div style="margin-bottom:20px; text-align:left;">
+                    <label><b>Mostra come variante per i piatti in:</b></label><br>
+                    <div style="margin-top:8px;">
+                        <label style="margin-right:15px;"><input type="checkbox" class="chk-cat" value="cibi" ${isCibi}> Cibi</label>
+                        <label style="margin-right:15px;"><input type="checkbox" class="chk-cat" value="bevande" ${isBevande}> Bevande</label>
+                        <label><input type="checkbox" class="chk-cat" value="snack" ${isSnack}> Snack</label>
+                    </div>
+                </div>
+                
+                <div class="modal-actions">
+                    <button class="btn-chiudi" id="closeModal">Annulla</button>
+                    <button class="btn-salva" id="saveModal">Salva</button>
+                </div>
+            `;
+            overlay.appendChild(modal);
+            document.body.appendChild(overlay);
+
+            document.getElementById("closeModal").onclick = () => overlay.remove();
+            document.getElementById("saveModal").onclick = () => {
+                const p = parseFloat(document.getElementById("valPrezzo").value);
+                const q = parseFloat(document.getElementById("valQty").value);
+                
+                const selectedCats = [];
+                document.querySelectorAll(".chk-cat:checked").forEach(cb => selectedCats.push(cb.value));
+
+                db.ref(`ingredienti/${ing.id}`).update({ 
+                    prezzoExtra: isNaN(p) ? 0 : p, 
+                    qtyExtra: isNaN(q) ? 1 : q,
+                    categorieApplicabili: selectedCats
+                });
+                overlay.remove();
+                notify("Modifiche salvate!", "success");
+            };
+        };
         row.appendChild(btnExtra);
 
         qtyInput.onchange = async (e) => {
@@ -4292,6 +4317,15 @@ function apriPopupVariantiAdmin(idx, comandaTemp, reserved, callback) {
         const baseIds = (piatto.ingredienti || []).map(i => i.id);
 
         Object.entries(window.ingredientData || {}).forEach(([id, ing]) => {
+            // 🔹 FILTRO CATEGORIA: Mostra l'ingrediente solo se applicabile al piatto
+            const catsApp = ing.categorieApplicabili || [ing.categoria || "cibi"];
+            const catPiatto = (piatto.categoria || "cibi").toLowerCase();
+            
+            // Se l'ingrediente non è abilitato per questa categoria E non è un ingrediente base del piatto, lo nascondiamo
+            if (!catsApp.includes(catPiatto) && !baseIds.includes(id)) {
+                return; 
+            }
+
             const row = document.createElement("div");
             row.className = "variante-row";
             
