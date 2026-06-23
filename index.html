@@ -439,22 +439,21 @@
 
 		<!-- Menu -->
 		<div id="menuTab" class="tabContent">
-			<h3>Menu</h3>
-			<div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
-				Nome: <input type="text" id="piattoNome">
-				Prezzo: <input type="number" id="piattoPrezzo" step="0.01">
-				Categoria:
-				<select id="piattoCat">
-					<option value="cibi">Cibi</option>
-					<option value="bevande">Bevande</option>
-					<option value="snack">Snack</option>
-				</select>
-				<input type="number" id="piattoMaxGratis" min="0" placeholder="Max gratis (es. 3)" title="Numero massimo di aggiunte gratuite" style="width:130px; margin-left:8px;">
-				<button id="mostraOpzioniIngredientiBtn">Mostra/aggiorna ingredienti</button>
-			</div>
-			<div id="piattoIngredientiContainer" style="margin-bottom:10px; display:none;"></div>
-			<button id="aggiungiMenuBtn">Aggiungi piatto</button>
-			<div id="menuAdmin"></div>
+		    <h3>Menu</h3>
+		    <button id="aggiungiMenuBtn" class="primaryButton" style="padding: 12px 24px; font-size: 1.1em; margin-bottom: 20px; cursor: pointer; border-radius: 8px; font-weight: bold;">➕ Aggiungi Nuovo Piatto</button>
+		    <div id="menuAdmin"></div>
+		
+		    <div style="display: none;">
+		        <input type="text" id="piattoNome">
+		        <input type="number" id="piattoPrezzo">
+		        <select id="piattoCat">
+		            <option value="cibi">cibi</option>
+		            <option value="bevande">bevande</option>
+		            <option value="snack">snack</option>
+		        </select>
+		        <button id="mostraOpzioniIngredientiBtn"></button>
+		        <div id="piattoIngredientiContainer"></div>
+		    </div>
 		</div>
 
 		<!-- Utenti -->
