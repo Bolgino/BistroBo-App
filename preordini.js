@@ -639,6 +639,7 @@ async function getProssimoNumero(lettera) {
 // ========== 3️⃣ PARTE CLIENTI (pagina preordina.html) ============
 // ================================================================
 let totale = 0;
+let menuItems = {};
 async function initPreordiniClienti() {
     // 🔹 Controllo impostazioni preordini
     const snapImpostazioni = await db.ref("impostazioni/preordiniAbilitati").once("value");
@@ -668,7 +669,6 @@ async function initPreordiniClienti() {
   if (!menuDiv) return;
 
   totale = 0;
-  let menuItems = {};
 
   // 🔹 Applica tema dal DB prima di mostrare tutto
   applicaTemaDaDatabase();
@@ -728,7 +728,7 @@ async function initPreordiniClienti() {
             if (esaurito) riga.classList.add("esaurito");
             riga.innerHTML = `
                 <div class="menu-item-top" style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
-                    <button class="preordine-btn" style="padding: 6px 16px; font-size: 0.95em; margin-right: 10px; font-weight: bold; border-radius: 20px; transition: 0.2s; ${esaurito ? "background:#e0e0e0; color:#999; border:none; cursor:not-allowed;" : "background:transparent; color:#4CAF50; border:2px solid #4CAF50; cursor:pointer;"}" 
+                    <button class="preordine-btn" style="padding: 4px 12px; font-size: 0.8em; margin-right: 8px; font-weight: bold; border-radius: 12px; transition: 0.2s; ${esaurito ? "background:#e0e0e0; color:#999; border:none; cursor:not-allowed;" : "background:transparent; color:#4CAF50; border:1.5px solid #4CAF50; cursor:pointer;"}" 
                         onclick="apriPopupPersonalizzaCliente('${id}')" ${esaurito ? "disabled" : ""}>
                         ${esaurito ? "Esaurito" : "+ Aggiungi"}
                     </button>
