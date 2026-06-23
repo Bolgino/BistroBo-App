@@ -2644,168 +2644,6 @@ function aggiornaComandaCorrente(){
     aggiornaSuggerimentoResto();
 	sincronizzaDisplayLive();
 }
-// ================= POPUP VARIANTI (AGGIUNTE/RIMOZIONI) =================
-function apriPopupVarianti(idx) {
-    const piatto = comandaCorrente[idx];
-    
-    // Inizializza array e extra prezzo se non esistono
-    if (!piatto.varianti) piatto.varianti = [];
-    if (!piatto.extraPrezzo) piatto.extraPrezzo = 0;
-
-    // Crea un clone temporaneo per non modificare lo scontrino se premiamo "Annulla"
-    let tempVarianti = [...piatto.varianti];
-    let tempExtraPrezzo = piatto.extraPrezzo;
-
-    const overlay = document.createElement("div");
-    overlay.className = "modal-overlay";
-
-    const modal = document.createElement("div");
-    modal.className = "modal-varianti";
-    
-    // 1. MOSTRA LA PROMOZIONE NEL TITOLO
-    const maxGratis = piatto.maxVariantiGratis || 0;
-    const testoGratis = maxGratis > 0 ? `<br><small style="color:green; font-size:0.75em;">(Promozione: Hai ${maxGratis} aggiunte GRATIS!)</small>` : "";
-    
-    const titolo = document.createElement("h3");
-    titolo.innerHTML = `Modifica: ${piatto.nome} ${testoGratis}`;
-    modal.appendChild(titolo);
-
-    const listaDiv = document.createElement("div");
-
-    // 2. FUNZIONE DI RICALCOLO INTELLIGENTE
-    function ricalcolaExtraPrezzo() {
-        let totaleExtra = 0;
-        // Troviamo tutte le stringhe che rappresentano un'aggiunta (iniziano con "+ ")
-        const aggiunte = tempVarianti.filter(v => v.startsWith("+ "));
-
-        aggiunte.forEach((nomeAggiunta, index) => {
-            // Se l'indice supera il limite delle gratuità, si paga
-            if (index >= maxGratis) {
-                // Ricaviamo il nome pulito (es. "+ Peperoni" -> "Peperoni")
-                const nomeIng = nomeAggiunta.substring(2);
-                
-                // Cerchiamo l'ingrediente per sapere quanto costa
-                const ingKey = Object.keys(window.ingredientData).find(k => window.ingredientData[k].nome === nomeIng);
-                const costo = (ingKey && window.ingredientData[ingKey].prezzoExtra !== undefined) 
-                              ? Number(window.ingredientData[ingKey].prezzoExtra) 
-                              : 0.50; // Costo di default se non impostato
-                
-                totaleExtra += costo;
-            }
-        });
-        tempExtraPrezzo = totaleExtra;
-    }
-
-    // Funzione interna per ridisegnare la lista nel popup
-    function renderListaIngredienti() {
-        // Ricalcola il prezzo a ogni rendering per sicurezza
-        ricalcolaExtraPrezzo();
-        
-        // Controlla se la prossima aggiunta sarà gratuita
-        const aggiunteFatte = tempVarianti.filter(v => v.startsWith("+ ")).length;
-        const isProssimaGratis = aggiunteFatte < maxGratis;
-
-        listaDiv.innerHTML = "";
-        const baseIds = (piatto.ingredienti || []).map(i => i.id);
-
-        Object.entries(window.ingredientData || {}).forEach(([id, ing]) => {
-            // 🔹 FILTRO CATEGORIA ADMIN:
-            const catsApp = ing.categorieApplicabili || [ing.categoria || "cibi"];
-            const catPiatto = (piatto.categoria || "cibi").toLowerCase();
-            
-            if (!catsApp.includes(catPiatto) && !baseIds.includes(id)) {
-                return; 
-            }
-
-            const row = document.createElement("div");
-            row.className = "variante-row";
-            
-            const nomeSpan = document.createElement("span");
-            nomeSpan.innerText = ing.nome;
-            
-            const btnContainer = document.createElement("div");
-
-            // --- LOGICA RIMOZIONE (Senza Cipolla) ---
-            const btnRemove = document.createElement("button");
-            const strSenza = "Senza " + ing.nome;
-            if (tempVarianti.includes(strSenza)) {
-                btnRemove.className = "variante-btn disabled";
-                btnRemove.innerText = "Annulla Rimozione"; // <-- Modificato per permettere di cambiare idea
-                btnRemove.onclick = () => {
-                    tempVarianti = tempVarianti.filter(v => v !== strSenza);
-                    renderListaIngredienti();
-                };
-            } else {
-                btnRemove.className = "variante-btn remove";
-                btnRemove.innerText = "- Rimuovi";
-                btnRemove.onclick = () => {
-                    tempVarianti.push(strSenza);
-                    renderListaIngredienti(); // Ridisegna per aggiornare i bottoni
-                };
-            }
-
-            // --- LOGICA AGGIUNTA (+ Peperoni) ---
-            const btnAdd = document.createElement("button");
-            const strCon = "+ " + ing.nome;
-            const costoExtra = ing.prezzoExtra !== undefined ? Number(ing.prezzoExtra) : 0.50;
-
-            if (tempVarianti.includes(strCon)) {
-                btnAdd.className = "variante-btn disabled";
-                btnAdd.innerText = "Annulla Aggiunta"; // <-- Modificato per poter liberare lo slot gratis!
-                btnAdd.onclick = () => {
-                    tempVarianti = tempVarianti.filter(v => v !== strCon);
-                    renderListaIngredienti();
-                };
-            } else {
-                btnAdd.className = "variante-btn add";
-                // Etichetta dinamica: GRATIS o con il prezzo
-                btnAdd.innerText = isProssimaGratis ? `+ Aggiungi (GRATIS)` : `+ Aggiungi (€${costoExtra.toFixed(2)})`;
-                btnAdd.onclick = () => {
-                    tempVarianti.push(strCon);
-                    // Non facciamo più += qui, ma chiamiamo il render che lancia il ricalcolo intelligente
-                    renderListaIngredienti();
-                };
-            }
-
-            btnContainer.appendChild(btnRemove);
-            btnContainer.appendChild(btnAdd);
-            
-            row.appendChild(nomeSpan);
-            row.appendChild(btnContainer);
-            listaDiv.appendChild(row);
-        });
-    }
-
-    renderListaIngredienti();
-    modal.appendChild(listaDiv);
-
-    // Bottoni di conferma/annulla
-    const actionDiv = document.createElement("div");
-    actionDiv.className = "modal-actions";
-
-    const btnAnnulla = document.createElement("button");
-    btnAnnulla.className = "btn-chiudi";
-    btnAnnulla.innerText = "Annulla";
-    btnAnnulla.onclick = () => overlay.remove();
-
-    const btnSalva = document.createElement("button");
-    btnSalva.className = "btn-salva";
-    btnSalva.innerText = "Salva";
-    btnSalva.onclick = () => {
-        // Applica le modifiche temporanee al piatto reale
-        piatto.varianti = tempVarianti;
-        piatto.extraPrezzo = tempExtraPrezzo;
-        aggiornaComandaCorrente(); // Ricarica lo scontrino
-        overlay.remove();
-    };
-
-    actionDiv.appendChild(btnAnnulla);
-    actionDiv.appendChild(btnSalva);
-    modal.appendChild(actionDiv);
-
-    overlay.appendChild(modal);
-    document.body.appendChild(overlay);
-}
 // ================= CALCOLO INGREDIENTI EFFETTIVI (CON VARIANTI) =================
 function getIngredientiEffettivi(p) {
     let mappa = {}; 
@@ -2830,6 +2668,7 @@ function getIngredientiEffettivi(p) {
 }
 
 // ================= POPUP VARIANTI =================
+// ================= POPUP VARIANTI CASSA (UNIFICATO E OTTIMIZZATO) =================
 function apriPopupVarianti(idx) {
     const piatto = comandaCorrente[idx];
     
@@ -2843,7 +2682,7 @@ function apriPopupVarianti(idx) {
         
         comandaCorrente.splice(idx + 1, 0, piattoSingolo);
         aggiornaComandaCorrente();
-        apriPopupVarianti(idx + 1); // Riapriamo il popup sul nuovo piatto
+        apriPopupVarianti(idx + 1); 
         return;
     }
 
@@ -2859,44 +2698,56 @@ function apriPopupVarianti(idx) {
     const modal = document.createElement("div");
     modal.className = "modal-varianti";
     
+    const maxGratis = piatto.maxVariantiGratis || 0;
+    const testoGratis = maxGratis > 0 ? `<br><small style="color:green; font-size:0.75em;">(Promozione: Hai ${maxGratis} aggiunte GRATIS!)</small>` : "";
+    
     const titolo = document.createElement("h3");
-    titolo.innerText = `Modifica: ${piatto.nome}`;
+    titolo.innerHTML = `Modifica: ${piatto.nome} ${testoGratis}`;
     modal.appendChild(titolo);
 
     const listaDiv = document.createElement("div");
 
+    // IL CERVELLO DEL PREZZO: Calcola da zero basandosi sulle varianti nell'array
+    function ricalcolaExtraPrezzo() {
+        let totaleExtra = 0;
+        const aggiunte = tempVarianti.filter(v => v.tipo === "aggiunta");
+
+        aggiunte.forEach((v, index) => {
+            if (index >= maxGratis) {
+                totaleExtra += Number(v.prezzo || 0);
+            }
+        });
+        tempExtraPrezzo = totaleExtra;
+    }
+
     function renderListaIngredienti() {
+        ricalcolaExtraPrezzo(); // Ricalcola ad ogni click
+        
+        const aggiunteFatte = tempVarianti.filter(v => v.tipo === "aggiunta").length;
+        const isProssimaGratis = aggiunteFatte < maxGratis;
+
         listaDiv.innerHTML = "";
         const baseIds = (piatto.ingredienti || []).map(i => i.id);
 
         Object.entries(window.ingredientData || {}).forEach(([id, ing]) => {
-            // 🔹 FILTRO CATEGORIA (MODIFICA SCONTRINO):
-            // Cerchiamo di capire come si chiama la variabile del piatto in questa funzione (spesso 'item' o 'piatto')
-            const piattoCorrente = typeof item !== 'undefined' ? item : (typeof piatto !== 'undefined' ? piatto : {});
-            const catPiatto = (piattoCorrente.categoria || "cibi").toLowerCase();
-            
             const catsApp = ing.categorieApplicabili || [ing.categoria || "cibi"];
+            const catPiatto = (piatto.categoria || "cibi").toLowerCase();
             
-            // Se l'ingrediente non è abilitato per questa categoria E non è un ingrediente base, nascondilo
-            if (!catsApp.includes(catPiatto) && !baseIds.includes(id)) {
-                return; 
-            }
+            if (!catsApp.includes(catPiatto) && !baseIds.includes(id)) return; 
 
             const row = document.createElement("div");
             row.className = "variante-row";
-            
             const nomeSpan = document.createElement("span");
             nomeSpan.innerText = ing.nome;
-            
             const btnContainer = document.createElement("div");
 
-            // RIMOZIONE
+            // --- RIMOZIONE ---
             if (baseIds.includes(id)) {
                 const btnRemove = document.createElement("button");
                 const isRimosso = tempVarianti.some(v => v.tipo === "rimozione" && v.id === id);
                 if (isRimosso) {
                     btnRemove.className = "variante-btn disabled";
-                    btnRemove.innerText = "Annulla";
+                    btnRemove.innerText = "Annulla Rimozione";
                     btnRemove.onclick = () => {
                         tempVarianti = tempVarianti.filter(v => !(v.tipo === "rimozione" && v.id === id));
                         renderListaIngredienti();
@@ -2912,7 +2763,7 @@ function apriPopupVarianti(idx) {
                 btnContainer.appendChild(btnRemove);
             }
 
-            // AGGIUNTA
+            // --- AGGIUNTA ---
             const btnAdd = document.createElement("button");
             const costoExtra = ing.prezzoExtra !== undefined ? Number(ing.prezzoExtra) : 0.50; 
             const qtyExtra = ing.qtyExtra !== undefined ? Number(ing.qtyExtra) : 1;
@@ -2921,21 +2772,19 @@ function apriPopupVarianti(idx) {
 
             if (isAggiunto) {
                 btnAdd.className = "variante-btn disabled";
-                btnAdd.innerText = "Annulla";
+                btnAdd.innerText = "Annulla Aggiunta";
                 btnAdd.style.marginLeft = "5px";
                 btnAdd.onclick = () => {
                     tempVarianti = tempVarianti.filter(v => !(v.tipo === "aggiunta" && v.id === id));
-                    tempExtraPrezzo -= costoExtra;
-                    renderListaIngredienti();
+                    renderListaIngredienti(); // IL RICALCOLO FA TUTTO
                 };
             } else {
                 btnAdd.className = "variante-btn add";
-                btnAdd.innerText = `+ Aggiungi (€${costoExtra.toFixed(2)})`;
+                btnAdd.innerText = isProssimaGratis ? `+ Aggiungi (GRATIS)` : `+ Aggiungi (€${costoExtra.toFixed(2)})`;
                 btnAdd.style.marginLeft = "5px";
                 btnAdd.onclick = () => {
                     tempVarianti.push({ tipo: "aggiunta", id: id, nome: ing.nome, qty: qtyExtra, prezzo: costoExtra });
-                    tempExtraPrezzo += costoExtra;
-                    renderListaIngredienti();
+                    renderListaIngredienti(); // IL RICALCOLO FA TUTTO
                 };
             }
 
@@ -4333,6 +4182,7 @@ function modificaComanda(id, comanda) {
 
 
 // ================= POPUP VARIANTI ESCLUSIVO PER ADMIN =================
+// ================= POPUP VARIANTI ESCLUSIVO PER ADMIN =================
 function apriPopupVariantiAdmin(idx, comandaTemp, reserved, callback) {
     const piatto = comandaTemp.piatti[idx];
     
@@ -4357,37 +4207,48 @@ function apriPopupVariantiAdmin(idx, comandaTemp, reserved, callback) {
 
     const overlay = document.createElement("div");
     overlay.className = "modal-overlay";
-    overlay.style.zIndex = "10005"; // Si posiziona SOPRA al modale di modifica comanda!
+    overlay.style.zIndex = "10005"; 
 
     const modal = document.createElement("div");
     modal.className = "modal-varianti";
     
+    const maxGratis = piatto.maxVariantiGratis || 0;
+    const testoGratis = maxGratis > 0 ? `<br><small style="color:green; font-size:0.75em;">(Promozione: Hai ${maxGratis} aggiunte GRATIS!)</small>` : "";
+
     const titolo = document.createElement("h3");
-    titolo.innerText = `Modifica: ${piatto.nome}`;
+    titolo.innerHTML = `Modifica: ${piatto.nome} ${testoGratis}`;
     modal.appendChild(titolo);
 
     const listaDiv = document.createElement("div");
 
+    // STESSO CERVELLO DELLA CASSA
+    function ricalcolaExtraPrezzo() {
+        let totaleExtra = 0;
+        const aggiunte = tempVarianti.filter(v => v.tipo === "aggiunta");
+        aggiunte.forEach((v, index) => {
+            if (index >= maxGratis) totaleExtra += Number(v.prezzo || 0);
+        });
+        tempExtraPrezzo = totaleExtra;
+    }
+
     function renderListaIngredienti() {
+        ricalcolaExtraPrezzo();
+        const aggiunteFatte = tempVarianti.filter(v => v.tipo === "aggiunta").length;
+        const isProssimaGratis = aggiunteFatte < maxGratis;
+
         listaDiv.innerHTML = "";
         const baseIds = (piatto.ingredienti || []).map(i => i.id);
 
         Object.entries(window.ingredientData || {}).forEach(([id, ing]) => {
-            // 🔹 FILTRO CATEGORIA: Mostra l'ingrediente solo se applicabile al piatto
             const catsApp = ing.categorieApplicabili || [ing.categoria || "cibi"];
             const catPiatto = (piatto.categoria || "cibi").toLowerCase();
             
-            // Se l'ingrediente non è abilitato per questa categoria E non è un ingrediente base del piatto, lo nascondiamo
-            if (!catsApp.includes(catPiatto) && !baseIds.includes(id)) {
-                return; 
-            }
+            if (!catsApp.includes(catPiatto) && !baseIds.includes(id)) return; 
 
             const row = document.createElement("div");
             row.className = "variante-row";
-            
             const nomeSpan = document.createElement("span");
             nomeSpan.innerText = ing.nome;
-            
             const btnContainer = document.createElement("div");
 
             // RIMOZIONE
@@ -4396,7 +4257,7 @@ function apriPopupVariantiAdmin(idx, comandaTemp, reserved, callback) {
                 const isRimosso = tempVarianti.some(v => v.tipo === "rimozione" && v.id === id);
                 if (isRimosso) {
                     btnRemove.className = "variante-btn disabled";
-                    btnRemove.innerText = "Annulla";
+                    btnRemove.innerText = "Annulla Rimozione";
                     btnRemove.onclick = () => {
                         tempVarianti = tempVarianti.filter(v => !(v.tipo === "rimozione" && v.id === id));
                         renderListaIngredienti();
@@ -4421,20 +4282,18 @@ function apriPopupVariantiAdmin(idx, comandaTemp, reserved, callback) {
 
             if (isAggiunto) {
                 btnAdd.className = "variante-btn disabled";
-                btnAdd.innerText = "Annulla";
+                btnAdd.innerText = "Annulla Aggiunta";
                 btnAdd.style.marginLeft = "5px";
                 btnAdd.onclick = () => {
                     tempVarianti = tempVarianti.filter(v => !(v.tipo === "aggiunta" && v.id === id));
-                    tempExtraPrezzo -= costoExtra;
                     renderListaIngredienti();
                 };
             } else {
                 btnAdd.className = "variante-btn add";
-                btnAdd.innerText = `+ Aggiungi (€${costoExtra.toFixed(2)})`;
+                btnAdd.innerText = isProssimaGratis ? `+ Aggiungi (GRATIS)` : `+ Aggiungi (€${costoExtra.toFixed(2)})`;
                 btnAdd.style.marginLeft = "5px";
                 btnAdd.onclick = () => {
                     tempVarianti.push({ tipo: "aggiunta", id: id, nome: ing.nome, qty: qtyExtra, prezzo: costoExtra });
-                    tempExtraPrezzo += costoExtra;
                     renderListaIngredienti();
                 };
             }
@@ -4464,7 +4323,6 @@ function apriPopupVariantiAdmin(idx, comandaTemp, reserved, callback) {
         btnSalva.disabled = true;
         btnSalva.innerText = "Attendere...";
 
-        // Calcoliamo la differenza esatta di magazzino causata da questo cambio varianti
         const oldEff = getIngredientiEffettivi(piatto);
         
         const newPiattoMock = JSON.parse(JSON.stringify(piatto));
@@ -4481,7 +4339,6 @@ function apriPopupVariantiAdmin(idx, comandaTemp, reserved, callback) {
             if (id) deltaDb[id] = (deltaDb[id] || 0) - (ing.qty * piatto.quantita);
         });
 
-        // Applichiamo i cambiamenti al volo su Firebase
         for (const [key, diff] of Object.entries(deltaDb)) {
             if (diff > 0) {
                 const res = await applicaDecrementiIngredienti({ byId: { [key]: diff }, byName: {} });
