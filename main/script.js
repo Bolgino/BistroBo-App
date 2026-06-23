@@ -3562,52 +3562,6 @@ function aggiornaOpzioniIngredientiMenu(){
     const cat = document.getElementById("piattoCat").value;
     renderIngredientOptionsForCategory(cat, container, null);
 }
-//aggiungi ingrediente
-document.getElementById("aggiungiIngredienteBtn").onclick = async () => {
-    const nome = document.getElementById("ingredienteNome").value.trim();
-    const categoria = document.getElementById("ingredienteCategoria").value;
-    const rimanenteVal = document.getElementById("ingredienteRimanente").value;
-
-    // se vuoto, la quantità sarà illimitata (null)
-    const rimanente = rimanenteVal === "" ? null : parseInt(rimanenteVal);
-
-    if(!nome){ 
-        notify("Inserisci il nome dell'ingrediente", "warn"); 
-        return; 
-    }
-    const unita = document.getElementById("ingredienteUnita").value || "pz";
-    // evita duplicati nella stessa categoria
-    const snap = await db.ref("ingredienti").orderByChild("nome").equalTo(nome).once("value");
-    if(snap.exists()){
-        const found = Object.entries(snap.val()).find(([k,v]) => (v.categoria||'') === categoria);
-        if(found){
-            const key = found[0];
-            await db.ref("ingredienti/" + key).update({ 
-                rimanente, 
-                disponibile: rimanente === null || rimanente > 0, 
-                categoria,
-                unita
-            });
-            document.getElementById("ingredienteNome").value = "";
-            document.getElementById("ingredienteRimanente").value = "";
-            caricaIngredienti();
-            return;
-        }
-    }
-
-    // inserimento nuovo
-    await db.ref("ingredienti").push({ 
-        nome, 
-        categoria, 
-        rimanente,
-        unita: unita,
-        disponibile: true  // di default disponibile
-    });
-
-    document.getElementById("ingredienteNome").value = "";
-    document.getElementById("ingredienteRimanente").value = "";
-    caricaIngredienti();
-};
 function initIngredientiAdminRealtime() {
     if (!checkOnline(true)) return;
     const container = document.getElementById("ingredientiDiv");
