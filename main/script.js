@@ -2741,7 +2741,12 @@ function apriPopupVarianti(idx) {
             const catsApp = ing.categorieApplicabili || [ing.categoria || "cibi"];
             const catPiatto = (piatto.categoria || "cibi").toLowerCase();
             
-            if (!catsApp.includes(catPiatto) && !baseIds.includes(id)) return; 
+            // Mostra ingrediente SOLO SE è un ingrediente di base del piatto (per poterlo rimuovere)
+            // OPPURE SE ha la spunta "Utilizzabile come variante" attivata.
+            const isBase = baseIds.includes(id);
+            const isExtraValido = (ing.usabileComeExtra === true) && catsApp.includes(catPiatto);
+
+            if (!isBase && !isExtraValido) return;
 
             const row = document.createElement("div");
             row.className = "variante-row";
@@ -3073,9 +3078,20 @@ function caricaComandeCassa() {
       ordiniIds.add(id);
 
       const { cibo, bere, snack } = separaComanda(c.piatti || []);
-      const piattiCibo = cibo.map(i => i.quantita + " " + i.nome).join(" | ") || "—";
-      const piattiBere = bere.map(i => i.quantita + " " + i.nome).join(" | ") || "—";
-      const piattiSnack = snack.map(i => i.quantita + " " + i.nome).join(" | ") || "—";
+      function formattaPiatto(i) {
+          let base = `${i.quantita}x ${i.nome}`;
+          if (i.varianti && i.varianti.length > 0) {
+              let varTxt = i.varianti.map(v => 
+                  v.tipo === "aggiunta" ? `<span style="color:green; font-weight:bold;">+${v.nome}</span>` : `<span style="color:red; font-weight:bold;">-${v.nome}</span>`
+              ).join(", ");
+              base += ` <span style="font-size:0.85em;">(${varTxt})</span>`;
+          }
+          return base;
+      }
+
+      const piattiCibo = cibo.map(formattaPiatto).join(" | ") || "—";
+      const piattiBere = bere.map(formattaPiatto).join(" | ") || "—";
+      const piattiSnack = snack.map(formattaPiatto).join(" | ") || "—";
 
       let d = document.getElementById("cassa_comanda_" + id);
 
@@ -3312,7 +3328,7 @@ async function caricaIngredienti() {
                 onCancel: () => {}
             });
         };
-		  const btnExtra = document.createElement("button");
+		const btnExtra = document.createElement("button");
         btnExtra.innerText = "⚙️ Extra";
         btnExtra.title = "Imposta Prezzo e Quantità per Aggiunte";
         btnExtra.style.marginLeft = "5px";
@@ -3320,11 +3336,14 @@ async function caricaIngredienti() {
             const defP = ing.prezzoExtra !== undefined ? ing.prezzoExtra : 0.50;
             const defQ = ing.qtyExtra !== undefined ? ing.qtyExtra : 1;
             
-            // Quali categorie ha già attive? (Default: quella principale dell'ingrediente)
+            // Quali categorie ha già attive?
             const cats = ing.categorieApplicabili || [ing.categoria || "cibi"];
             const isCibi = cats.includes("cibi") ? "checked" : "";
             const isBevande = cats.includes("bevande") ? "checked" : "";
             const isSnack = cats.includes("snack") ? "checked" : "";
+            
+            // NOVITÀ: Controllo se è usabile come extra
+            const isExtraChecked = ing.usabileComeExtra ? "checked" : "";
 
             const overlay = document.createElement("div");
             overlay.className = "modal-overlay";
@@ -3335,6 +3354,13 @@ async function caricaIngredienti() {
             modal.innerHTML = `
                 <h3>Impostazioni: ${ing.nome}</h3>
                 
+                <div style="margin-bottom:15px; text-align:left; background: #e8f5e9; padding: 10px; border-radius: 6px; border: 1px solid #c8e6c9;">
+                    <label style="cursor:pointer;">
+                        <input type="checkbox" id="chkUsabileExtra" ${isExtraChecked} style="transform: scale(1.2); margin-right: 8px;"> 
+                        <b>Utilizzabile come variante / aggiunta nei piatti</b>
+                    </label>
+                </div>
+
                 <div style="margin-bottom:15px; text-align:left;">
                     <label><b>Prezzo Extra (€):</b></label>
                     <input type="number" step="0.01" id="valPrezzo" value="${defP}" style="width:100%; box-sizing:border-box; padding:8px; margin-top:5px;">
@@ -3366,6 +3392,7 @@ async function caricaIngredienti() {
             document.getElementById("saveModal").onclick = () => {
                 const p = parseFloat(document.getElementById("valPrezzo").value);
                 const q = parseFloat(document.getElementById("valQty").value);
+                const usabile = document.getElementById("chkUsabileExtra").checked; // Cattura la spunta
                 
                 const selectedCats = [];
                 document.querySelectorAll(".chk-cat:checked").forEach(cb => selectedCats.push(cb.value));
@@ -3373,7 +3400,8 @@ async function caricaIngredienti() {
                 db.ref(`ingredienti/${ing.id}`).update({ 
                     prezzoExtra: isNaN(p) ? 0 : p, 
                     qtyExtra: isNaN(q) ? 1 : q,
-                    categorieApplicabili: selectedCats
+                    categorieApplicabili: selectedCats,
+                    usabileComeExtra: usabile // Salva su database
                 });
                 overlay.remove();
                 notify("Modifiche salvate!", "success");
@@ -3599,9 +3627,20 @@ async function caricaGestioneComandeAdmin() {
                 }, 0);
             }
            
-            const piattiCibo = cibo.map(i => i.quantita + "x " + i.nome).join(" | ") || "—";
-            const piattiBere = bere.map(i => i.quantita + "x " + i.nome).join(" | ") || "—";
-            const piattiSnack = snack && snack.length ? snack.map(i => i.quantita + "x " + i.nome).join(" | ") : null;
+            function formattaPiattoAdmin(i) {
+                let base = `${i.quantita}x ${i.nome}`;
+                if (i.varianti && i.varianti.length > 0) {
+                    let varTxt = i.varianti.map(v => 
+                        v.tipo === "aggiunta" ? `<span style="color:green; font-weight:bold;">+${v.nome}</span>` : `<span style="color:red; font-weight:bold;">-${v.nome}</span>`
+                    ).join(", ");
+                    base += ` <span style="font-size:0.85em;">(${varTxt})</span>`;
+                }
+                return base;
+            }
+
+            const piattiCibo = cibo.map(formattaPiattoAdmin).join(" <br> ") || "—";
+            const piattiBere = bere.map(formattaPiattoAdmin).join(" <br> ") || "—";
+            const piattiSnack = snack && snack.length ? snack.map(formattaPiattoAdmin).join(" <br> ") : null;
 
             const riga = document.createElement("div");
             riga.className = "order";
@@ -4260,7 +4299,12 @@ function apriPopupVariantiAdmin(idx, comandaTemp, reserved, callback) {
             const catsApp = ing.categorieApplicabili || [ing.categoria || "cibi"];
             const catPiatto = (piatto.categoria || "cibi").toLowerCase();
             
-            if (!catsApp.includes(catPiatto) && !baseIds.includes(id)) return; 
+            // Mostra ingrediente SOLO SE è un ingrediente di base del piatto (per poterlo rimuovere)
+            // OPPURE SE ha la spunta "Utilizzabile come variante" attivata.
+            const isBase = baseIds.includes(id);
+            const isExtraValido = (ing.usabileComeExtra === true) && catsApp.includes(catPiatto);
+
+            if (!isBase && !isExtraValido) return;
 
             const row = document.createElement("div");
             row.className = "variante-row";
