@@ -726,38 +726,36 @@ async function initPreordiniClienti() {
             const riga = document.createElement("div");
             riga.className = "menu-item";
             if (esaurito) riga.classList.add("esaurito");
-            riga.innerHTML = `
-                <div class="menu-item-top" style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
-                    <button style="padding: 5px 12px; font-size: 13px; font-weight: bold; border-radius: 50px; background: transparent; color: ${esaurito ? '#aaa' : '#4CAF50'}; border: 1.5px solid ${esaurito ? '#ddd' : '#4CAF50'}; cursor: ${esaurito ? 'not-allowed' : 'pointer'}; transition: 0.2s;" 
-                        onclick="apriPopupPersonalizzaCliente('${id}')" ${esaurito ? "disabled" : ""}>
-                        ${esaurito ? "Esaurito" : "+ Aggiungi"}
-                    </button>
-                    <span class="piatto-nome" style="flex:1;">${item.nome}</span>
-                    <span class="piatto-prezzo">
-                        ${
-                            item.sconto && item.sconto.tipo === "percentuale"
-                            ? `<span style="text-decoration: line-through; color:#888;">€${item.prezzo.toFixed(2)}</span>
-                            <br>
-                            <span style="font-weight:bold; color:#d9534f;">
-                                    €${(item.prezzo * (1 - item.sconto.valore/100)).toFixed(2)}
-                            </span>`
-                            : `€${item.prezzo.toFixed(2)}`
-                        }
-                    </span>
-                    ${esaurito ? `<span class="piatto-esaurito-label">❌ Non disponibile</span>` : ""}
-
-
-                </div>
-                ${item.sconto ? `<div class="piatto-sconto" style="color:#d9534f; font-weight:bold; font-size:0.9em; margin-left:35px;">
-                    ${item.sconto.tipo === "percentuale" ? `${item.sconto.valore}% di sconto`
-                    : item.sconto.tipo === "x_paga_y" ? `Prendi ${item.sconto.valore.x} Paga ${item.sconto.valore.y}`
-                    : item.sconto.tipo === "x_paga_y_fisso" ? `Prendi ${item.sconto.valore.x} Paga €${item.sconto.valore.y.toFixed(2)}`
-                    : ""}
-                </div>` : ""}
-                ${item.ingredienti && item.ingredienti.length ? `<div class="piatto-ingredienti" style="margin-left:10px; font-size:0.85em; color:#555;">
-                    ${item.ingredienti.map(i => `${i.nome}${i.qtyPerUnit ? ` (${i.qtyPerUnit}${i.unita||""})`:""}`).join(", ")}
-                </div>` : ""}
+            
+            // 1. Parte superiore (Nome + Prezzo)
+            const topDiv = document.createElement("div");
+            topDiv.className = "menu-item-top";
+            topDiv.style.display = "flex";
+            topDiv.style.justifyContent = "space-between";
+            topDiv.innerHTML = `
+                <span class="piatto-nome" style="flex:1; font-weight:bold;">${item.nome}</span>
+                <span class="piatto-prezzo">€${item.prezzo.toFixed(2)}</span>
             `;
+            
+            // 2. Ingredienti (sotto)
+            let ingDiv = "";
+            if (item.ingredienti && item.ingredienti.length) {
+                ingDiv = `<div class="piatto-ingredienti" style="font-size:0.85em; color:#555; margin: 5px 0;">
+                            ${item.ingredienti.map(i => i.nome).join(", ")}
+                          </div>`;
+            }
+            
+            // 3. Bottone (SOTTO gli ingredienti)
+            const btnHtml = `
+                <button style="margin-top: 10px; width: 100%; padding: 8px; border-radius: 8px; border: 1.5px solid ${esaurito ? '#ccc' : '#4CAF50'}; background: transparent; color: ${esaurito ? '#aaa' : '#4CAF50'}; cursor: ${esaurito ? 'not-allowed' : 'pointer'};" 
+                    onclick="apriPopupPersonalizzaCliente('${id}')" ${esaurito ? "disabled" : ""}>
+                    ${esaurito ? "Esaurito" : "+ Aggiungi all'ordine"}
+                </button>`;
+            
+            riga.innerHTML = ""; // Puliamo
+            riga.appendChild(topDiv);
+            riga.insertAdjacentHTML('beforeend', ingDiv);
+            riga.insertAdjacentHTML('beforeend', btnHtml);
             menuDiv.appendChild(riga);
         });
 
