@@ -728,9 +728,9 @@ async function initPreordiniClienti() {
             if (esaurito) riga.classList.add("esaurito");
             riga.innerHTML = `
                 <div class="menu-item-top" style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
-                    <button class="preordine-btn" style="padding: 5px 15px; font-size: 0.9em; margin-right: 10px; ${esaurito ? "background:#ccc; cursor:not-allowed;" : "background:#4CAF50;"}" 
+                    <button class="preordine-btn" style="padding: 6px 16px; font-size: 0.95em; margin-right: 10px; font-weight: bold; border-radius: 20px; transition: 0.2s; ${esaurito ? "background:#e0e0e0; color:#999; border:none; cursor:not-allowed;" : "background:transparent; color:#4CAF50; border:2px solid #4CAF50; cursor:pointer;"}" 
                         onclick="apriPopupPersonalizzaCliente('${id}')" ${esaurito ? "disabled" : ""}>
-                        + Aggiungi
+                        ${esaurito ? "Esaurito" : "+ Aggiungi"}
                     </button>
                     <span class="piatto-nome" style="flex:1;">${item.nome}</span>
                     <span class="piatto-prezzo">
@@ -822,11 +822,16 @@ async function initPreordiniClienti() {
     // Listener combinato ingredienti + bloccato
     function aggiornaDisponibilitaPiatti(menuData, ingredientiDB) {
         document.querySelectorAll(".menu-item").forEach(riga => {
-            const select = riga.querySelector("select[data-id]");
+            // Cerchiamo il bottone invece della vecchia select
+            const btnAggiungi = riga.querySelector("button[onclick^='apriPopupPersonalizzaCliente']");
             const labelEsaurito = riga.querySelector(".piatto-esaurito-label");
-            if (!select) return;
+            if (!btnAggiungi) return;
 
-            const id = select.dataset.id;
+            // Estraiamo l'ID del piatto dalla funzione onclick
+            const match = btnAggiungi.getAttribute('onclick').match(/'([^']+)'/);
+            if (!match) return;
+            const id = match[1];
+
             const item = menuData[id];
             if (!item) return;
 
@@ -844,10 +849,13 @@ async function initPreordiniClienti() {
 
             if (esaurito) {
                 riga.classList.add("esaurito");
-                select.disabled = true;
-                select.value = "0"; // reset quantità se diventa esaurito
+                btnAggiungi.disabled = true;
+                btnAggiungi.style.background = "#e0e0e0";
+                btnAggiungi.style.color = "#999";
+                btnAggiungi.style.border = "none";
+                btnAggiungi.style.cursor = "not-allowed";
+                btnAggiungi.innerText = "Esaurito";
 
-                // Mostra la scritta esaurito
                 if (!labelEsaurito) {
                     const span = document.createElement("span");
                     span.className = "piatto-esaurito-label";
@@ -857,14 +865,22 @@ async function initPreordiniClienti() {
                 }
             } else {
                 riga.classList.remove("esaurito");
-                select.disabled = false;
+                btnAggiungi.disabled = false;
+                // Stile leggero e moderno
+                btnAggiungi.style.background = "transparent";
+                btnAggiungi.style.color = "#4CAF50";
+                btnAggiungi.style.border = "2px solid #4CAF50";
+                btnAggiungi.style.cursor = "pointer";
+                btnAggiungi.innerText = "+ Aggiungi";
 
-                // Rimuovi scritta esaurito se presente
                 if (labelEsaurito) labelEsaurito.remove();
             }
         });
 
-        aggiornaTotale();
+        // Richiama la nuova funzione del carrello (se è già caricata in fondo al file)
+        if (typeof aggiornaRiepilogoCarrelloUI === "function") {
+            aggiornaRiepilogoCarrelloUI();
+        }
     }
     // Listener realtime combinato
     db.ref("menu").on("value", snapMenu => {
