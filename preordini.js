@@ -723,39 +723,63 @@ async function initPreordiniClienti() {
             }
             const esaurito = piattoBloccato || ingredientiEsauriti;
 
+            // Crea il contenitore principale
             const riga = document.createElement("div");
             riga.className = "menu-item";
             if (esaurito) riga.classList.add("esaurito");
             
-            // 1. Parte superiore (Nome + Prezzo)
+            // 1. Parte superiore (Nome + Prezzo scontato)
             const topDiv = document.createElement("div");
             topDiv.className = "menu-item-top";
             topDiv.style.display = "flex";
             topDiv.style.justifyContent = "space-between";
+            topDiv.style.alignItems = "center";
+            topDiv.style.gap = "10px";
+            
+            const prezzoHtml = item.sconto && item.sconto.tipo === "percentuale"
+                ? `<span style="text-align: right;">
+                    <span style="text-decoration: line-through; color:#888; font-size: 0.9em;">€${item.prezzo.toFixed(2)}</span><br>
+                    <span style="font-weight:bold; color:#d9534f;">€${(item.prezzo * (1 - item.sconto.valore / 100)).toFixed(2)}</span>
+                   </span>`
+                : `<span>€${item.prezzo.toFixed(2)}</span>`;
+            
             topDiv.innerHTML = `
                 <span class="piatto-nome" style="flex:1; font-weight:bold;">${item.nome}</span>
-                <span class="piatto-prezzo">€${item.prezzo.toFixed(2)}</span>
+                <span class="piatto-prezzo">${prezzoHtml}</span>
             `;
             
-            // 2. Ingredienti (sotto)
-            let ingDiv = "";
-            if (item.ingredienti && item.ingredienti.length) {
-                ingDiv = `<div class="piatto-ingredienti" style="font-size:0.85em; color:#555; margin: 5px 0;">
-                            ${item.ingredienti.map(i => i.nome).join(", ")}
-                          </div>`;
+            // 2. Sconto e Ingredienti
+            let dettagliDiv = "";
+            
+            // Aggiunta label sconto se presente
+            if (item.sconto) {
+                dettagliDiv += `<div class="piatto-sconto" style="color:#d9534f; font-weight:bold; font-size:0.85em; margin-bottom: 5px;">
+                    ${item.sconto.tipo === "percentuale" ? `${item.sconto.valore}% di sconto`
+                    : item.sconto.tipo === "x_paga_y" ? `Prendi ${item.sconto.valore.x} Paga ${item.sconto.valore.y}`
+                    : item.sconto.tipo === "x_paga_y_fisso" ? `Prendi ${item.sconto.valore.x} Paga €${item.sconto.valore.y.toFixed(2)}`
+                    : ""}
+                </div>`;
             }
             
-            // 3. Bottone (SOTTO gli ingredienti)
+            // Aggiunta ingredienti
+            if (item.ingredienti && item.ingredienti.length) {
+                dettagliDiv += `<div class="piatto-ingredienti" style="font-size:0.85em; color:#555; margin-bottom: 10px;">
+                    ${item.ingredienti.map(i => `${i.nome}${i.qtyPerUnit ? ` (${i.qtyPerUnit}${i.unita||""})`:""}`).join(", ")}
+                </div>`;
+            }
+            
+            // 3. Bottone (SOTTO gli ingredienti come richiesto)
             const btnHtml = `
-                <button style="margin-top: 10px; width: 100%; padding: 8px; border-radius: 8px; border: 1.5px solid ${esaurito ? '#ccc' : '#4CAF50'}; background: transparent; color: ${esaurito ? '#aaa' : '#4CAF50'}; cursor: ${esaurito ? 'not-allowed' : 'pointer'};" 
+                <button style="width: 100%; padding: 8px; border-radius: 8px; border: 1.5px solid ${esaurito ? '#ccc' : '#4CAF50'}; background: transparent; color: ${esaurito ? '#aaa' : '#4CAF50'}; cursor: ${esaurito ? 'not-allowed' : 'pointer'}; font-weight: bold;" 
                     onclick="apriPopupPersonalizzaCliente('${id}')" ${esaurito ? "disabled" : ""}>
-                    ${esaurito ? "Esaurito" : "+ Aggiungi all'ordine"}
+                    ${esaurito ? "❌ Esaurito" : "+ Aggiungi all'ordine"}
                 </button>`;
             
-            riga.innerHTML = ""; // Puliamo
+            // Assemblaggio finale
             riga.appendChild(topDiv);
-            riga.insertAdjacentHTML('beforeend', ingDiv);
+            riga.insertAdjacentHTML('beforeend', dettagliDiv);
             riga.insertAdjacentHTML('beforeend', btnHtml);
+            
             menuDiv.appendChild(riga);
         });
 
