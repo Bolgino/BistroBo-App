@@ -2168,6 +2168,7 @@ window.simulaRuolo = function(ruoloScelto) {
         caricaComandeCassa();
         initIngredientiCriticiListeners(true);
         initTickNoteDestinazioni();
+		if (typeof gestisciFondoCassa === "function") gestisciFondoCassa(false);
 		if (typeof renderPreordiniCassa === "function") {
             db.ref("preordini").once("value").then(snap => renderPreordiniCassa(snap.val() || {}));
         }
