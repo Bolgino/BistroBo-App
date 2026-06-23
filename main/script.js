@@ -2386,7 +2386,7 @@ async function caricaMenuCassa() {
                 } else {
                     comandaCorrente.push({
                         nome: item.nome, prezzo: item.prezzo, quantita: quant, categoria: item.categoria,
-                        ingredienti: item.ingredienti || [], sconto: item.sconto || null
+                        ingredienti: item.ingredienti || [], sconto: item.sconto || null, maxVariantiGratis: item.maxVariantiGratis
                     });
                 }
                 aggiornaComandaCorrente();
@@ -4096,7 +4096,8 @@ function modificaComanda(id, comanda) {
                                 nome: mp.nome, prezzo: mp.prezzo, quantita: 1, prezziSingoli: [mp.prezzo],
                                 categoria: mp.categoria || "altro", sconto: mp.sconto || null,
                                 tipo: mp.tipo || (mp.categoria && mp.categoria.toLowerCase().includes("snack") ? "snack" : "cucina"),
-                                ingredienti: mp.ingredienti ? JSON.parse(JSON.stringify(mp.ingredienti)) : []
+                                ingredienti: mp.ingredienti ? JSON.parse(JSON.stringify(mp.ingredienti)) : [],
+								maxVariantiGratis: mp.maxVariantiGratis || 0
                             });
                         }
 
@@ -4212,7 +4213,15 @@ function apriPopupVariantiAdmin(idx, comandaTemp, reserved, callback) {
     const modal = document.createElement("div");
     modal.className = "modal-varianti";
     
-    const maxGratis = piatto.maxVariantiGratis || 0;
+    let maxGratis = piatto.maxVariantiGratis || 0;
+	// Sistema anti-errore: se il dato manca, lo peschiamo dal menu originale
+	if (!maxGratis && window.menuData) {
+	    const piattoOriginale = Object.values(window.menuData).find(m => m.nome === piatto.nome);
+	    if (piattoOriginale && piattoOriginale.maxVariantiGratis) {
+	        maxGratis = parseInt(piattoOriginale.maxVariantiGratis);
+	        piatto.maxVariantiGratis = maxGratis; // Lo salva nello scontrino per non doverlo ricaricare
+	    }
+	}
     const testoGratis = maxGratis > 0 ? `<br><small style="color:green; font-size:0.75em;">(Promozione: Hai ${maxGratis} aggiunte GRATIS!)</small>` : "";
 
     const titolo = document.createElement("h3");
