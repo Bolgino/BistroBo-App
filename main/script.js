@@ -3369,7 +3369,7 @@ async function caricaIngredienti() {
         btnExtra.onclick = () => {
             // 🔹 NOVITÀ: Peschiamo l'ingrediente aggiornato in tempo reale dal database locale
             // Questo risolve il bug della spunta che salta se riapri la scheda!
-            const currentIng = window.ingredientData[id] || ing;
+            const currentIng = window.ingredientData[ing.id] || ing;
 
             const defP = currentIng.prezzoExtra !== undefined ? currentIng.prezzoExtra : 0.50;
             const defQ = currentIng.qtyExtra !== undefined ? currentIng.qtyExtra : 1;
@@ -7004,44 +7004,65 @@ async function stampaComanda(items, numeroComanda, note = "") {
     });
 
     let pagina = 0;
+    let y = 10;
+
+    // 🔹 MOTORE DI IMPAGINAZIONE: Se superiamo i 135mm (il foglio a6 è 148mm), cambia pagina
+    function checkY() {
+        if (y > 135) { 
+            doc.addPage();
+            y = 10;
+        }
+    }
+
     for (const [cat, piatti] of Object.entries(categorie)) {
         if (piatti.length === 0) continue;
-        if (pagina > 0) doc.addPage();
+        if (pagina > 0) {
+            doc.addPage();
+            y = 10;
+        }
         pagina++;
 
         const titolo = cat === "cibi" ? "CIBO" : cat === "bevande" ? "BEVANDE" : "SNACK";
-        let y = 10;
-        // ✅ Scritta in cima centrata
+        
         doc.setFontSize(14);
         doc.setFont("helvetica", "bold");
         const pageWidth = doc.internal.pageSize.getWidth();
-        const nomeStand = cliente.nomeStand || window.settings.nomeStand || "BistroBò";
+        
+        // 🔹 Prevenzione crash se la variabile "cliente" non esiste nella pagina
+        let nomeStand = "BistroBò";
+        try {
+            nomeStand = (typeof cliente !== "undefined" && cliente.nomeStand) ? cliente.nomeStand : (window.settings.nomeStand || "BistroBò");
+        } catch(e) {}
+
         doc.text(nomeStand, pageWidth / 2, y, { align: "center" });
-        y += 10; // spazio sotto il titolo
+        y += 10; 
+        
         doc.setFontSize(12);
         doc.text(`NUMERO COMANDA: ${numeroComanda}`, 10, y); y += 6;
         doc.text(`ORARIO: ${orario}`, 10, y); y += 8;
         doc.text(`${titolo}:`, 10, y); y += 6;
+        
         doc.setFontSize(10);
         piatti.forEach(p => {
-            // 1. Stampa il piatto principale
-            // NOTA: il tuo codice per calcolare il prezzo qui potrebbe essere leggermente diverso, usa il tuo se necessario
-            doc.text(`  ${p.quantita}x ${p.nome} - €${(p.prezzoTotale || p.prezzo).toFixed(2)}`, 10, y);
+            checkY();
+            // Stampa il piatto principale in Grassetto
+            doc.setFont("helvetica", "bold");
+            doc.text(`  ${p.quantita}x ${p.nome} - €${calcolaPrezzoConSconto(p).toFixed(2)}`, 10, y);
+            doc.setFont("helvetica", "normal");
             y += 5;
             
-            // 2. 🔹 BLOCCO DA AGGIUNGERE: Stampa le varianti sotto al piatto
+            // Stampa le varianti raggruppate
             if (p.varianti && p.varianti.length > 0) {
                 let maxGratis = p.maxVariantiGratis || 0;
                 let aggiunteCount = 0;
                 
-                // A) Stampa prima tutte le rimozioni
                 const rimozioni = p.varianti.filter(v => v.tipo === "rimozione");
                 rimozioni.forEach(v => {
+                    checkY();
                     doc.text(`    - Senza ${v.nome}`, 10, y);
                     y += 5;
                 });
 
-                // B) Raggruppa e stampa le aggiunte (es. "2x Maionese")
                 const aggiunte = p.varianti.filter(v => v.tipo === "aggiunta");
                 const mappaAggiunte = {};
                 
@@ -7058,6 +7079,7 @@ async function stampaComanda(items, numeroComanda, note = "") {
                 });
 
                 Object.values(mappaAggiunte).forEach(a => {
+                    checkY();
                     const qTxt = a.count > 1 ? `${a.count}x ` : "";
                     const costoTxt = `  +€${a.costoTot.toFixed(2)}`; 
                     doc.text(`    + ${qTxt}${a.nome}${costoTxt}`, 10, y);
@@ -7065,12 +7087,19 @@ async function stampaComanda(items, numeroComanda, note = "") {
                 });
             }
         });
+        
         if (note) {
+            checkY();
             y += 3;
-            doc.text(`NOTE: ${note}`, 10, y);
+            doc.setFont("helvetica", "italic");
+            // 🔹 Se le note sono lunghissime, questo comando le manda a capo senza farle uscire dal foglio
+            const noteSplit = doc.splitTextToSize(`NOTE: ${note}`, pageWidth - 20);
+            doc.text(noteSplit, 10, y);
+            y += (noteSplit.length * 5);
+            doc.setFont("helvetica", "normal");
         }
     }
-    // --- Browser normale ---
+
     const pdfBase64 = doc.output("datauristring");
     const newWindow = window.open("", "_blank");
     newWindow.document.write(`
