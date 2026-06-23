@@ -2662,14 +2662,49 @@ function apriPopupVarianti(idx) {
     const modal = document.createElement("div");
     modal.className = "modal-varianti";
     
+    // 1. MOSTRA LA PROMOZIONE NEL TITOLO
+    const maxGratis = piatto.maxVariantiGratis || 0;
+    const testoGratis = maxGratis > 0 ? `<br><small style="color:green; font-size:0.75em;">(Promozione: Hai ${maxGratis} aggiunte GRATIS!)</small>` : "";
+    
     const titolo = document.createElement("h3");
-    titolo.innerText = `Modifica: ${piatto.nome}`;
+    titolo.innerHTML = `Modifica: ${piatto.nome} ${testoGratis}`;
     modal.appendChild(titolo);
 
     const listaDiv = document.createElement("div");
 
+    // 2. FUNZIONE DI RICALCOLO INTELLIGENTE
+    function ricalcolaExtraPrezzo() {
+        let totaleExtra = 0;
+        // Troviamo tutte le stringhe che rappresentano un'aggiunta (iniziano con "+ ")
+        const aggiunte = tempVarianti.filter(v => v.startsWith("+ "));
+
+        aggiunte.forEach((nomeAggiunta, index) => {
+            // Se l'indice supera il limite delle gratuità, si paga
+            if (index >= maxGratis) {
+                // Ricaviamo il nome pulito (es. "+ Peperoni" -> "Peperoni")
+                const nomeIng = nomeAggiunta.substring(2);
+                
+                // Cerchiamo l'ingrediente per sapere quanto costa
+                const ingKey = Object.keys(window.ingredientData).find(k => window.ingredientData[k].nome === nomeIng);
+                const costo = (ingKey && window.ingredientData[ingKey].prezzoExtra !== undefined) 
+                              ? Number(window.ingredientData[ingKey].prezzoExtra) 
+                              : 0.50; // Costo di default se non impostato
+                
+                totaleExtra += costo;
+            }
+        });
+        tempExtraPrezzo = totaleExtra;
+    }
+
     // Funzione interna per ridisegnare la lista nel popup
     function renderListaIngredienti() {
+        // Ricalcola il prezzo a ogni rendering per sicurezza
+        ricalcolaExtraPrezzo();
+        
+        // Controlla se la prossima aggiunta sarà gratuita
+        const aggiunteFatte = tempVarianti.filter(v => v.startsWith("+ ")).length;
+        const isProssimaGratis = aggiunteFatte < maxGratis;
+
         listaDiv.innerHTML = "";
         const baseIds = (piatto.ingredienti || []).map(i => i.id);
 
@@ -2690,12 +2725,16 @@ function apriPopupVarianti(idx) {
             
             const btnContainer = document.createElement("div");
 
-            // LOGICA RIMOZIONE (Senza Cipolla)
+            // --- LOGICA RIMOZIONE (Senza Cipolla) ---
             const btnRemove = document.createElement("button");
             const strSenza = "Senza " + ing.nome;
             if (tempVarianti.includes(strSenza)) {
                 btnRemove.className = "variante-btn disabled";
-                btnRemove.innerText = "Già rimosso";
+                btnRemove.innerText = "Annulla Rimozione"; // <-- Modificato per permettere di cambiare idea
+                btnRemove.onclick = () => {
+                    tempVarianti = tempVarianti.filter(v => v !== strSenza);
+                    renderListaIngredienti();
+                };
             } else {
                 btnRemove.className = "variante-btn remove";
                 btnRemove.innerText = "- Rimuovi";
@@ -2705,20 +2744,25 @@ function apriPopupVarianti(idx) {
                 };
             }
 
-            // LOGICA AGGIUNTA (+ Peperoni, costo fisso 0.50€ per ora)
+            // --- LOGICA AGGIUNTA (+ Peperoni) ---
             const btnAdd = document.createElement("button");
             const strCon = "+ " + ing.nome;
-            const costoExtra = 0.50; // COSTO STANDARD PER AGGIUNTA
+            const costoExtra = ing.prezzoExtra !== undefined ? Number(ing.prezzoExtra) : 0.50;
 
             if (tempVarianti.includes(strCon)) {
                 btnAdd.className = "variante-btn disabled";
-                btnAdd.innerText = "Già aggiunto";
+                btnAdd.innerText = "Annulla Aggiunta"; // <-- Modificato per poter liberare lo slot gratis!
+                btnAdd.onclick = () => {
+                    tempVarianti = tempVarianti.filter(v => v !== strCon);
+                    renderListaIngredienti();
+                };
             } else {
                 btnAdd.className = "variante-btn add";
-                btnAdd.innerText = `+ Aggiungi (0.50€)`;
+                // Etichetta dinamica: GRATIS o con il prezzo
+                btnAdd.innerText = isProssimaGratis ? `+ Aggiungi (GRATIS)` : `+ Aggiungi (€${costoExtra.toFixed(2)})`;
                 btnAdd.onclick = () => {
                     tempVarianti.push(strCon);
-                    tempExtraPrezzo += costoExtra;
+                    // Non facciamo più += qui, ma chiamiamo il render che lancia il ricalcolo intelligente
                     renderListaIngredienti();
                 };
             }
@@ -5188,6 +5232,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const nome = document.getElementById("piattoNome").value.trim();
         const prezzo = parseFloat(document.getElementById("piattoPrezzo").value);
         const categoria = document.getElementById("piattoCat").value;
+		const maxGratisVal = document.getElementById("piattoMaxGratis").value;
+		const maxVariantiGratis = maxGratisVal ? parseInt(maxGratisVal) : 0;
 
         if(!nome || isNaN(prezzo)){
             notify("Inserisci nome e prezzo validi!", "warn");
@@ -5204,10 +5250,11 @@ document.addEventListener("DOMContentLoaded", () => {
             }));
 
         try {
-            await db.ref("menu").push({ nome, prezzo, categoria, ingredienti });
+            await db.ref("menu").push({ nome, prezzo, categoria, ingredienti, maxVariantiGratis });
             
             document.getElementById("piattoNome").value = "";
             document.getElementById("piattoPrezzo").value = "";
+			document.getElementById("piattoMaxGratis").value = "";
 
             window.selectedMap = {}; 
             aggiornaOpzioniIngredientiMenu();
@@ -5379,6 +5426,14 @@ function modificaPiattoMenu(menuId, piatto) {
 
     const prezzoInput = document.createElement("input");
     prezzoInput.type = "number"; prezzoInput.step = "0.01"; prezzoInput.value = (typeof piatto.prezzo !== "undefined") ? piatto.prezzo : ""; prezzoInput.style.marginRight = "8px"; prezzoInput.style.width = "120px";
+	const gratisInput = document.createElement("input");
+	gratisInput.type = "number"; 
+	gratisInput.min = 0; 
+	gratisInput.placeholder = "Max gratis";
+	gratisInput.value = (piatto.maxVariantiGratis !== undefined) ? piatto.maxVariantiGratis : "";
+	gratisInput.style.marginRight = "8px"; 
+	gratisInput.style.width = "90px";
+
 
     const catSelect = document.createElement("select");
     ["cibi","bevande","snack"].forEach(c=>{
@@ -5396,6 +5451,8 @@ function modificaPiattoMenu(menuId, piatto) {
     row1.appendChild(prezzoInput);
     row1.appendChild(document.createTextNode("Categoria:"));
     row1.appendChild(catSelect);
+	row1.appendChild(document.createTextNode("Gratis max:"));
+	row1.appendChild(gratisInput);
 
     const row2 = document.createElement("div");
     row2.style.marginBottom = "8px";
@@ -5460,7 +5517,8 @@ function modificaPiattoMenu(menuId, piatto) {
                 nome: newName,
                 prezzo: newPrezzo,
                 categoria: newCat,
-                ingredienti: ingredienti
+                ingredienti: ingredienti,
+				maxVariantiGratis: newMaxGratis
             });
             if(panel && panel.parentNode) panel.parentNode.removeChild(panel);
         } catch(err){
