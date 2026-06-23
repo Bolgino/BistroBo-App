@@ -2698,7 +2698,15 @@ function apriPopupVarianti(idx) {
     const modal = document.createElement("div");
     modal.className = "modal-varianti";
     
-    const maxGratis = piatto.maxVariantiGratis || 0;
+    let maxGratis = piatto.maxVariantiGratis || 0;
+	// Sistema anti-errore: se il dato manca, lo peschiamo dal menu originale
+	if (!maxGratis && window.menuData) {
+		const piattoOriginale = Object.values(window.menuData).find(m => m.nome === piatto.nome);
+		if (piattoOriginale && piattoOriginale.maxVariantiGratis) {
+			maxGratis = parseInt(piattoOriginale.maxVariantiGratis);
+			piatto.maxVariantiGratis = maxGratis; // Lo salva nello scontrino per non doverlo ricaricare
+		}
+	}
     const testoGratis = maxGratis > 0 ? `<br><small style="color:green; font-size:0.75em;">(Promozione: Hai ${maxGratis} aggiunte GRATIS!)</small>` : "";
     
     const titolo = document.createElement("h3");
