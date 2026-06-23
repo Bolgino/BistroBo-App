@@ -5227,47 +5227,105 @@ async function caricaUtenti(){
 }
 // -------------------- MENU (ADMIN) --------------------
 document.addEventListener("DOMContentLoaded", () => {
-    document.getElementById("aggiungiMenuBtn").onclick = async () => {
-        if (!checkOnline(true)) return;
-        const nome = document.getElementById("piattoNome").value.trim();
-        const prezzo = parseFloat(document.getElementById("piattoPrezzo").value);
-        const categoria = document.getElementById("piattoCat").value;
-		const maxGratisVal = document.getElementById("piattoMaxGratis").value;
-		const maxVariantiGratis = maxGratisVal ? parseInt(maxGratisVal) : 0;
-
-        if(!nome || isNaN(prezzo)){
-            notify("Inserisci nome e prezzo validi!", "warn");
-            return;
-        }
-
-        const ingredienti = Object.keys(window.selectedMap)
-            .filter(id => id && window.ingredientData[id])
-            .map(id => ({
-                id,
-                nome: window.ingredientData[id].nome,
-                qtyPerUnit: window.selectedMap[id],
-                unita: window.ingredientData[id].unita || "pz"   // 🔹 salva anche l’unità
-            }));
-
-        try {
-            await db.ref("menu").push({ nome, prezzo, categoria, ingredienti, maxVariantiGratis });
-            
-            document.getElementById("piattoNome").value = "";
-            document.getElementById("piattoPrezzo").value = "";
-			document.getElementById("piattoMaxGratis").value = "";
-
-            window.selectedMap = {}; 
-            aggiornaOpzioniIngredientiMenu();
-
-            db.ref("ingredienti").once("value").then(snap => {
-                ingredientData = snap.val() || {};
-                aggiornaOpzioniIngredientiMenu();
-            });
-
-        } catch(err){
-            notify("Errore nell'aggiunta: " + err.message, "error");
-        }
-    };
+    document.getElementById("aggiungiMenuBtn").onclick = () => {
+	    if (!checkOnline(true)) return;
+	    
+	    const overlay = document.createElement("div");
+	    overlay.className = "modal-overlay";
+	    overlay.style.zIndex = "10005";
+	
+	    const modal = document.createElement("div");
+	    modal.className = "modal-varianti";
+	    modal.style.maxWidth = "600px";
+	    modal.style.width = "95%";
+	    modal.style.maxHeight = "90vh";
+	    modal.style.overflowY = "auto";
+	    modal.style.textAlign = "left";
+	
+	    modal.innerHTML = `
+	        <h3 style="text-align: center; margin-bottom: 20px;">➕ Aggiungi Nuovo Piatto</h3>
+	        <div style="margin-bottom: 12px;">
+	            <label><b>Nome Piatto:</b></label>
+	            <input type="text" id="modalPiattoNome" style="width: 100%; padding: 8px; box-sizing: border-box; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px;">
+	        </div>
+	        <div style="margin-bottom: 12px; display: flex; gap: 10px;">
+	            <div style="flex: 1;">
+	                <label><b>Prezzo (€):</b></label>
+	                <input type="number" id="modalPiattoPrezzo" step="0.01" style="width: 100%; padding: 8px; box-sizing: border-box; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px;">
+	            </div>
+	            <div style="flex: 1;">
+	                <label><b>Categoria:</b></label>
+	                <select id="modalPiattoCat" style="width: 100%; padding: 8px; box-sizing: border-box; margin-top: 4px; height: 37px; border: 1px solid #ccc; border-radius: 4px;">
+	                    <option value="cibi">Cibi</option>
+	                    <option value="bevande">Bevande</option>
+	                    <option value="snack">Snack</option>
+	                </select>
+	            </div>
+	        </div>
+	        <div style="margin-bottom: 15px;">
+	            <label><b>Aggiunte max gratuite:</b></label>
+	            <input type="number" id="modalPiattoMaxGratis" min="0" placeholder="0 (Nessuna gratuità)" style="width: 100%; padding: 8px; box-sizing: border-box; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px;">
+	        </div>
+	        <div style="margin-bottom: 15px;">
+	            <label><b>Ingredienti / Ricetta Piatto:</b></label>
+	            <div id="modalPiattoIngredientiContainer" style="margin-top: 8px; max-height: 220px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; border-radius: 6px; background: #fafafa;"></div>
+	        </div>
+	        <div class="modal-actions" style="margin-top: 25px; display: flex; justify-content: flex-end; gap: 10px;">
+	            <button class="btn-chiudi" id="btnAnnullaNuovoPiatto" style="padding: 10px 20px;">Annulla</button>
+	            <button class="btn-salva" id="btnSalvaNuovoPiatto" style="padding: 10px 20px;">Salva Piatto</button>
+	        </div>
+	    `;
+	    overlay.appendChild(modal);
+	    document.body.appendChild(overlay);
+	
+	    const ingContainer = document.getElementById("modalPiattoIngredientiContainer");
+	    const catSelect = document.getElementById("modalPiattoCat");
+	
+	    window.selectedMap = {}; // Reset mappa ingredienti per il nuovo inserimento
+	
+	    const renderIngModal = () => {
+	        renderIngredientOptionsForCategory(catSelect.value, ingContainer);
+	    };
+	    
+	    catSelect.addEventListener("change", renderIngModal);
+	    renderIngModal();
+	
+	    document.getElementById("btnAnnullaNuovoPiatto").onclick = () => {
+	        window.selectedMap = {};
+	        overlay.remove();
+	    };
+	
+	    document.getElementById("btnSalvaNuovoPiatto").onclick = async () => {
+	        const nome = document.getElementById("modalPiattoNome").value.trim();
+	        const prezzo = parseFloat(document.getElementById("modalPiattoPrezzo").value);
+	        const categoria = catSelect.value;
+	        const maxGratisVal = document.getElementById("modalPiattoMaxGratis").value;
+	        const maxVariantiGratis = maxGratisVal ? parseInt(maxGratisVal) : 0;
+	
+	        if (!nome || isNaN(prezzo)) {
+	            notify("Inserisci nome e prezzo validi!", "warn");
+	            return;
+	        }
+	
+	        const ingredienti = Object.keys(window.selectedMap)
+	            .filter(id => id && window.ingredientData[id])
+	            .map(id => ({
+	                id,
+	                nome: window.ingredientData[id].nome,
+	                qtyPerUnit: window.selectedMap[id],
+	                unita: window.ingredientData[id].unita || "pz"
+	            }));
+	
+	        try {
+	            await db.ref("menu").push({ nome, prezzo, categoria, ingredienti, maxVariantiGratis });
+	            window.selectedMap = {};
+	            overlay.remove();
+	            notify("Piatto aggiunto con successo al menu!", "success");
+	        } catch (err) {
+	            notify("Errore nell'aggiunta: " + err.message, "error");
+	        }
+	    };
+	};
     db.ref("ingredienti").on("value", snap => {
         // RIGA RIMOSSA: db.ref("menu").off(); 
         
@@ -5410,105 +5468,111 @@ function caricaMenuAdmin(){
 }
 function modificaPiattoMenu(menuId, piatto) {
     if (!checkOnline(true)) return;
-    const existing = document.getElementById("admin_edit_menu_" + menuId);
-    if (existing) { existing.scrollIntoView({ behavior: "smooth" }); return; }
     
-    const tab = document.getElementById("menuTab");
-    const panel = document.createElement("div");
-    panel.id = "admin_edit_menu_" + menuId;
-    panel.style.border = "1px solid #ccc";
-    panel.style.padding = "10px";
-    panel.style.margin = "8px 0";
-    panel.style.background = "#fffefc";
+    const overlay = document.createElement("div");
+    overlay.className = "modal-overlay";
+    overlay.style.zIndex = "10005";
 
-    const nomeInput = document.createElement("input");
-    nomeInput.type = "text"; nomeInput.value = piatto.nome || ""; nomeInput.style.marginRight = "8px";
+    const modal = document.createElement("div");
+    modal.className = "modal-varianti";
+    modal.style.maxWidth = "600px";
+    modal.style.width = "95%";
+    modal.style.maxHeight = "90vh";
+    modal.style.overflowY = "auto";
+    modal.style.textAlign = "left";
 
-    const prezzoInput = document.createElement("input");
-    prezzoInput.type = "number"; prezzoInput.step = "0.01"; prezzoInput.value = (typeof piatto.prezzo !== "undefined") ? piatto.prezzo : ""; prezzoInput.style.marginRight = "8px"; prezzoInput.style.width = "120px";
-	const gratisInput = document.createElement("input");
-	gratisInput.type = "number"; 
-	gratisInput.min = 0; 
-	gratisInput.placeholder = "Max gratis";
-	gratisInput.value = (piatto.maxVariantiGratis !== undefined) ? piatto.maxVariantiGratis : "";
-	gratisInput.style.marginRight = "8px"; 
-	gratisInput.style.width = "90px";
+    modal.innerHTML = `
+        <h3 style="text-align: center; margin-bottom: 20px;">📝 Modifica Piatto: ${piatto.nome}</h3>
+        <div style="margin-bottom: 12px;">
+            <label><b>Nome Piatto:</b></label>
+            <input type="text" id="editPiattoNome" style="width: 100%; padding: 8px; box-sizing: border-box; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px;">
+        </div>
+        <div style="margin-bottom: 12px; display: flex; gap: 10px;">
+            <div style="flex: 1;">
+                <label><b>Prezzo (€):</b></label>
+                <input type="number" id="editPiattoPrezzo" step="0.01" style="width: 100%; padding: 8px; box-sizing: border-box; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px;">
+            </div>
+            <div style="flex: 1;">
+                <label><b>Categoria:</b></label>
+                <select id="editPiattoCat" style="width: 100%; padding: 8px; box-sizing: border-box; margin-top: 4px; height: 37px; border: 1px solid #ccc; border-radius: 4px;">
+                    <option value="cibi">Cibi</option>
+                    <option value="bevande">Bevande</option>
+                    <option value="snack">Snack</option>
+                </select>
+            </div>
+        </div>
+        <div style="margin-bottom: 15px;">
+            <label><b>Aggiunte max gratuite:</b></label>
+            <input type="number" id="editPiattoMaxGratis" min="0" placeholder="0" style="width: 100%; padding: 8px; box-sizing: border-box; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px;">
+        </div>
+        <div style="margin-bottom: 15px;">
+            <label><b>Ingredienti / Composizione:</b></label>
+            <div id="editPiattoIngredientiContainer" style="margin-top: 8px; max-height: 220px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; border-radius: 6px; background: #fafafa;"></div>
+        </div>
+        <div class="modal-actions" style="margin-top: 25px; display: flex; justify-content: flex-end; gap: 10px;">
+            <button class="btn-chiudi" id="btnAnnullaEditPiatto" style="padding: 10px 20px;">Annulla</button>
+            <button class="btn-salva" id="btnSalvaEditPiatto" style="padding: 10px 20px;">Salva Modifiche</button>
+        </div>
+    `;
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
 
+    const nomeInput = document.getElementById("editPiattoNome");
+    const prezzoInput = document.getElementById("editPiattoPrezzo");
+    const catSelect = document.getElementById("editPiattoCat");
+    const gratisInput = document.getElementById("editPiattoMaxGratis");
+    const ingrContainer = document.getElementById("editPiattoIngredientiContainer");
 
-    const catSelect = document.createElement("select");
-    ["cibi","bevande","snack"].forEach(c=>{
-        const o = document.createElement("option"); o.value = c; o.innerText = c;
-        if(piatto.categoria === c) o.selected = true;
-        catSelect.appendChild(o);
-    });
-    catSelect.style.marginRight = "8px";
+    // Popola con i vecchi dati attuali
+    nomeInput.value = piatto.nome || "";
+    prezzoInput.value = piatto.prezzo !== undefined ? piatto.prezzo : "";
+    catSelect.value = piatto.categoria || "cibi";
+    gratisInput.value = piatto.maxVariantiGratis !== undefined ? piatto.maxVariantiGratis : "";
 
-    const row1 = document.createElement("div");
-    row1.style.display = "flex"; row1.style.alignItems = "center"; row1.style.gap = "8px"; row1.style.marginBottom = "8px";
-    row1.appendChild(document.createTextNode("Nome:"));
-    row1.appendChild(nomeInput);
-    row1.appendChild(document.createTextNode("Prezzo:"));
-    row1.appendChild(prezzoInput);
-    row1.appendChild(document.createTextNode("Categoria:"));
-    row1.appendChild(catSelect);
-	row1.appendChild(document.createTextNode("Gratis max:"));
-	row1.appendChild(gratisInput);
-
-    const row2 = document.createElement("div");
-    row2.style.marginBottom = "8px";
-    row2.appendChild(document.createTextNode("Ingredienti (seleziona):"));
-
-    const ingrContainer = document.createElement("div");
-    ingrContainer.style.marginTop = "6px";
-    ingrContainer.style.marginBottom = "6px";
-
-    // 1️⃣ reset mappa e container
-    window.selectedMap = {};   // rimuove i tick del piatto precedente
-    ingrContainer.innerHTML = ""; // pulisce eventuali checkbox precedenti
-
-    // 2️⃣ popola la mappa solo con gli ingredienti del piatto corrente
+    window.selectedMap = {};
     (piatto.ingredienti || []).forEach(i => {
-        if(i.id) window.selectedMap[i.id] = i.qtyPerUnit || 1; // tick + quantità
+        if (i.id) window.selectedMap[i.id] = i.qtyPerUnit || 1;
     });
 
-    // 3️⃣ renderizza gli ingredienti con i tick già selezionati
-    renderIngredientOptionsForCategory(piatto.categoria || 'cibi', ingrContainer, window.selectedMap);
+    const renderIngEditModal = () => {
+        renderIngredientOptionsForCategory(catSelect.value, ingrContainer);
+    };
 
+    catSelect.addEventListener("change", renderIngEditModal);
+    renderIngEditModal();
 
+    document.getElementById("btnAnnullaEditPiatto").onclick = () => {
+        window.selectedMap = {};
+        overlay.remove();
+    };
 
-    panel.appendChild(row1);
-    panel.appendChild(row2);
-    panel.appendChild(ingrContainer);
-    // se cambio categoria mentre modifico, ricostruisco la lista (non preservo selezioni su categoria diversa)
-    catSelect.addEventListener("change", ()=> renderIngredientOptionsForCategory(catSelect.value, ingrContainer, window.selectedMap));
-
-    const actions = document.createElement("div");
-    actions.style.marginTop = "6px";
-
-    const btnSalva = document.createElement("button");
-    btnSalva.innerText = "Salva modifiche";
-    btnSalva.onclick = async () => {
+    document.getElementById("btnSalvaEditPiatto").onclick = async () => {
         const newName = nomeInput.value.trim();
         const newPrezzo = parseFloat(prezzoInput.value);
         const newCat = catSelect.value;
-        if(!newName || isNaN(newPrezzo)){ notify("Nome e prezzo validi sono obbligatori.", "warn"); return; }
+        const newMaxGratis = parseInt(gratisInput.value) || 0;
 
-        // leggo dalle checkbox in ingrContainer
+        if (!newName || isNaN(newPrezzo)) {
+            notify("Nome e prezzo validi sono obbligatori.", "warn");
+            return;
+        }
+
         const ingredienti = [];
         const rows = Array.from(ingrContainer.querySelectorAll("div"));
-        rows.forEach(r=>{
+        rows.forEach(r => {
             const chk = r.querySelector('input[type="checkbox"]');
-            if(chk && chk.checked){
+            if (chk && chk.checked) {
                 const id = chk.dataset.ingredId;
                 const qtyInput = r.querySelector('input[type="number"]');
                 const qty = qtyInput && qtyInput.value ? parseFloat(qtyInput.value) || 1 : 1;
-                if(ingredientData[id]) ingredienti.push({
-                    id,
-                    nome: ingredientData[id].nome,
-                    qtyPerUnit: qty,
-                    unita: ingredientData[id].unita || "pz"   // 🔹 aggiunta unità
-                });
-
+                if (ingredientData[id]) {
+                    ingredienti.push({
+                        id,
+                        nome: ingredientData[id].nome,
+                        qtyPerUnit: qty,
+                        unita: ingredientData[id].unita || "pz"
+                    });
+                }
             }
         });
 
@@ -5518,24 +5582,15 @@ function modificaPiattoMenu(menuId, piatto) {
                 prezzo: newPrezzo,
                 categoria: newCat,
                 ingredienti: ingredienti,
-				maxVariantiGratis: newMaxGratis
+                maxVariantiGratis: newMaxGratis
             });
-            if(panel && panel.parentNode) panel.parentNode.removeChild(panel);
-        } catch(err){
+            window.selectedMap = {};
+            overlay.remove();
+            notify("Piatto aggiornato correttamente!", "success");
+        } catch (err) {
             notify("Errore salvataggio: " + err.message, "error");
         }
     };
-
-    const btnAnnulla = document.createElement("button");
-    btnAnnulla.innerText = "Annulla";
-    btnAnnulla.style.marginLeft = "8px";
-    btnAnnulla.onclick = () => { if(panel && panel.parentNode) panel.parentNode.removeChild(panel); window.selectedMap = {}; aggiornaOpzioniIngredientiMenu(); };
-
-    actions.appendChild(btnSalva); actions.appendChild(btnAnnulla);
-    panel.appendChild(actions);
-
-    tab.prepend(panel);
-    panel.scrollIntoView({ behavior: "smooth" });
 }
 // -------------------- STATISTICHE ADMIN --------------------
 async function caricaStatistiche() {
@@ -5996,119 +6051,122 @@ function caricaScontiAdmin() {
     });
 }
 function mostraFormSconto(piatto, id, containerRow) {
-    // Rimuove eventuali form già aperti (eviti duplicati)
-    document.querySelectorAll('.sconto-form').forEach(f => f.remove());
+    if (!checkOnline(true)) return;
 
-    // Crea il form
-    const formDiv = document.createElement("div");
-    formDiv.className = "sconto-form";
-    formDiv.style.border = "1px solid #ccc";
-    formDiv.style.padding = "8px";
-    formDiv.style.margin = "6px 0";
-    formDiv.style.background = "#fefefe";
+    const overlay = document.createElement("div");
+    overlay.className = "modal-overlay";
+    overlay.style.zIndex = "10005";
 
-    // Tipo select
-    const tipoSelect = document.createElement("select");
-    const optPerc = document.createElement("option");
-    optPerc.value = "percentuale"; optPerc.innerText = "Percentuale";
-    const optXPY = document.createElement("option");
-    optXPY.value = "x_paga_y"; optXPY.innerText = "Prendi X Paga Y";
-    const optXPYF = document.createElement("option");
-    optXPYF.value = "x_paga_y_fisso"; optXPYF.innerText = "Prendi X Paga Y €";
-    tipoSelect.appendChild(optPerc);
-    tipoSelect.appendChild(optXPY);
-    tipoSelect.appendChild(optXPYF);
+    const modal = document.createElement("div");
+    modal.className = "modal-varianti";
+    modal.style.maxWidth = "450px";
+    modal.style.width = "90%";
+    modal.style.textAlign = "left";
+
+    modal.innerHTML = `
+        <h3 style="text-align: center; margin-bottom: 20px;">🏷️ Gestione Sconto: ${piatto.nome}</h3>
+        <div style="margin-bottom: 15px;">
+            <label><b>Tipo Strategia Sconto:</b></label>
+            <select id="modalScontoTipo" style="width: 100%; padding: 8px; box-sizing: border-box; margin-top: 4px; height: 37px; border: 1px solid #ccc; border-radius: 4px;">
+                <option value="percentuale">Sconto Percentuale (%)</option>
+                <option value="x_paga_y">Prendi X Paga Y articoli</option>
+                <option value="x_paga_y_fisso">Prendi X Paga Prezzo Fisso (€)</option>
+            </select>
+        </div>
+        
+        <div id="containerScontoPercentuale" style="margin-bottom: 15px;">
+            <label><b>Percentuale Sconto (%):</b></label>
+            <input type="number" id="modalScontoPerc" min="0" max="100" step="0.1" style="width: 100%; padding: 8px; box-sizing: border-box; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px;">
+        </div>
+
+        <div id="containerScontoQuantita" style="margin-bottom: 15px; display: none; gap: 10px;">
+            <div style="flex: 1;">
+                <label><b>Articoli Richiesti (X):</b></label>
+                <input type="number" id="modalScontoX" min="1" step="1" style="width: 100%; padding: 8px; box-sizing: border-box; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px;">
+            </div>
+            <div style="flex: 1;">
+                <label id="labelScontoY"><b>Paga (Y):</b></label>
+                <input type="number" id="modalScontoY" min="0.01" step="any" style="width: 100%; padding: 8px; box-sizing: border-box; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px;">
+            </div>
+        </div>
+
+        <div class="modal-actions" style="margin-top: 25px; display: flex; justify-content: flex-end; gap: 10px;">
+            <button class="btn-chiudi" id="btnAnnullaSconto" style="padding: 10px 20px;">Annulla</button>
+            <button class="btn-salva" id="btnSalvaSconto" style="padding: 10px 20px;">Salva Sconto</button>
+        </div>
+    `;
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    const tipoSelect = document.getElementById("modalScontoTipo");
+    const percContainer = document.getElementById("containerScontoPercentuale");
+    const qtyContainer = document.getElementById("containerScontoQuantita");
+    const labelY = document.getElementById("labelScontoY");
+
+    const percInput = document.getElementById("modalScontoPerc");
+    const xInput = document.getElementById("modalScontoX");
+    const yInput = document.getElementById("modalScontoY");
+
+    // Pre-popola se c'era uno sconto precedente attivo
     tipoSelect.value = piatto.sconto?.tipo || "percentuale";
-    formDiv.appendChild(document.createTextNode("Tipo: "));
-    formDiv.appendChild(tipoSelect);
-    formDiv.appendChild(document.createTextNode(" "));
+    if (piatto.sconto?.tipo === "percentuale") {
+        percInput.value = piatto.sconto.valore || 0;
+    } else if (piatto.sconto?.tipo === "x_paga_y" || piatto.sconto?.tipo === "x_paga_y_fisso") {
+        xInput.value = piatto.sconto.valore?.x || 1;
+        yInput.value = piatto.sconto.valore?.y || 1;
+    }
 
-    // Input per percentuale
-    const percInput = document.createElement("input");
-    percInput.type = "number";
-    percInput.min = 0;
-    percInput.step = 0.1;
-    percInput.style.width = "80px";
-    percInput.value = (piatto.sconto && piatto.sconto.tipo === "percentuale") ? (piatto.sconto.valore || 0) : 0;
-    formDiv.appendChild(percInput);
-
-    // Input per X e Y (prendi X paga Y)
-    const xInput = document.createElement("input");
-    xInput.type = "number";
-    xInput.min = 1;
-    xInput.step = 1;
-    xInput.style.width = "60px";
-    xInput.style.marginLeft = "6px";
-    xInput.value = (piatto.sconto && piatto.sconto.tipo === "x_paga_y") ? (piatto.sconto.valore?.x || 1) : 1;
-
-    const yInput = document.createElement("input");
-    yInput.type = "number";
-    yInput.min = 1;
-    yInput.step = 1;
-    yInput.style.width = "60px";
-    yInput.style.marginLeft = "4px";
-    yInput.value = (piatto.sconto && piatto.sconto.tipo === "x_paga_y") ? (piatto.sconto.valore?.y || 1) : 1;
-
-    // Mostra/nascondi gli input corretti in base al tipo
-    function aggiornaVisibilita() {
+    function aggiornaCampiScontoVisibili() {
         if (tipoSelect.value === "percentuale") {
-            percInput.style.display = "inline-block";
-            xInput.style.display = "none";
-            yInput.style.display = "none";
+            percContainer.style.display = "block";
+            qtyContainer.style.display = "none";
         } else {
-            percInput.style.display = "none";
-            xInput.style.display = "inline-block";
-            yInput.style.display = "inline-block";
+            percContainer.style.display = "none";
+            qtyContainer.style.display = "flex";
+            if (tipoSelect.value === "x_paga_y") {
+                labelY.innerHTML = "<b>Articoli da Pagare (Y):</b>";
+                yInput.step = "1";
+            } else {
+                labelY.innerHTML = "<b>Prezzo Totale Fisso (Y €):</b>";
+                yInput.step = "0.01";
+            }
         }
     }
-    formDiv.appendChild(xInput);
-    formDiv.appendChild(document.createTextNode(" / "));
-    formDiv.appendChild(yInput);
-    aggiornaVisibilita();
 
-    tipoSelect.addEventListener("change", aggiornaVisibilita);
+    tipoSelect.addEventListener("change", aggiornaCampiScontoVisibili);
+    aggiornaCampiScontoVisibili();
 
-    // Pulsanti Salva / Annulla
-    const btnSalva = document.createElement("button");
-    btnSalva.innerText = "Salva";
-    btnSalva.style.marginLeft = "8px";
-    btnSalva.onclick = () => {
+    document.getElementById("btnAnnullaSconto").onclick = () => overlay.remove();
+
+    document.getElementById("btnSalvaSconto").onclick = () => {
         let scontoObj;
         if (tipoSelect.value === "percentuale") {
             const v = parseFloat(percInput.value);
-            if (isNaN(v) || v < 0) return notify("Inserisci una percentuale valida (>=0).", "warn");
+            if (isNaN(v) || v < 0 || v > 100) return notify("Inserisci una percentuale valida (0-100).", "warn");
             scontoObj = { tipo: "percentuale", valore: v };
         } 
         else if (tipoSelect.value === "x_paga_y") {
             const x = parseInt(xInput.value, 10);
             const y = parseInt(yInput.value, 10);
-            if (isNaN(x) || isNaN(y) || x < 1 || y < 1) return notify("Inserisci X e Y validi (>=1).", "warn");
-            if (y > x) return notify("In 'Prendi X Paga Y' Y non può essere maggiore di X.", "error");
+            if (isNaN(x) || isNaN(y) || x < 1 || y < 1) return notify("Inserisci numeri interi validi.", "warn");
+            if (y > x) return notify("Gli articoli pagati (Y) non possono superare quelli presi (X).", "error");
             scontoObj = { tipo: "x_paga_y", valore: { x, y } };
         } 
         else if (tipoSelect.value === "x_paga_y_fisso") {
             const x = parseInt(xInput.value, 10);
             const y = parseFloat(yInput.value);
-            if (isNaN(x) || isNaN(y) || x < 1 || y <= 0) return notify("Inserisci X e Y validi (>=1).", "warn");
+            if (isNaN(x) || isNaN(y) || x < 1 || y <= 0) return notify("Inserisci quantità e prezzi validi.", "warn");
             scontoObj = { tipo: "x_paga_y_fisso", valore: { x, y } };
         }
+
         db.ref("menu/" + id + "/sconto").set(scontoObj).then(() => {
-            caricaScontiAdmin(); // ricarica la lista
-        }).catch(err => { notify("Errore salvataggio: " + err.message, "error"); });
-        formDiv.remove();
+            caricaScontiAdmin();
+            overlay.remove();
+            notify("Regola di sconto applicata correttamente!", "success");
+        }).catch(err => { 
+            notify("Errore nel salvataggio: " + err.message, "error"); 
+        });
     };
-    formDiv.appendChild(btnSalva);
-
-    const btnAnnulla = document.createElement("button");
-    btnAnnulla.innerText = "Annulla";
-    btnAnnulla.style.marginLeft = "6px";
-    btnAnnulla.onclick = () => formDiv.remove();
-    formDiv.appendChild(btnAnnulla);
-
-    // Inserisce il form sotto la riga del piatto
-    containerRow.insertAdjacentElement('afterend', formDiv);
-
-    formDiv.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
 //invio comanda di ogni tipo in fondo per evitari errori
