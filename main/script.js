@@ -2744,7 +2744,7 @@ function apriPopupVarianti(idx) {
             const isBase = baseIds.includes(id);
             const isExtraValido = (ing.usabileComeExtra === true) && catsApp.includes(catPiatto);
 
-            // 🔹 Se non fa parte della ricetta base e non ha la spunta "Utilizzabile come extra", lo nascondiamo del tutto
+            // Se non fa parte della ricetta base e non ha la spunta "Extra", lo nascondiamo
             if (!isBase && !isExtraValido) return; 
 
             const row = document.createElement("div");
@@ -2775,32 +2775,65 @@ function apriPopupVarianti(idx) {
                 btnContainer.appendChild(btnRemove);
             }
 
-            // --- AGGIUNTA (Compare SOLO se l'ingrediente ha la spunta Extra) ---
+            // --- AGGIUNTA MULTIPLA (Compare SOLO se ha la spunta Extra abilitata) ---
             if (isExtraValido) {
-                const btnAdd = document.createElement("button");
                 const costoExtra = ing.prezzoExtra !== undefined ? Number(ing.prezzoExtra) : 0.50; 
                 const qtyExtra = ing.qtyExtra !== undefined ? Number(ing.qtyExtra) : 1;
                 
-                const isAggiunto = tempVarianti.some(v => v.tipo === "aggiunta" && v.id === id);
+                // Contiamo quante volte è stato aggiunto questo specifico ingrediente
+                const occorrenze = tempVarianti.filter(v => v.tipo === "aggiunta" && v.id === id).length;
 
-                if (isAggiunto) {
-                    btnAdd.className = "variante-btn disabled";
-                    btnAdd.innerText = "Annulla Aggiunta";
-                    btnAdd.style.marginLeft = "5px";
-                    btnAdd.onclick = () => {
-                        tempVarianti = tempVarianti.filter(v => !(v.tipo === "aggiunta" && v.id === id));
-                        renderListaIngredienti(); 
+                const wrapperAdd = document.createElement("div");
+                wrapperAdd.style.display = "inline-flex";
+                wrapperAdd.style.alignItems = "center";
+                wrapperAdd.style.marginLeft = "5px";
+
+                if (occorrenze > 0) {
+                    // Tasto Meno (rimuove solo un'aggiunta)
+                    const btnMinus = document.createElement("button");
+                    btnMinus.className = "variante-btn remove";
+                    btnMinus.innerText = "-";
+                    btnMinus.style.padding = "4px 10px";
+                    btnMinus.onclick = () => {
+                        const reversedIndex = [...tempVarianti].reverse().findIndex(v => v.tipo === "aggiunta" && v.id === id);
+                        if (reversedIndex !== -1) {
+                            const indexToRemove = tempVarianti.length - 1 - reversedIndex;
+                            tempVarianti.splice(indexToRemove, 1);
+                        }
+                        renderListaIngredienti();
                     };
+
+                    // Numero di aggiunte
+                    const spanCount = document.createElement("span");
+                    spanCount.innerText = occorrenze;
+                    spanCount.style.margin = "0 8px";
+                    spanCount.style.fontWeight = "bold";
+
+                    // Tasto Più (aggiunge un'altra porzione)
+                    const btnPlus = document.createElement("button");
+                    btnPlus.className = "variante-btn add";
+                    btnPlus.innerText = "+";
+                    btnPlus.style.padding = "4px 10px";
+                    btnPlus.onclick = () => {
+                        tempVarianti.push({ tipo: "aggiunta", id: id, nome: ing.nome, qty: qtyExtra, prezzo: costoExtra });
+                        renderListaIngredienti();
+                    };
+
+                    wrapperAdd.appendChild(btnMinus);
+                    wrapperAdd.appendChild(spanCount);
+                    wrapperAdd.appendChild(btnPlus);
                 } else {
+                    const btnAdd = document.createElement("button");
                     btnAdd.className = "variante-btn add";
                     btnAdd.innerText = isProssimaGratis ? `+ Aggiungi (GRATIS)` : `+ Aggiungi (€${costoExtra.toFixed(2)})`;
-                    btnAdd.style.marginLeft = "5px";
                     btnAdd.onclick = () => {
                         tempVarianti.push({ tipo: "aggiunta", id: id, nome: ing.nome, qty: qtyExtra, prezzo: costoExtra });
                         renderListaIngredienti(); 
                     };
+                    wrapperAdd.appendChild(btnAdd);
                 }
-                btnContainer.appendChild(btnAdd);
+
+                btnContainer.appendChild(wrapperAdd);
             }
 
             row.appendChild(nomeSpan);
@@ -4301,7 +4334,7 @@ function apriPopupVariantiAdmin(idx, comandaTemp, reserved, callback) {
             const isBase = baseIds.includes(id);
             const isExtraValido = (ing.usabileComeExtra === true) && catsApp.includes(catPiatto);
 
-            // 🔹 Se non fa parte della ricetta base e non ha la spunta "Utilizzabile come extra", lo nascondiamo del tutto
+            // Se non fa parte della ricetta base e non ha la spunta "Extra", lo nascondiamo
             if (!isBase && !isExtraValido) return; 
 
             const row = document.createElement("div");
@@ -4332,32 +4365,65 @@ function apriPopupVariantiAdmin(idx, comandaTemp, reserved, callback) {
                 btnContainer.appendChild(btnRemove);
             }
 
-            // --- AGGIUNTA (Compare SOLO se l'ingrediente ha la spunta Extra) ---
+            // --- AGGIUNTA MULTIPLA (Compare SOLO se ha la spunta Extra abilitata) ---
             if (isExtraValido) {
-                const btnAdd = document.createElement("button");
                 const costoExtra = ing.prezzoExtra !== undefined ? Number(ing.prezzoExtra) : 0.50; 
                 const qtyExtra = ing.qtyExtra !== undefined ? Number(ing.qtyExtra) : 1;
                 
-                const isAggiunto = tempVarianti.some(v => v.tipo === "aggiunta" && v.id === id);
+                // Contiamo quante volte è stato aggiunto questo specifico ingrediente
+                const occorrenze = tempVarianti.filter(v => v.tipo === "aggiunta" && v.id === id).length;
 
-                if (isAggiunto) {
-                    btnAdd.className = "variante-btn disabled";
-                    btnAdd.innerText = "Annulla Aggiunta";
-                    btnAdd.style.marginLeft = "5px";
-                    btnAdd.onclick = () => {
-                        tempVarianti = tempVarianti.filter(v => !(v.tipo === "aggiunta" && v.id === id));
-                        renderListaIngredienti(); 
+                const wrapperAdd = document.createElement("div");
+                wrapperAdd.style.display = "inline-flex";
+                wrapperAdd.style.alignItems = "center";
+                wrapperAdd.style.marginLeft = "5px";
+
+                if (occorrenze > 0) {
+                    // Tasto Meno (rimuove solo un'aggiunta)
+                    const btnMinus = document.createElement("button");
+                    btnMinus.className = "variante-btn remove";
+                    btnMinus.innerText = "-";
+                    btnMinus.style.padding = "4px 10px";
+                    btnMinus.onclick = () => {
+                        const reversedIndex = [...tempVarianti].reverse().findIndex(v => v.tipo === "aggiunta" && v.id === id);
+                        if (reversedIndex !== -1) {
+                            const indexToRemove = tempVarianti.length - 1 - reversedIndex;
+                            tempVarianti.splice(indexToRemove, 1);
+                        }
+                        renderListaIngredienti();
                     };
+
+                    // Numero di aggiunte
+                    const spanCount = document.createElement("span");
+                    spanCount.innerText = occorrenze;
+                    spanCount.style.margin = "0 8px";
+                    spanCount.style.fontWeight = "bold";
+
+                    // Tasto Più (aggiunge un'altra porzione)
+                    const btnPlus = document.createElement("button");
+                    btnPlus.className = "variante-btn add";
+                    btnPlus.innerText = "+";
+                    btnPlus.style.padding = "4px 10px";
+                    btnPlus.onclick = () => {
+                        tempVarianti.push({ tipo: "aggiunta", id: id, nome: ing.nome, qty: qtyExtra, prezzo: costoExtra });
+                        renderListaIngredienti();
+                    };
+
+                    wrapperAdd.appendChild(btnMinus);
+                    wrapperAdd.appendChild(spanCount);
+                    wrapperAdd.appendChild(btnPlus);
                 } else {
+                    const btnAdd = document.createElement("button");
                     btnAdd.className = "variante-btn add";
                     btnAdd.innerText = isProssimaGratis ? `+ Aggiungi (GRATIS)` : `+ Aggiungi (€${costoExtra.toFixed(2)})`;
-                    btnAdd.style.marginLeft = "5px";
                     btnAdd.onclick = () => {
                         tempVarianti.push({ tipo: "aggiunta", id: id, nome: ing.nome, qty: qtyExtra, prezzo: costoExtra });
                         renderListaIngredienti(); 
                     };
+                    wrapperAdd.appendChild(btnAdd);
                 }
-                btnContainer.appendChild(btnAdd);
+
+                btnContainer.appendChild(wrapperAdd);
             }
 
             row.appendChild(nomeSpan);
@@ -4365,7 +4431,6 @@ function apriPopupVariantiAdmin(idx, comandaTemp, reserved, callback) {
             listaDiv.appendChild(row);
         });
     }
-
     renderListaIngredienti();
     modal.appendChild(listaDiv);
 
@@ -6885,31 +6950,45 @@ async function stampaComanda(items, numeroComanda, note = "") {
         doc.text(`${titolo}:`, 10, y); y += 6;
         doc.setFontSize(10);
         piatti.forEach(p => {
-            // Stampa il piatto principale (il totale in euro include già i costi extra)
+            // Stampa il piatto principale
             doc.text(`  ${p.quantita}x ${p.nome} - €${calcolaPrezzoConSconto(p).toFixed(2)}`, 10, y);
             y += 5;
             
-            // 🔹 NOVITÀ: Stampa le varianti (anche se gratis scrive +€0.00)
+            // 🔹 NOVITÀ: Stampa le varianti raggruppate e con +€0.00 se gratis
             if (p.varianti && p.varianti.length > 0) {
                 let maxGratis = p.maxVariantiGratis || 0;
                 let aggiunteCount = 0;
+                
+                // 1. Stampiamo prima tutte le rimozioni
+                const rimozioni = p.varianti.filter(v => v.tipo === "rimozione");
+                rimozioni.forEach(v => {
+                    doc.text(`    - Senza ${v.nome}`, 10, y);
+                    y += 5;
+                });
 
-                p.varianti.forEach(v => {
-                    let txt = "";
-                    if (v.tipo === "aggiunta") {
-                        let prezzoAggiunta = 0;
-                        // Se abbiamo superato le aggiunte gratis, prende il prezzo reale dell'extra
-                        if (aggiunteCount >= maxGratis) {
-                            prezzoAggiunta = Number(v.prezzo || 0);
-                        }
-                        aggiunteCount++;
-                        txt = `    + ${v.nome}  +€${prezzoAggiunta.toFixed(2)}`;
-                    } else {
-                        // Se è una rimozione non ha prezzo
-                        txt = `    - Senza ${v.nome}`;
+                // 2. Raggruppiamo le aggiunte (per compattare es. "2x Maionese")
+                const aggiunte = p.varianti.filter(v => v.tipo === "aggiunta");
+                const mappaAggiunte = {};
+                
+                aggiunte.forEach(v => {
+                    let prezzoAggiunta = 0;
+                    // Calcola il prezzo dell'extra superate le gratuità
+                    if (aggiunteCount >= maxGratis) {
+                        prezzoAggiunta = Number(v.prezzo || 0);
                     }
-                    doc.text(txt, 10, y);
-                    y += 5; // va a capo
+                    aggiunteCount++;
+
+                    if (!mappaAggiunte[v.nome]) mappaAggiunte[v.nome] = { nome: v.nome, count: 0, costoTot: 0 };
+                    mappaAggiunte[v.nome].count++;
+                    mappaAggiunte[v.nome].costoTot += prezzoAggiunta;
+                });
+
+                // 3. Stampiamo le aggiunte raggruppate
+                Object.values(mappaAggiunte).forEach(a => {
+                    const qTxt = a.count > 1 ? `${a.count}x ` : "";
+                    const costoTxt = `  +€${a.costoTot.toFixed(2)}`; // Stampa sempre, anche se è 0.00
+                    doc.text(`    + ${qTxt}${a.nome}${costoTxt}`, 10, y);
+                    y += 5;
                 });
             }
         });
