@@ -2741,12 +2741,11 @@ function apriPopupVarianti(idx) {
             const catsApp = ing.categorieApplicabili || [ing.categoria || "cibi"];
             const catPiatto = (piatto.categoria || "cibi").toLowerCase();
             
-            // Mostra ingrediente SOLO SE è un ingrediente di base del piatto (per poterlo rimuovere)
-            // OPPURE SE ha la spunta "Utilizzabile come variante" attivata.
             const isBase = baseIds.includes(id);
             const isExtraValido = (ing.usabileComeExtra === true) && catsApp.includes(catPiatto);
 
-            if (!isBase && !isExtraValido) return;
+            // 🔹 Se non fa parte della ricetta base e non ha la spunta "Utilizzabile come extra", lo nascondiamo del tutto
+            if (!isBase && !isExtraValido) return; 
 
             const row = document.createElement("div");
             row.className = "variante-row";
@@ -2754,8 +2753,8 @@ function apriPopupVarianti(idx) {
             nomeSpan.innerText = ing.nome;
             const btnContainer = document.createElement("div");
 
-            // --- RIMOZIONE ---
-            if (baseIds.includes(id)) {
+            // --- RIMOZIONE (Compare SOLO se è un ingrediente della ricetta base) ---
+            if (isBase) {
                 const btnRemove = document.createElement("button");
                 const isRimosso = tempVarianti.some(v => v.tipo === "rimozione" && v.id === id);
                 if (isRimosso) {
@@ -2776,32 +2775,34 @@ function apriPopupVarianti(idx) {
                 btnContainer.appendChild(btnRemove);
             }
 
-            // --- AGGIUNTA ---
-            const btnAdd = document.createElement("button");
-            const costoExtra = ing.prezzoExtra !== undefined ? Number(ing.prezzoExtra) : 0.50; 
-            const qtyExtra = ing.qtyExtra !== undefined ? Number(ing.qtyExtra) : 1;
-            
-            const isAggiunto = tempVarianti.some(v => v.tipo === "aggiunta" && v.id === id);
+            // --- AGGIUNTA (Compare SOLO se l'ingrediente ha la spunta Extra) ---
+            if (isExtraValido) {
+                const btnAdd = document.createElement("button");
+                const costoExtra = ing.prezzoExtra !== undefined ? Number(ing.prezzoExtra) : 0.50; 
+                const qtyExtra = ing.qtyExtra !== undefined ? Number(ing.qtyExtra) : 1;
+                
+                const isAggiunto = tempVarianti.some(v => v.tipo === "aggiunta" && v.id === id);
 
-            if (isAggiunto) {
-                btnAdd.className = "variante-btn disabled";
-                btnAdd.innerText = "Annulla Aggiunta";
-                btnAdd.style.marginLeft = "5px";
-                btnAdd.onclick = () => {
-                    tempVarianti = tempVarianti.filter(v => !(v.tipo === "aggiunta" && v.id === id));
-                    renderListaIngredienti(); // IL RICALCOLO FA TUTTO
-                };
-            } else {
-                btnAdd.className = "variante-btn add";
-                btnAdd.innerText = isProssimaGratis ? `+ Aggiungi (GRATIS)` : `+ Aggiungi (€${costoExtra.toFixed(2)})`;
-                btnAdd.style.marginLeft = "5px";
-                btnAdd.onclick = () => {
-                    tempVarianti.push({ tipo: "aggiunta", id: id, nome: ing.nome, qty: qtyExtra, prezzo: costoExtra });
-                    renderListaIngredienti(); // IL RICALCOLO FA TUTTO
-                };
+                if (isAggiunto) {
+                    btnAdd.className = "variante-btn disabled";
+                    btnAdd.innerText = "Annulla Aggiunta";
+                    btnAdd.style.marginLeft = "5px";
+                    btnAdd.onclick = () => {
+                        tempVarianti = tempVarianti.filter(v => !(v.tipo === "aggiunta" && v.id === id));
+                        renderListaIngredienti(); 
+                    };
+                } else {
+                    btnAdd.className = "variante-btn add";
+                    btnAdd.innerText = isProssimaGratis ? `+ Aggiungi (GRATIS)` : `+ Aggiungi (€${costoExtra.toFixed(2)})`;
+                    btnAdd.style.marginLeft = "5px";
+                    btnAdd.onclick = () => {
+                        tempVarianti.push({ tipo: "aggiunta", id: id, nome: ing.nome, qty: qtyExtra, prezzo: costoExtra });
+                        renderListaIngredienti(); 
+                    };
+                }
+                btnContainer.appendChild(btnAdd);
             }
 
-            btnContainer.appendChild(btnAdd);
             row.appendChild(nomeSpan);
             row.appendChild(btnContainer);
             listaDiv.appendChild(row);
@@ -4227,9 +4228,6 @@ function modificaComanda(id, comanda) {
     overlayEdit.appendChild(divAdmin);
     document.body.appendChild(overlayEdit);
 }
-
-
-// ================= POPUP VARIANTI ESCLUSIVO PER ADMIN =================
 // ================= POPUP VARIANTI ESCLUSIVO PER ADMIN =================
 function apriPopupVariantiAdmin(idx, comandaTemp, reserved, callback) {
     const piatto = comandaTemp.piatti[idx];
@@ -4288,7 +4286,8 @@ function apriPopupVariantiAdmin(idx, comandaTemp, reserved, callback) {
     }
 
     function renderListaIngredienti() {
-        ricalcolaExtraPrezzo();
+        ricalcolaExtraPrezzo(); // Ricalcola ad ogni click
+        
         const aggiunteFatte = tempVarianti.filter(v => v.tipo === "aggiunta").length;
         const isProssimaGratis = aggiunteFatte < maxGratis;
 
@@ -4299,12 +4298,11 @@ function apriPopupVariantiAdmin(idx, comandaTemp, reserved, callback) {
             const catsApp = ing.categorieApplicabili || [ing.categoria || "cibi"];
             const catPiatto = (piatto.categoria || "cibi").toLowerCase();
             
-            // Mostra ingrediente SOLO SE è un ingrediente di base del piatto (per poterlo rimuovere)
-            // OPPURE SE ha la spunta "Utilizzabile come variante" attivata.
             const isBase = baseIds.includes(id);
             const isExtraValido = (ing.usabileComeExtra === true) && catsApp.includes(catPiatto);
 
-            if (!isBase && !isExtraValido) return;
+            // 🔹 Se non fa parte della ricetta base e non ha la spunta "Utilizzabile come extra", lo nascondiamo del tutto
+            if (!isBase && !isExtraValido) return; 
 
             const row = document.createElement("div");
             row.className = "variante-row";
@@ -4312,8 +4310,8 @@ function apriPopupVariantiAdmin(idx, comandaTemp, reserved, callback) {
             nomeSpan.innerText = ing.nome;
             const btnContainer = document.createElement("div");
 
-            // RIMOZIONE
-            if (baseIds.includes(id)) {
+            // --- RIMOZIONE (Compare SOLO se è un ingrediente della ricetta base) ---
+            if (isBase) {
                 const btnRemove = document.createElement("button");
                 const isRimosso = tempVarianti.some(v => v.tipo === "rimozione" && v.id === id);
                 if (isRimosso) {
@@ -4334,32 +4332,34 @@ function apriPopupVariantiAdmin(idx, comandaTemp, reserved, callback) {
                 btnContainer.appendChild(btnRemove);
             }
 
-            // AGGIUNTA
-            const btnAdd = document.createElement("button");
-            const costoExtra = ing.prezzoExtra !== undefined ? Number(ing.prezzoExtra) : 0.50; 
-            const qtyExtra = ing.qtyExtra !== undefined ? Number(ing.qtyExtra) : 1;
-            
-            const isAggiunto = tempVarianti.some(v => v.tipo === "aggiunta" && v.id === id);
+            // --- AGGIUNTA (Compare SOLO se l'ingrediente ha la spunta Extra) ---
+            if (isExtraValido) {
+                const btnAdd = document.createElement("button");
+                const costoExtra = ing.prezzoExtra !== undefined ? Number(ing.prezzoExtra) : 0.50; 
+                const qtyExtra = ing.qtyExtra !== undefined ? Number(ing.qtyExtra) : 1;
+                
+                const isAggiunto = tempVarianti.some(v => v.tipo === "aggiunta" && v.id === id);
 
-            if (isAggiunto) {
-                btnAdd.className = "variante-btn disabled";
-                btnAdd.innerText = "Annulla Aggiunta";
-                btnAdd.style.marginLeft = "5px";
-                btnAdd.onclick = () => {
-                    tempVarianti = tempVarianti.filter(v => !(v.tipo === "aggiunta" && v.id === id));
-                    renderListaIngredienti();
-                };
-            } else {
-                btnAdd.className = "variante-btn add";
-                btnAdd.innerText = isProssimaGratis ? `+ Aggiungi (GRATIS)` : `+ Aggiungi (€${costoExtra.toFixed(2)})`;
-                btnAdd.style.marginLeft = "5px";
-                btnAdd.onclick = () => {
-                    tempVarianti.push({ tipo: "aggiunta", id: id, nome: ing.nome, qty: qtyExtra, prezzo: costoExtra });
-                    renderListaIngredienti();
-                };
+                if (isAggiunto) {
+                    btnAdd.className = "variante-btn disabled";
+                    btnAdd.innerText = "Annulla Aggiunta";
+                    btnAdd.style.marginLeft = "5px";
+                    btnAdd.onclick = () => {
+                        tempVarianti = tempVarianti.filter(v => !(v.tipo === "aggiunta" && v.id === id));
+                        renderListaIngredienti(); 
+                    };
+                } else {
+                    btnAdd.className = "variante-btn add";
+                    btnAdd.innerText = isProssimaGratis ? `+ Aggiungi (GRATIS)` : `+ Aggiungi (€${costoExtra.toFixed(2)})`;
+                    btnAdd.style.marginLeft = "5px";
+                    btnAdd.onclick = () => {
+                        tempVarianti.push({ tipo: "aggiunta", id: id, nome: ing.nome, qty: qtyExtra, prezzo: costoExtra });
+                        renderListaIngredienti(); 
+                    };
+                }
+                btnContainer.appendChild(btnAdd);
             }
 
-            btnContainer.appendChild(btnAdd);
             row.appendChild(nomeSpan);
             row.appendChild(btnContainer);
             listaDiv.appendChild(row);
@@ -6889,16 +6889,23 @@ async function stampaComanda(items, numeroComanda, note = "") {
             doc.text(`  ${p.quantita}x ${p.nome} - €${calcolaPrezzoConSconto(p).toFixed(2)}`, 10, y);
             y += 5;
             
-            // 🔹 NOVITÀ: Stampa le varianti e il loro singolo costo extra!
+            // 🔹 NOVITÀ: Stampa le varianti (anche se gratis scrive +€0.00)
             if (p.varianti && p.varianti.length > 0) {
+                let maxGratis = p.maxVariantiGratis || 0;
+                let aggiunteCount = 0;
+
                 p.varianti.forEach(v => {
                     let txt = "";
                     if (v.tipo === "aggiunta") {
-                        // Se c'è un costo extra, lo scriviamo. Es: "    + Peperoni  €0.50"
-                        let costoExtraStr = (v.prezzo && v.prezzo > 0) ? `  +€${Number(v.prezzo).toFixed(2)}` : "";
-                        txt = `    + ${v.nome}${costoExtraStr}`;
+                        let prezzoAggiunta = 0;
+                        // Se abbiamo superato le aggiunte gratis, prende il prezzo reale dell'extra
+                        if (aggiunteCount >= maxGratis) {
+                            prezzoAggiunta = Number(v.prezzo || 0);
+                        }
+                        aggiunteCount++;
+                        txt = `    + ${v.nome}  +€${prezzoAggiunta.toFixed(2)}`;
                     } else {
-                        // Se è una rimozione, ovviamente non ha prezzo
+                        // Se è una rimozione non ha prezzo
                         txt = `    - Senza ${v.nome}`;
                     }
                     doc.text(txt, 10, y);
