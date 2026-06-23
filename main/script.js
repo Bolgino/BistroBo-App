@@ -4077,43 +4077,12 @@ function modificaComanda(id, comanda) {
                 infoText = `<b>${p.quantita}x ${p.nome}</b> (€${prezzoPiattoAttuale.toFixed(2)})`;
             }
 
-            // 🔹 RISOLTO BUG FIREBASE: Convertiamo sempre in Array
-            let variantiArray = p.varianti ? (Array.isArray(p.varianti) ? p.varianti : Object.values(p.varianti)) : [];
-            
-            // Stampa le varianti raggruppate
-            if (variantiArray.length > 0) {
-                let maxGratis = p.maxVariantiGratis || 0;
-                let aggiunteCount = 0;
-                
-                const rimozioni = variantiArray.filter(v => v.tipo === "rimozione");
-                rimozioni.forEach(v => {
-                    checkY();
-                    doc.text(`    - Senza ${v.nome}`, 10, y);
-                    y += 5;
-                });
-
-                const aggiunte = variantiArray.filter(v => v.tipo === "aggiunta");
-                const mappaAggiunte = {};
-                
-                aggiunte.forEach(v => {
-                    let prezzoAggiunta = 0;
-                    if (aggiunteCount >= maxGratis) {
-                        prezzoAggiunta = Number(v.prezzo || 0);
-                    }
-                    aggiunteCount++;
-
-                    if (!mappaAggiunte[v.nome]) mappaAggiunte[v.nome] = { nome: v.nome, count: 0, costoTot: 0 };
-                    mappaAggiunte[v.nome].count++;
-                    mappaAggiunte[v.nome].costoTot += prezzoAggiunta;
-                });
-
-                Object.values(mappaAggiunte).forEach(a => {
-                    checkY();
-                    const qTxt = a.count > 1 ? `${a.count}x ` : "";
-                    const costoTxt = `  +€${a.costoTot.toFixed(2)}`; 
-                    doc.text(`    + ${qTxt}${a.nome}${costoTxt}`, 10, y);
-                    y += 5;
-                });
+            // Aggiunta delle scritte colorate per le varianti
+            let variantiHtml = "";
+            if (p.varianti && p.varianti.length > 0) {
+                variantiHtml = "<br><small style='font-weight:bold;'>" + p.varianti.map(v => 
+                    v.tipo === "aggiunta" ? `<span style="color:green">+ ${v.nome}</span>` : `<span style="color:red">- Senza ${v.nome}</span>`
+                ).join("<br>") + "</small>";
             }
 
             info.innerHTML = infoText + variantiHtml;
@@ -7112,19 +7081,22 @@ async function stampaComanda(items, numeroComanda, note = "") {
             doc.setFont("helvetica", "normal");
             y += 5;
             
+            // 🔹 RISOLTO BUG FIREBASE: Convertiamo sempre in Array
+            let variantiArray = p.varianti ? (Array.isArray(p.varianti) ? p.varianti : Object.values(p.varianti)) : [];
+            
             // Stampa le varianti raggruppate
-            if (p.varianti && p.varianti.length > 0) {
+            if (variantiArray.length > 0) {
                 let maxGratis = p.maxVariantiGratis || 0;
                 let aggiunteCount = 0;
                 
-                const rimozioni = p.varianti.filter(v => v.tipo === "rimozione");
+                const rimozioni = variantiArray.filter(v => v.tipo === "rimozione");
                 rimozioni.forEach(v => {
                     checkY();
                     doc.text(`    - Senza ${v.nome}`, 10, y);
                     y += 5;
                 });
 
-                const aggiunte = p.varianti.filter(v => v.tipo === "aggiunta");
+                const aggiunte = variantiArray.filter(v => v.tipo === "aggiunta");
                 const mappaAggiunte = {};
                 
                 aggiunte.forEach(v => {
