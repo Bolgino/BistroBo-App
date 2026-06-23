@@ -140,5 +140,23 @@
 
   <!-- Sfondo dinamico per i temi -->
   <div id="themeBackground"></div>
+  
+  <div id="popupPersonalizzaCliente" class="modal-overlay hidden" style="display:none; z-index: 10005;">
+      <div class="modal-varianti" style="max-width: 500px; width: 95%; max-height: 90vh; overflow-y: auto; background: white; padding: 20px; border-radius: 10px;">
+          <h2 id="titoloPersonalizza">Personalizza</h2>
+          <div id="listaIngredientiCliente"></div>
+          
+          <div style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center;">
+              <div style="font-size: 1.2em; font-weight: bold;">
+                  Totale: €<span id="totalePiattoPersonalizzato">0.00</span>
+              </div>
+          </div>
+
+          <div class="modal-actions" style="margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end;">
+              <button class="btn-chiudi" onclick="chiudiPopupPersonalizza()" style="padding: 10px 20px;">Annulla</button>
+              <button class="btn-salva" id="btnConfermaPersonalizzazione" style="padding: 10px 20px;">Aggiungi all'ordine</button>
+          </div>
+      </div>
+  </div>
 </body>
 </html>
