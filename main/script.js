@@ -3114,10 +3114,25 @@ function caricaComandeCassa() {
       const { cibo, bere, snack } = separaComanda(c.piatti || []);
       function formattaPiatto(i) {
           let base = `${i.quantita}x ${i.nome}`;
-          if (i.varianti && i.varianti.length > 0) {
-              let varTxt = i.varianti.map(v => 
-                  v.tipo === "aggiunta" ? `<span style="color:green; font-weight:bold;">+${v.nome}</span>` : `<span style="color:red; font-weight:bold;">-${v.nome}</span>`
-              ).join(", ");
+          // Assicuriamoci che sia un array, anche se Firebase lo ha trasformato in oggetto
+          let variantiArray = i.varianti ? (Array.isArray(i.varianti) ? i.varianti : Object.values(i.varianti)) : [];
+
+          if (variantiArray.length > 0) {
+              // Raggruppiamo le occorrenze
+              let conteggio = {};
+              variantiArray.forEach(v => {
+                  let key = v.tipo + "_" + v.nome;
+                  if (!conteggio[key]) conteggio[key] = { tipo: v.tipo, nome: v.nome, count: 0 };
+                  conteggio[key].count++;
+              });
+
+              // Stampiamo con la quantità
+              let varTxt = Object.values(conteggio).map(v => {
+                  let qTxt = v.count > 1 ? `${v.count}x ` : "";
+                  if (v.tipo === "aggiunta") return `<span style="color:green; font-weight:bold;">+${qTxt}${v.nome}</span>`;
+                  else return `<span style="color:red; font-weight:bold;">-${v.nome}</span>`;
+              }).join(", ");
+              
               base += ` <span style="font-size:0.85em;">(${varTxt})</span>`;
           }
           return base;
@@ -3736,15 +3751,30 @@ async function caricaGestioneComandeAdmin() {
             }
            
             function formattaPiattoAdmin(i) {
-                let base = `${i.quantita}x ${i.nome}`;
-                if (i.varianti && i.varianti.length > 0) {
-                    let varTxt = i.varianti.map(v => 
-                        v.tipo === "aggiunta" ? `<span style="color:green; font-weight:bold;">+${v.nome}</span>` : `<span style="color:red; font-weight:bold;">-${v.nome}</span>`
-                    ).join(", ");
-                    base += ` <span style="font-size:0.85em;">(${varTxt})</span>`;
-                }
-                return base;
-            }
+                  let base = `${i.quantita}x ${i.nome}`;
+			  // Assicuriamoci che sia un array, anche se Firebase lo ha trasformato in oggetto
+			  let variantiArray = i.varianti ? (Array.isArray(i.varianti) ? i.varianti : Object.values(i.varianti)) : [];
+	
+			  if (variantiArray.length > 0) {
+				  // Raggruppiamo le occorrenze
+				  let conteggio = {};
+				  variantiArray.forEach(v => {
+					  let key = v.tipo + "_" + v.nome;
+					  if (!conteggio[key]) conteggio[key] = { tipo: v.tipo, nome: v.nome, count: 0 };
+					  conteggio[key].count++;
+				  });
+	
+				  // Stampiamo con la quantità
+				  let varTxt = Object.values(conteggio).map(v => {
+					  let qTxt = v.count > 1 ? `${v.count}x ` : "";
+					  if (v.tipo === "aggiunta") return `<span style="color:green; font-weight:bold;">+${qTxt}${v.nome}</span>`;
+					  else return `<span style="color:red; font-weight:bold;">-${v.nome}</span>`;
+				  }).join(", ");
+				  
+				  base += ` <span style="font-size:0.85em;">(${varTxt})</span>`;
+			  }
+			  return base;
+		  }
 
             const piattiCibo = cibo.map(formattaPiattoAdmin).join(" <br> ") || "—";
             const piattiBere = bere.map(formattaPiattoAdmin).join(" <br> ") || "—";
@@ -4047,12 +4077,43 @@ function modificaComanda(id, comanda) {
                 infoText = `<b>${p.quantita}x ${p.nome}</b> (€${prezzoPiattoAttuale.toFixed(2)})`;
             }
 
-            // Aggiunta delle scritte colorate per le varianti
-            let variantiHtml = "";
-            if (p.varianti && p.varianti.length > 0) {
-                variantiHtml = "<br><small style='font-weight:bold;'>" + p.varianti.map(v => 
-                    v.tipo === "aggiunta" ? `<span style="color:green">+ ${v.nome}</span>` : `<span style="color:red">- Senza ${v.nome}</span>`
-                ).join("<br>") + "</small>";
+            // 🔹 RISOLTO BUG FIREBASE: Convertiamo sempre in Array
+            let variantiArray = p.varianti ? (Array.isArray(p.varianti) ? p.varianti : Object.values(p.varianti)) : [];
+            
+            // Stampa le varianti raggruppate
+            if (variantiArray.length > 0) {
+                let maxGratis = p.maxVariantiGratis || 0;
+                let aggiunteCount = 0;
+                
+                const rimozioni = variantiArray.filter(v => v.tipo === "rimozione");
+                rimozioni.forEach(v => {
+                    checkY();
+                    doc.text(`    - Senza ${v.nome}`, 10, y);
+                    y += 5;
+                });
+
+                const aggiunte = variantiArray.filter(v => v.tipo === "aggiunta");
+                const mappaAggiunte = {};
+                
+                aggiunte.forEach(v => {
+                    let prezzoAggiunta = 0;
+                    if (aggiunteCount >= maxGratis) {
+                        prezzoAggiunta = Number(v.prezzo || 0);
+                    }
+                    aggiunteCount++;
+
+                    if (!mappaAggiunte[v.nome]) mappaAggiunte[v.nome] = { nome: v.nome, count: 0, costoTot: 0 };
+                    mappaAggiunte[v.nome].count++;
+                    mappaAggiunte[v.nome].costoTot += prezzoAggiunta;
+                });
+
+                Object.values(mappaAggiunte).forEach(a => {
+                    checkY();
+                    const qTxt = a.count > 1 ? `${a.count}x ` : "";
+                    const costoTxt = `  +€${a.costoTot.toFixed(2)}`; 
+                    doc.text(`    + ${qTxt}${a.nome}${costoTxt}`, 10, y);
+                    y += 5;
+                });
             }
 
             info.innerHTML = infoText + variantiHtml;
