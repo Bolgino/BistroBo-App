@@ -2556,12 +2556,25 @@ function aggiornaComandaCorrente(){
         span.style.cursor = "pointer"; 
         span.style.flex = "1";
         
-        const testoVarianti = (i.varianti && i.varianti.length > 0) 
-            ? `<br><small style="font-weight:bold;">` + i.varianti.map(v => 
-                v.tipo === "aggiunta" ? `<span style="color:green">+ ${v.nome}</span>` : `<span style="color:red">- Senza ${v.nome}</span>`
-              ).join("<br>") + `</small>` 
-            : "";
+        let testoVarianti = "";
+        let variantiArray = i.varianti ? (Array.isArray(i.varianti) ? i.varianti : Object.values(i.varianti)) : [];
+        
+        if (variantiArray.length > 0) {
+            let conteggio = {};
+            variantiArray.forEach(v => {
+                let key = v.tipo + "_" + v.nome;
+                if (!conteggio[key]) conteggio[key] = { tipo: v.tipo, nome: v.nome, count: 0 };
+                conteggio[key].count++;
+            });
+            
+            const mapVarianti = Object.values(conteggio).map(v => {
+                let qTxt = v.count > 1 ? `${v.count}x ` : "";
+                if (v.tipo === "aggiunta") return `<span style="color:green">+ ${qTxt}${v.nome}</span>`;
+                else return `<span style="color:red">- Senza ${v.nome}</span>`;
+            }).join("<br>");
 
+            testoVarianti = `<br><small style="font-weight:bold;">${mapVarianti}</small>`;
+        }
         const prezzoPiattoAttuale = (i.prezzo + (i.extraPrezzo || 0));
 
         if(i.sconto){
@@ -7015,128 +7028,141 @@ function initRicercaComande(containerId, inputId) {
     // Mantiene la compatibilità per il filtro automatico all'arrivo di nuovi ordini
     container.filterCurrentOrders = applyFilter;
 }
-async function stampaComanda(items, numeroComanda, note = "") {
+async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
     if (!items || items.length === 0) return;
 
     const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({ unit: "mm", format: "a6", orientation: "portrait" });
+    // Formato scontrino termico da 80mm
+    const doc = new jsPDF({ unit: "mm", format: [80, 200], orientation: "portrait" });
 
     const ora = new Date();
     const orario = ora.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
-    // --- Divisione per categoria ---
-    const categorie = { cibi: [], bevande: [], snack: [] };
-    items.forEach(i => {
-        const cat = (i.categoria || "").toLowerCase();
-        if (cat === "cibi") categorie.cibi.push(i);
-        else if (cat === "bevande") categorie.bevande.push(i);
-        else if (cat === "snack") categorie.snack.push(i);
+    let y = 10;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 5;
+    const rightMargin = pageWidth - margin;
+
+    // --- INTESTAZIONE SCONTRINO ---
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    const nomeStand = cliente.nomeStand || window.settings.nomeStand || "BistroBò";
+    doc.text(nomeStand, pageWidth / 2, y, { align: "center" });
+    y += 8;
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Data: ${ora.toLocaleDateString()} Ora: ${orario}`, pageWidth / 2, y, { align: "center" });
+    y += 8;
+
+    // --- NUMERO COMANDA IN GRANDE ---
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.text(`COMANDA: ${numeroComanda}`, pageWidth / 2, y, { align: "center" });
+    y += 8;
+
+    // --- DATI CLIENTE (Se presenti) ---
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    if (cliente.nome) { doc.text(`Cliente: ${cliente.nome}`, margin, y); y += 5; }
+    if (cliente.telefono) { doc.text(`Telefono: ${cliente.telefono}`, margin, y); y += 5; }
+    if (cliente.posizione) { doc.text(`Posizione: ${cliente.posizione}`, margin, y); y += 5; }
+    
+    // Linea separatrice
+    doc.text("-".repeat(35), pageWidth / 2, y, { align: "center" });
+    y += 6;
+
+    // --- LISTA PIATTI (Senza divisione in categorie) ---
+    let totaleComanda = 0;
+    
+    items.forEach(p => {
+        const qTxt = `${p.quantita}x `;
+        const prezzoTotPiatto = calcolaPrezzoConSconto(p);
+        totaleComanda += prezzoTotPiatto;
+
+        // Piatto e Quantità a sinistra, Prezzo a destra
+        doc.setFontSize(11);
+        doc.setFont("helvetica", "bold");
+        doc.text(`${qTxt}${p.nome}`, margin, y);
+        doc.text(`€${prezzoTotPiatto.toFixed(2)}`, rightMargin, y, { align: "right" });
+        y += 5;
+
+        // --- STAMPA VARIANTI SOTTO AL PIATTO ---
+        // Convertiamo sempre in Array per sicurezza Firebase
+        let variantiArray = p.varianti ? (Array.isArray(p.varianti) ? p.varianti : Object.values(p.varianti)) : [];
+        
+        if (variantiArray.length > 0) {
+            doc.setFontSize(9);
+            doc.setFont("helvetica", "italic");
+            let maxGratis = p.maxVariantiGratis || 0;
+            let aggiunteCount = 0;
+            
+            // Rimozioni
+            const rimozioni = variantiArray.filter(v => v.tipo === "rimozione");
+            rimozioni.forEach(v => {
+                doc.text(`   - Senza ${v.nome}`, margin, y);
+                y += 4;
+            });
+
+            // Aggiunte raggruppate
+            const aggiunte = variantiArray.filter(v => v.tipo === "aggiunta");
+            const mappaAggiunte = {};
+            
+            aggiunte.forEach(v => {
+                let prezzoAggiunta = 0;
+                if (aggiunteCount >= maxGratis) {
+                    prezzoAggiunta = Number(v.prezzo || 0);
+                }
+                aggiunteCount++;
+
+                if (!mappaAggiunte[v.nome]) mappaAggiunte[v.nome] = { nome: v.nome, count: 0, costoTot: 0 };
+                mappaAggiunte[v.nome].count++;
+                mappaAggiunte[v.nome].costoTot += prezzoAggiunta;
+            });
+
+            Object.values(mappaAggiunte).forEach(a => {
+                const aqTxt = a.count > 1 ? `${a.count}x ` : "";
+                const costoTxt = `+€${a.costoTot.toFixed(2)}`; 
+                doc.text(`   + ${aqTxt}${a.nome}`, margin, y);
+                doc.text(costoTxt, rightMargin, y, { align: "right" });
+                y += 4;
+            });
+            doc.setFont("helvetica", "normal"); // resetta font
+        }
     });
 
-    let pagina = 0;
-    let y = 10;
+    y += 2;
+    doc.setFont("helvetica", "normal");
+    doc.text("-".repeat(35), pageWidth / 2, y, { align: "center" });
+    y += 8;
 
-    // 🔹 MOTORE DI IMPAGINAZIONE: Se superiamo i 135mm (il foglio a6 è 148mm), cambia pagina
-    function checkY() {
-        if (y > 135) { 
-            doc.addPage();
-            y = 10;
-        }
+    // --- TOTALE IN GRANDE ---
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.text("TOTALE:", margin, y);
+    doc.text(`€${totaleComanda.toFixed(2)}`, rightMargin, y, { align: "right" });
+    y += 8;
+
+    // --- RESTO E PAGAMENTO ---
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    if (cliente.restoRichiesto && cliente.restoRichiesto > 0) { 
+        doc.text(`Resto da dare: €${cliente.restoRichiesto}`, margin, y); 
+        y += 5; 
+    }
+    
+    if (note) {
+        y += 2;
+        doc.setFont("helvetica", "italic");
+        doc.text(`NOTE: ${note}`, margin, y);
+        y += 6;
     }
 
-    for (const [cat, piatti] of Object.entries(categorie)) {
-        if (piatti.length === 0) continue;
-        if (pagina > 0) {
-            doc.addPage();
-            y = 10;
-        }
-        pagina++;
-
-        const titolo = cat === "cibi" ? "CIBO" : cat === "bevande" ? "BEVANDE" : "SNACK";
-        
-        doc.setFontSize(14);
-        doc.setFont("helvetica", "bold");
-        const pageWidth = doc.internal.pageSize.getWidth();
-        
-        // 🔹 Prevenzione crash se la variabile "cliente" non esiste nella pagina
-        let nomeStand = "BistroBò";
-        try {
-            nomeStand = (typeof cliente !== "undefined" && cliente.nomeStand) ? cliente.nomeStand : (window.settings.nomeStand || "BistroBò");
-        } catch(e) {}
-
-        doc.text(nomeStand, pageWidth / 2, y, { align: "center" });
-        y += 10; 
-        
-        doc.setFontSize(12);
-        doc.text(`NUMERO COMANDA: ${numeroComanda}`, 10, y); y += 6;
-        doc.text(`ORARIO: ${orario}`, 10, y); y += 8;
-        doc.text(`${titolo}:`, 10, y); y += 6;
-        
-        doc.setFontSize(10);
-        piatti.forEach(p => {
-            checkY();
-            // Stampa il piatto principale in Grassetto
-            doc.setFont("helvetica", "bold");
-            doc.text(`  ${p.quantita}x ${p.nome} - €${calcolaPrezzoConSconto(p).toFixed(2)}`, 10, y);
-            doc.setFont("helvetica", "normal");
-            y += 5;
-            
-            // 🔹 RISOLTO BUG FIREBASE: Convertiamo sempre in Array
-            let variantiArray = p.varianti ? (Array.isArray(p.varianti) ? p.varianti : Object.values(p.varianti)) : [];
-            
-            // Stampa le varianti raggruppate
-            if (variantiArray.length > 0) {
-                let maxGratis = p.maxVariantiGratis || 0;
-                let aggiunteCount = 0;
-                
-                const rimozioni = variantiArray.filter(v => v.tipo === "rimozione");
-                rimozioni.forEach(v => {
-                    checkY();
-                    doc.text(`    - Senza ${v.nome}`, 10, y);
-                    y += 5;
-                });
-
-                const aggiunte = variantiArray.filter(v => v.tipo === "aggiunta");
-                const mappaAggiunte = {};
-                
-                aggiunte.forEach(v => {
-                    let prezzoAggiunta = 0;
-                    if (aggiunteCount >= maxGratis) {
-                        prezzoAggiunta = Number(v.prezzo || 0);
-                    }
-                    aggiunteCount++;
-
-                    if (!mappaAggiunte[v.nome]) mappaAggiunte[v.nome] = { nome: v.nome, count: 0, costoTot: 0 };
-                    mappaAggiunte[v.nome].count++;
-                    mappaAggiunte[v.nome].costoTot += prezzoAggiunta;
-                });
-
-                Object.values(mappaAggiunte).forEach(a => {
-                    checkY();
-                    const qTxt = a.count > 1 ? `${a.count}x ` : "";
-                    const costoTxt = `  +€${a.costoTot.toFixed(2)}`; 
-                    doc.text(`    + ${qTxt}${a.nome}${costoTxt}`, 10, y);
-                    y += 5;
-                });
-            }
-        });
-        
-        if (note) {
-            checkY();
-            y += 3;
-            doc.setFont("helvetica", "italic");
-            // 🔹 Se le note sono lunghissime, questo comando le manda a capo senza farle uscire dal foglio
-            const noteSplit = doc.splitTextToSize(`NOTE: ${note}`, pageWidth - 20);
-            doc.text(noteSplit, 10, y);
-            y += (noteSplit.length * 5);
-            doc.setFont("helvetica", "normal");
-        }
-    }
-
+    // --- Browser normale (Apertura iframe per stampa) ---
     const pdfBase64 = doc.output("datauristring");
     const newWindow = window.open("", "_blank");
     newWindow.document.write(`
-        <html><head><title>Comanda ${numeroComanda}</title></head>
+        <html><head><title>Scontrino ${numeroComanda}</title></head>
         <body style="margin:0">
             <iframe src="${pdfBase64}" style="border:none;width:100%;height:100vh;"></iframe>
             <script>
