@@ -605,6 +605,8 @@ async function aggiungiPreordineAlleComande(id) {
             nomeStand: window.settings.nomeStand,
             restoRichiesto: p.restoRichiesto
         };
+        stampaComanda([...piattiCucina, ...piattiBere, ...piattiSnack], numeroComandaFinale, p.note || "", datiDellaStampa);
+    }
     
         if (window.settings.scontriniSeparati) {
             // Stampa separata per reparto (solo se ci sono piatti per quel reparto)
@@ -780,9 +782,12 @@ async function initPreordiniClienti() {
             }
             
             // 3. Bottone (SOTTO gli ingredienti come richiesto)
+            // 3. Bottone dinamico
+            const clickAction = window.settings.sistemaExtraAbilitato ? `apriPopupPersonalizzaCliente('${id}')` : `aggiungiVeloceCarrello('${id}')`;
+            
             const btnHtml = `
                 <button style="width: 100%; padding: 8px; border-radius: 8px; border: 1.5px solid ${esaurito ? '#ccc' : '#4CAF50'}; background: transparent; color: ${esaurito ? '#aaa' : '#4CAF50'}; cursor: ${esaurito ? 'not-allowed' : 'pointer'}; font-weight: bold;" 
-                    onclick="apriPopupPersonalizzaCliente('${id}')" ${esaurito ? "disabled" : ""}>
+                    onclick="${clickAction}" ${esaurito ? "disabled" : ""}>
                     ${esaurito ? "❌ Esaurito" : "+ Aggiungi all'ordine"}
                 </button>`;
             
@@ -977,7 +982,27 @@ db.ref("ingredienti").on("value", snapIng => {
         aggiornaDisponibilitaPiatti(menuData, ingredientiDB);
     });
 });
-
+window.aggiungiVeloceCarrello = function(id) {
+    const piatto = menuItems[id];
+    if (!piatto) return;
+    
+    const prezzoBaseScontato = calcolaPrezzoConScontoPerPiattoSingolo(piatto); 
+    
+    carrelloCliente.push({
+        id: id,
+        nome: piatto.nome,
+        prezzo: prezzoBaseScontato, 
+        categoria: piatto.categoria,
+        varianti: [], // Nessuna variante concessa!
+        extraPrezzo: 0,
+        quantita: 1,
+        maxVariantiGratis: piatto.maxVariantiGratis || 0
+    });
+    
+    if (typeof aggiornaRiepilogoCarrelloUI === "function") {
+        aggiornaRiepilogoCarrelloUI();
+    }
+};
 
   function calcolaPrezzoPreordine(piatto) {
     const q = piatto.quantita || 1;
