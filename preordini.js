@@ -598,13 +598,30 @@ async function aggiungiPreordineAlleComande(id) {
 
     // 🔹 Stampa automatica comanda se abilitata
     if (window.settings.stampaAutomaticaComande) {
-        stampaComanda([...piattiCucina, ...piattiBere, ...piattiSnack], numeroComandaFinale, p.note || "", {
+        const datiDellaStampa = {
             nome: p.nome,
             telefono: p.telefono,
             posizione: p.posizione,
             nomeStand: window.settings.nomeStand,
             restoRichiesto: p.restoRichiesto
-        });
+        };
+    
+        if (window.settings.scontriniSeparati) {
+            // Stampa separata per reparto (solo se ci sono piatti per quel reparto)
+            if (piattiCucina.length > 0) {
+                stampaComanda(piattiCucina, numeroComandaFinale + " - CUCINA", p.note || "", datiDellaStampa);
+            }
+            if (piattiBere.length > 0) {
+                stampaComanda(piattiBere, numeroComandaFinale + " - BERE", p.note || "", datiDellaStampa);
+            }
+            if (piattiSnack.length > 0) {
+                stampaComanda(piattiSnack, numeroComandaFinale + " - SNACK", p.note || "", datiDellaStampa);
+            }
+        } else {
+            // Logica originale: scontrino unico con tutti i piatti uniti
+            stampaComanda([...piattiCucina, ...piattiBere, ...piattiSnack], numeroComandaFinale, p.note || "", datiDellaStampa);
+        }
+    }
 
 
 
