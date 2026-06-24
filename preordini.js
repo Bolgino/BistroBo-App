@@ -768,14 +768,13 @@ async function initPreordiniClienti() {
                 </div>`;
             }
             
-            // 3. Bottone (SOTTO gli ingredienti come richiesto)
-            // 3. Bottone dinamico
+            // 3. Bottone dinamico con ID univoco e transizione
             const clickAction = window.settings.sistemaExtraAbilitato ? `apriPopupPersonalizzaCliente('${id}')` : `aggiungiVeloceCarrello('${id}')`;
             
             const btnHtml = `
-                <button style="width: 100%; padding: 8px; border-radius: 8px; border: 1.5px solid ${esaurito ? '#ccc' : '#4CAF50'}; background: transparent; color: ${esaurito ? '#aaa' : '#4CAF50'}; cursor: ${esaurito ? 'not-allowed' : 'pointer'}; font-weight: bold;" 
+                <button id="btn-add-${id}" style="width: 100%; padding: 8px; border-radius: 8px; border: 1.5px solid ${esaurito ? '#ccc' : '#4CAF50'}; background: transparent; color: ${esaurito ? '#aaa' : '#4CAF50'}; cursor: ${esaurito ? 'not-allowed' : 'pointer'}; font-weight: bold; transition: all 0.3s ease;" 
                     onclick="${clickAction}" ${esaurito ? "disabled" : ""}>
-                    ${esaurito ? "❌ Esaurito" : "+ Aggiungi all'ordine"}
+                    ${esaurito ? "❌ Esaurito" : "+ Aggiungi"}
                 </button>`;
             
             // Assemblaggio finale
@@ -1542,16 +1541,16 @@ function aggiornaRiepilogoCarrelloUI() {
                 htmlVarianti = `<div style="font-size: 0.8em; color: #777; margin-top: 4px;">${variantiTxt}</div>`;
             }
 
-            // Disegniamo la riga del carrello: bloccando il prezzo e il bottone per non andare a capo male
+            // Disegniamo la riga del carrello imponendo le proporzioni corrette
             divRiga.innerHTML = `
-                <div style="flex: 1; text-align: left; padding-right: 10px;">
+                <div style="flex: 1 1 auto; text-align: left; padding-right: 15px; word-break: break-word;">
                     <b style="color: #333; font-size: 1.1em;">${item.nome}</b>
                     ${htmlVarianti}
                 </div>
-                <div style="font-weight: bold; font-size: 1.1em; color: #4CAF50; white-space: nowrap;">
+                <div style="flex: 0 0 auto; font-weight: bold; font-size: 1.1em; color: #4CAF50; white-space: nowrap; margin-right: 15px;">
                     €${costoRiga.toFixed(2)}
                 </div>
-                <button onclick="rimuoviDalCarrello(${index})" style="background: #fff; color: #ff5252; border: 1px solid #ff5252; border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 0.9em; font-weight: bold; transition: 0.2s; white-space: nowrap;">Rimuovi</button>
+                <button onclick="rimuoviDalCarrello(${index})" style="flex: 0 0 auto; background: #fff; color: #ff5252; border: 1px solid #ff5252; border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 0.9em; font-weight: bold; transition: 0.2s; white-space: nowrap;">Rimuovi</button>
             `;
             listaCarrello.appendChild(divRiga);
         }
@@ -1560,6 +1559,22 @@ function aggiornaRiepilogoCarrelloUI() {
     totale = Number(nuovoTotale.toFixed(2));
     const totaleSpan = document.getElementById("totaleCliente");
     if (totaleSpan) totaleSpan.innerText = totale.toFixed(2);
+    // 🔹 FEEDBACK VISIVO: Aggiorna i bottoni del menu con la quantità nel carrello
+    if (typeof menuItems !== 'undefined') {
+        Object.keys(menuItems).forEach(id => {
+            const btn = document.getElementById(`btn-add-${id}`);
+            if (btn && !btn.disabled && !btn.innerText.includes("Esaurito")) { 
+                const count = carrelloCliente.filter(item => item.id === id).length;
+                if (count > 0) {
+                    btn.innerHTML = `✅ Aggiunto (${count})`;
+                    btn.style.background = "#e8f5e9"; // Sfondo verdino chiaro
+                } else {
+                    btn.innerHTML = `+ Aggiungi`;
+                    btn.style.background = "transparent";
+                }
+            }
+        });
+    }
 }
 
 // Permette al cliente di cancellare un piatto se ci ha ripensato
