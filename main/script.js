@@ -2385,8 +2385,13 @@ async function caricaMenuCassa() {
                     esiste.prezzo = item.prezzo;
                 } else {
                     comandaCorrente.push({
-                        nome: item.nome, prezzo: item.prezzo, quantita: quant, categoria: item.categoria,
-                        ingredienti: item.ingredienti || [], sconto: item.sconto || null, maxVariantiGratis: item.maxVariantiGratis
+                        nome: item.nome, 
+                        prezzo: item.prezzo, 
+                        quantita: quant, 
+                        categoria: item.categoria,
+                        ingredienti: item.ingredienti || [], 
+                        sconto: item.sconto || null, 
+                        maxVariantiGratis: item.maxVariantiGratis || 0  // 🔹 Qui aggiungiamo "|| 0" per evitare il crash!
                     });
                 }
                 aggiornaComandaCorrente();
@@ -2717,9 +2722,11 @@ function apriPopupVarianti(idx) {
 		const piattoOriginale = Object.values(window.menuData).find(m => m.nome === piatto.nome);
 		if (piattoOriginale && piattoOriginale.maxVariantiGratis) {
 			maxGratis = parseInt(piattoOriginale.maxVariantiGratis);
-			piatto.maxVariantiGratis = maxGratis; // Lo salva nello scontrino per non doverlo ricaricare
 		}
 	}
+    
+    // 🔹 PREVIENE IL CRASH: Assicuriamoci che il piatto non porti con sé un valore "undefined"
+    piatto.maxVariantiGratis = maxGratis;
     const testoGratis = maxGratis > 0 ? `<br><small style="color:green; font-size:0.75em;">(Promozione: Hai ${maxGratis} aggiunte GRATIS!)</small>` : "";
     
     const titolo = document.createElement("h3");
