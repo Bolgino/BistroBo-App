@@ -3106,6 +3106,131 @@ document.getElementById("resetSoldiBtn").onclick = () => {
     restoDovutoSpan.parentElement.style.color = "black";
 	sincronizzaDisplayLive();
 };
+// ================= GESTIONE PIATTI COMBO =================
+let statoComboCorrente = { piattoId: null, contorniSelezionati: [], contesto: "cassa" };
+
+window.chiudiPopupCombo = function() {
+    const p = document.getElementById("popupCombo");
+    if(p) p.style.display = "none";
+};
+
+window.apriPopupCombo = function(id, contesto = "cassa") {
+    const piatto = window.menuData ? window.menuData[id] : null;
+    if (!piatto) return;
+
+    statoComboCorrente = { piattoId: id, contorniSelezionati: [], contesto: contesto };
+    const titoloEl = document.getElementById("titoloCombo");
+    if(titoloEl) titoloEl.innerText = `Scegli i contorni per: ${piatto.nome}`;
+    
+    const popupEl = document.getElementById("popupCombo");
+    if(popupEl) popupEl.style.display = "flex";
+
+    renderListaPiattiCombo(piatto);
+};
+
+function renderListaPiattiCombo(piattoCombo) {
+    const listaDiv = document.getElementById("listaPiattiCombo");
+    if (!listaDiv) return;
+    listaDiv.innerHTML = "";
+    
+    const maxGratis = piattoCombo.maxContorniGratis || 0;
+    const catValide = piattoCombo.categorieCombo || [];
+
+    const infoGratisEl = document.getElementById("infoComboGratis");
+    if(infoGratisEl) {
+        infoGratisEl.innerText = maxGratis > 0 
+            ? `Hai diritto a ${maxGratis} contorn${maxGratis > 1 ? 'i' : 'o'} GRATIS!` 
+            : `Nessun contorno gratis incluso.`;
+    }
+
+    // Filtriamo i veri piatti del menu
+    let piattiAmmessi = [];
+    Object.entries(window.menuData || {}).forEach(([pId, p]) => {
+        if (catValide.includes((p.categoria || "").toLowerCase()) && !p.bloccato) {
+            piattiAmmessi.push({ id: pId, ...p });
+        }
+    });
+
+    if (piattiAmmessi.length === 0) {
+        listaDiv.innerHTML = "<p>Nessun contorno disponibile al momento.</p>";
+    }
+
+    let totaleExtra = 0;
+    const quantitaTotaleScelta = statoComboCorrente.contorniSelezionati.length;
+
+    statoComboCorrente.contorniSelezionati.forEach((c, index) => {
+        if (index >= maxGratis) {
+            totaleExtra += Number(c.prezzoBase || 0);
+        }
+    });
+    const extraEl = document.getElementById("totaleExtraCombo");
+    if(extraEl) extraEl.innerText = totaleExtra.toFixed(2);
+
+    piattiAmmessi.forEach(pAmmesso => {
+        const occorrenze = statoComboCorrente.contorniSelezionati.filter(c => c.id === pAmmesso.id).length;
+        const btnPrezzoTxt = (quantitaTotaleScelta < maxGratis) ? "GRATIS" : `+€${pAmmesso.prezzo.toFixed(2)}`;
+
+        const row = document.createElement("div");
+        row.style.display = "flex";
+        row.style.justifyContent = "space-between";
+        row.style.alignItems = "center";
+        row.style.padding = "8px 0";
+        row.style.borderBottom = "1px solid #eee";
+
+        row.innerHTML = `
+            <div style="flex:1;"><b>${pAmmesso.nome}</b> <small style="color:#777;">(€${pAmmesso.prezzo.toFixed(2)})</small></div>
+            <div style="display:flex; align-items:center; gap:8px;">
+                ${occorrenze > 0 ? `
+                    <button onclick="rimuoviContornoCombo('${pAmmesso.id}')" style="background:#ccc; border:none; padding:5px 12px; border-radius:6px; font-weight:bold;">-</button>
+                    <span style="font-weight:bold;">${occorrenze}</span>
+                ` : ''}
+                <button onclick="aggiungiContornoCombo('${pAmmesso.id}')" style="background:#4CAF50; color:white; border:none; padding:5px 10px; border-radius:6px; font-weight:bold;">${occorrenze > 0 ? '+' : btnPrezzoTxt}</button>
+            </div>
+        `;
+        listaDiv.appendChild(row);
+    });
+
+    const btnConferma = document.getElementById("btnConfermaCombo");
+    if(btnConferma) {
+        btnConferma.onclick = () => {
+            chiudiPopupCombo();
+            let contorniDaSalvare = [];
+            statoComboCorrente.contorniSelezionati.forEach((c, index) => {
+                contorniDaSalvare.push({
+                    id: c.id, nome: c.nome,
+                    prezzoOriginale: c.prezzoBase,
+                    prezzoPagato: (index >= maxGratis) ? c.prezzoBase : 0, 
+                    isGratis: (index < maxGratis)
+                });
+            });
+
+            if (statoComboCorrente.contesto === "cassa") {
+                comandaCorrente.push({
+                    nome: piattoCombo.nome, prezzo: piattoCombo.prezzo, categoria: piattoCombo.categoria,
+                    varianti: [], extraPrezzo: totaleExtra, quantita: 1, contorniScelti: contorniDaSalvare
+                });
+                aggiornaComandaCorrente();
+            } else if (statoComboCorrente.contesto === "preordine") {
+                if (typeof aggiungiComboCarrelloCliente === "function") {
+                    aggiungiComboCarrelloCliente(piattoCombo, contorniDaSalvare, totaleExtra);
+                }
+            }
+        };
+    }
+}
+
+window.aggiungiContornoCombo = function(idPiattino) {
+    const p = window.menuData[idPiattino];
+    statoComboCorrente.contorniSelezionati.push({ id: p.id, nome: p.nome, prezzoBase: p.prezzo });
+    renderListaPiattiCombo(window.menuData[statoComboCorrente.piattoId]);
+};
+
+window.rimuoviContornoCombo = function(idPiattino) {
+    const arr = statoComboCorrente.contorniSelezionati;
+    const index = arr.map(e => e.id).lastIndexOf(idPiattino);
+    if (index > -1) arr.splice(index, 1);
+    renderListaPiattiCombo(window.menuData[statoComboCorrente.piattoId]);
+};
 function calcolaRestoMinimo(resto) {
     if (!checkOnline(true)) return;
     const soldiOrdinati = [...soldi].sort((a,b) => b.val - a.val); // dal più grande al più piccolo
