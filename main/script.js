@@ -2643,7 +2643,13 @@ function aggiornaComandaCorrente(){
             span.innerHTML = `<b style="color:#0056b3;">${i.quantita}x ${i.nome}</b> (€${prezzoPiattoAttuale.toFixed(2)})` + testoVarianti;
         }
 
-        span.onclick = () => apriPopupVarianti(idx);
+        if (window.settings.sistemaExtraAbilitato) {
+		    span.onclick = () => apriPopupVarianti(idx);
+		    span.title = "Clicca per personalizzare le varianti";
+		} else {
+		    span.onclick = null;
+		    span.style.cursor = "default";
+		}
 
 
 
@@ -4157,7 +4163,14 @@ function modificaComanda(id, comanda) {
 
             info.innerHTML = infoText + variantiHtml;
             // APRE IL POPUP DELLE VARIANTI!
-            info.onclick = () => apriPopupVariantiAdmin(idx, comandaTemp, reserved, aggiornaLista);
+            if (window.settings.sistemaExtraAbilitato) {
+    			info.onclick = () => apriPopupVariantiAdmin(idx, comandaTemp, reserved, aggiornaLista);
+			    info.title = "Clicca per aggiungere/rimuovere varianti";
+			} else {
+			    info.onclick = null;
+			    info.style.cursor = "default";
+			    info.title = "";
+			}
 
             const controls = document.createElement("span");
             controls.style.marginLeft = "10px";
@@ -6518,31 +6531,10 @@ document.addEventListener("DOMContentLoaded", () => {
 			    notify("✅ Comanda " + numeroComandaFinale + " inviata con successo!", "info");
 			} else {
 			    notify("✅ Comanda " + numeroComandaFinale + " inviata, avvio stampa...", "info");
-			    
 			    if (typeof stampaComanda === 'function') {
-			        if (window.settings.scontriniSeparati) {
-			            // Dividiamo i piatti in base alla categoria
-			            const cibi = piattiDaStampare.filter(p => p.categoria !== 'bevande' && p.categoria !== 'snack');
-			            const bere = piattiDaStampare.filter(p => p.categoria === 'bevande');
-			            const snack = piattiDaStampare.filter(p => p.categoria === 'snack');
-			
-			            // Stampiamo solo i reparti che hanno effettivamente ordinato qualcosa
-			            if (cibi.length > 0) {
-			                stampaComanda(cibi, numeroComandaDaStampare + " - CUCINA", noteDaStampare);
-			            }
-			            if (bere.length > 0) {
-			                stampaComanda(bere, numeroComandaDaStampare + " - BERE", noteDaStampare);
-			            }
-			            if (snack.length > 0) {
-			                stampaComanda(snack, numeroComandaDaStampare + " - SNACK", noteDaStampare);
-			            }
-			        } else {
-			            // Logica originale: scontrino unico totale
-			            stampaComanda(piattiDaStampare, numeroComandaDaStampare, noteDaStampare);
-			        }
+			        stampaComanda(piattiDaStampare, numeroComandaFinale, noteDaStampare);
 			    }
 			}
-
         } catch (err) {
             console.error("Errore invio comanda:", err);
             notify("Errore invio comanda: " + (err.message || err), "error");
@@ -7111,187 +7103,217 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
     if (!items || items.length === 0) return;
 
     const { jsPDF } = window.jspdf;
-    // Formato scontrino termico 80mm continuo
+    // Formato scontrino termico 80mm
     const doc = new jsPDF({ unit: "mm", format: [80, 250], orientation: "portrait" });
 
     const ora = new Date();
     const orario = ora.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     const dataOdierna = ora.toLocaleDateString();
 
-    let y = 8;
-    const margin = 4;
-    const pageWidth = 80;
-    const rightMargin = pageWidth - margin;
+    // --- 1. DIVISIONE IN REPARTI ---
+    let reparti = [];
+    if (window.settings.scontriniSeparati) {
+        const cibi = items.filter(p => p.categoria !== 'bevande' && p.categoria !== 'snack');
+        const bere = items.filter(p => p.categoria === 'bevande');
+        const snack = items.filter(p => p.categoria === 'snack');
+        
+        if (cibi.length > 0) reparti.push({ nome: "CUCINA", items: cibi });
+        if (bere.length > 0) reparti.push({ nome: "BERE", items: bere });
+        
+        if (snack.length > 0) {
+            if (window.settings.snackAbilitato) {
+                reparti.push({ nome: "SNACK", items: snack });
+            } else {
+                // Se snack disattivato globalmente, li uniamo alla cucina
+                const cucIdx = reparti.findIndex(r => r.nome === "CUCINA");
+                if (cucIdx > -1) reparti[cucIdx].items.push(...snack);
+                else reparti.push({ nome: "CUCINA", items: snack });
+            }
+        }
+    } else {
+        // Scontrino Unico
+        reparti.push({ nome: null, items: items });
+    }
 
-    // 1. INTESTAZIONE STAND
-    doc.setFontSize(16);
-    doc.setFont("helvetica", "bold");
-    const nomeStand = (typeof cliente !== "undefined" && cliente.nomeStand) ? cliente.nomeStand : (window.settings && window.settings.nomeStand ? window.settings.nomeStand : "BistroBò");
-    doc.text(nomeStand.toUpperCase(), pageWidth / 2, y, { align: "center" });
-    y += 6;
+    // --- 2. DISEGNO DEL PDF PER OGNI REPARTO ---
+    reparti.forEach((reparto, index) => {
+        if (index > 0) {
+            doc.addPage(); // Genera un taglio della carta termica!
+        }
 
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    doc.text(`${dataOdierna} - Ore ${orario}`, pageWidth / 2, y, { align: "center" });
-    y += 6;
+        let y = 8;
+        const margin = 4;
+        const pageWidth = 80;
+        const rightMargin = pageWidth - margin;
 
-    // Trattini separatori
-    doc.text("-".repeat(45), pageWidth / 2, y, { align: "center" });
-    y += 8;
-
-    // 2. NUMERO COMANDA GIGANTE
-    doc.setFontSize(24);
-    doc.setFont("helvetica", "bold");
-    doc.text(`COMANDA ${numeroComanda}`, pageWidth / 2, y, { align: "center" });
-    y += 6;
-
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    doc.text("-".repeat(45), pageWidth / 2, y, { align: "center" });
-    y += 6;
-
-    // 3. DATI CLIENTE (Se presenti dai Preordini)
-    if (cliente && cliente.nome) {
-        doc.setFontSize(11);
+        // INTESTAZIONE
+        doc.setFontSize(16);
         doc.setFont("helvetica", "bold");
-        doc.text(`Cliente: ${cliente.nome}`, margin, y); y += 5;
-        if (cliente.telefono) { doc.setFont("helvetica", "normal"); doc.text(`Tel: ${cliente.telefono}`, margin, y); y += 5; }
-        if (cliente.posizione) { doc.text(`Pos: ${cliente.posizione}`, margin, y); y += 5; }
+        const nomeStand = (cliente && cliente.nomeStand) ? cliente.nomeStand : (window.settings && window.settings.nomeStand ? window.settings.nomeStand : "BistroBò");
+        doc.text(nomeStand.toUpperCase(), pageWidth / 2, y, { align: "center" });
+        y += 6;
+
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        doc.text(`${dataOdierna} - Ore ${orario}`, pageWidth / 2, y, { align: "center" });
+        y += 6;
+        doc.text("-".repeat(45), pageWidth / 2, y, { align: "center" });
+        y += 8;
+
+        // NUMERO COMANDA GIGANTE E NOME REPARTO (Più piccolo)
+        doc.setFontSize(24);
+        doc.setFont("helvetica", "bold");
+        doc.text(`COMANDA ${numeroComanda}`, pageWidth / 2, y, { align: "center" });
+        y += 7;
+
+        if (reparto.nome) {
+            doc.setFontSize(14);
+            doc.text(`*** ${reparto.nome} ***`, pageWidth / 2, y, { align: "center" });
+            y += 6;
+        }
+
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
         doc.text("-".repeat(45), pageWidth / 2, y, { align: "center" });
         y += 6;
-    }
 
-    // 4. INTESTAZIONE LISTA PIATTI
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "bold");
-    doc.text("Q.TA  DESCRIZIONE", margin, y);
-    doc.text("IMPORTO", rightMargin, y, { align: "right" });
-    y += 2;
-    doc.setFont("helvetica", "normal");
-    doc.text("-".repeat(45), pageWidth / 2, y, { align: "center" });
-    y += 5;
-
-    let totaleComanda = 0;
-
-    items.forEach(p => {
-        // Fallback di sicurezza
-        let prezzoTotPiatto = 0;
-        if (typeof calcolaPrezzoConSconto === "function") {
-            prezzoTotPiatto = calcolaPrezzoConSconto(p);
-        } else {
-            prezzoTotPiatto = (p.prezzo + (p.extraPrezzo || 0)) * (p.quantita || 1);
+        // DATI CLIENTE (Preordini)
+        if (cliente && cliente.nome) {
+            doc.setFontSize(11);
+            doc.setFont("helvetica", "bold");
+            doc.text(`Cliente: ${cliente.nome}`, margin, y); y += 5;
+            if (cliente.telefono) { doc.setFont("helvetica", "normal"); doc.text(`Tel: ${cliente.telefono}`, margin, y); y += 5; }
+            if (cliente.posizione) { doc.text(`Pos: ${cliente.posizione}`, margin, y); y += 5; }
+            doc.text("-".repeat(45), pageWidth / 2, y, { align: "center" });
+            y += 6;
         }
-        totaleComanda += prezzoTotPiatto;
 
-        doc.setFontSize(12);
-        doc.setFont("helvetica", "bold");
-        
-        // Quantità
-        const qtyStr = `${p.quantita}x`;
-        doc.text(qtyStr, margin, y);
-        
-        // Nome del piatto (mandato a capo se lunghissimo)
-        const nomeSplit = doc.splitTextToSize(p.nome, 48);
-        doc.text(nomeSplit, margin + 8, y);
-        
-        // Prezzo a destra
-        doc.text(`€ ${prezzoTotPiatto.toFixed(2)}`, rightMargin, y, { align: "right" });
-        y += (nomeSplit.length * 5); 
-
-        // 5. STAMPA VARIANTI E AGGIUNTE
-        let variantiArray = p.varianti ? (Array.isArray(p.varianti) ? p.varianti : Object.values(p.varianti)) : [];
-        if (variantiArray.length > 0) {
-            doc.setFontSize(10);
-            doc.setFont("helvetica", "normal");
-            
-            let maxGratis = p.maxVariantiGratis || 0;
-            let aggiunteCount = 0;
-
-            // Stampiamo le Rimozioni
-            const rimozioni = variantiArray.filter(v => v.tipo === "rimozione");
-            rimozioni.forEach(v => {
-                doc.text(`   - NO ${v.nome}`, margin + 8, y);
-                y += 4.5;
-            });
-
-            // Stampiamo le Aggiunte (Raggruppate)
-            const aggiunte = variantiArray.filter(v => v.tipo === "aggiunta");
-            const mappaAggiunte = {};
-            aggiunte.forEach(v => {
-                let prezzoAggiunta = 0;
-                if (aggiunteCount >= maxGratis) { prezzoAggiunta = Number(v.prezzo || 0); }
-                aggiunteCount++;
-                
-                if (!mappaAggiunte[v.nome]) mappaAggiunte[v.nome] = { nome: v.nome, count: 0, costoTot: 0 };
-                mappaAggiunte[v.nome].count++;
-                mappaAggiunte[v.nome].costoTot += prezzoAggiunta;
-            });
-
-            Object.values(mappaAggiunte).forEach(a => {
-                const aqTxt = a.count > 1 ? `${a.count}x ` : "";
-                doc.text(`   + ${aqTxt}${a.nome}`, margin + 8, y);
-                
-                // 🔹 FISSA IL PREZZO A 0.00 SE GRATIS O INCLUSA
-                const stringaCosto = a.costoTot > 0 ? `€ ${a.costoTot.toFixed(2)}` : `€ 0.00`;
-                doc.text(stringaCosto, rightMargin, y, { align: "right" });
-                y += 4.5;
-            });
-        }
-        y += 2; // Spazietto per il prossimo piatto
-    });
-
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    y += 2;
-    doc.text("-".repeat(45), pageWidth / 2, y, { align: "center" });
-    y += 8;
-
-    // 6. TOTALE GIGANTE
-    doc.setFontSize(18);
-    doc.setFont("helvetica", "bold");
-    doc.text("TOTALE", margin, y);
-    doc.text(`€ ${totaleComanda.toFixed(2)}`, rightMargin, y, { align: "right" });
-    y += 8;
-
-    // 7. RESTO E NOTE
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "normal");
-    if (cliente && cliente.restoRichiesto && cliente.restoRichiesto > 0) {
-        doc.text(`Da dare resto su: € ${cliente.restoRichiesto}`, margin, y);
-        y += 6;
-    }
-
-    if (note) {
-        y += 2;
+        // LISTA PIATTI
         doc.setFontSize(10);
         doc.setFont("helvetica", "bold");
-        const noteSplit = doc.splitTextToSize(`NOTE: ${note}`, pageWidth - margin*2);
-        doc.text(noteSplit, margin, y);
-        y += (noteSplit.length * 5);
-    }
+        doc.text("Q.TA  DESCRIZIONE", margin, y);
+        doc.text("IMPORTO", rightMargin, y, { align: "right" });
+        y += 2;
+        doc.setFont("helvetica", "normal");
+        doc.text("-".repeat(45), pageWidth / 2, y, { align: "center" });
+        y += 5;
 
-    // FOOTER GRAZIE
-    y += 5;
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "italic");
-    doc.text("Grazie e Buon Appetito!", pageWidth / 2, y, { align: "center" });
+        let totaleReparto = 0;
 
-    // --- Apertura PDF per la stampa ---
+        reparto.items.forEach(p => {
+            let prezzoTotPiatto = 0;
+            if (typeof calcolaPrezzoConSconto === "function") {
+                prezzoTotPiatto = calcolaPrezzoConSconto(p);
+            } else {
+                prezzoTotPiatto = (p.prezzo + (p.extraPrezzo || 0)) * (p.quantita || 1);
+            }
+            totaleReparto += prezzoTotPiatto;
+
+            doc.setFontSize(12);
+            doc.setFont("helvetica", "bold");
+            
+            doc.text(`${p.quantita}x`, margin, y);
+            const nomeSplit = doc.splitTextToSize(p.nome, 48);
+            doc.text(nomeSplit, margin + 8, y);
+            doc.text(`€ ${prezzoTotPiatto.toFixed(2)}`, rightMargin, y, { align: "right" });
+            y += (nomeSplit.length * 5); 
+
+            // VARIANTI
+            let variantiArray = p.varianti ? (Array.isArray(p.varianti) ? p.varianti : Object.values(p.varianti)) : [];
+            if (variantiArray.length > 0) {
+                doc.setFontSize(10);
+                doc.setFont("helvetica", "normal");
+                
+                let maxGratis = p.maxVariantiGratis || 0;
+                let aggiunteCount = 0;
+
+                const rimozioni = variantiArray.filter(v => v.tipo === "rimozione");
+                rimozioni.forEach(v => {
+                    doc.text(`   - NO ${v.nome}`, margin + 8, y);
+                    y += 4.5;
+                });
+
+                const aggiunte = variantiArray.filter(v => v.tipo === "aggiunta");
+                const mappaAggiunte = {};
+                aggiunte.forEach(v => {
+                    let prezzoAggiunta = 0;
+                    if (aggiunteCount >= maxGratis) { prezzoAggiunta = Number(v.prezzo || 0); }
+                    aggiunteCount++;
+                    
+                    if (!mappaAggiunte[v.nome]) mappaAggiunte[v.nome] = { nome: v.nome, count: 0, costoTot: 0 };
+                    mappaAggiunte[v.nome].count++;
+                    mappaAggiunte[v.nome].costoTot += prezzoAggiunta;
+                });
+
+                Object.values(mappaAggiunte).forEach(a => {
+                    const aqTxt = a.count > 1 ? `${a.count}x ` : "";
+                    doc.text(`   + ${aqTxt}${a.nome}`, margin + 8, y);
+                    const stringaCosto = a.costoTot > 0 ? `€ ${a.costoTot.toFixed(2)}` : `€ 0.00`;
+                    doc.text(stringaCosto, rightMargin, y, { align: "right" });
+                    y += 4.5;
+                });
+            }
+            y += 2; 
+        });
+
+        // TOTALE
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        y += 2;
+        doc.text("-".repeat(45), pageWidth / 2, y, { align: "center" });
+        y += 8;
+
+        doc.setFontSize(18);
+        doc.setFont("helvetica", "bold");
+        doc.text("TOTALE", margin, y);
+        doc.text(`€ ${totaleReparto.toFixed(2)}`, rightMargin, y, { align: "right" });
+        y += 8;
+
+        // RESTO E NOTE
+        doc.setFontSize(11);
+        doc.setFont("helvetica", "normal");
+        if (cliente && cliente.restoRichiesto && cliente.restoRichiesto > 0) {
+            doc.text(`Da dare resto su: € ${cliente.restoRichiesto}`, margin, y);
+            y += 6;
+        }
+
+        if (note) {
+            y += 2;
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "bold");
+            const noteSplit = doc.splitTextToSize(`NOTE: ${note}`, pageWidth - margin*2);
+            doc.text(noteSplit, margin, y);
+            y += (noteSplit.length * 5);
+        }
+
+        y += 5;
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "italic");
+        doc.text("Grazie e Buon Appetito!", pageWidth / 2, y, { align: "center" });
+    });
+
+    // --- 3. CREAZIONE FINESTRA SINGOLA ---
     const pdfBase64 = doc.output("datauristring");
     const newWindow = window.open("", "_blank");
-    newWindow.document.write(`
-        <html><head><title>Scontrino ${numeroComanda}</title></head>
-        <body style="margin:0; background:#555; display:flex; justify-content:center;">
-            <iframe src="${pdfBase64}" style="border:none; width:80mm; height:100vh; background:white;"></iframe>
-            <script>
-                window.onload = () => {
-                    const iframe = document.querySelector('iframe');
-                    iframe.onload = () => setTimeout(() => iframe.contentWindow.print(), 300);
-                };
-            </script>
-        </body></html>
-    `);
-    newWindow.document.close();
+    
+    // Controllo anti-crash se il browser blocca i popup
+    if (newWindow) {
+        newWindow.document.write(`
+            <html><head><title>Scontrino ${numeroComanda}</title></head>
+            <body style="margin:0; background:#555; display:flex; justify-content:center;">
+                <iframe src="${pdfBase64}" style="border:none; width:80mm; height:100vh; background:white;"></iframe>
+                <script>
+                    window.onload = () => {
+                        const iframe = document.querySelector('iframe');
+                        iframe.onload = () => setTimeout(() => iframe.contentWindow.print(), 300);
+                    };
+                </script>
+            </body></html>
+        `);
+        newWindow.document.close();
+    } else {
+        notify("Errore: il browser ha bloccato il popup per la stampa. Controlla le impostazioni in alto a destra.", "error");
+    }
 }
 //OROLOGIO
 async function inizializzaOrologio() {
