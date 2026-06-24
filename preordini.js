@@ -441,7 +441,13 @@ function renderPreordiniCassa(data) {
                         ${pi.ingredienti && pi.ingredienti.length
                             ? `<div style="font-size:0.75em; color:#555;">
                                 Ingredienti: ${pi.ingredienti.map(i => `${i.nome}${i.qtyPerUnit ? ` (${i.qtyPerUnit}${i.unita || ""})` : ""}`).join(", ")}
-                            </div>` : ""}
+                            </div>`
+                            : ""}
+                        ${pi.contorniScelti && pi.contorniScelti.length 
+                            ? `<div style="font-size:0.85em; color:#d9534f; font-weight:bold; margin-top:3px;">
+                                Contorni: ${pi.contorniScelti.map(c => c.nome).join(" + ")}
+                               </div>`
+                            : ""}
                     </div>
                 `).join("")}
                 ${piattiBere.map(pi => `
@@ -450,7 +456,13 @@ function renderPreordiniCassa(data) {
                         ${pi.ingredienti && pi.ingredienti.length
                             ? `<div style="font-size:0.75em; color:#555;">
                                 Ingredienti: ${pi.ingredienti.map(i => `${i.nome}${i.qtyPerUnit ? ` (${i.qtyPerUnit}${i.unita || ""})` : ""}`).join(", ")}
-                            </div>` : ""}
+                            </div>`
+                            : ""}
+                        ${pi.contorniScelti && pi.contorniScelti.length 
+                            ? `<div style="font-size:0.85em; color:#d9534f; font-weight:bold; margin-top:3px;">
+                                Contorni: ${pi.contorniScelti.map(c => c.nome).join(" + ")}
+                               </div>`
+                            : ""}
                     </div>
                 `).join("")}
                 ${piattiSnack.map(pi => `
@@ -459,7 +471,13 @@ function renderPreordiniCassa(data) {
                         ${pi.ingredienti && pi.ingredienti.length
                             ? `<div style="font-size:0.75em; color:#555;">
                                 Ingredienti: ${pi.ingredienti.map(i => `${i.nome}${i.qtyPerUnit ? ` (${i.qtyPerUnit}${i.unita || ""})` : ""}`).join(", ")}
-                            </div>` : ""}
+                            </div>`
+                            : ""}
+                        ${pi.contorniScelti && pi.contorniScelti.length 
+                            ? `<div style="font-size:0.85em; color:#d9534f; font-weight:bold; margin-top:3px;">
+                                Contorni: ${pi.contorniScelti.map(c => c.nome).join(" + ")}
+                               </div>`
+                            : ""}
                     </div>
                 `).join("")}
                 ${p.note ? `
