@@ -675,6 +675,19 @@ async function initPreordiniClienti() {
     // Legge la nuova impostazione
     const snapInfo = await db.ref("impostazioni/preordiniRichiediInfo").once("value");
     window.settings.preordiniRichiediInfo = snapInfo.exists() ? snapInfo.val() : false;
+    // Legge la nuova impostazione (Questo c'è già nel tuo codice)
+    const snapInfo = await db.ref("impostazioni/preordiniRichiediInfo").once("value");
+    window.settings.preordiniRichiediInfo = snapInfo.exists() ? snapInfo.val() : false;
+
+    // 🟢 AGGIUNGI QUESTE DUE RIGHE ESATTAMENTE QUI:
+    const snapExtra = await db.ref("impostazioni/sistemaExtraAbilitato").once("value");
+    window.settings.sistemaExtraAbilitato = snapExtra.exists() ? snapExtra.val() : true;
+
+    // Carica menù (Questo c'è già nel tuo codice)
+    Promise.all([
+        db.ref("menu").once("value"),
+        db.ref("ingredienti").once("value")
+    ]).then(([snapMenu, snapIngredienti]) => {
 
   // Carica menù
     Promise.all([
