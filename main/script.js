@@ -2428,6 +2428,12 @@ async function caricaMenuCassa() {
             btn.dataset.menuId = id;
 
             btn.onclick = () => {
+                // SE E' UNA COMBO, ignoriamo la quantità multipla e apriamo il modale speciale!
+                if (window.settings.piattiComboAbilitati && item.isCombo) {
+                    if (typeof apriPopupCombo === "function") apriPopupCombo(id, "cassa");
+                    return;
+                }
+
                 let quant = 1; 
                 if (window.settings.selettoreQuantitaCassa) {
                     const quantVal = document.getElementById("quantita").value;
@@ -2636,6 +2642,15 @@ function aggiornaComandaCorrente(){
 
             testoVarianti = `<br><small style="font-weight:bold;">${mapVarianti}</small>`;
         }
+        
+        // --- NUOVO BLOCCO CONTORNI COMBO ---
+        if (i.contorniScelti && i.contorniScelti.length > 0) {
+            const cTxt = i.contorniScelti.map(c => {
+                return c.isGratis ? `<span style="color:green;">+ ${c.nome} (Incluso)</span>` : `<span style="color:#d9534f;">+ ${c.nome} (+€${c.prezzoPagato.toFixed(2)})</span>`;
+            }).join("<br>");
+            testoVarianti += `<br><small style="font-weight:bold;">${cTxt}</small>`;
+        }
+        
         const prezzoPiattoAttuale = (i.prezzo + (i.extraPrezzo || 0));
 
         if(i.sconto){
@@ -5445,7 +5460,20 @@ document.addEventListener("DOMContentLoaded", () => {
 	            <label><b>Aggiunte max gratuite:</b></label>
 	            <input type="number" id="modalPiattoMaxGratis" min="0" placeholder="0 (Nessuna gratuità)" style="width: 100%; padding: 8px; box-sizing: border-box; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px;">
 	        </div>
-	        <div style="margin-bottom: 15px;">
+
+            <div style="background: #e8f5e9; padding: 10px; border: 1px solid #c8e6c9; border-radius: 8px; margin-bottom: 15px;">
+                <label style="cursor:pointer; display:flex; align-items:center;">
+                    <input type="checkbox" id="modalPiattoIsCombo" style="transform: scale(1.2); margin-right: 10px;" onchange="document.getElementById('comboSettingsNew').style.display = this.checked ? 'block' : 'none';"> 
+                    <b> È un Piatto Combo (Menu)?</b>
+                </label>
+                <div id="comboSettingsNew" style="display:none; margin-top:10px;">
+                    <label><b>N° Contorni Gratis inclusi:</b></label>
+                    <input type="number" id="modalPiattoMaxContorniGratis" value="1" min="0" style="width:100%; padding: 8px; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px;"><br><br>
+                    <label><b>Categorie dei contorni ammessi:</b> <small>(es. snack, cibi)</small></label>
+                    <input type="text" id="modalPiattoCatsCombo" placeholder="snack" style="width:100%; padding: 8px; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
+            </div>
+            <div style="margin-bottom: 15px;">
 	            <label><b>Ingredienti / Ricetta Piatto:</b></label>
 	            <div id="modalPiattoIngredientiContainer" style="margin-top: 8px; max-height: 220px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; border-radius: 6px; background: #fafafa;"></div>
 	        </div>
@@ -5480,6 +5508,10 @@ document.addEventListener("DOMContentLoaded", () => {
 	        const categoria = catSelect.value;
 	        const maxGratisVal = document.getElementById("modalPiattoMaxGratis").value;
 	        const maxVariantiGratis = maxGratisVal ? parseInt(maxGratisVal) : 0;
+            
+            const isCombo = document.getElementById("modalPiattoIsCombo").checked;
+            const maxContorniGratis = parseInt(document.getElementById("modalPiattoMaxContorniGratis").value) || 0;
+            const categorieCombo = document.getElementById("modalPiattoCatsCombo").value.split(",").map(s => s.trim().toLowerCase()).filter(s => s);
 	
 	        if (!nome || isNaN(prezzo)) {
 	            notify("Inserisci nome e prezzo validi!", "warn");
@@ -5496,7 +5528,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	            }));
 	
 	        try {
-	            await db.ref("menu").push({ nome, prezzo, categoria, ingredienti, maxVariantiGratis });
+	            await db.ref("menu").push({ nome, prezzo, categoria, ingredienti, maxVariantiGratis, isCombo, maxContorniGratis, categorieCombo });
 	            window.selectedMap = {};
 	            overlay.remove();
 	            notify("Piatto aggiunto con successo al menu!", "success");
@@ -5684,6 +5716,19 @@ function modificaPiattoMenu(menuId, piatto) {
             <label><b>Aggiunte max gratuite:</b></label>
             <input type="number" id="editPiattoMaxGratis" min="0" placeholder="0" style="width: 100%; padding: 8px; box-sizing: border-box; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px;">
         </div>
+
+        <div style="background: #e8f5e9; padding: 10px; border: 1px solid #c8e6c9; border-radius: 8px; margin-bottom: 15px;">
+            <label style="cursor:pointer; display:flex; align-items:center;">
+                <input type="checkbox" id="editPiattoIsCombo" style="transform: scale(1.2); margin-right: 10px;" onchange="document.getElementById('comboSettingsEdit').style.display = this.checked ? 'block' : 'none';"> 
+                <b> È un Piatto Combo (Menu)?</b>
+            </label>
+            <div id="comboSettingsEdit" style="display:none; margin-top:10px;">
+                <label><b>N° Contorni Gratis inclusi:</b></label>
+                <input type="number" id="editPiattoMaxContorniGratis" value="1" min="0" style="width:100%; padding: 8px; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px;"><br><br>
+                <label><b>Categorie dei contorni ammessi:</b> <small>(es. snack, cibi)</small></label>
+                <input type="text" id="editPiattoCatsCombo" placeholder="snack" style="width:100%; padding: 8px; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px;">
+            </div>
+        </div>
         <div style="margin-bottom: 15px;">
             <label><b>Ingredienti / Composizione:</b></label>
             <div id="editPiattoIngredientiContainer" style="margin-top: 8px; max-height: 220px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; border-radius: 6px; background: #fafafa;"></div>
@@ -5708,6 +5753,14 @@ function modificaPiattoMenu(menuId, piatto) {
     catSelect.value = piatto.categoria || "cibi";
     gratisInput.value = piatto.maxVariantiGratis !== undefined ? piatto.maxVariantiGratis : "";
 
+    // POPOLA DATI COMBO
+    if (piatto.isCombo) {
+        document.getElementById("editPiattoIsCombo").checked = true;
+        document.getElementById("comboSettingsEdit").style.display = "block";
+        document.getElementById("editPiattoMaxContorniGratis").value = piatto.maxContorniGratis || 1;
+        document.getElementById("editPiattoCatsCombo").value = (piatto.categorieCombo || []).join(", ");
+    }
+
     window.selectedMap = {};
     (piatto.ingredienti || []).forEach(i => {
         if (i.id) window.selectedMap[i.id] = i.qtyPerUnit || 1;
@@ -5730,6 +5783,10 @@ function modificaPiattoMenu(menuId, piatto) {
         const newPrezzo = parseFloat(prezzoInput.value);
         const newCat = catSelect.value;
         const newMaxGratis = parseInt(gratisInput.value) || 0;
+        
+        const newIsCombo = document.getElementById("editPiattoIsCombo").checked;
+        const newMaxContorniGratis = parseInt(document.getElementById("editPiattoMaxContorniGratis").value) || 0;
+        const newCategorieCombo = document.getElementById("editPiattoCatsCombo").value.split(",").map(s => s.trim().toLowerCase()).filter(s => s);
 
         if (!newName || isNaN(newPrezzo)) {
             notify("Nome e prezzo validi sono obbligatori.", "warn");
@@ -5761,7 +5818,10 @@ function modificaPiattoMenu(menuId, piatto) {
                 prezzo: newPrezzo,
                 categoria: newCat,
                 ingredienti: ingredienti,
-                maxVariantiGratis: newMaxGratis
+                maxVariantiGratis: newMaxGratis,
+                isCombo: newIsCombo,
+                maxContorniGratis: newMaxContorniGratis,
+                categorieCombo: newCategorieCombo
             });
             window.selectedMap = {};
             overlay.remove();
@@ -7262,6 +7322,19 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
                     y += 4.5;
                 });
             }
+            
+            // --- STAMPA CONTORNI COMBO ---
+            if (p.contorniScelti && p.contorniScelti.length > 0) {
+                doc.setFontSize(10);
+                doc.setFont("helvetica", "italic");
+                p.contorniScelti.forEach(c => {
+                    doc.text(`   => ${c.nome}`, margin + 8, y);
+                    const txtCosto = c.isGratis ? "INCLUSO" : `€ ${c.prezzoPagato.toFixed(2)}`;
+                    doc.text(txtCosto, rightMargin, y, { align: "right" });
+                    y += 4.5;
+                });
+            }
+
             y += 2; 
         });
 
