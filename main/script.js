@@ -7102,7 +7102,7 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
     let totaleComanda = 0;
 
     items.forEach(p => {
-        // Fallback di sicurezza: se la funzione di sconto non c'è, fa un calcolo grezzo
+        // Fallback di sicurezza
         let prezzoTotPiatto = 0;
         if (typeof calcolaPrezzoConSconto === "function") {
             prezzoTotPiatto = calcolaPrezzoConSconto(p);
@@ -7158,7 +7158,10 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
             Object.values(mappaAggiunte).forEach(a => {
                 const aqTxt = a.count > 1 ? `${a.count}x ` : "";
                 doc.text(`   + ${aqTxt}${a.nome}`, margin + 8, y);
-                doc.text(`€ ${a.costoTot.toFixed(2)}`, rightMargin, y, { align: "right" });
+                
+                // 🔹 FISSA IL PREZZO A 0.00 SE GRATIS O INCLUSA
+                const stringaCosto = a.costoTot > 0 ? `€ ${a.costoTot.toFixed(2)}` : `€ 0.00`;
+                doc.text(stringaCosto, rightMargin, y, { align: "right" });
                 y += 4.5;
             });
         }
