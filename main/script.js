@@ -1169,24 +1169,42 @@ function aggiornaListaIngredientiCritici(force=false) {
     // Popola contenuto della tab
     container.innerHTML = "";
     
-    // Aggiunge lo sfondo a box per renderlo leggibile in ogni tema (Autunno, Estate, ecc.)
+    // Aggiunge lo sfondo a box per renderlo leggibile in ogni tema
     container.className = "box-ingredienti-critici";
 
+    // Creiamo le due colonne separate
+    const colAttenzione = document.createElement("div");
+    colAttenzione.className = "colonna-attenzione";
+    colAttenzione.innerHTML = "<h4 class='titolo-colonna'>⚠️ In Esaurimento</h4>";
+
+    const colEmergenza = document.createElement("div");
+    colEmergenza.className = "colonna-emergenza";
+    colEmergenza.innerHTML = "<h4 class='titolo-colonna'>🚨 Critici (Finiti)</h4>";
+
+    // Cicliamo gli ingredienti e li smistiamo nelle colonne giuste
     listaCritica.forEach(i => {
         const r = document.createElement("div");
         
-        // Sceglie lo stile a forma di "etichetta" in base alla gravità
         if (i.critico) {
+            // Se è critico va nella colonna di Destra (Emergenza)
             r.className = "badge-critico";
+            r.innerHTML = `<span>${i.nome}</span> <strong>${i.rimanente} ${i.unita}</strong>`;
+            colEmergenza.appendChild(r);
         } else {
+            // Se è sotto soglia ma non critico va a Sinistra (Attenzione)
             r.className = "badge-sottosoglia";
+            r.innerHTML = `<span>${i.nome}</span> <strong>${i.rimanente} ${i.unita}</strong>`;
+            colAttenzione.appendChild(r);
         }
-        
-        // HTML pulito senza colori forzati inline, ci pensa il CSS
-        r.innerHTML = `<strong>${i.nome}</strong> <span>(${i.rimanente} ${i.unita})</span> ${i.critico ? "⚠️" : ""}`;
-        
-        container.appendChild(r);
     });
+
+    // Se una colonna non ha ingredienti, mostriamo un testo vuoto
+    if(colAttenzione.children.length === 1) colAttenzione.innerHTML += "<p class='nessun-dato'>Nessun ingrediente</p>";
+    if(colEmergenza.children.length === 1) colEmergenza.innerHTML += "<p class='nessun-dato'>Nessun ingrediente</p>";
+
+    // Inseriamo le due colonne nel contenitore principale
+    container.appendChild(colAttenzione);
+    container.appendChild(colEmergenza);
 
     // Lampeggio bottone
     btnTab.style.animation = listaCritica.some(i => i.critico)
