@@ -1896,3 +1896,45 @@ body.tema-estate button {
 .modal-actions button { flex: 1; padding: 10px; margin: 0 5px; border-radius: 8px; font-size: 1.1rem; border: none; cursor: pointer; color: white; }
 .btn-chiudi { background: #999; }
 .btn-salva { background: #2196F3; font-weight: bold; }
+
+/* =========================================
+   BOX INGREDIENTI CRITICI
+   ========================================= */
+
+/* Contenitore principale (Il Box) */
+.box-ingredienti-critici {
+    background-color: var(--bg-card, rgba(255, 255, 255, 0.92)); /* Sfondo chiaro che si stacca dal tema */
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 12px;
+    padding: 16px;
+    margin: 20px 0;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); /* Ombra leggera per dare tridimensionalità */
+    backdrop-filter: blur(4px); /* Effetto "vetro" per renderlo moderno */
+}
+
+/* Titolo del box (se ne hai uno) */
+.box-ingredienti-critici h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #1e293b; /* Colore scuro per garantire leggibilità */
+    font-size: 1.1em;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 8px;
+}
+
+/* =========================================
+   BADGE PER GLI INGREDIENTI SOTTOSOGLIA
+   ========================================= */
+
+/* Stile a etichetta per gli ingredienti in arancione */
+.badge-sottosoglia {
+    display: inline-block;
+    background-color: #fff7ed; /* Sfondo arancione chiarissimo, quasi bianco */
+    color: #c2410c; /* Testo arancione scuro ad alto contrasto */
+    border: 1px solid #fed7aa; /* Bordino in tono per definire il contorno */
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 20px; /* Bordo molto arrotondato, stile "pillola" */
+    margin: 4px;
+    font-size: 0.9em;
+}
