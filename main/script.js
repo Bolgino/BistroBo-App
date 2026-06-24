@@ -6514,12 +6514,34 @@ document.addEventListener("DOMContentLoaded", () => {
             if(typeof aggiornaSuggerimentoResto === 'function') aggiornaSuggerimentoResto();
             if (checkAsporto) checkAsporto.checked = false;
 
-            if(!window.settings.stampaAutomaticaComande) {
-                notify("✅ Comanda " + numeroComandaFinale + " inviata con successo!", "info");
-            } else {
-                notify("✅ Comanda " + numeroComandaFinale + " inviata, avvio stampa...", "info");
-                if(typeof stampaComanda === 'function') stampaComanda(piattiDaStampare, numeroComandaDaStampare, noteDaStampare);
-            }
+            if (!window.settings.stampaAutomaticaComande) {
+			    notify("✅ Comanda " + numeroComandaFinale + " inviata con successo!", "info");
+			} else {
+			    notify("✅ Comanda " + numeroComandaFinale + " inviata, avvio stampa...", "info");
+			    
+			    if (typeof stampaComanda === 'function') {
+			        if (window.settings.scontriniSeparati) {
+			            // Dividiamo i piatti in base alla categoria
+			            const cibi = piattiDaStampare.filter(p => p.categoria !== 'bevande' && p.categoria !== 'snack');
+			            const bere = piattiDaStampare.filter(p => p.categoria === 'bevande');
+			            const snack = piattiDaStampare.filter(p => p.categoria === 'snack');
+			
+			            // Stampiamo solo i reparti che hanno effettivamente ordinato qualcosa
+			            if (cibi.length > 0) {
+			                stampaComanda(cibi, numeroComandaDaStampare + " - CUCINA", noteDaStampare);
+			            }
+			            if (bere.length > 0) {
+			                stampaComanda(bere, numeroComandaDaStampare + " - BERE", noteDaStampare);
+			            }
+			            if (snack.length > 0) {
+			                stampaComanda(snack, numeroComandaDaStampare + " - SNACK", noteDaStampare);
+			            }
+			        } else {
+			            // Logica originale: scontrino unico totale
+			            stampaComanda(piattiDaStampare, numeroComandaDaStampare, noteDaStampare);
+			        }
+			    }
+			}
 
         } catch (err) {
             console.error("Errore invio comanda:", err);
