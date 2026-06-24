@@ -1898,43 +1898,46 @@ body.tema-estate button {
 .btn-salva { background: #2196F3; font-weight: bold; }
 
 /* =========================================
-   BOX INGREDIENTI CRITICI
+   BOX INGREDIENTI CRITICI E SOTTOSOGLIA
    ========================================= */
 
-/* Contenitore principale (Il Box) */
+/* Il contenitore che isola il testo dai temi come Autunno/Inverno */
 .box-ingredienti-critici {
-    background-color: var(--bg-card, rgba(255, 255, 255, 0.92)); /* Sfondo chiaro che si stacca dal tema */
-    border: 1px solid var(--border-color, #e2e8f0);
+    background-color: rgba(255, 255, 255, 0.95); /* Sfondo quasi bianco */
+    border: 1px solid #e2e8f0;
     border-radius: 12px;
     padding: 16px;
-    margin: 20px 0;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); /* Ombra leggera per dare tridimensionalità */
-    backdrop-filter: blur(4px); /* Effetto "vetro" per renderlo moderno */
+    margin: 15px 0;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
-/* Titolo del box (se ne hai uno) */
-.box-ingredienti-critici h3 {
-    margin-top: 0;
-    margin-bottom: 15px;
-    color: #1e293b; /* Colore scuro per garantire leggibilità */
-    font-size: 1.1em;
-    border-bottom: 1px solid #e2e8f0;
-    padding-bottom: 8px;
-}
-
-/* =========================================
-   BADGE PER GLI INGREDIENTI SOTTOSOGLIA
-   ========================================= */
-
-/* Stile a etichetta per gli ingredienti in arancione */
-.badge-sottosoglia {
+/* Base comune per le etichette */
+.badge-sottosoglia, .badge-critico {
     display: inline-block;
-    background-color: #fff7ed; /* Sfondo arancione chiarissimo, quasi bianco */
-    color: #c2410c; /* Testo arancione scuro ad alto contrasto */
-    border: 1px solid #fed7aa; /* Bordino in tono per definire il contorno */
     font-weight: 600;
     padding: 6px 12px;
-    border-radius: 20px; /* Bordo molto arrotondato, stile "pillola" */
+    border-radius: 20px;
     margin: 4px;
-    font-size: 0.9em;
+    font-size: 0.95em;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* Attenzione (Arancione) */
+.badge-sottosoglia {
+    background-color: #fff7ed; /* Sfondino chiaro */
+    color: #c2410c !important; /* Arancione scuro leggibile */
+    border: 1px solid #fed7aa;
+}
+.badge-sottosoglia span {
+    color: #c2410c !important; 
+}
+
+/* Critico (Rosso) */
+.badge-critico {
+    background-color: #fef2f2; /* Sfondino rosato */
+    color: #b91c1c !important; /* Rosso scuro leggibile */
+    border: 1px solid #fecaca;
+}
+.badge-critico span {
+    color: #b91c1c !important;
 }
