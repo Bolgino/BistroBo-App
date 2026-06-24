@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bistrobo-cache-v6'; 
+const CACHE_NAME = 'bistrobo-cache-v1'; 
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
