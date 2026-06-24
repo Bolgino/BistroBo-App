@@ -56,7 +56,9 @@ window.settings = {
 	magazzinoSnack: true,
 	menuCucina: true,
 	menuBere: true,
-	menuSnack: true
+	menuSnack: true,
+	sistemaExtraAbilitato: true,
+    scontriniSeparati: false
 };
 
 //Ingredienti Critici
@@ -1002,6 +1004,23 @@ function initImpostazioniToggle() {
             });
         }
     });
+	// ================= SISTEMA EXTRA =================
+	const toggleSistemaExtraBtn = document.getElementById("toggleSistemaExtraBtn");
+	const sistemaExtraRef = db.ref("impostazioni/sistemaExtraAbilitato");
+	if (toggleSistemaExtraBtn) {
+	    initToggle(toggleSistemaExtraBtn, sistemaExtraRef, {on: "ON", off: "OFF"}, true, val => {
+	        window.settings.sistemaExtraAbilitato = val;
+	    });
+	}
+	
+	// ================= SCONTRINI SEPARATI =================
+	const toggleScontriniSeparatiBtn = document.getElementById("toggleScontriniSeparatiBtn");
+	const scontriniSeparatiRef = db.ref("impostazioni/scontriniSeparati");
+	if (toggleScontriniSeparatiBtn) {
+	    initToggle(toggleScontriniSeparatiBtn, scontriniSeparatiRef, {on: "ON", off: "OFF"}, false, val => {
+	        window.settings.scontriniSeparati = val;
+	    });
+	}
 }
 function initTickNoteDestinazioni() {
     // 🔹 Mostra/nasconde i tick destinazioni note in base all'impostazione
@@ -3508,7 +3527,10 @@ async function caricaIngredienti() {
                 notify("Modifiche salvate!", "success");
             };
         };
-        row.appendChild(btnExtra);
+        // In caricaIngredienti()
+		if (window.settings.sistemaExtraAbilitato) {
+		    row.appendChild(btnExtra);
+		}
 
         qtyInput.onchange = async (e) => {
         let newQty = e.target.value === "" ? null : parseFloat(e.target.value);
@@ -4484,7 +4506,7 @@ function apriPopupVariantiAdmin(idx, comandaTemp, reserved, callback) {
             const catPiatto = (piatto.categoria || "cibi").toLowerCase();
             
             const isBase = baseIds.includes(id);
-            const isExtraValido = (ing.usabileComeExtra === true) && catsApp.includes(catPiatto);
+           const isExtraValido = window.settings.sistemaExtraAbilitato && (ing.usabileComeExtra === true) && catsApp.includes(catPiatto);
 
             // Se non fa parte della ricetta base e non ha la spunta "Extra", lo nascondiamo
             if (!isBase && !isExtraValido) return; 
