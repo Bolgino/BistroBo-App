@@ -1901,43 +1901,71 @@ body.tema-estate button {
    BOX INGREDIENTI CRITICI E SOTTOSOGLIA
    ========================================= */
 
-/* Il contenitore che isola il testo dai temi come Autunno/Inverno */
+/* Il contenitore ora usa Flexbox per affiancare le colonne */
 .box-ingredienti-critici {
-    background-color: rgba(255, 255, 255, 0.95); /* Sfondo quasi bianco */
+    background-color: rgba(255, 255, 255, 0.95);
     border: 1px solid #e2e8f0;
     border-radius: 12px;
-    padding: 16px;
+    padding: 20px;
     margin: 15px 0;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    display: flex;
+    gap: 30px; /* Spazio tra la colonna destra e sinistra */
 }
 
-/* Base comune per le etichette */
+/* Impostazione delle due colonne */
+.colonna-attenzione, .colonna-emergenza {
+    flex: 1; /* Si dividono lo spazio al 50% e 50% */
+    display: flex;
+    flex-direction: column; /* Mette i badge in colonna verticale */
+    gap: 8px; /* Spazio verticale tra un ingrediente e l'altro */
+}
+
+/* Titoli delle colonne */
+.titolo-colonna {
+    margin: 0 0 10px 0;
+    font-size: 1.05em;
+    color: #334155;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 8px;
+}
+
+/* Testo quando la colonna è vuota */
+.nessun-dato {
+    font-size: 0.85em;
+    color: #94a3b8;
+    font-style: italic;
+    margin: 0;
+}
+
+/* Base per le righe degli ingredienti */
 .badge-sottosoglia, .badge-critico {
-    display: inline-block;
-    font-weight: 600;
-    padding: 6px 12px;
-    border-radius: 20px;
-    margin: 4px;
+    display: flex;
+    justify-content: space-between; /* Nome a sinistra, quantità a destra */
+    align-items: center;
+    padding: 10px 14px;
+    border-radius: 8px; /* Bordo meno tondo, fa più "lista" */
     font-size: 0.95em;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
-/* Attenzione (Arancione) */
+/* Colori riga Attenzione (Sinistra) */
 .badge-sottosoglia {
-    background-color: #fff7ed; /* Sfondino chiaro */
-    color: #c2410c !important; /* Arancione scuro leggibile */
+    background-color: #fff7ed;
+    color: #c2410c; 
     border: 1px solid #fed7aa;
 }
-.badge-sottosoglia span {
-    color: #c2410c !important; 
-}
 
-/* Critico (Rosso) */
+/* Colori riga Emergenza (Destra) */
 .badge-critico {
-    background-color: #fef2f2; /* Sfondino rosato */
-    color: #b91c1c !important; /* Rosso scuro leggibile */
+    background-color: #fef2f2;
+    color: #b91c1c; 
     border: 1px solid #fecaca;
 }
-.badge-critico span {
-    color: #b91c1c !important;
+
+/* --- RESPONSIVE: Se lo schermo è piccolo (es. cellulare), le colonne si mettono una sotto l'altra --- */
+@media (max-width: 768px) {
+    .box-ingredienti-critici {
+        flex-direction: column;
+        gap: 20px;
+    }
 }
