@@ -605,25 +605,12 @@ async function aggiungiPreordineAlleComande(id) {
             nomeStand: window.settings.nomeStand,
             restoRichiesto: p.restoRichiesto
         };
+        
+        // Chiamiamo stampaComanda UNA SOLA VOLTA passando tutti i piatti insieme.
+        // Sarà lei al suo interno a dividere le pagine del PDF se window.settings.scontriniSeparati è ON!
         stampaComanda([...piattiCucina, ...piattiBere, ...piattiSnack], numeroComandaFinale, p.note || "", datiDellaStampa);
     }
-    
-        if (window.settings.scontriniSeparati) {
-            // Stampa separata per reparto (solo se ci sono piatti per quel reparto)
-            if (piattiCucina.length > 0) {
-                stampaComanda(piattiCucina, numeroComandaFinale + " - CUCINA", p.note || "", datiDellaStampa);
-            }
-            if (piattiBere.length > 0) {
-                stampaComanda(piattiBere, numeroComandaFinale + " - BERE", p.note || "", datiDellaStampa);
-            }
-            if (piattiSnack.length > 0) {
-                stampaComanda(piattiSnack, numeroComandaFinale + " - SNACK", p.note || "", datiDellaStampa);
-            }
-        } else {
-            // Logica originale: scontrino unico con tutti i piatti uniti
-            stampaComanda([...piattiCucina, ...piattiBere, ...piattiSnack], numeroComandaFinale, p.note || "", datiDellaStampa);
-        }
-    }
+
     // 🔟 Conferma visiva
     notifypreordini(`✅ Preordine ${numeroComandaFinale} aggiunto come comanda!`, "info");
 }
