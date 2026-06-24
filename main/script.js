@@ -7032,89 +7032,111 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
     if (!items || items.length === 0) return;
 
     const { jsPDF } = window.jspdf;
-    // Formato scontrino termico da 80mm
-    const doc = new jsPDF({ unit: "mm", format: [80, 200], orientation: "portrait" });
+    // Formato scontrino termico 80mm continuo
+    const doc = new jsPDF({ unit: "mm", format: [80, 250], orientation: "portrait" });
 
     const ora = new Date();
     const orario = ora.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const dataOdierna = ora.toLocaleDateString();
 
-    let y = 10;
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const margin = 5;
+    let y = 8;
+    const margin = 4;
+    const pageWidth = 80;
     const rightMargin = pageWidth - margin;
 
-    // --- INTESTAZIONE SCONTRINO ---
-    doc.setFontSize(14);
-    doc.setFont("helvetica", "bold");
-    const nomeStand = cliente.nomeStand || window.settings.nomeStand || "BistroBò";
-    doc.text(nomeStand, pageWidth / 2, y, { align: "center" });
-    y += 8;
-
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    doc.text(`Data: ${ora.toLocaleDateString()} Ora: ${orario}`, pageWidth / 2, y, { align: "center" });
-    y += 8;
-
-    // --- NUMERO COMANDA IN GRANDE ---
+    // 1. INTESTAZIONE STAND
     doc.setFontSize(16);
     doc.setFont("helvetica", "bold");
-    doc.text(`COMANDA: ${numeroComanda}`, pageWidth / 2, y, { align: "center" });
-    y += 8;
-
-    // --- DATI CLIENTE (Se presenti) ---
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    if (cliente.nome) { doc.text(`Cliente: ${cliente.nome}`, margin, y); y += 5; }
-    if (cliente.telefono) { doc.text(`Telefono: ${cliente.telefono}`, margin, y); y += 5; }
-    if (cliente.posizione) { doc.text(`Posizione: ${cliente.posizione}`, margin, y); y += 5; }
-    
-    // Linea separatrice
-    doc.text("-".repeat(35), pageWidth / 2, y, { align: "center" });
+    const nomeStand = (typeof cliente !== "undefined" && cliente.nomeStand) ? cliente.nomeStand : (window.settings.nomeStand || "BistroBò");
+    doc.text(nomeStand.toUpperCase(), pageWidth / 2, y, { align: "center" });
     y += 6;
 
-    // --- LISTA PIATTI (Senza divisione in categorie) ---
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`${dataOdierna} - Ore ${orario}`, pageWidth / 2, y, { align: "center" });
+    y += 6;
+
+    // Trattini separatori
+    doc.text("-".repeat(45), pageWidth / 2, y, { align: "center" });
+    y += 8;
+
+    // 2. NUMERO COMANDA GIGANTE
+    doc.setFontSize(24);
+    doc.setFont("helvetica", "bold");
+    doc.text(`COMANDA ${numeroComanda}`, pageWidth / 2, y, { align: "center" });
+    y += 6;
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text("-".repeat(45), pageWidth / 2, y, { align: "center" });
+    y += 6;
+
+    // 3. DATI CLIENTE (Se presenti dai Preordini)
+    if (cliente && cliente.nome) {
+        doc.setFontSize(11);
+        doc.setFont("helvetica", "bold");
+        doc.text(`Cliente: ${cliente.nome}`, margin, y); y += 5;
+        if (cliente.telefono) { doc.setFont("helvetica", "normal"); doc.text(`Tel: ${cliente.telefono}`, margin, y); y += 5; }
+        if (cliente.posizione) { doc.text(`Pos: ${cliente.posizione}`, margin, y); y += 5; }
+        doc.text("-".repeat(45), pageWidth / 2, y, { align: "center" });
+        y += 6;
+    }
+
+    // 4. INTESTAZIONE LISTA PIATTI
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text("Q.TA  DESCRIZIONE", margin, y);
+    doc.text("IMPORTO", rightMargin, y, { align: "right" });
+    y += 2;
+    doc.setFont("helvetica", "normal");
+    doc.text("-".repeat(45), pageWidth / 2, y, { align: "center" });
+    y += 5;
+
     let totaleComanda = 0;
-    
+
     items.forEach(p => {
-        const qTxt = `${p.quantita}x `;
         const prezzoTotPiatto = calcolaPrezzoConSconto(p);
         totaleComanda += prezzoTotPiatto;
 
-        // Piatto e Quantità a sinistra, Prezzo a destra
-        doc.setFontSize(11);
+        doc.setFontSize(12);
         doc.setFont("helvetica", "bold");
-        doc.text(`${qTxt}${p.nome}`, margin, y);
-        doc.text(`€${prezzoTotPiatto.toFixed(2)}`, rightMargin, y, { align: "right" });
-        y += 5;
-
-        // --- STAMPA VARIANTI SOTTO AL PIATTO ---
-        // Convertiamo sempre in Array per sicurezza Firebase
-        let variantiArray = p.varianti ? (Array.isArray(p.varianti) ? p.varianti : Object.values(p.varianti)) : [];
         
+        // Quantità
+        const qtyStr = `${p.quantita}x`;
+        doc.text(qtyStr, margin, y);
+        
+        // Nome del piatto (mandato a capo se lunghissimo)
+        const nomeSplit = doc.splitTextToSize(p.nome, 48);
+        doc.text(nomeSplit, margin + 8, y);
+        
+        // Prezzo a destra
+        doc.text(`€ ${prezzoTotPiatto.toFixed(2)}`, rightMargin, y, { align: "right" });
+        y += (nomeSplit.length * 5); 
+
+        // 5. STAMPA VARIANTI E AGGIUNTE
+        let variantiArray = p.varianti ? (Array.isArray(p.varianti) ? p.varianti : Object.values(p.varianti)) : [];
         if (variantiArray.length > 0) {
-            doc.setFontSize(9);
-            doc.setFont("helvetica", "italic");
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "normal");
+            
             let maxGratis = p.maxVariantiGratis || 0;
             let aggiunteCount = 0;
-            
-            // Rimozioni
+
+            // Stampiamo le Rimozioni
             const rimozioni = variantiArray.filter(v => v.tipo === "rimozione");
             rimozioni.forEach(v => {
-                doc.text(`   - Senza ${v.nome}`, margin, y);
-                y += 4;
+                doc.text(`   - NO ${v.nome}`, margin + 8, y);
+                y += 4.5;
             });
 
-            // Aggiunte raggruppate
+            // Stampiamo le Aggiunte (Raggruppate)
             const aggiunte = variantiArray.filter(v => v.tipo === "aggiunta");
             const mappaAggiunte = {};
-            
             aggiunte.forEach(v => {
                 let prezzoAggiunta = 0;
-                if (aggiunteCount >= maxGratis) {
-                    prezzoAggiunta = Number(v.prezzo || 0);
-                }
+                if (aggiunteCount >= maxGratis) { prezzoAggiunta = Number(v.prezzo || 0); }
                 aggiunteCount++;
-
+                
                 if (!mappaAggiunte[v.nome]) mappaAggiunte[v.nome] = { nome: v.nome, count: 0, costoTot: 0 };
                 mappaAggiunte[v.nome].count++;
                 mappaAggiunte[v.nome].costoTot += prezzoAggiunta;
@@ -7122,49 +7144,57 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
 
             Object.values(mappaAggiunte).forEach(a => {
                 const aqTxt = a.count > 1 ? `${a.count}x ` : "";
-                const costoTxt = `+€${a.costoTot.toFixed(2)}`; 
-                doc.text(`   + ${aqTxt}${a.nome}`, margin, y);
-                doc.text(costoTxt, rightMargin, y, { align: "right" });
-                y += 4;
+                doc.text(`   + ${aqTxt}${a.nome}`, margin + 8, y);
+                doc.text(`€ ${a.costoTot.toFixed(2)}`, rightMargin, y, { align: "right" });
+                y += 4.5;
             });
-            doc.setFont("helvetica", "normal"); // resetta font
         }
+        y += 2; // Spazietto per il prossimo piatto
     });
 
-    y += 2;
-    doc.setFont("helvetica", "normal");
-    doc.text("-".repeat(35), pageWidth / 2, y, { align: "center" });
-    y += 8;
-
-    // --- TOTALE IN GRANDE ---
-    doc.setFontSize(16);
-    doc.setFont("helvetica", "bold");
-    doc.text("TOTALE:", margin, y);
-    doc.text(`€${totaleComanda.toFixed(2)}`, rightMargin, y, { align: "right" });
-    y += 8;
-
-    // --- RESTO E PAGAMENTO ---
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
-    if (cliente.restoRichiesto && cliente.restoRichiesto > 0) { 
-        doc.text(`Resto da dare: €${cliente.restoRichiesto}`, margin, y); 
-        y += 5; 
-    }
-    
-    if (note) {
-        y += 2;
-        doc.setFont("helvetica", "italic");
-        doc.text(`NOTE: ${note}`, margin, y);
+    y += 2;
+    doc.text("-".repeat(45), pageWidth / 2, y, { align: "center" });
+    y += 8;
+
+    // 6. TOTALE GIGANTE
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.text("TOTALE", margin, y);
+    doc.text(`€ ${totaleComanda.toFixed(2)}`, rightMargin, y, { align: "right" });
+    y += 8;
+
+    // 7. RESTO E NOTE
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "normal");
+    if (cliente && cliente.restoRichiesto && cliente.restoRichiesto > 0) {
+        doc.text(`Da dare resto su: € ${cliente.restoRichiesto}`, margin, y);
         y += 6;
     }
 
-    // --- Browser normale (Apertura iframe per stampa) ---
+    if (note) {
+        y += 2;
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        const noteSplit = doc.splitTextToSize(`NOTE: ${note}`, pageWidth - margin*2);
+        doc.text(noteSplit, margin, y);
+        y += (noteSplit.length * 5);
+    }
+
+    // FOOTER GRAZIE
+    y += 5;
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "italic");
+    doc.text("Grazie e Buon Appetito!", pageWidth / 2, y, { align: "center" });
+
+    // --- Apertura PDF per la stampa ---
     const pdfBase64 = doc.output("datauristring");
     const newWindow = window.open("", "_blank");
     newWindow.document.write(`
         <html><head><title>Scontrino ${numeroComanda}</title></head>
-        <body style="margin:0">
-            <iframe src="${pdfBase64}" style="border:none;width:100%;height:100vh;"></iframe>
+        <body style="margin:0; background:#555; display:flex; justify-content:center;">
+            <iframe src="${pdfBase64}" style="border:none; width:80mm; height:100vh; background:white;"></iframe>
             <script>
                 window.onload = () => {
                     const iframe = document.querySelector('iframe');
