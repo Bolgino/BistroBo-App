@@ -1408,24 +1408,29 @@ function renderVariantiCliente(piatto, maxGratis) {
     const listaDiv = document.getElementById("listaIngredientiCliente");
     listaDiv.innerHTML = "";
 
-    // Calcolo Intelligente del Prezzo Extra (Stesso cervello della cassa!)
+    // Calcolo Intelligente del Prezzo Extra
     let totaleExtra = 0;
     const aggiunte = tempVariantiCliente.filter(v => v.tipo === "aggiunta");
     aggiunte.forEach((v, index) => {
         if (index >= maxGratis) totaleExtra += Number(v.prezzo || 0);
     });
 
-    // Aggiorna il totale in tempo reale nel popup
     const prezzoBaseScontato = calcolaPrezzoConScontoPerPiattoSingolo(piatto); 
     document.getElementById("totalePiattoPersonalizzato").innerText = (prezzoBaseScontato + totaleExtra).toFixed(2);
 
-    const isProssimaGratis = aggiunte.length < maxGratis;
+    const aggiunteFatte = tempVariantiCliente.filter(v => v.tipo === "aggiunta").length;
+    const isProssimaGratis = aggiunteFatte < maxGratis;
     const baseIds = (piatto.ingredienti || []).map(i => i.id);
 
     Object.entries(ingredientiGlobali).forEach(([ingId, ing]) => {
         const catsApp = ing.categorieApplicabili || [ing.categoria || "cibi"];
         const catPiatto = (piatto.categoria || "cibi").toLowerCase();
-        if (!catsApp.includes(catPiatto) && !baseIds.includes(ingId)) return;
+        
+        const isBase = baseIds.includes(ingId);
+        const isExtraValido = (ing.usabileComeExtra === true) && catsApp.includes(catPiatto);
+
+        // Se non è base e non è extra valido per questa categoria, salta
+        if (!isBase && !isExtraValido) return;
 
         const row = document.createElement("div");
         row.style.display = "flex";
@@ -1437,9 +1442,11 @@ function renderVariantiCliente(piatto, maxGratis) {
         const nomeSpan = document.createElement("span");
         nomeSpan.innerText = ing.nome;
         const btnContainer = document.createElement("div");
+        btnContainer.style.display = "flex";
+        btnContainer.style.alignItems = "center";
 
-        // RIMOZIONE (Per togliere ingredienti base)
-        if (baseIds.includes(ingId)) {
+        // RIMOZIONE (Solo ingredienti base)
+        if (isBase) {
             const isRimosso = tempVariantiCliente.some(v => v.tipo === "rimozione" && v.id === ingId);
             const btnRemove = document.createElement("button");
             btnRemove.innerText = isRimosso ? "Annulla" : "- Togli";
@@ -1452,51 +1459,83 @@ function renderVariantiCliente(piatto, maxGratis) {
             btnContainer.appendChild(btnRemove);
         }
 
-        // AGGIUNTA
-        const costoExtra = ing.prezzoExtra !== undefined ? Number(ing.prezzoExtra) : 0.50; 
-        const isAggiunto = tempVariantiCliente.some(v => v.tipo === "aggiunta" && v.id === ingId);
-        
-        const btnAdd = document.createElement("button");
-        btnAdd.style.marginLeft = "5px";
-        if (isAggiunto) {
-            btnAdd.innerText = "Annulla";
-            btnAdd.style.cssText += "background:#ccc; padding:5px 10px; border-radius:5px; border:none;";
-            btnAdd.onclick = () => {
-                tempVariantiCliente = tempVariantiCliente.filter(v => !(v.tipo === "aggiunta" && v.id === ingId));
-                renderVariantiCliente(piatto, maxGratis);
-            };
-        } else {
-            btnAdd.innerText = isProssimaGratis ? `+ Aggiungi (GRATIS)` : `+ Aggiungi (€${costoExtra.toFixed(2)})`;
-            btnAdd.style.cssText += "background:#4CAF50; color:white; padding:5px 10px; border-radius:5px; border:none;";
-            btnAdd.onclick = () => {
-                tempVariantiCliente.push({ tipo: "aggiunta", id: ingId, nome: ing.nome, prezzo: costoExtra });
-                renderVariantiCliente(piatto, maxGratis);
-            };
+        // AGGIUNTA MULTIPLA (Solo se Extra valido)
+        if (isExtraValido) {
+            const costoExtra = ing.prezzoExtra !== undefined ? Number(ing.prezzoExtra) : 0.50; 
+            const qtyExtra = ing.qtyExtra !== undefined ? Number(ing.qtyExtra) : 1;
+            
+            const occorrenze = tempVariantiCliente.filter(v => v.tipo === "aggiunta" && v.id === ingId).length;
+
+            const wrapperAdd = document.createElement("div");
+            wrapperAdd.style.display = "inline-flex";
+            wrapperAdd.style.alignItems = "center";
+            wrapperAdd.style.marginLeft = "5px";
+
+            if (occorrenze > 0) {
+                // Tasto Meno
+                const btnMinus = document.createElement("button");
+                btnMinus.innerText = "-";
+                btnMinus.style.cssText = "background:#ccc; color:black; padding:4px 10px; border-radius:5px; border:none;";
+                btnMinus.onclick = () => {
+                    const reversedIndex = [...tempVariantiCliente].reverse().findIndex(v => v.tipo === "aggiunta" && v.id === ingId);
+                    if (reversedIndex !== -1) {
+                        const indexToRemove = tempVariantiCliente.length - 1 - reversedIndex;
+                        tempVariantiCliente.splice(indexToRemove, 1);
+                    }
+                    renderVariantiCliente(piatto, maxGratis);
+                };
+
+                const spanCount = document.createElement("span");
+                spanCount.innerText = occorrenze;
+                spanCount.style.margin = "0 8px";
+                spanCount.style.fontWeight = "bold";
+
+                // Tasto Più
+                const btnPlus = document.createElement("button");
+                btnPlus.innerText = "+";
+                btnPlus.style.cssText = "background:#4CAF50; color:white; padding:4px 10px; border-radius:5px; border:none;";
+                btnPlus.onclick = () => {
+                    tempVariantiCliente.push({ tipo: "aggiunta", id: ingId, nome: ing.nome, qty: qtyExtra, prezzo: costoExtra });
+                    renderVariantiCliente(piatto, maxGratis);
+                };
+
+                wrapperAdd.appendChild(btnMinus);
+                wrapperAdd.appendChild(spanCount);
+                wrapperAdd.appendChild(btnPlus);
+            } else {
+                // Tasto Aggiungi iniziale
+                const btnAdd = document.createElement("button");
+                btnAdd.innerText = isProssimaGratis ? `+ Aggiungi (GRATIS)` : `+ Aggiungi (€${costoExtra.toFixed(2)})`;
+                btnAdd.style.cssText = "background:#4CAF50; color:white; padding:5px 10px; border-radius:5px; border:none;";
+                btnAdd.onclick = () => {
+                    tempVariantiCliente.push({ tipo: "aggiunta", id: ingId, nome: ing.nome, qty: qtyExtra, prezzo: costoExtra });
+                    renderVariantiCliente(piatto, maxGratis);
+                };
+                wrapperAdd.appendChild(btnAdd);
+            }
+            btnContainer.appendChild(wrapperAdd);
         }
-        btnContainer.appendChild(btnAdd);
 
         row.appendChild(nomeSpan);
         row.appendChild(btnContainer);
         listaDiv.appendChild(row);
     });
 
-    // Azione del tasto SALVA
     document.getElementById("btnConfermaPersonalizzazione").onclick = () => {
         carrelloCliente.push({
             id: idPiattoInModifica,
             nome: piatto.nome,
-            prezzo: prezzoBaseScontato, // Usiamo il prezzo già eventualmente scontato
+            prezzo: prezzoBaseScontato, 
             categoria: piatto.categoria,
             varianti: JSON.parse(JSON.stringify(tempVariantiCliente)),
             extraPrezzo: totaleExtra,
-            quantita: 1 // Nel carrello ogni elemento configurato vale 1
+            quantita: 1 
         });
         
         chiudiPopupPersonalizza();
-        aggiornaRiepilogoCarrelloUI(); // Funzione che disegneremo per mostrare il totale
+        aggiornaRiepilogoCarrelloUI(); 
     };
 }
-
 // Calcola lo sconto per la singola unità
 function calcolaPrezzoConScontoPerPiattoSingolo(piatto) {
     let p = Number(piatto.prezzo || 0);
@@ -1533,12 +1572,23 @@ function aggiornaRiepilogoCarrelloUI() {
             divRiga.style.justifyContent = "space-between";
             divRiga.style.alignItems = "center";
             
-            // Creiamo il testo delle varianti (es: "+ Bacon \n - Senza Cipolla")
+            // Creiamo il testo delle varianti RAGGRUPPATO
             let htmlVarianti = "";
             if (item.varianti && item.varianti.length > 0) {
-                htmlVarianti = `<div style="font-size: 0.8em; color: #777; margin-top: 4px;">
-                    ${item.varianti.map(v => v.tipo === "aggiunta" ? `+ ${v.nome}` : `- Senza ${v.nome}`).join("<br>")}
-                </div>`;
+                let conteggio = {};
+                item.varianti.forEach(v => {
+                    let key = v.tipo + "_" + v.nome;
+                    if (!conteggio[key]) conteggio[key] = { tipo: v.tipo, nome: v.nome, count: 0 };
+                    conteggio[key].count++;
+                });
+
+                const variantiTxt = Object.values(conteggio).map(v => {
+                    let qTxt = v.count > 1 ? `${v.count}x ` : "";
+                    if (v.tipo === "aggiunta") return `<span style="color:green;">+ ${qTxt}${v.nome}</span>`;
+                    else return `<span style="color:red;">- Senza ${v.nome}</span>`;
+                }).join("<br>");
+
+                htmlVarianti = `<div style="font-size: 0.8em; color: #777; margin-top: 4px;">${variantiTxt}</div>`;
             }
 
             // Disegniamo la riga del carrello con il tastino per cancellare
