@@ -58,7 +58,8 @@ window.settings = {
 	menuBere: true,
 	menuSnack: true,
 	sistemaExtraAbilitato: true,
-    scontriniSeparati: false
+    scontriniSeparati: false,
+    piattiComboAbilitati: false
 };
 
 //Ingredienti Critici
@@ -1019,6 +1020,14 @@ function initImpostazioniToggle() {
 	if (toggleScontriniSeparatiBtn) {
 	    initToggle(toggleScontriniSeparatiBtn, scontriniSeparatiRef, {on: "ON", off: "OFF"}, false, val => {
 	        window.settings.scontriniSeparati = val;
+	    });
+	}
+	// ================= PIATTI COMBO =================
+	const toggleComboBtn = document.getElementById("toggleComboBtn");
+	const comboRef = db.ref("impostazioni/piattiComboAbilitati");
+	if (toggleComboBtn) {
+	    initToggle(toggleComboBtn, comboRef, {on: "ON", off: "OFF"}, false, val => {
+	        window.settings.piattiComboAbilitati = val;
 	    });
 	}
 }
