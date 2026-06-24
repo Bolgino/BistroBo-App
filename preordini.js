@@ -1352,7 +1352,7 @@ function renderVariantiCliente(piatto, maxGratis) {
         const catPiatto = (piatto.categoria || "cibi").toLowerCase();
         
         const isBase = baseIds.includes(ingId);
-        const isExtraValido = (ing.usabileComeExtra === true) && catsApp.includes(catPiatto);
+        const isExtraValido = window.settings.sistemaExtraAbilitato && (ing.usabileComeExtra === true) && catsApp.includes(catPiatto);
 
         // Se non è base e non è extra valido per questa categoria, salta
         if (!isBase && !isExtraValido) return;
