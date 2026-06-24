@@ -1168,13 +1168,23 @@ function aggiornaListaIngredientiCritici(force=false) {
 
     // Popola contenuto della tab
     container.innerHTML = "";
+    
+    // Aggiunge lo sfondo a box per renderlo leggibile in ogni tema (Autunno, Estate, ecc.)
+    container.className = "box-ingredienti-critici";
+
     listaCritica.forEach(i => {
         const r = document.createElement("div");
-        r.style.padding = "4px 6px";
-        r.style.marginBottom = "4px";
-        r.style.border = `1px solid ${i.critico ? "red" : "orange"}`;
-        r.style.borderRadius = "5px";
-        r.innerHTML = `${i.nome} <span style="color:${i.critico ? "red" : "orange"}">(${i.rimanente})</span> ${i.critico ? "⚠️" : ""}`;
+        
+        // Sceglie lo stile a forma di "etichetta" in base alla gravità
+        if (i.critico) {
+            r.className = "badge-critico";
+        } else {
+            r.className = "badge-sottosoglia";
+        }
+        
+        // HTML pulito senza colori forzati inline, ci pensa il CSS
+        r.innerHTML = `<strong>${i.nome}</strong> <span>(${i.rimanente} ${i.unita})</span> ${i.critico ? "⚠️" : ""}`;
+        
         container.appendChild(r);
     });
 
