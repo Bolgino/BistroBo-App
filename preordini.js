@@ -622,14 +622,8 @@ async function aggiungiPreordineAlleComande(id) {
             stampaComanda([...piattiCucina, ...piattiBere, ...piattiSnack], numeroComandaFinale, p.note || "", datiDellaStampa);
         }
     }
-
-
-
-    }
-
     // 🔟 Conferma visiva
     notifypreordini(`✅ Preordine ${numeroComandaFinale} aggiunto come comanda!`, "info");
-
 }
 async function eliminaPreordine(id) {
   await preordiniRef.child(id).remove();
