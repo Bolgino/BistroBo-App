@@ -558,9 +558,9 @@
 			<div class="settingItem">
 			    <div class="settingLabel">
 			        <span>Abilita Sistema Piatti Combo</span>
-			        <small>Abilita la gestione dei Menù con contorni inclusi a scelta (es. Pastin + Patatine).</small>
+			        <small>Attiva la logica per i piatti "Menu/Combo", permettendo di scegliere contorni (altri piatti) inclusi nel prezzo base.</small>
 			    </div>
-			    <button id="toggleSistemaComboBtn" class="toggleBtn">ON</button>
+			    <button id="toggleComboBtn" class="toggleBtn">OFF</button>
 			</div>
 			<div class="settingItem">
 				<div class="settingLabel">
@@ -797,22 +797,6 @@
 			</div>
 		
 		</div>
-	</div>
-	
-	<div id="popupCombo" class="modal hidden" style="z-index: 3000;">
-	    <div class="modal-content" style="max-width: 450px;">
-	        <h2 id="titoloCombo" style="margin-top:0; color:#1976D2;">Scegli i Contorni</h2>
-	        <div id="listaContorniCombo" style="max-height: 50vh; overflow-y: auto; margin-bottom: 15px;">
-	            </div>
-	        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 1.2em; font-weight: bold; margin-bottom: 15px;">
-	            <span>Totale Piatto:</span>
-	            <span style="color: #4CAF50;">€<span id="totalePiattoCombo">0.00</span></span>
-	        </div>
-	        <div style="display: flex; gap: 10px;">
-	            <button class="btn btn-secondary" onclick="chiudiPopupCombo()" style="flex: 1;">Annulla</button>
-	            <button class="btn btn-primary" id="btnConfermaCombo" style="flex: 2; background-color: #1976D2;">Conferma Scelta</button>
-	        </div>
-	    </div>
 	</div>
 
 	<!-- ================= SCRIPT ================= -->
