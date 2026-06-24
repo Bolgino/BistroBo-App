@@ -7047,7 +7047,7 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
     // 1. INTESTAZIONE STAND
     doc.setFontSize(16);
     doc.setFont("helvetica", "bold");
-    const nomeStand = (typeof cliente !== "undefined" && cliente.nomeStand) ? cliente.nomeStand : (window.settings.nomeStand || "BistroBò");
+    const nomeStand = (typeof cliente !== "undefined" && cliente.nomeStand) ? cliente.nomeStand : (window.settings && window.settings.nomeStand ? window.settings.nomeStand : "BistroBò");
     doc.text(nomeStand.toUpperCase(), pageWidth / 2, y, { align: "center" });
     y += 6;
 
@@ -7095,7 +7095,13 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
     let totaleComanda = 0;
 
     items.forEach(p => {
-        const prezzoTotPiatto = calcolaPrezzoConSconto(p);
+        // Fallback di sicurezza: se la funzione di sconto non c'è, fa un calcolo grezzo
+        let prezzoTotPiatto = 0;
+        if (typeof calcolaPrezzoConSconto === "function") {
+            prezzoTotPiatto = calcolaPrezzoConSconto(p);
+        } else {
+            prezzoTotPiatto = (p.prezzo + (p.extraPrezzo || 0)) * (p.quantita || 1);
+        }
         totaleComanda += prezzoTotPiatto;
 
         doc.setFontSize(12);
