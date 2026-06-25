@@ -2418,6 +2418,8 @@ function separaComanda(items) {
                     cloneContornoSlegato.contorniScelti = []; 
 					cloneContornoSlegato.isCombo = false; // Ferma il sistema dal credere che sia ancora un menu!
                     cloneContornoSlegato.ingredienti = [];
+					cloneContornoSlegato.categoria = c.categoria || "Snack";
+                    cloneContornoSlegato.tipo = destC;
                     
                     let varTxt = c.varianti && c.varianti.length > 0 ? " (" + c.varianti.map(v => v.tipo==='aggiunta'?`+${v.nome}`:`-${v.nome}`).join(", ") + ")" : "";
                     cloneContornoSlegato.nome = `${c.nome}${varTxt} [Contorno di ${i.nome}]`;
@@ -5148,7 +5150,7 @@ async function caricaComandePerRuolo(daFareDiv, storicoDiv, ruolo) {
                             }
 
                             const cSpan = document.createElement("span");
-                            cSpan.innerHTML = ` ↳ ${i.quantita}x ${contorno.nome}${variantiContHtml}`;
+                            cSpan.innerHTML = `${i.quantita}x ${contorno.nome}${variantiContHtml}`;
                             cDiv.appendChild(cSpan);
                             pContainer.appendChild(cDiv);
                         });
