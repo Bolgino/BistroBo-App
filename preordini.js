@@ -825,10 +825,8 @@ async function initPreordiniClienti() {
             let clickAction = "";
             if (window.settings.piattiComboAbilitati && item.isCombo) {
                 clickAction = `apriPopupCombo('${id}', 'preordine')`;
-            } else if (window.settings.sistemaExtraAbilitato) {
-                clickAction = `apriPopupPersonalizzaCliente('${id}')`;
             } else {
-                clickAction = `aggiungiVeloceCarrello('${id}')`;
+                clickAction = `apriPopupPersonalizzaCliente('${id}')`;
             }
             
             const btnHtml = `
@@ -1525,15 +1523,20 @@ function renderVariantiCliente(piatto, maxGratis) {
     });
 
     document.getElementById("btnConfermaPersonalizzazione").onclick = () => {
+        let extraFinali = 0;
+        tempVariantiCliente.filter(v => v.tipo === "aggiunta").forEach((v, index) => {
+            if (index >= maxGratis) extraFinali += Number(v.prezzo || 0);
+        });
+
         carrelloCliente.push({
             id: idPiattoInModifica,
             nome: piatto.nome,
-            prezzo: prezzoBaseScontato, 
+            prezzo: piatto.prezzo, 
             categoria: piatto.categoria,
-            varianti: JSON.parse(JSON.stringify(tempVariantiCliente)),
-            extraPrezzo: totaleExtra,
+            varianti: tempVariantiCliente,
+            extraPrezzo: extraFinali,
             quantita: 1,
-            maxVariantiGratis: maxGratis || 0 // 🔹 QUESTO EVITA IL CRASH FIREBASE
+            sconto: piatto.sconto || null
         });
         
         chiudiPopupPersonalizza();
@@ -1552,33 +1555,54 @@ function calcolaPrezzoConScontoPerPiattoSingolo(piatto) {
 // FUNZIONI DEL CARRELLO VISIVO (CLIENTE)
 // ==========================================
 
+function calcolaPrezzoConScontoPerPiatto(piatto, comandaIntera) {
+    const q = piatto.quantita || 1;
+    const prezzoBaseEExtra = piatto.prezzo + (piatto.extraPrezzo || 0);
+
+    if(!piatto.sconto) return prezzoBaseEExtra * q;
+    if(piatto.sconto.tipo === "percentuale"){
+        return prezzoBaseEExtra * q * (1 - (Number(piatto.sconto.valore)||0)/100);
+    } 
+
+    if(piatto.sconto.tipo === "x_paga_y" || piatto.sconto.tipo === "x_paga_y_fisso"){
+        let qTotale = comandaIntera.filter(p => p.id === piatto.id).reduce((sum, p) => sum + (p.quantita || 1), 0);
+        const x = parseInt(piatto.sconto.valore.x);
+        const y = piatto.sconto.tipo === "x_paga_y" ? parseInt(piatto.sconto.valore.y) : parseFloat(piatto.sconto.valore.y);
+
+        if (qTotale < x) return prezzoBaseEExtra * q;
+
+        const numGruppi = Math.floor(qTotale / x);
+        const prezzoScontatoTotale = numGruppi * y * piatto.prezzo; 
+        const prezzoPienoTotale = (qTotale % x) * piatto.prezzo;
+        const scontoTotale = (qTotale * piatto.prezzo) - (prezzoScontatoTotale + prezzoPienoTotale);
+
+        return (prezzoBaseEExtra * q) - ((q / qTotale) * scontoTotale);
+    }
+    return prezzoBaseEExtra * q;
+}
+
 function aggiornaRiepilogoCarrelloUI() {
     let nuovoTotale = 0;
+    let totaleGrezzo = 0;
     const listaCarrello = document.getElementById("listaCarrello");
     const carrelloContainer = document.getElementById("carrelloContainer");
-    
+
     if (listaCarrello) listaCarrello.innerHTML = "";
-    
-    // Mostra o Nasconde magicamente il box del carrello se ci sono prodotti
-    if (carrelloContainer) {
-        carrelloContainer.style.display = carrelloCliente.length === 0 ? "none" : "block";
-    }
+    if (carrelloContainer) carrelloContainer.style.display = carrelloCliente.length === 0 ? "none" : "block";
 
     carrelloCliente.forEach((item, index) => {
-        const costoRiga = item.prezzo + item.extraPrezzo;
-        nuovoTotale += costoRiga;
+        const costoRigaGrezzo = item.prezzo + (item.extraPrezzo || 0);
+        const costoRigaScontato = calcolaPrezzoConScontoPerPiatto(item, carrelloCliente);
         
+        totaleGrezzo += costoRigaGrezzo;
+        nuovoTotale += costoRigaScontato;
+
         if (listaCarrello) {
             const divRiga = document.createElement("div");
-            // Stili del contenitore della riga: aggiungiamo "gap" per distanziare gli elementi
-            divRiga.style.padding = "10px 0";
-            divRiga.style.borderBottom = "1px dashed #eee";
-            divRiga.style.display = "flex";
-            divRiga.style.justifyContent = "space-between";
-            divRiga.style.alignItems = "center";
-            divRiga.style.gap = "15px"; // 🔹 SPAZIO MAGICO AGGIUNTO
-            
-            // Creiamo il testo delle varianti RAGGRUPPATO
+            divRiga.style.padding = "10px 0"; divRiga.style.borderBottom = "1px dashed #eee";
+            divRiga.style.display = "flex"; divRiga.style.justifyContent = "space-between";
+            divRiga.style.alignItems = "center"; divRiga.style.gap = "15px";
+
             let htmlVarianti = "";
             if (item.varianti && item.varianti.length > 0) {
                 let conteggio = {};
@@ -1587,32 +1611,32 @@ function aggiornaRiepilogoCarrelloUI() {
                     if (!conteggio[key]) conteggio[key] = { tipo: v.tipo, nome: v.nome, count: 0 };
                     conteggio[key].count++;
                 });
-
                 const variantiTxt = Object.values(conteggio).map(v => {
                     let qTxt = v.count > 1 ? `${v.count}x ` : "";
-                    if (v.tipo === "aggiunta") return `<span style="color:green;">+ ${qTxt}${v.nome}</span>`;
-                    else return `<span style="color:red;">- Senza ${v.nome}</span>`;
+                    return v.tipo === "aggiunta" ? `<span style="color:green;">+ ${qTxt}${v.nome}</span>` : `<span style="color:red;">- Senza ${v.nome}</span>`;
                 }).join("<br>");
-
                 htmlVarianti = `<div style="font-size: 0.8em; color: #777; margin-top: 4px;">${variantiTxt}</div>`;
             }
-
-            // NUOVO: RAGGRUPPAMENTO CONTORNI COMBO
+            
+            let htmlCombo = "";
             if (item.contorniScelti && item.contorniScelti.length > 0) {
-                const cTxt = item.contorniScelti.map(c => {
-                    return c.isGratis ? `<span style="color:#2e7d32; font-weight:bold;">=> ${c.nome}</span>` : `<span style="color:#d9534f;">=> ${c.nome} (+€${c.prezzoPagato.toFixed(2)})</span>`;
+                const cTxt = item.contorniScelti.map((c, cIdx) => {
+                    let varsTxt = c.varianti && c.varianti.length > 0 ? " <small style='color:#777;'>(" + c.varianti.map(v => v.tipo==='aggiunta'?`+${v.nome}`:`-${v.nome}`).join(", ") + ")</small>" : "";
+                    return c.isGratis 
+                        ? `<span style="color:#2e7d32; font-weight:bold; cursor:pointer;" onclick="apriPopupVariantiContornoCliente(${index}, ${cIdx})">=> ${c.nome}${varsTxt}</span>` 
+                        : `<span style="color:#555; cursor:pointer;" onclick="apriPopupVariantiContornoCliente(${index}, ${cIdx})">=> ${c.nome} (+€${c.prezzoPagato.toFixed(2)})${varsTxt}</span>`;
                 }).join("<br>");
-                htmlVarianti += `<div style="font-size: 0.85em; margin-top: 4px;">${cTxt}</div>`;
+                htmlCombo = `<div style="font-size: 0.85em; margin-top: 4px;">${cTxt}</div>`;
             }
 
-            // Disegniamo la riga del carrello: bloccando il prezzo e il bottone per non andare a capo male
             divRiga.innerHTML = `
                 <div style="flex: 1 1 auto; text-align: left; padding-right: 15px; word-break: break-word;">
                     <b style="color: #333; font-size: 1.1em;">${item.nome}</b>
                     ${htmlVarianti}
+                    ${htmlCombo}
                 </div>
                 <div style="flex: 0 0 auto; font-weight: bold; font-size: 1.1em; color: #4CAF50; white-space: nowrap; margin-right: 15px;">
-                    €${costoRiga.toFixed(2)}
+                    €${costoRigaGrezzo.toFixed(2)}
                 </div>
                 <button onclick="rimuoviDalCarrello(${index})" style="flex: 0 0 auto; background: #fff; color: #ff5252; border: 1px solid #ff5252; border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 0.9em; font-weight: bold; transition: 0.2s; white-space: nowrap;">Rimuovi</button>
             `;
@@ -1621,32 +1645,152 @@ function aggiornaRiepilogoCarrelloUI() {
     });
 
     totale = Number(nuovoTotale.toFixed(2));
+    
+    const risparmio = totaleGrezzo - totale;
+    if (risparmio > 0.01 && listaCarrello) {
+        const divSconto = document.createElement("div");
+        divSconto.style.padding = "10px 0"; divSconto.style.color = "#d32f2f";
+        divSconto.style.fontWeight = "bold"; divSconto.style.textAlign = "right";
+        divSconto.innerHTML = `Sconto Applicato (Offerte): -€${risparmio.toFixed(2)}`;
+        listaCarrello.appendChild(divSconto);
+    }
+
     const totaleSpan = document.getElementById("totaleCliente");
     if (totaleSpan) totaleSpan.innerText = totale.toFixed(2);
-    // 🔹 FEEDBACK VISIVO: Aggiorna i bottoni del menu con la quantità nel carrello
+    
     if (typeof menuItems !== 'undefined') {
         Object.keys(menuItems).forEach(id => {
             const btn = document.getElementById(`btn-add-${id}`);
             if (btn && !btn.disabled && !btn.innerText.includes("Esaurito")) { 
                 const count = carrelloCliente.filter(item => item.id === id).length;
-                if (count > 0) {
-                    btn.innerHTML = `✅ Aggiunto (${count})`;
-                    btn.style.background = "#e8f5e9"; // Sfondo verdino chiaro
-                } else {
-                    btn.innerHTML = `+ Aggiungi`;
-                    btn.style.background = "transparent";
-                }
+                if (count > 0) { btn.innerHTML = `✅ Aggiunto (${count})`; btn.style.background = "#e8f5e9"; } 
+                else { btn.innerHTML = `+ Aggiungi`; btn.style.background = "transparent"; }
             }
         });
     }
 }
-window.aggiungiComboCarrelloCliente = function(piattoCombo, idCombo, contorniDaSalvare, extraComboCalcolato) {
-    const prezzoBase = piattoCombo.prezzo; 
+window.apriPopupVariantiContornoCliente = function(idxCarrello, idxContorno) {
+    const piattoPadre = carrelloCliente[idxCarrello];
+    const contorno = piattoPadre.contorniScelti[idxContorno];
+    const piattoOriginale = menuItems[contorno.id];
+    if (!piattoOriginale) return;
+
+    if (!contorno.varianti) contorno.varianti = [];
+    let tempVariantiCliente = JSON.parse(JSON.stringify(contorno.varianti));
+
+    const popup = document.getElementById("popupPersonalizzaCliente");
+    const maxGratis = piattoOriginale.maxVariantiGratis || 0;
+    const testoGratis = maxGratis > 0 ? `<br><small style="color:green; font-size:0.7em;">Hai ${maxGratis} aggiunte GRATIS su questo prodotto!</small>` : "";
+    document.getElementById("titoloPersonalizza").innerHTML = `Personalizza: ${contorno.nome} ${testoGratis}`;
+    popup.style.display = "flex";
+
+    function renderVariantiContorno() {
+        const listaDiv = document.getElementById("listaIngredientiCliente");
+        listaDiv.innerHTML = "";
+        let totaleExtra = 0;
+        tempVariantiCliente.filter(v => v.tipo === "aggiunta").forEach((v, index) => {
+            if (index >= maxGratis) totaleExtra += Number(v.prezzo || 0);
+        });
+
+        document.getElementById("totalePiattoPersonalizzato").innerText = (piattoOriginale.prezzo + totaleExtra).toFixed(2);
+        const aggiunteFatte = tempVariantiCliente.filter(v => v.tipo === "aggiunta").length;
+        const isProssimaGratis = aggiunteFatte < maxGratis;
+
+        const baseIds = (piattoOriginale.ingredienti || []).map(i => i.id);
+
+        Object.entries(ingredientiGlobali || {}).forEach(([ingId, ing]) => {
+            const catsApp = ing.categorieApplicabili || [ing.categoria || "cibi"];
+            const catPiatto = (piattoOriginale.categoria || "cibi").toLowerCase();
+            const isBase = baseIds.includes(ingId);
+            const isExtraValido = window.settings.sistemaExtraAbilitato && (ing.usabileComeExtra === true) && catsApp.includes(catPiatto);
+
+            if (!isBase && !isExtraValido) return;
+
+            const row = document.createElement("div");
+            row.className = "ingrediente-row-cliente";
+            row.style.cssText = "display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid #eee;";
+            
+            const nomeSpan = document.createElement("span");
+            nomeSpan.innerText = ing.nome;
+            nomeSpan.style.fontWeight = "bold";
+
+            const btnContainer = document.createElement("div");
+            btnContainer.style.display = "flex"; btnContainer.style.alignItems = "center";
+
+            if (isBase) {
+                const isRimosso = tempVariantiCliente.some(v => v.tipo === "rimozione" && v.id === ingId);
+                const btnRemove = document.createElement("button");
+                btnRemove.innerText = isRimosso ? "Annulla" : "- Togli";
+                btnRemove.style.cssText = isRimosso ? "background:#ccc; padding:5px 10px; border-radius:5px;" : "background:#ff9800; color:white; padding:5px 10px; border-radius:5px; border:none;";
+                btnRemove.onclick = () => {
+                    if (isRimosso) tempVariantiCliente = tempVariantiCliente.filter(v => !(v.tipo === "rimozione" && v.id === ingId));
+                    else tempVariantiCliente.push({ tipo: "rimozione", id: ingId, nome: ing.nome });
+                    renderVariantiContorno();
+                };
+                btnContainer.appendChild(btnRemove);
+            }
+
+            if (isExtraValido) {
+                const costoExtra = ing.prezzoExtra !== undefined ? Number(ing.prezzoExtra) : 0.50;
+                const occorrenze = tempVariantiCliente.filter(v => v.tipo === "aggiunta" && v.id === ingId).length;
+                const wrapperAdd = document.createElement("div"); wrapperAdd.style.cssText = "display:inline-flex; align-items:center; margin-left:5px;";
+
+                if (occorrenze > 0) {
+                    const btnMinus = document.createElement("button"); btnMinus.innerText = "-"; btnMinus.style.cssText = "background:#ccc; padding:4px 10px; border-radius:5px; border:none;";
+                    btnMinus.onclick = () => {
+                        const rIndex = [...tempVariantiCliente].reverse().findIndex(v => v.tipo === "aggiunta" && v.id === ingId);
+                        if (rIndex !== -1) tempVariantiCliente.splice(tempVariantiCliente.length - 1 - rIndex, 1);
+                        renderVariantiContorno();
+                    };
+                    const spanCount = document.createElement("span"); spanCount.innerText = occorrenze; spanCount.style.cssText = "margin:0 8px; font-weight:bold;";
+                    const btnPlus = document.createElement("button"); btnPlus.innerText = "+"; btnPlus.style.cssText = "background:#4CAF50; color:white; padding:4px 10px; border-radius:5px; border:none;";
+                    btnPlus.onclick = () => { tempVariantiCliente.push({ tipo: "aggiunta", id: ingId, nome: ing.nome, qty: 1, prezzo: costoExtra }); renderVariantiContorno(); };
+
+                    wrapperAdd.appendChild(btnMinus); wrapperAdd.appendChild(spanCount); wrapperAdd.appendChild(btnPlus);
+                } else {
+                    const btnAdd = document.createElement("button");
+                    btnAdd.innerText = isProssimaGratis ? `+ Gratis` : `+ €${costoExtra.toFixed(2)}`;
+                    btnAdd.style.cssText = "background:#4CAF50; color:white; padding:5px 10px; border-radius:5px; border:none;";
+                    btnAdd.onclick = () => { tempVariantiCliente.push({ tipo: "aggiunta", id: ingId, nome: ing.nome, qty: 1, prezzo: costoExtra }); renderVariantiContorno(); };
+                    wrapperAdd.appendChild(btnAdd);
+                }
+                btnContainer.appendChild(wrapperAdd);
+            }
+            row.appendChild(nomeSpan); row.appendChild(btnContainer); listaDiv.appendChild(row);
+        });
+    }
+
+    renderVariantiContorno();
+
+    const btnSalva = document.getElementById("confermaPersonalizzaCliente");
+    btnSalva.onclick = () => {
+        contorno.varianti = tempVariantiCliente;
+        let ext = 0;
+        tempVariantiCliente.filter(v => v.tipo === "aggiunta").forEach((v, idx) => { if (idx >= maxGratis) ext += Number(v.prezzo || 0); });
+        contorno.extraPrezzo = ext;
+
+        // Ricalcola il totale extra del piattoPadre
+        let nuovoExtraPrezzoPiatto = 0;
+        piattoPadre.contorniScelti.forEach(c => { nuovoExtraPrezzoPiatto += (c.prezzoPagato || 0) + (c.extraPrezzo || 0); });
+        let extVarPiatto = 0; const mxGr = piattoPadre.maxVariantiGratis || 0;
+        (piattoPadre.varianti || []).filter(v => v.tipo === "aggiunta").forEach((v, index) => { if (index >= mxGr) extVarPiatto += Number(v.prezzo || 0); });
+        
+        piattoPadre.extraPrezzo = extVarPiatto + nuovoExtraPrezzoPiatto;
+
+        chiudiPopupPersonalizza();
+        aggiornaRiepilogoCarrelloUI();
+    };
+
+    const btnAnnulla = document.getElementById("annullaPersonalizzaCliente");
+    btnAnnulla.onclick = () => { chiudiPopupPersonalizza(); };
+}
+
     
+window.aggiungiComboCarrelloCliente = function(piattoCombo, idCombo, contorniDaSalvare, extraComboCalcolato) {
     carrelloCliente.push({
         id: idCombo,
         nome: piattoCombo.nome,
-        prezzo: prezzoBase, 
+        prezzo: piattoCombo.prezzo, 
         categoria: piattoCombo.categoria,
         varianti: [], 
         extraPrezzo: extraComboCalcolato, 
@@ -1655,10 +1799,9 @@ window.aggiungiComboCarrelloCliente = function(piattoCombo, idCombo, contorniDaS
         sconto: piattoCombo.sconto || null
     });
     
-    if (typeof aggiornaRiepilogoCarrelloUI === "function") {
-        aggiornaRiepilogoCarrelloUI();
-    }
+    if (typeof aggiornaRiepilogoCarrelloUI === "function") aggiornaRiepilogoCarrelloUI();
 };
+
 // Permette al cliente di cancellare un piatto se ci ha ripensato
 function rimuoviDalCarrello(index) {
     carrelloCliente.splice(index, 1);
