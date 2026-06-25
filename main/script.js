@@ -3291,6 +3291,7 @@ function renderListaPiattiCombo(piattoCombo) {
                         nome: piattoCombo.nome, 
                         prezzo: piattoCombo.prezzo, 
                         categoria: piattoCombo.categoria,
+                        ingredienti: piattoCombo.ingredienti || [], // <--- AGGIUNGI QUESTA RIGA!
                         varianti: [], 
                         extraPrezzo: totaleExtra, 
                         quantita: 1, 
