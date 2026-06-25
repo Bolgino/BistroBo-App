@@ -3154,25 +3154,49 @@ function renderListaPiattiCombo(piattoCombo) {
         listaDiv.innerHTML = "<p>Nessun contorno disponibile al momento.</p>";
     }
 
-    let totaleExtra = 0;
-    const quantitaTotaleScelta = statoComboCorrente.contorniSelezionati.length;
-
-    statoComboCorrente.contorniSelezionati.forEach((c, index) => {
-        if (index >= maxGratis) {
-            totaleExtra += Number(c.prezzoBase || 0);
-        }
+    // --- CALCOLO INTELLIGENTE SCONTI PER I CONTORNI ---
+    let contorniPagamento = statoComboCorrente.contorniSelezionati.slice(maxGratis);
+    let gruppiPagamento = {};
+    contorniPagamento.forEach(c => {
+        if (!gruppiPagamento[c.id]) gruppiPagamento[c.id] = { ...c, count: 0 };
+        gruppiPagamento[c.id].count++;
     });
+
+    let totaleExtra = 0;
+    Object.values(gruppiPagamento).forEach(g => {
+        const pOriginale = window.menuData[g.id] || {};
+        let costoGruppo = g.prezzoBase * g.count; 
+
+        if (pOriginale.sconto) {
+            const sc = pOriginale.sconto;
+            if (sc.tipo === "percentuale") {
+                costoGruppo -= (costoGruppo * (sc.valore / 100));
+            } else if (sc.tipo === "fisso") {
+                costoGruppo -= (sc.valore * g.count);
+            } else if (sc.tipo === "quantita" && g.count >= sc.quantitaMinima) {
+                const numGruppi = Math.floor(g.count / sc.quantitaMinima);
+                const resto = g.count % sc.quantitaMinima;
+                costoGruppo = (numGruppi * sc.prezzoScontato) + (resto * g.prezzoBase);
+            }
+        }
+        totaleExtra += Math.max(0, costoGruppo);
+    });
+
     const extraEl = document.getElementById("totaleExtraCombo");
     if(extraEl) extraEl.innerText = totaleExtra.toFixed(2);
+
+    const quantitaTotaleScelta = statoComboCorrente.contorniSelezionati.length;
 
     piattiAmmessi.forEach(pAmmesso => {
         const occorrenze = statoComboCorrente.contorniSelezionati.filter(c => c.id === pAmmesso.id).length;
         
-        // Calcolo prezzo testuale mostrato sul bottone (tiene conto degli sconti se siamo nei preordini!)
         let prezzoDaMostrare = pAmmesso.prezzo;
-        if (statoComboCorrente.contesto === "preordine" && typeof calcolaPrezzoConScontoPerPiattoSingolo === "function") {
-            prezzoDaMostrare = calcolaPrezzoConScontoPerPiattoSingolo(pAmmesso);
+        if (pAmmesso.sconto && pAmmesso.sconto.tipo === "percentuale") {
+            prezzoDaMostrare -= (prezzoDaMostrare * (pAmmesso.sconto.valore / 100));
+        } else if (pAmmesso.sconto && pAmmesso.sconto.tipo === "fisso") {
+            prezzoDaMostrare -= pAmmesso.sconto.valore;
         }
+        prezzoDaMostrare = Math.max(0, prezzoDaMostrare);
         
         const btnPrezzoTxt = (quantitaTotaleScelta < maxGratis) ? "GRATIS" : `+€${prezzoDaMostrare.toFixed(2)}`;
 
@@ -3184,7 +3208,7 @@ function renderListaPiattiCombo(piattoCombo) {
         row.style.borderBottom = "1px solid #eee";
 
         row.innerHTML = `
-            <div style="flex:1;"><b>${pAmmesso.nome}</b> <small style="color:#777;">(€${prezzoDaMostrare.toFixed(2)})</small></div>
+            <div style="flex:1;"><b>${pAmmesso.nome}</b> <small style="color:#777;">(€${pAmmesso.prezzo.toFixed(2)})</small></div>
             <div style="display:flex; align-items:center; gap:8px;">
                 ${occorrenze > 0 ? `
                     <button onclick="rimuoviContornoCombo('${pAmmesso.id}')" style="background:#ccc; border:none; padding:5px 12px; border-radius:6px; font-weight:bold;">-</button>
@@ -3213,19 +3237,20 @@ function renderListaPiattiCombo(piattoCombo) {
 
             if (statoComboCorrente.contesto === "cassa") {
                 comandaCorrente.push({
-                    id: piattoCombo.id, // Risolve l'errore undefined dell'ID del Menu principale
+                    id: statoComboCorrente.piattoId, // FIX: Risolve il blocco dell'invio comanda per ID mancante
                     nome: piattoCombo.nome, 
                     prezzo: piattoCombo.prezzo, 
                     categoria: piattoCombo.categoria,
                     varianti: [], 
                     extraPrezzo: totaleExtra, 
                     quantita: 1, 
-                    contorniScelti: contorniDaSalvare
+                    contorniScelti: contorniDaSalvare,
+                    sconto: piattoCombo.sconto || null // FIX: Assicura che le combo ricevano gli sconti del piatto principale!
                 });
                 aggiornaComandaCorrente();
             } else if (statoComboCorrente.contesto === "preordine") {
                 if (typeof aggiungiComboCarrelloCliente === "function") {
-                    aggiungiComboCarrelloCliente(piattoCombo, contorniDaSalvare, totaleExtra);
+                    aggiungiComboCarrelloCliente(piattoCombo, statoComboCorrente.piattoId, contorniDaSalvare, totaleExtra); // FIX: Passato l'ID
                 }
             }
         };
@@ -3234,32 +3259,11 @@ function renderListaPiattiCombo(piattoCombo) {
 
 window.aggiungiContornoCombo = function(idPiattino) {
     const p = window.menuData[idPiattino];
-    
-    // RISOLVE IL PROBLEMA DEGLI SCONTI: Applica lo sconto al contorno se presente nelle promozioni
-    let prezzoReale = p.prezzo;
-    if (statoComboCorrente.contesto === "preordine" && typeof calcolaPrezzoConScontoPerPiattoSingolo === "function") {
-        prezzoReale = calcolaPrezzoConScontoPerPiattoSingolo(p);
-    }
-    
     statoComboCorrente.contorniSelezionati.push({ 
-        id: idPiattino,     // RISOLVE IL PROBLEMA DELL'ERRORE "UNDEFINED ID"
+        id: idPiattino, // FIX: Mancava l'id!
         nome: p.nome, 
-        prezzoBase: prezzoReale 
+        prezzoBase: p.prezzo 
     });
-    
-    renderListaPiattiCombo(window.menuData[statoComboCorrente.piattoId]);
-};
-
-window.rimuoviContornoCombo = function(idPiattino) {
-    const arr = statoComboCorrente.contorniSelezionati;
-    const index = arr.map(e => e.id).lastIndexOf(idPiattino);
-    if (index > -1) arr.splice(index, 1);
-    renderListaPiattiCombo(window.menuData[statoComboCorrente.piattoId]);
-};
-
-window.aggiungiContornoCombo = function(idPiattino) {
-    const p = window.menuData[idPiattino];
-    statoComboCorrente.contorniSelezionati.push({ id: p.id, nome: p.nome, prezzoBase: p.prezzo });
     renderListaPiattiCombo(window.menuData[statoComboCorrente.piattoId]);
 };
 
@@ -7485,11 +7489,24 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
 
         reparto.items.forEach(p => {
             let prezzoTotPiatto = 0;
-            if (typeof calcolaPrezzoConSconto === "function") {
-                prezzoTotPiatto = calcolaPrezzoConSconto(p);
-            } else {
-                prezzoTotPiatto = (p.prezzo + (p.extraPrezzo || 0)) * (p.quantita || 1);
+            const prezzoPiattoAttuale = (p.prezzo + (p.extraPrezzo || 0));
+            let costoRiga = prezzoPiattoAttuale * (p.quantita || 1);
+
+            // APPLICAZIONE SCONTI REALE COME IN CASSA
+            if (p.sconto) {
+                if (p.sconto.tipo === "percentuale") {
+                    costoRiga = costoRiga - (costoRiga * (p.sconto.valore / 100));
+                } else if (p.sconto.tipo === "fisso") {
+                    costoRiga = costoRiga - (p.sconto.valore * (p.quantita || 1));
+                } else if (p.sconto.tipo === "quantita" && (p.quantita || 1) >= p.sconto.quantitaMinima) {
+                    const gruppi = Math.floor((p.quantita || 1) / p.sconto.quantitaMinima);
+                    const resto = (p.quantita || 1) % p.sconto.quantitaMinima;
+                    costoRiga = (gruppi * p.sconto.prezzoScontato) + (resto * prezzoPiattoAttuale);
+                }
+                costoRiga = Math.max(0, costoRiga);
             }
+            prezzoTotPiatto = costoRiga;
+
             totaleReparto += prezzoTotPiatto;
 
             doc.setFontSize(12);
