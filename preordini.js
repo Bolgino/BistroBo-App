@@ -1872,3 +1872,142 @@ function rimuoviDalCarrello(index) {
     carrelloCliente.splice(index, 1);
     aggiornaRiepilogoCarrelloUI();
 }
+// --- GESTIONE MODALE COMBO PREORDINI ---
+let piattoSceltoPerComboCliente = null;
+let contorniSelezionatiCliente = [];
+
+window.apriPopupComboCliente = function(id) {
+    const piatto = menuItems[id];
+    if (!piatto) return;
+
+    piattoSceltoPerComboCliente = JSON.parse(JSON.stringify(piatto));
+    contorniSelezionatiCliente = [];
+
+    let modal = document.getElementById("popupComboCliente");
+    if (!modal) {
+        // CREAZIONE DINAMICA DEL MODALE SE NON ESISTE IN HTML
+        modal = document.createElement("div");
+        modal.id = "popupComboCliente";
+        modal.style.cssText = "display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.6); justify-content:center; align-items:center;";
+        modal.innerHTML = `
+            <div style="background:#fff; width:90%; max-width:400px; border-radius:12px; padding:20px; box-shadow:0 5px 15px rgba(0,0,0,0.3); display:flex; flex-direction:column; max-height:85vh;">
+                <h2 id="comboNomePiattoCliente" style="margin-top:0; text-align:center; color:#e64a19; font-size:1.4em;"></h2>
+                <p id="comboInfoCliente" style="text-align:center; font-weight:bold; color:#2e7d32; margin-bottom:15px; font-size:1.1em;"></p>
+                <div id="listaContorniComboCliente" style="overflow-y:auto; flex-grow:1; margin-bottom:20px; padding:5px;"></div>
+                <div style="display:flex; justify-content:space-between; gap:10px;">
+                    <button onclick="chiudiPopupComboCliente()" style="flex:1; padding:12px; border-radius:8px; border:1px solid #ccc; background:#fff; font-weight:bold; cursor:pointer; font-size:1.1em;">Annulla</button>
+                    <button onclick="aggiungiComboCarrelloCliente()" style="flex:1; padding:12px; border-radius:8px; border:none; background:#e64a19; color:#fff; font-weight:bold; cursor:pointer; font-size:1.1em;">Aggiungi</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    document.getElementById("comboNomePiattoCliente").innerText = "Personalizza: " + piatto.nome;
+    const listaContorni = document.getElementById("listaContorniComboCliente");
+    listaContorni.innerHTML = "";
+
+    aggiornaUIContorniCliente();
+    modal.style.display = "flex";
+};
+
+window.aggiornaUIContorniCliente = function() {
+    const maxContorni = piattoSceltoPerComboCliente.maxContorni || 1;
+    const contatore = contorniSelezionatiCliente.length;
+    const info = document.getElementById("comboInfoCliente");
+    
+    if (contatore < maxContorni) {
+        info.innerText = `Hai ${maxContorni - contatore} aggiunte GRATIS su questo prodotto!`;
+        info.style.color = "#2e7d32";
+    } else {
+        info.innerText = "Hai raggiunto il limite di contorni gratuiti.";
+        info.style.color = "#d32f2f";
+    }
+    
+    const listaContorni = document.getElementById("listaContorniComboCliente");
+    listaContorni.innerHTML = "";
+    
+    if (piattoSceltoPerComboCliente.contorni && piattoSceltoPerComboCliente.contorni.length > 0) {
+        piattoSceltoPerComboCliente.contorni.forEach((contorno) => {
+            const div = document.createElement("div");
+            div.style.cssText = "display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid #eee;";
+            
+            const nomeSpan = document.createElement("span");
+            nomeSpan.innerText = contorno.nome;
+            nomeSpan.style.fontWeight = "bold";
+            nomeSpan.style.fontSize = "1.1em";
+
+            const btnGroup = document.createElement("div");
+            const sceltiDiQuestoTipo = contorniSelezionatiCliente.filter(c => c.nome === contorno.nome).length;
+
+            if (sceltiDiQuestoTipo > 0) {
+                const btnRemove = document.createElement("button");
+                btnRemove.innerText = "- Togli";
+                btnRemove.style.cssText = "background:#ff9800; color:white; border:none; padding:8px 12px; border-radius:6px; font-weight:bold; cursor:pointer; margin-right:5px;";
+                btnRemove.onclick = () => {
+                    const idx = contorniSelezionatiCliente.findIndex(c => c.nome === contorno.nome);
+                    if (idx > -1) {
+                        contorniSelezionatiCliente.splice(idx, 1);
+                        aggiornaUIContorniCliente();
+                    }
+                };
+                btnGroup.appendChild(btnRemove);
+            }
+            
+            const btnAdd = document.createElement("button");
+            btnAdd.innerText = "+ Aggiungi (GRATIS)";
+            if (contatore >= maxContorni) {
+                btnAdd.style.cssText = "background:#ccc; color:white; border:none; padding:8px 12px; border-radius:6px; font-weight:bold; cursor:not-allowed;";
+                btnAdd.disabled = true;
+            } else {
+                btnAdd.style.cssText = "background:#4CAF50; color:white; border:none; padding:8px 12px; border-radius:6px; font-weight:bold; cursor:pointer;";
+                btnAdd.onclick = () => {
+                    contorniSelezionatiCliente.push({
+                        nome: contorno.nome,
+                        prezzoBase: contorno.prezzo || 0,
+                        isGratis: true,
+                        prezzoPagato: 0,
+                        varianti: [],
+                        categoria: contorno.categoria || "Snack",
+                        tipo: contorno.tipo || "snack"
+                    });
+                    aggiornaUIContorniCliente();
+                };
+            }
+            btnGroup.appendChild(btnAdd);
+            div.appendChild(nomeSpan);
+            div.appendChild(btnGroup);
+            listaContorni.appendChild(div);
+        });
+    } else {
+        listaContorni.innerHTML = "<p style='text-align:center; color:#777;'>Nessun contorno configurato per questo menu.</p>";
+    }
+};
+
+window.chiudiPopupComboCliente = function() {
+    const modal = document.getElementById("popupComboCliente");
+    if (modal) modal.style.display = "none";
+    piattoSceltoPerComboCliente = null;
+    contorniSelezionatiCliente = [];
+};
+
+window.aggiungiComboCarrelloCliente = function() {
+    if (!piattoSceltoPerComboCliente) return;
+    const maxContorni = piattoSceltoPerComboCliente.maxContorni || 1;
+    if (contorniSelezionatiCliente.length < maxContorni && piattoSceltoPerComboCliente.contorni && piattoSceltoPerComboCliente.contorni.length > 0) {
+        if (!confirm(`Hai selezionato solo ${contorniSelezionatiCliente.length} contorni su ${maxContorni}. Procedere comunque?`)) return;
+    }
+
+    const piattoDaAggiungere = {
+        ...piattoSceltoPerComboCliente,
+        id_univoco: "cli_" + Math.random().toString(36).substr(2, 9),
+        contorniScelti: JSON.parse(JSON.stringify(contorniSelezionatiCliente)),
+        isCombo: true,
+        ingredienti: piattoSceltoPerComboCliente.ingredienti ? JSON.parse(JSON.stringify(piattoSceltoPerComboCliente.ingredienti)) : []
+    };
+
+    carrelloCliente.push(piattoDaAggiungere);
+    if(typeof salvaCarrelloCliente === 'function') salvaCarrelloCliente();
+    if(typeof aggiornaRiepilogoCarrelloUI === 'function') aggiornaRiepilogoCarrelloUI();
+    chiudiPopupComboCliente();
+};
