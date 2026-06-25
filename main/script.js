@@ -5650,12 +5650,29 @@ document.addEventListener("DOMContentLoaded", () => {
 	        </div>
 	    `;
 	    overlay.appendChild(modal);
-	    document.body.appendChild(overlay);
-	
-	    const ingContainer = document.getElementById("modalPiattoIngredientiContainer");
-	    const catSelect = document.getElementById("modalPiattoCat");
-	
-	    window.selectedMap = {}; // Reset mappa ingredienti per il nuovo inserimento
+            document.body.appendChild(overlay);
+
+            // NUOVO: Popoliamo la lista dei piatti Combo leggendola direttamente dal database per risolvere il bug!
+            const containerNew = document.getElementById("modalPiattoDishesCombo");
+            if (containerNew) {
+                db.ref("menu").once("value").then(snap => {
+                    const menuDatabase = snap.val() || {};
+                    let htmlPiatti = "";
+                    Object.entries(menuDatabase).forEach(([pId, p]) => {
+                        if (!p.isCombo) { 
+                            htmlPiatti += `<label style="display:flex; align-items:center; margin-bottom:8px; cursor:pointer; padding: 5px; background: #fafafa; border: 1px solid #eee; border-radius: 4px;">
+                                            <input type="checkbox" class="combo-dish-cb-new" value="${pId}" style="margin-right: 10px; transform: scale(1.1);"> 
+                                            <span><b>${p.nome}</b> <small style="color:#777;">(${p.categoria})</small></span>
+                                         </label>`;
+                        }
+                    });
+                    containerNew.innerHTML = htmlPiatti || "<p style='color:#777; font-size:0.9em;'>Nessun piatto disponibile.</p>";
+                });
+            }
+
+            const ingContainer = document.getElementById("modalPiattoIngredientiContainer");
+            const catSelect = document.getElementById("modalPiattoCat");
+            window.selectedMap = {}; // Reset mappa ingredienti per il nuovo inserimento
 	
 	    const renderIngModal = () => {
 	        renderIngredientOptionsForCategory(catSelect.value, ingContainer);
@@ -5934,22 +5951,25 @@ function modificaPiattoMenu(menuId, piatto) {
         document.getElementById("editPiattoMaxContorniGratis").value = piatto.maxContorniGratis || 1;
     }
     
-    // Genera la lista dei piatti nel modale di modifica
+    // Genera la lista dei piatti nel modale di modifica (leggendo dal DB per risolvere il bug)
     const containerEdit = document.getElementById("editPiattoDishesCombo");
-    if (containerEdit && window.menuData) {
-        let htmlPiattiEdit = "";
-        const piattiAmmessiGiaSalvati = piatto.piattiComboAmmessi || []; // I vecchi ID salvati
-        
-        Object.entries(window.menuData).forEach(([pId, p]) => {
-            if (!p.isCombo && pId !== menuId) { // Evitiamo combo e il piatto stesso
-                const isChecked = piattiAmmessiGiaSalvati.includes(pId) ? "checked" : "";
-                htmlPiattiEdit += `<label style="display:flex; align-items:center; margin-bottom:8px; cursor:pointer; padding: 5px; background: #fafafa; border: 1px solid #eee; border-radius: 4px;">
-                                <input type="checkbox" class="combo-dish-cb-edit" value="${pId}" ${isChecked} style="margin-right: 10px; transform: scale(1.1);"> 
-                                <span><b>${p.nome}</b> <small style="color:#777;">(${p.categoria})</small></span>
-                             </label>`;
-            }
+    if (containerEdit) {
+        db.ref("menu").once("value").then(snap => {
+            const menuDatabase = snap.val() || {};
+            let htmlPiattiEdit = "";
+            const piattiAmmessiGiaSalvati = piatto.piattiComboAmmessi || []; // I vecchi ID salvati
+            
+            Object.entries(menuDatabase).forEach(([pId, p]) => {
+                if (!p.isCombo && pId !== menuId) { // Evitiamo combo e il piatto stesso
+                    const isChecked = piattiAmmessiGiaSalvati.includes(pId) ? "checked" : "";
+                    htmlPiattiEdit += `<label style="display:flex; align-items:center; margin-bottom:8px; cursor:pointer; padding: 5px; background: #fafafa; border: 1px solid #eee; border-radius: 4px;">
+                                    <input type="checkbox" class="combo-dish-cb-edit" value="${pId}" ${isChecked} style="margin-right: 10px; transform: scale(1.1);"> 
+                                    <span><b>${p.nome}</b> <small style="color:#777;">(${p.categoria})</small></span>
+                                 </label>`;
+                }
+            });
+            containerEdit.innerHTML = htmlPiattiEdit || "<p style='color:#777; font-size:0.9em;'>Nessun piatto disponibile.</p>";
         });
-        containerEdit.innerHTML = htmlPiattiEdit || "<p style='color:#777; font-size:0.9em;'>Nessun piatto disponibile.</p>";
     }
 
     window.selectedMap = {};
