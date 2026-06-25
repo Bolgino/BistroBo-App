@@ -827,7 +827,7 @@ async function initPreordiniClienti() {
             let clickAction = "";
             if (item.isCombo && window.settings.piattiComboAbilitati) {
                 // Se è una combo, apre SEMPRE il modale per scegliere i contorni
-                clickAction = `apriPopupPersonalizzaCliente('${id}')`;
+                clickAction = `apriPopupComboCliente('${id}')`; 
             } else if (window.settings.sistemaExtraAbilitato) {
                 // Se gli extra sono attivi, apre il modale
                 clickAction = `apriPopupPersonalizzaCliente('${id}')`;
