@@ -5017,12 +5017,13 @@ async function caricaComandePerRuolo(daFareDiv, storicoDiv, ruolo) {
             if (ruoloEffettivo === "cucina") items = cibo;
             else if (ruoloEffettivo === "bere") items = bere;
             else if (ruoloEffettivo === "snack" && snackAbilitato) {
-                items = (c.piatti || []).filter(p => p.categoria === "snack");
+                items = snack; // 🔹 FIX: Usa l'array "snack" già elaborato da separaComanda, che include i contorni estratti!
+                
                 // 🔹 ORDINA ITEMS secondo toggle nuoveInAltoSnack
                 if (window.settings.nuoveInAltoSnack) {
-                    items.sort((a, b) => b.timestamp - a.timestamp); // nuove in cima
+                    items.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0)); // nuove in cima
                 } else {
-                    items.sort((a, b) => a.timestamp - b.timestamp); // nuove in fondo
+                    items.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0)); // nuove in fondo
                 }
             }
              else {
