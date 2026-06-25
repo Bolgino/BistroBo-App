@@ -2415,18 +2415,18 @@ function separaComanda(items) {
                 if (destC !== destMain) {
                     let varTxt = c.varianti && c.varianti.length > 0 ? " (" + c.varianti.map(v => v.tipo==='aggiunta'?`+${v.nome}`:`-${v.nome}`).join(", ") + ")" : "";
                     
-                    // Creiamo un oggetto PIATTO da zero, pulito e senza "scorie" del panino genitore
+                    // Creiamo un PIATTO da zero, pulito e senza "scorie" o vecchi ID del panino
                     const splitItem = {
-                        id: (i.id || "cont") + "_split_" + Math.floor(Math.random() * 10000),
+                        id: (i.id || "contorno") + "_split_" + Math.floor(Math.random() * 10000),
                         id_univoco: "split_" + Math.random().toString(36).substr(2, 9),
                         nome: `${c.nome}${varTxt} [di ${i.nome}]`,
                         prezzo: 0,
                         quantita: i.quantita || 1,
-                        categoria: "Snack", 
+                        categoria: c.categoria || "Snack",
                         tipo: destC,
-                        isCombo: false,     // Fondamentale: la cucina lo tratterà come un piatto normalissimo
-                        isMainHere: true,   // Fondamentale: dice alla cucina di stamparlo
-                        varianti: [],       // (Le varianti le abbiamo già scritte direttamente nel nome)
+                        isCombo: false,      // LA CUCINA LO TRATTERA' COME PIATTO NORMALE
+                        isMainHere: true,    // GLI DICE DI STAMPARLO NELLA CARD
+                        varianti: [],        // (Le varianti le abbiamo già scritte direttamente nel nome)
                         contorniScelti: [],
                         ingredienti: [],
                         note: i.note || ""
