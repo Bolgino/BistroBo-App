@@ -2645,8 +2645,11 @@ function aggiornaComandaCorrente(){
         
         // --- NUOVO BLOCCO CONTORNI COMBO ---
         if (i.contorniScelti && i.contorniScelti.length > 0) {
-            const cTxt = i.contorniScelti.map(c => {
-                return c.isGratis ? `<span style="color:green;">+ ${c.nome} (Incluso)</span>` : `<span style="color:#555;">+ ${c.nome} (+€${c.prezzoPagato.toFixed(2)})</span>`;
+            const cTxt = i.contorniScelti.map((c, cIndex) => {
+                let varsTxt = c.varianti && c.varianti.length > 0 ? " <small style='color:#777;'>(" + c.varianti.map(v => v.tipo==='aggiunta'?`+${v.nome}`:`-${v.nome}`).join(", ") + ")</small>" : "";
+                return c.isGratis 
+                    ? `<span style="color:#2e7d32; cursor:pointer; text-decoration:underline;" onclick="event.stopPropagation(); apriPopupVariantiContorno(${idx}, ${cIndex})">+ ${c.nome} (Incluso)${varsTxt}</span>` 
+                    : `<span style="color:#555; cursor:pointer; text-decoration:underline;" onclick="event.stopPropagation(); apriPopupVariantiContorno(${idx}, ${cIndex})">+ ${c.nome} (+€${c.prezzoPagato.toFixed(2)})${varsTxt}</span>`;
             }).join("<br>");
             testoVarianti += `<br><small style="font-weight:bold;">${cTxt}</small>`;
         }
@@ -2658,14 +2661,20 @@ function aggiornaComandaCorrente(){
                 span.innerHTML = `<b style="color:#0056b3;">${i.quantita}x ${i.nome}</b> 
                     <span style="text-decoration: line-through; color:red;">€${prezzoPiattoAttuale.toFixed(2)}</span> 
                     <span style="color:red;">€${(calcolaPrezzoConSconto(i)/i.quantita).toFixed(2)}</span>` + testoVarianti;
-            } else if(i.sconto.tipo === "x_paga_y"){
-                span.innerHTML = `<b style="color:#0056b3;">${i.quantita}x ${i.nome}</b> (€${(calcolaPrezzoConSconto(i)/i.quantita).toFixed(2)})` + testoVarianti;
+            } else if(i.sconto.tipo === "x_paga_y" || i.sconto.tipo === "x_paga_y_fisso"){
+                // MOSTRIAMO IL PREZZO INTERO ACCANTO AL NOME, LO SCONTO VA SUL TOTALE FINALE
+                span.innerHTML = `<b style="color:#0056b3;">${i.quantita}x ${i.nome}</b> (€${prezzoPiattoAttuale.toFixed(2)})` + testoVarianti;
             } else {
                 span.innerHTML = `<b style="color:#0056b3;">${i.quantita}x ${i.nome}</b> (€${prezzoPiattoAttuale.toFixed(2)})` + testoVarianti;
             }
         } else {
             span.innerHTML = `<b style="color:#0056b3;">${i.quantita}x ${i.nome}</b> (€${prezzoPiattoAttuale.toFixed(2)})` + testoVarianti;
         }
+
+        // Il piatto è SEMPRE cliccabile, anche se gli extra a pagamento sono off, così si possono rimuovere gli ingredienti
+        span.onclick = () => apriPopupVarianti(idx);
+        span.title = "Clicca per modificare ingredienti";
+        
 
         if (window.settings.sistemaExtraAbilitato) {
 		    span.onclick = () => apriPopupVarianti(idx);
@@ -3005,24 +3014,44 @@ numInput.addEventListener("input", aggiornaStatoInvio);
 letteraInput.addEventListener("input", aggiornaStatoInvio);
 document.getElementById("quantita").addEventListener("change", aggiornaStatoInvio);
 // --- FUNZIONE CALCOLO SCONTO (AGGIORNATA PER VARIANTI) ---
-function calcolaPrezzoConSconto(piatto){
+function calcolaPrezzoConSconto(piatto, comandaIntera = null){
     if (!checkOnline(true)) return;
     const q = piatto.quantita || 1;
     const prezzoBaseEExtra = piatto.prezzo + (piatto.extraPrezzo || 0);
 
     if(!piatto.sconto) return prezzoBaseEExtra * q;
 
+    // Sconto percentuale si applica sempre sulla singola riga
     if(piatto.sconto.tipo === "percentuale"){
-        return prezzoBaseEExtra * q * (1 - piatto.sconto.valore/100);
-    } else if(piatto.sconto.tipo === "x_paga_y"){
-        const x = piatto.sconto.valore.x;
-        const y = piatto.sconto.valore.y;
-        return (Math.floor(q / x) * y + (q % x)) * prezzoBaseEExtra;
-    } else if(piatto.sconto.tipo === "x_paga_y_fisso"){ 
-        const x = piatto.sconto.valore.x; 
-        const y = piatto.sconto.valore.y; 
-        return Math.floor(q / x) * y + (q % x) * prezzoBaseEExtra;
+        return prezzoBaseEExtra * q * (1 - (Number(piatto.sconto.valore)||0)/100);
+    } 
+
+    // Sconto Quantità (Prendi X Paghi Y): Calcola il totale guardando TUTTO IL CARRELLO
+    if(piatto.sconto.tipo === "x_paga_y" || piatto.sconto.tipo === "x_paga_y_fisso"){
+        let qTotale = q;
+        if (comandaIntera && Array.isArray(comandaIntera)) {
+            // Somma le quantità di tutti i piatti con lo stesso nome, anche se sono su righe diverse
+            qTotale = comandaIntera.filter(p => p.nome === piatto.nome).reduce((sum, p) => sum + (p.quantita || 1), 0);
+        }
+        
+        const x = parseInt(piatto.sconto.valore.x);
+        const y = piatto.sconto.tipo === "x_paga_y" ? parseInt(piatto.sconto.valore.y) : parseFloat(piatto.sconto.valore.y);
+
+        if (qTotale < x) return prezzoBaseEExtra * q;
+
+        const numGruppi = Math.floor(qTotale / x);
+        const prezzoScontatoTotale = numGruppi * y * piatto.prezzo; 
+        const prezzoPienoTotale = (qTotale % x) * piatto.prezzo;
+        const costoTotaleBase = qTotale * piatto.prezzo; 
+        
+        const scontoTotale = costoTotaleBase - (prezzoScontatoTotale + prezzoPienoTotale);
+
+        // Distribuisci lo sconto in modo proporzionale a questa specifica riga
+        const quotaSconto = (q / qTotale) * scontoTotale;
+        
+        return (prezzoBaseEExtra * q) - quotaSconto;
     }
+
     return prezzoBaseEExtra * q;
 }
 
@@ -7496,7 +7525,7 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
             let prezzoTotPiatto = 0;
             // Torna a usare la funzione originale perfetta!
             if (typeof calcolaPrezzoConSconto === "function") {
-                prezzoTotPiatto = calcolaPrezzoConSconto(p);
+                prezzoTotPiatto = calcolaPrezzoConSconto(p, items);
             } else {
                 prezzoTotPiatto = (p.prezzo + (p.extraPrezzo || 0)) * (p.quantita || 1);
             }
@@ -7621,6 +7650,130 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
         notify("Errore: il browser ha bloccato il popup per la stampa. Controlla le impostazioni in alto a destra.", "error");
     }
 }
+window.apriPopupVariantiContorno = function(idxPiatto, idxContorno) {
+    const piattoPadre = comandaCorrente[idxPiatto];
+    const contorno = piattoPadre.contorniScelti[idxContorno];
+
+    const piattoOriginale = window.menuData ? window.menuData[contorno.id] : null;
+    if (!piattoOriginale) return;
+
+    if (!contorno.varianti) contorno.varianti = [];
+    if (!contorno.extraPrezzo) contorno.extraPrezzo = 0;
+
+    let tempVarianti = JSON.parse(JSON.stringify(contorno.varianti));
+    let tempExtraPrezzo = contorno.extraPrezzo;
+
+    const overlay = document.createElement("div");
+    overlay.className = "modal-overlay";
+    const modal = document.createElement("div");
+    modal.className = "modal-varianti";
+    
+    let maxGratis = piattoOriginale.maxVariantiGratis || 0;
+    const testoGratis = maxGratis > 0 ? `<br><small style="color:green; font-size:0.75em;">(Promozione: Hai ${maxGratis} aggiunte GRATIS!)</small>` : "";
+    const titolo = document.createElement("h3");
+    titolo.innerHTML = `Modifica: ${contorno.nome} ${testoGratis}`;
+    modal.appendChild(titolo);
+
+    const listaDiv = document.createElement("div");
+
+    function renderListaIngredientiContorno() {
+        let totaleExtra = 0;
+        tempVarianti.filter(v => v.tipo === "aggiunta").forEach((v, index) => {
+            if (index >= maxGratis) totaleExtra += Number(v.prezzo || 0);
+        });
+        tempExtraPrezzo = totaleExtra;
+        
+        const aggiunteFatte = tempVarianti.filter(v => v.tipo === "aggiunta").length;
+        const isProssimaGratis = aggiunteFatte < maxGratis;
+        listaDiv.innerHTML = "";
+
+        const baseIds = (piattoOriginale.ingredienti || []).map(i => i.id);
+
+        Object.entries(window.ingredientData || {}).forEach(([id, ing]) => {
+            const catsApp = ing.categorieApplicabili || [ing.categoria || "cibi"];
+            const catPiatto = (piattoOriginale.categoria || "cibi").toLowerCase();
+            const isBase = baseIds.includes(id);
+            const isExtraValido = window.settings.sistemaExtraAbilitato && (ing.usabileComeExtra === true) && catsApp.includes(catPiatto);
+
+            if (!isBase && !isExtraValido) return; 
+
+            const row = document.createElement("div");
+            row.className = "variante-row";
+            const nomeSpan = document.createElement("span");
+            nomeSpan.innerText = ing.nome;
+            const btnContainer = document.createElement("div");
+
+            if (isBase) {
+                const btnRemove = document.createElement("button");
+                const isRimosso = tempVarianti.some(v => v.tipo === "rimozione" && v.id === id);
+                if (isRimosso) {
+                    btnRemove.className = "variante-btn disabled";
+                    btnRemove.innerText = "Annulla Rimozione";
+                    btnRemove.onclick = () => {
+                        tempVarianti = tempVarianti.filter(v => !(v.tipo === "rimozione" && v.id === id));
+                        renderListaIngredientiContorno();
+                    };
+                } else {
+                    btnRemove.className = "variante-btn remove";
+                    btnRemove.innerText = "- Rimuovi";
+                    btnRemove.onclick = () => {
+                        tempVarianti.push({ tipo: "rimozione", id: id, nome: ing.nome });
+                        renderListaIngredientiContorno();
+                    };
+                }
+                btnContainer.appendChild(btnRemove);
+            }
+
+            if (isExtraValido) {
+                const costoExtra = ing.prezzoExtra !== undefined ? Number(ing.prezzoExtra) : 0.50; 
+                const qtyExtra = ing.qtyExtra !== undefined ? Number(ing.qtyExtra) : 1;
+                const occorrenze = tempVarianti.filter(v => v.tipo === "aggiunta" && v.id === id).length;
+
+                const wrapperAdd = document.createElement("div");
+                wrapperAdd.style.display = "inline-flex"; wrapperAdd.style.alignItems = "center"; wrapperAdd.style.marginLeft = "5px";
+
+                if (occorrenze > 0) {
+                    const btnMinus = document.createElement("button"); btnMinus.className = "variante-btn remove"; btnMinus.innerText = "-"; btnMinus.style.padding = "4px 10px";
+                    btnMinus.onclick = () => {
+                        const reversedIndex = [...tempVarianti].reverse().findIndex(v => v.tipo === "aggiunta" && v.id === id);
+                        if (reversedIndex !== -1) tempVarianti.splice(tempVarianti.length - 1 - reversedIndex, 1);
+                        renderListaIngredientiContorno();
+                    };
+                    const spanCount = document.createElement("span"); spanCount.innerText = occorrenze; spanCount.style.margin = "0 8px"; spanCount.style.fontWeight = "bold";
+                    const btnPlus = document.createElement("button"); btnPlus.className = "variante-btn add"; btnPlus.innerText = "+"; btnPlus.style.padding = "4px 10px";
+                    btnPlus.onclick = () => { tempVarianti.push({ tipo: "aggiunta", id: id, nome: ing.nome, qty: qtyExtra, prezzo: costoExtra }); renderListaIngredientiContorno(); };
+
+                    wrapperAdd.appendChild(btnMinus); wrapperAdd.appendChild(spanCount); wrapperAdd.appendChild(btnPlus);
+                } else {
+                    const btnAdd = document.createElement("button"); btnAdd.className = "variante-btn add";
+                    btnAdd.innerText = isProssimaGratis ? `+ Aggiungi (GRATIS)` : `+ Aggiungi (€${costoExtra.toFixed(2)})`;
+                    btnAdd.onclick = () => { tempVarianti.push({ tipo: "aggiunta", id: id, nome: ing.nome, qty: qtyExtra, prezzo: costoExtra }); renderListaIngredientiContorno(); };
+                    wrapperAdd.appendChild(btnAdd);
+                }
+                btnContainer.appendChild(wrapperAdd);
+            }
+            row.appendChild(nomeSpan); row.appendChild(btnContainer); listaDiv.appendChild(row);
+        });
+    }
+
+    renderListaIngredientiContorno();
+    modal.appendChild(listaDiv);
+
+    const actionDiv = document.createElement("div"); actionDiv.className = "modal-actions";
+    const btnAnnulla = document.createElement("button"); btnAnnulla.className = "btn-chiudi"; btnAnnulla.innerText = "Annulla"; btnAnnulla.onclick = () => overlay.remove();
+    const btnSalva = document.createElement("button"); btnSalva.className = "btn-salva"; btnSalva.innerText = "Salva";
+    btnSalva.onclick = () => {
+        contorno.varianti = tempVarianti; contorno.extraPrezzo = tempExtraPrezzo;
+        let nuovoExtraPrezzoPiatto = 0;
+        piattoPadre.contorniScelti.forEach(c => { nuovoExtraPrezzoPiatto += (c.prezzoPagato || 0); nuovoExtraPrezzoPiatto += (c.extraPrezzo || 0); });
+        let extraVariantiPiatto = 0; const maxGratisPiatto = piattoPadre.maxVariantiGratis || 0;
+        (piattoPadre.varianti || []).filter(v => v.tipo === "aggiunta").forEach((v, index) => { if (index >= maxGratisPiatto) extraVariantiPiatto += Number(v.prezzo || 0); });
+        piattoPadre.extraPrezzo = extraVariantiPiatto + nuovoExtraPrezzoPiatto;
+        aggiornaComandaCorrente();
+        overlay.remove();
+    };
+    actionDiv.appendChild(btnAnnulla); actionDiv.appendChild(btnSalva); modal.appendChild(actionDiv); overlay.appendChild(modal); document.body.appendChild(overlay);
+};
 //OROLOGIO
 async function inizializzaOrologio() {
     try {
