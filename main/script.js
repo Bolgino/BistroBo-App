@@ -2848,10 +2848,20 @@ function apriPopupVarianti(idx) {
             const catPiatto = (piatto.categoria || "cibi").toLowerCase();
             
             const isBase = baseIds.includes(id);
-            const isExtraValido = (ing.usabileComeExtra === true) && catsApp.includes(catPiatto);
-
-            // Se non fa parte della ricetta base e non ha la spunta "Extra", lo nascondiamo
-            if (!isBase && !isExtraValido) return; 
+	        const isExtraFlag = (ing.usabileComeExtra === true) && catsApp.includes(catPiatto);
+	
+	        let allowRemove = false;
+	        let allowAdd = false;
+	
+	        if (window.settings.sistemaExtraAbilitato) {
+	            if (isBase) allowRemove = true;
+	            if (isExtraFlag) allowAdd = true;
+	        } else {
+	            // Se EXTRA OFF: mostra solo se è nella ricetta base E ANCHE abilitato come extra (solo per toglierlo)
+	            if (isBase && isExtraFlag) allowRemove = true;
+	        }
+	
+	        if (!allowRemove && !allowAdd) return;
 
             const row = document.createElement("div");
             row.className = "variante-row";
@@ -4756,10 +4766,20 @@ function apriPopupVariantiAdmin(idx, comandaTemp, reserved, callback) {
             const catPiatto = (piatto.categoria || "cibi").toLowerCase();
             
             const isBase = baseIds.includes(id);
-           const isExtraValido = window.settings.sistemaExtraAbilitato && (ing.usabileComeExtra === true) && catsApp.includes(catPiatto);
-
-            // Se non fa parte della ricetta base e non ha la spunta "Extra", lo nascondiamo
-            if (!isBase && !isExtraValido) return; 
+	        const isExtraFlag = (ing.usabileComeExtra === true) && catsApp.includes(catPiatto);
+	
+	        let allowRemove = false;
+	        let allowAdd = false;
+	
+	        if (window.settings.sistemaExtraAbilitato) {
+	            if (isBase) allowRemove = true;
+	            if (isExtraFlag) allowAdd = true;
+	        } else {
+	            // Se EXTRA OFF: mostra solo se è nella ricetta base E ANCHE abilitato come extra (solo per toglierlo)
+	            if (isBase && isExtraFlag) allowRemove = true;
+	        }
+	
+	        if (!allowRemove && !allowAdd) return;
 
             const row = document.createElement("div");
             row.className = "variante-row";
@@ -7705,9 +7725,20 @@ window.apriPopupVariantiContorno = function(idxPiatto, idxContorno) {
             const catsApp = ing.categorieApplicabili || [ing.categoria || "cibi"];
             const catPiatto = (piattoOriginale.categoria || "cibi").toLowerCase();
             const isBase = baseIds.includes(id);
-            const isExtraValido = window.settings.sistemaExtraAbilitato && (ing.usabileComeExtra === true) && catsApp.includes(catPiatto);
-
-            if (!isBase && !isExtraValido) return; 
+	        const isExtraFlag = (ing.usabileComeExtra === true) && catsApp.includes(catPiatto);
+	
+	        let allowRemove = false;
+	        let allowAdd = false;
+	
+	        if (window.settings.sistemaExtraAbilitato) {
+	            if (isBase) allowRemove = true;
+	            if (isExtraFlag) allowAdd = true;
+	        } else {
+	            // Se EXTRA OFF: mostra solo se è nella ricetta base E ANCHE abilitato come extra (solo per toglierlo)
+	            if (isBase && isExtraFlag) allowRemove = true;
+	        }
+	
+	        if (!allowRemove && !allowAdd) return;
 
             const row = document.createElement("div");
             row.className = "variante-row";
