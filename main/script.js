@@ -2845,7 +2845,7 @@ function apriPopupVarianti(idx) {
 
         Object.entries(window.ingredientData || {}).forEach(([id, ing]) => {
             const catsApp = ing.categorieApplicabili || [ing.categoria || "cibi"];
-            const catPiatto = (piattoOriginale.categoria || "cibi").toLowerCase();
+            const catPiatto = (piatto.categoria || "cibi").toLowerCase(); // <--- CORRETTO: usa piatto.categoria
             const isBase = baseIds.includes(id);
             const isExtraFlag = (ing.usabileComeExtra === true) && catsApp.includes(catPiatto);
 
@@ -4723,25 +4723,23 @@ function apriPopupVariantiAdmin(idx, comandaTemp, reserved, callback) {
         listaDiv.innerHTML = "";
         const baseIds = (piatto.ingredienti || []).map(i => i.id);
 
-        Object.entries(window.ingredientData || {}).forEach(([id, ing]) => {
+       Object.entries(window.ingredientData || {}).forEach(([id, ing]) => {
             const catsApp = ing.categorieApplicabili || [ing.categoria || "cibi"];
-            const catPiatto = (piatto.categoria || "cibi").toLowerCase();
-            
+            const catPiatto = (piatto.categoria || "cibi").toLowerCase(); // <--- CORRETTO: usa piatto.categoria
             const isBase = baseIds.includes(id);
-	        const isExtraFlag = (ing.usabileComeExtra === true) && catsApp.includes(catPiatto);
-	
-	        let allowRemove = false;
-	        let allowAdd = false;
-	
-	        if (window.settings.sistemaExtraAbilitato) {
-	            if (isBase) allowRemove = true;
-	            if (isExtraFlag) allowAdd = true;
-	        } else {
-	            // Se EXTRA OFF: mostra solo se è nella ricetta base E ANCHE abilitato come extra (solo per toglierlo)
-	            if (isBase && isExtraFlag) allowRemove = true;
-	        }
-	
-	        if (!allowRemove && !allowAdd) return;
+            const isExtraFlag = (ing.usabileComeExtra === true) && catsApp.includes(catPiatto);
+
+            let allowRemove = false;
+            let allowAdd = false;
+
+            if (window.settings.sistemaExtraAbilitato) {
+                if (isBase) allowRemove = true;
+                if (isExtraFlag) allowAdd = true;
+            } else {
+                if (isBase && isExtraFlag) allowRemove = true;
+            }
+
+            if (!allowRemove && !allowAdd) return; 
 
             const row = document.createElement("div");
             row.className = "variante-row";
@@ -4749,8 +4747,7 @@ function apriPopupVariantiAdmin(idx, comandaTemp, reserved, callback) {
             nomeSpan.innerText = ing.nome;
             const btnContainer = document.createElement("div");
 
-            // --- RIMOZIONE (Compare SOLO se è un ingrediente della ricetta base) ---
-            if (isBase) {
+            if (allowRemove) {
                 const btnRemove = document.createElement("button");
                 const isRimosso = tempVarianti.some(v => v.tipo === "rimozione" && v.id === id);
                 if (isRimosso) {
@@ -4771,70 +4768,35 @@ function apriPopupVariantiAdmin(idx, comandaTemp, reserved, callback) {
                 btnContainer.appendChild(btnRemove);
             }
 
-            // --- AGGIUNTA MULTIPLA (Compare SOLO se ha la spunta Extra abilitata) ---
-            if (isExtraValido) {
+            if (allowAdd) {
                 const costoExtra = ing.prezzoExtra !== undefined ? Number(ing.prezzoExtra) : 0.50; 
                 const qtyExtra = ing.qtyExtra !== undefined ? Number(ing.qtyExtra) : 1;
-                
-                // Contiamo quante volte è stato aggiunto questo specifico ingrediente
                 const occorrenze = tempVarianti.filter(v => v.tipo === "aggiunta" && v.id === id).length;
 
                 const wrapperAdd = document.createElement("div");
-                wrapperAdd.style.display = "inline-flex";
-                wrapperAdd.style.alignItems = "center";
-                wrapperAdd.style.marginLeft = "5px";
+                wrapperAdd.style.display = "inline-flex"; wrapperAdd.style.alignItems = "center"; wrapperAdd.style.marginLeft = "5px";
 
                 if (occorrenze > 0) {
-                    // Tasto Meno (rimuove solo un'aggiunta)
-                    const btnMinus = document.createElement("button");
-                    btnMinus.className = "variante-btn remove";
-                    btnMinus.innerText = "-";
-                    btnMinus.style.padding = "4px 10px";
+                    const btnMinus = document.createElement("button"); btnMinus.className = "variante-btn remove"; btnMinus.innerText = "-"; btnMinus.style.padding = "4px 10px";
                     btnMinus.onclick = () => {
                         const reversedIndex = [...tempVarianti].reverse().findIndex(v => v.tipo === "aggiunta" && v.id === id);
-                        if (reversedIndex !== -1) {
-                            const indexToRemove = tempVarianti.length - 1 - reversedIndex;
-                            tempVarianti.splice(indexToRemove, 1);
-                        }
+                        if (reversedIndex !== -1) tempVarianti.splice(tempVarianti.length - 1 - reversedIndex, 1);
                         renderListaIngredienti();
                     };
+                    const spanCount = document.createElement("span"); spanCount.innerText = occorrenze; spanCount.style.margin = "0 8px"; spanCount.style.fontWeight = "bold";
+                    const btnPlus = document.createElement("button"); btnPlus.className = "variante-btn add"; btnPlus.innerText = "+"; btnPlus.style.padding = "4px 10px";
+                    btnPlus.onclick = () => { tempVarianti.push({ tipo: "aggiunta", id: id, nome: ing.nome, qty: qtyExtra, prezzo: costoExtra }); renderListaIngredienti(); };
 
-                    // Numero di aggiunte
-                    const spanCount = document.createElement("span");
-                    spanCount.innerText = occorrenze;
-                    spanCount.style.margin = "0 8px";
-                    spanCount.style.fontWeight = "bold";
-
-                    // Tasto Più (aggiunge un'altra porzione)
-                    const btnPlus = document.createElement("button");
-                    btnPlus.className = "variante-btn add";
-                    btnPlus.innerText = "+";
-                    btnPlus.style.padding = "4px 10px";
-                    btnPlus.onclick = () => {
-                        tempVarianti.push({ tipo: "aggiunta", id: id, nome: ing.nome, qty: qtyExtra, prezzo: costoExtra });
-                        renderListaIngredienti();
-                    };
-
-                    wrapperAdd.appendChild(btnMinus);
-                    wrapperAdd.appendChild(spanCount);
-                    wrapperAdd.appendChild(btnPlus);
+                    wrapperAdd.appendChild(btnMinus); wrapperAdd.appendChild(spanCount); wrapperAdd.appendChild(btnPlus);
                 } else {
-                    const btnAdd = document.createElement("button");
-                    btnAdd.className = "variante-btn add";
+                    const btnAdd = document.createElement("button"); btnAdd.className = "variante-btn add";
                     btnAdd.innerText = isProssimaGratis ? `+ Aggiungi (GRATIS)` : `+ Aggiungi (€${costoExtra.toFixed(2)})`;
-                    btnAdd.onclick = () => {
-                        tempVarianti.push({ tipo: "aggiunta", id: id, nome: ing.nome, qty: qtyExtra, prezzo: costoExtra });
-                        renderListaIngredienti(); 
-                    };
+                    btnAdd.onclick = () => { tempVarianti.push({ tipo: "aggiunta", id: id, nome: ing.nome, qty: qtyExtra, prezzo: costoExtra }); renderListaIngredienti(); };
                     wrapperAdd.appendChild(btnAdd);
                 }
-
                 btnContainer.appendChild(wrapperAdd);
             }
-
-            row.appendChild(nomeSpan);
-            row.appendChild(btnContainer);
-            listaDiv.appendChild(row);
+            row.appendChild(nomeSpan); row.appendChild(btnContainer); listaDiv.appendChild(row);
         });
     }
     renderListaIngredienti();
@@ -5684,19 +5646,18 @@ document.addEventListener("DOMContentLoaded", () => {
 	    overlay.appendChild(modal);
             document.body.appendChild(overlay);
 
-            // NUOVO: Popoliamo la lista dei piatti Combo leggendola direttamente dal database per risolvere il bug!
+            // POPOLIAMO LA LISTA DEI PIATTI COMBO leggendola direttamente dal database
             const containerNew = document.getElementById("modalPiattoDishesCombo");
             if (containerNew) {
                 db.ref("menu").once("value").then(snap => {
                     const menuDatabase = snap.val() || {};
                     let htmlPiatti = "";
                     Object.entries(menuDatabase).forEach(([pId, p]) => {
-                        if (!p.isCombo) { 
-                            htmlPiatti += `<label style="display:flex; align-items:center; margin-bottom:8px; cursor:pointer; padding: 5px; background: #fafafa; border: 1px solid #eee; border-radius: 4px;">
-                                            <input type="checkbox" class="combo-dish-cb-new" value="${pId}" style="margin-right: 10px; transform: scale(1.1);"> 
-                                            <span><b>${p.nome}</b> <small style="color:#777;">(${p.categoria})</small></span>
-                                         </label>`;
-                        }
+                        // NESSUN BLOCCO! Vogliamo vedere tutti i piatti, anche le altre combo.
+                        htmlPiatti += `<label style="display:flex; align-items:center; margin-bottom:8px; cursor:pointer; padding: 5px; background: #fafafa; border: 1px solid #eee; border-radius: 4px;">
+                                        <input type="checkbox" class="combo-dish-cb-new" value="${pId}" style="margin-right: 10px; transform: scale(1.1);"> 
+                                        <span><b>${p.nome}</b> <small style="color:#777;">(${p.categoria})</small></span>
+                                     </label>`;
                     });
                     containerNew.innerHTML = htmlPiatti || "<p style='color:#777; font-size:0.9em;'>Nessun piatto disponibile.</p>";
                 });
@@ -5983,16 +5944,17 @@ function modificaPiattoMenu(menuId, piatto) {
         document.getElementById("editPiattoMaxContorniGratis").value = piatto.maxContorniGratis || 1;
     }
     
-    // Genera la lista dei piatti nel modale di modifica (leggendo dal DB per risolvere il bug)
+    // Genera la lista dei piatti nel modale di modifica
     const containerEdit = document.getElementById("editPiattoDishesCombo");
     if (containerEdit) {
         db.ref("menu").once("value").then(snap => {
             const menuDatabase = snap.val() || {};
             let htmlPiattiEdit = "";
-            const piattiAmmessiGiaSalvati = piatto.piattiComboAmmessi || []; // I vecchi ID salvati
+            const piattiAmmessiGiaSalvati = piatto.piattiComboAmmessi || []; 
             
             Object.entries(menuDatabase).forEach(([pId, p]) => {
-                if (!p.isCombo && pId !== menuId) { // Evitiamo combo e il piatto stesso
+                // L'unica regola: un piatto non può contenere SE STESSO come contorno, sennò il server esplode
+                if (pId !== menuId) { 
                     const isChecked = piattiAmmessiGiaSalvati.includes(pId) ? "checked" : "";
                     htmlPiattiEdit += `<label style="display:flex; align-items:center; margin-bottom:8px; cursor:pointer; padding: 5px; background: #fafafa; border: 1px solid #eee; border-radius: 4px;">
                                     <input type="checkbox" class="combo-dish-cb-edit" value="${pId}" ${isChecked} style="margin-right: 10px; transform: scale(1.1);"> 
@@ -6003,7 +5965,6 @@ function modificaPiattoMenu(menuId, piatto) {
             containerEdit.innerHTML = htmlPiattiEdit || "<p style='color:#777; font-size:0.9em;'>Nessun piatto disponibile.</p>";
         });
     }
-
     window.selectedMap = {};
     (piatto.ingredienti || []).forEach(i => {
         if (i.id) window.selectedMap[i.id] = i.qtyPerUnit || 1;
