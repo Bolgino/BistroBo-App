@@ -1718,7 +1718,7 @@ window.apriPopupVariantiContornoCliente = function(idxCarrello, idxContorno) {
 
         Object.entries(ingredientiGlobali || {}).forEach(([ingId, ing]) => {
             const catsApp = ing.categorieApplicabili || [ing.categoria || "cibi"];
-            const catPiatto = (piattoOriginale.categoria || "cibi").toLowerCase();
+            const catPiatto = (piatto.categoria || "cibi").toLowerCase(); // <--- CORRETTO: usa piatto.categoria
             const isBase = baseIds.includes(ingId);
             const isExtraFlag = (ing.usabileComeExtra === true) && catsApp.includes(catPiatto);
 
@@ -1729,11 +1729,10 @@ window.apriPopupVariantiContornoCliente = function(idxCarrello, idxContorno) {
                 if (isBase) allowRemove = true;
                 if (isExtraFlag) allowAdd = true;
             } else {
-                // EXTRA OFF: Tasto togli visibile SOLO se l'ingrediente fa parte del piatto (isBase) 
-                // E se l'ingrediente è configurato come extra (isExtraFlag). Niente aggiunte.
                 if (isBase && isExtraFlag) allowRemove = true;
             }
 
+            // Se non può né togliere né aggiungere, salta questo ingrediente
             if (!allowRemove && !allowAdd) return;
 
             const row = document.createElement("div");
