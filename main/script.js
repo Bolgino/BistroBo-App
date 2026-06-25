@@ -3134,16 +3134,15 @@ function renderListaPiattiCombo(piattoCombo) {
     listaDiv.innerHTML = "";
     
     const maxGratis = piattoCombo.maxContorniGratis || 0;
-    const arrayIDValidi = piattoCombo.piattiComboAmmessi || []; // Lista di ID specifici!
+    const arrayIDValidi = piattoCombo.piattiComboAmmessi || []; 
 
     const infoGratisEl = document.getElementById("infoComboGratis");
     if(infoGratisEl) {
         infoGratisEl.innerText = maxGratis > 0 
             ? `Hai diritto a ${maxGratis} contorn${maxGratis > 1 ? 'i' : 'o'} GRATIS!` 
-            : `Nessun contorno gratis incluso.`;
+            : `Nessun contorno gratis incluso, verranno calcolati a prezzo di listino.`;
     }
 
-    // Filtriamo ESATTAMENTE i piatti scelti da Admin
     let piattiAmmessi = [];
     Object.entries(window.menuData || {}).forEach(([pId, p]) => {
         if (arrayIDValidi.includes(pId) && !p.bloccato) {
@@ -3168,7 +3167,14 @@ function renderListaPiattiCombo(piattoCombo) {
 
     piattiAmmessi.forEach(pAmmesso => {
         const occorrenze = statoComboCorrente.contorniSelezionati.filter(c => c.id === pAmmesso.id).length;
-        const btnPrezzoTxt = (quantitaTotaleScelta < maxGratis) ? "GRATIS" : `+€${pAmmesso.prezzo.toFixed(2)}`;
+        
+        // Calcolo prezzo testuale mostrato sul bottone (tiene conto degli sconti se siamo nei preordini!)
+        let prezzoDaMostrare = pAmmesso.prezzo;
+        if (statoComboCorrente.contesto === "preordine" && typeof calcolaPrezzoConScontoPerPiattoSingolo === "function") {
+            prezzoDaMostrare = calcolaPrezzoConScontoPerPiattoSingolo(pAmmesso);
+        }
+        
+        const btnPrezzoTxt = (quantitaTotaleScelta < maxGratis) ? "GRATIS" : `+€${prezzoDaMostrare.toFixed(2)}`;
 
         const row = document.createElement("div");
         row.style.display = "flex";
@@ -3178,7 +3184,7 @@ function renderListaPiattiCombo(piattoCombo) {
         row.style.borderBottom = "1px solid #eee";
 
         row.innerHTML = `
-            <div style="flex:1;"><b>${pAmmesso.nome}</b> <small style="color:#777;">(€${pAmmesso.prezzo.toFixed(2)})</small></div>
+            <div style="flex:1;"><b>${pAmmesso.nome}</b> <small style="color:#777;">(€${prezzoDaMostrare.toFixed(2)})</small></div>
             <div style="display:flex; align-items:center; gap:8px;">
                 ${occorrenze > 0 ? `
                     <button onclick="rimuoviContornoCombo('${pAmmesso.id}')" style="background:#ccc; border:none; padding:5px 12px; border-radius:6px; font-weight:bold;">-</button>
@@ -3197,7 +3203,8 @@ function renderListaPiattiCombo(piattoCombo) {
             let contorniDaSalvare = [];
             statoComboCorrente.contorniSelezionati.forEach((c, index) => {
                 contorniDaSalvare.push({
-                    id: c.id, nome: c.nome,
+                    id: c.id, 
+                    nome: c.nome,
                     prezzoOriginale: c.prezzoBase,
                     prezzoPagato: (index >= maxGratis) ? c.prezzoBase : 0, 
                     isGratis: (index < maxGratis)
@@ -3206,8 +3213,14 @@ function renderListaPiattiCombo(piattoCombo) {
 
             if (statoComboCorrente.contesto === "cassa") {
                 comandaCorrente.push({
-                    nome: piattoCombo.nome, prezzo: piattoCombo.prezzo, categoria: piattoCombo.categoria,
-                    varianti: [], extraPrezzo: totaleExtra, quantita: 1, contorniScelti: contorniDaSalvare
+                    id: piattoCombo.id, // Risolve l'errore undefined dell'ID del Menu principale
+                    nome: piattoCombo.nome, 
+                    prezzo: piattoCombo.prezzo, 
+                    categoria: piattoCombo.categoria,
+                    varianti: [], 
+                    extraPrezzo: totaleExtra, 
+                    quantita: 1, 
+                    contorniScelti: contorniDaSalvare
                 });
                 aggiornaComandaCorrente();
             } else if (statoComboCorrente.contesto === "preordine") {
@@ -3218,6 +3231,31 @@ function renderListaPiattiCombo(piattoCombo) {
         };
     }
 }
+
+window.aggiungiContornoCombo = function(idPiattino) {
+    const p = window.menuData[idPiattino];
+    
+    // RISOLVE IL PROBLEMA DEGLI SCONTI: Applica lo sconto al contorno se presente nelle promozioni
+    let prezzoReale = p.prezzo;
+    if (statoComboCorrente.contesto === "preordine" && typeof calcolaPrezzoConScontoPerPiattoSingolo === "function") {
+        prezzoReale = calcolaPrezzoConScontoPerPiattoSingolo(p);
+    }
+    
+    statoComboCorrente.contorniSelezionati.push({ 
+        id: idPiattino,     // RISOLVE IL PROBLEMA DELL'ERRORE "UNDEFINED ID"
+        nome: p.nome, 
+        prezzoBase: prezzoReale 
+    });
+    
+    renderListaPiattiCombo(window.menuData[statoComboCorrente.piattoId]);
+};
+
+window.rimuoviContornoCombo = function(idPiattino) {
+    const arr = statoComboCorrente.contorniSelezionati;
+    const index = arr.map(e => e.id).lastIndexOf(idPiattino);
+    if (index > -1) arr.splice(index, 1);
+    renderListaPiattiCombo(window.menuData[statoComboCorrente.piattoId]);
+};
 
 window.aggiungiContornoCombo = function(idPiattino) {
     const p = window.menuData[idPiattino];
@@ -5594,10 +5632,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 
                 <div id="comboSettingsNew" style="display:none; margin-top:15px; padding-top: 15px; border-top: 1px dashed #c8e6c9;">
                     <label style="display:block; margin-bottom: 5px;"><b>N° Contorni Gratis inclusi:</b></label>
-                    <input type="number" id="modalPiattoMaxContorniGratis" value="1" min="0" style="width:100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box;">
+                    <input type="number" id="modalPiattoMaxContorniGratis" value="0" min="0" style="width:100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box;">
                     
                     <label style="display:block; margin-bottom: 5px;"><b>Seleziona i piatti ammessi nel Menu:</b></label>
-                    <div id="modalPiattoDishesCombo" style="max-height: 180px; overflow-y: auto; background: white; border: 1px solid #ccc; border-radius: 6px; padding: 10px; box-sizing: border-box;">
+                    <div id="modalPiattoDishesCombo" style="min-height: 60px; max-height: 180px; overflow-y: auto; background: white; border: 1px solid #ccc; border-radius: 6px; padding: 10px; box-sizing: border-box;">
                         <!-- I checkbox dei piatti verranno iniettati qui via JS -->
                     </div>
                 </div>
@@ -5857,10 +5895,10 @@ function modificaPiattoMenu(menuId, piatto) {
             
             <div id="comboSettingsEdit" style="display:none; margin-top:15px; padding-top: 15px; border-top: 1px dashed #c8e6c9;">
                 <label style="display:block; margin-bottom: 5px;"><b>N° Contorni Gratis inclusi:</b></label>
-                <input type="number" id="editPiattoMaxContorniGratis" value="1" min="0" style="width:100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box;">
+                <input type="number" id="editPiattoMaxContorniGratis" value="0" min="0" style="width:100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box;">
                 
                 <label style="display:block; margin-bottom: 5px;"><b>Seleziona i piatti ammessi nel Menu:</b></label>
-                <div id="editPiattoDishesCombo" style="max-height: 180px; overflow-y: auto; background: white; border: 1px solid #ccc; border-radius: 6px; padding: 10px; box-sizing: border-box;">
+                <div id="editPiattoDishesCombo" style="min-height: 60px; max-height: 180px; overflow-y: auto; background: white; border: 1px solid #ccc; border-radius: 6px; padding: 10px; box-sizing: border-box;">
                     <!-- I checkbox dei piatti verranno iniettati qui via JS -->
                 </div>
             </div>
@@ -5875,7 +5913,23 @@ function modificaPiattoMenu(menuId, piatto) {
         </div>
     `;
     overlay.appendChild(modal);
-    document.body.appendChild(overlay);
+    // POPOLIAMO LA LISTA DEI PIATTI COMBO IN MODIFICA (Deve stare qui, dopo l'appendChild!)
+	const containerEdit = document.getElementById("editPiattoDishesCombo");
+	if (containerEdit && window.menuData) {
+		let htmlPiattiEdit = "";
+		const piattiAmmessiGiaSalvati = piatto.piattiComboAmmessi || [];
+		
+		Object.entries(window.menuData).forEach(([pId, p]) => {
+			if (!p.isCombo && pId !== menuId) {
+				const isChecked = piattiAmmessiGiaSalvati.includes(pId) ? "checked" : "";
+				htmlPiattiEdit += `<label style="display:flex; align-items:center; margin-bottom:8px; cursor:pointer; padding: 5px; background: #fafafa; border: 1px solid #eee; border-radius: 4px;">
+								<input type="checkbox" class="combo-dish-cb-edit" value="${pId}" ${isChecked} style="margin-right: 10px; transform: scale(1.1);"> 
+								<span><b>${p.nome}</b> <small style="color:#777;">(${p.categoria})</small></span>
+							 </label>`;
+			}
+		});
+		containerEdit.innerHTML = htmlPiattiEdit || "<p style='color:#777; font-size:0.9em;'>Nessun piatto disponibile.</p>";
+	}
 
     const nomeInput = document.getElementById("editPiattoNome");
     const prezzoInput = document.getElementById("editPiattoPrezzo");
