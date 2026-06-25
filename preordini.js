@@ -887,68 +887,7 @@ async function initPreordiniClienti() {
         if (posizioneInput) posizioneInput.parentElement.style.display = "none";
         if (orarioConsegnaInput) orarioConsegnaInput.parentElement.style.display = "none";
     }
-
-      function aggiornaRiepilogoCarrelloUI() {
-        let nuovoTotale = 0;
-        const listaCarrello = document.getElementById("listaCarrello");
-        const carrelloContainer = document.getElementById("carrelloContainer");
-        
-        if (listaCarrello) listaCarrello.innerHTML = "";
-        
-        // Mostra o Nasconde magicamente il box del carrello se ci sono prodotti
-        if (carrelloContainer) {
-            carrelloContainer.style.display = carrelloCliente.length === 0 ? "none" : "block";
-        }
-          // AGGIUNTA NOTA INFORMATIVA:
-        if (listaCarrello && carrelloCliente.length > 0 && window.settings.sistemaExtraAbilitato) {
-             listaCarrello.innerHTML = "<div style='font-size:0.85em; color:#777; font-style:italic; margin-bottom:5px; text-align:center;'>Clicca sul nome di un piatto per aggiungere o togliere ingredienti.</div>";
-        }
-    
-        carrelloCliente.forEach((item, index) => {
-            const costoRiga = item.prezzo + item.extraPrezzo;
-            nuovoTotale += costoRiga;
-            
-            if (listaCarrello) {
-                const divRiga = document.createElement("div");
-                divRiga.style.padding = "10px 0";
-                divRiga.style.borderBottom = "1px dashed #eee";
-                divRiga.style.display = "flex";
-                divRiga.style.justifyContent = "space-between";
-                divRiga.style.alignItems = "center";
-                
-                // Creiamo il testo delle varianti (es: "+ Bacon \n - Senza Cipolla")
-                let htmlVarianti = "";
-                if (item.varianti && item.varianti.length > 0) {
-                    htmlVarianti = `<div style="font-size: 0.8em; color: #777; margin-top: 4px;">
-                        ${item.varianti.map(v => v.tipo === "aggiunta" ? `+ ${v.nome}` : `- Senza ${v.nome}`).join("<br>")}
-                    </div>`;
-                }
-    
-                // Rende il nome cliccabile SOLO se Extra è ON
-                const onclickStr = window.settings.sistemaExtraAbilitato ? `onclick="apriPopupPersonalizzaClienteModifica(${index})"` : "";
-                const cursorStr = window.settings.sistemaExtraAbilitato ? "cursor: pointer; text-decoration: underline;" : "";
-    
-                divRiga.innerHTML = `
-                    <div style="flex: 1 1 auto; text-align: left; padding-right: 15px; word-break: break-word;">
-                        <b ${onclickStr} style="color: #333; font-size: 1.1em; ${cursorStr}" title="${window.settings.sistemaExtraAbilitato ? 'Clicca per personalizzare' : ''}">${item.nome}</b>
-                        ${htmlVarianti}
-                        ${htmlCombo}
-                    </div>
-                    <div style="flex: 0 0 auto; font-weight: bold; font-size: 1.1em; color: #4CAF50; white-space: nowrap; margin-right: 15px;">
-                        €${costoRigaGrezzo.toFixed(2)}
-                    </div>
-                    <button onclick="rimuoviDalCarrello(${index})" style="flex: 0 0 auto; background: #fff; color: #ff5252; border: 1px solid #ff5252; border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 0.9em; font-weight: bold; transition: 0.2s; white-space: nowrap;">Rimuovi</button>
-                `;
-                listaCarrello.appendChild(divRiga);
-            }
-        });
-    
-        totale = Number(nuovoTotale.toFixed(2));
-        const totaleSpan = document.getElementById("totaleCliente");
-        if (totaleSpan) totaleSpan.innerText = totale.toFixed(2);
-    }
-    
-    
+   
     // Permette al cliente di cancellare un piatto se ci ha ripensato
     function rimuoviDalCarrello(index) {
         carrelloCliente.splice(index, 1);
@@ -1237,7 +1176,143 @@ window.aggiungiVeloceCarrello = function(id) {
         };
     };
 }
+function calcolaPrezzoConScontoPerPiatto(piatto, comandaIntera) {
+    const q = piatto.quantita || 1;
+    const prezzoBaseEExtra = piatto.prezzo + (piatto.extraPrezzo || 0);
 
+    if(!piatto.sconto) return prezzoBaseEExtra * q;
+    if(piatto.sconto.tipo === "percentuale"){
+        return prezzoBaseEExtra * q * (1 - (Number(piatto.sconto.valore)||0)/100);
+    } 
+
+    if(piatto.sconto.tipo === "x_paga_y" || piatto.sconto.tipo === "x_paga_y_fisso"){
+        let qTotale = comandaIntera.filter(p => p.id === piatto.id).reduce((sum, p) => sum + (p.quantita || 1), 0);
+        const x = parseInt(piatto.sconto.valore.x);
+
+        if (qTotale < x) return prezzoBaseEExtra * q;
+
+        const numGruppi = Math.floor(qTotale / x);
+        const resto = qTotale % x;
+
+        let costoScontatoIntero = 0;
+        if (piatto.sconto.tipo === "x_paga_y") {
+            const y = parseInt(piatto.sconto.valore.y);
+            costoScontatoIntero = (numGruppi * y * piatto.prezzo) + (resto * piatto.prezzo);
+        } else { 
+            const y = parseFloat(piatto.sconto.valore.y);
+            costoScontatoIntero = (numGruppi * y) + (resto * piatto.prezzo);
+        }
+
+        const costoTotaleBase = qTotale * piatto.prezzo;
+        const scontoTotale = costoTotaleBase - costoScontatoIntero;
+
+        return (prezzoBaseEExtra * q) - ((q / qTotale) * scontoTotale);
+    }
+    return prezzoBaseEExtra * q;
+}
+
+function aggiornaRiepilogoCarrelloUI() {
+    let nuovoTotale = 0;
+    let totaleGrezzo = 0;
+    const listaCarrello = document.getElementById("listaCarrello");
+    const carrelloContainer = document.getElementById("carrelloContainer");
+
+    if (listaCarrello) listaCarrello.innerHTML = "";
+    if (carrelloContainer) carrelloContainer.style.display = carrelloCliente.length === 0 ? "none" : "block";
+
+    // 🔹 NOTA INFORMATIVA SOLO SE EXTRA È ON
+    if (listaCarrello && carrelloCliente.length > 0 && window.settings.sistemaExtraAbilitato) {
+         listaCarrello.innerHTML = "<div style='font-size:0.85em; color:#777; font-style:italic; margin-bottom:5px; text-align:center;'>Clicca sul nome di un piatto per aggiungere o togliere ingredienti.</div>";
+    }
+
+    carrelloCliente.forEach((item, index) => {
+        const costoRigaGrezzo = item.prezzo + (item.extraPrezzo || 0);
+        const costoRigaScontato = calcolaPrezzoConScontoPerPiatto(item, carrelloCliente);
+        
+        totaleGrezzo += costoRigaGrezzo;
+        nuovoTotale += costoRigaScontato;
+
+        if (listaCarrello) {
+            const divRiga = document.createElement("div");
+            divRiga.style.padding = "10px 0"; divRiga.style.borderBottom = "1px dashed #eee";
+            divRiga.style.display = "flex"; divRiga.style.justifyContent = "space-between";
+            divRiga.style.alignItems = "center"; divRiga.style.gap = "15px";
+
+            let htmlVarianti = "";
+            if (item.varianti && item.varianti.length > 0) {
+                let conteggio = {};
+                item.varianti.forEach(v => {
+                    let key = v.tipo + "_" + v.nome;
+                    if (!conteggio[key]) conteggio[key] = { tipo: v.tipo, nome: v.nome, count: 0 };
+                    conteggio[key].count++;
+                });
+                const variantiTxt = Object.values(conteggio).map(v => {
+                    let qTxt = v.count > 1 ? `${v.count}x ` : "";
+                    return v.tipo === "aggiunta" ? `<span style="color:green;">+ ${qTxt}${v.nome}</span>` : `<span style="color:red;">- Senza ${v.nome}</span>`;
+                }).join("<br>");
+                htmlVarianti = `<div style="font-size: 0.8em; color: #777; margin-top: 4px;">${variantiTxt}</div>`;
+            }
+            
+            let htmlCombo = "";
+            if (item.contorniScelti && item.contorniScelti.length > 0) {
+                const cTxt = item.contorniScelti.map((c, cIdx) => {
+                    let varsTxt = c.varianti && c.varianti.length > 0 ? " <small style='color:#777;'>(" + c.varianti.map(v => v.tipo==='aggiunta'?`+${v.nome}`:`-${v.nome}`).join(", ") + ")</small>" : "";
+                    
+                    // 🔹 Rende i contorni cliccabili SOLO se Extra è ON
+                    const clickStr = window.settings.sistemaExtraAbilitato ? `onclick="apriPopupVariantiContornoCliente(${index}, ${cIdx})"` : "";
+                    const curStr = window.settings.sistemaExtraAbilitato ? "cursor:pointer; text-decoration:underline;" : "cursor:default;";
+
+                    return c.isGratis 
+                        ? `<span style="color:#2e7d32; font-weight:bold; ${curStr}" ${clickStr}>↳ ${c.nome}${varsTxt}</span>` 
+                        : `<span style="color:#555; ${curStr}" ${clickStr}>↳ ${c.nome} (+€${c.prezzoPagato.toFixed(2)})${varsTxt}</span>`;
+                }).join("<br>");
+                htmlCombo = `<div style="font-size: 0.85em; margin-top: 4px;">${cTxt}</div>`;
+            }
+
+            // 🔹 Rende il piatto cliccabile SOLO se Extra è ON
+            const onclickStr = window.settings.sistemaExtraAbilitato ? `onclick="apriPopupPersonalizzaClienteModifica(${index})"` : "";
+            const cursorStr = window.settings.sistemaExtraAbilitato ? "cursor: pointer; text-decoration: underline;" : "cursor: default;";
+
+            divRiga.innerHTML = `
+                <div style="flex: 1 1 auto; text-align: left; padding-right: 15px; word-break: break-word;">
+                    <b ${onclickStr} style="color: #333; font-size: 1.1em; ${cursorStr}" title="${window.settings.sistemaExtraAbilitato ? 'Clicca per personalizzare' : ''}">${item.nome}</b>
+                    ${htmlVarianti}
+                    ${htmlCombo}
+                </div>
+                <div style="flex: 0 0 auto; font-weight: bold; font-size: 1.1em; color: #4CAF50; white-space: nowrap; margin-right: 15px;">
+                    €${costoRigaGrezzo.toFixed(2)}
+                </div>
+                <button onclick="rimuoviDalCarrello(${index})" style="flex: 0 0 auto; background: #fff; color: #ff5252; border: 1px solid #ff5252; border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 0.9em; font-weight: bold; transition: 0.2s; white-space: nowrap;">Rimuovi</button>
+            `;
+            listaCarrello.appendChild(divRiga);
+        }
+    });
+
+    totale = Number(nuovoTotale.toFixed(2));
+    
+    const risparmio = totaleGrezzo - totale;
+    if (risparmio > 0.01 && listaCarrello) {
+        const divSconto = document.createElement("div");
+        divSconto.style.padding = "10px 0"; divSconto.style.color = "#d32f2f";
+        divSconto.style.fontWeight = "bold"; divSconto.style.textAlign = "right";
+        divSconto.innerHTML = `Sconto Applicato (Offerte): -€${risparmio.toFixed(2)}`;
+        listaCarrello.appendChild(divSconto);
+    }
+
+    const totaleSpan = document.getElementById("totaleCliente");
+    if (totaleSpan) totaleSpan.innerText = totale.toFixed(2);
+    
+    if (typeof menuItems !== 'undefined') {
+        Object.keys(menuItems).forEach(id => {
+            const btn = document.getElementById(`btn-add-${id}`);
+            if (btn && !btn.disabled && !btn.innerText.includes("Esaurito")) { 
+                const count = carrelloCliente.filter(item => item.id === id).length;
+                if (count > 0) { btn.innerHTML = `✅ Aggiunto (${count})`; btn.style.background = "#e8f5e9"; } 
+                else { btn.innerHTML = `+ Aggiungi`; btn.style.background = "transparent"; }
+            }
+        });
+    }
+}
 // ================================================================
 // ========== AUTO-DETECT DEL CONTESTO ============================
 // ================================================================
@@ -1633,94 +1708,7 @@ function calcolaPrezzoConScontoPerPiatto(piatto, comandaIntera) {
     return prezzoBaseEExtra * q;
 }
 
-function aggiornaRiepilogoCarrelloUI() {
-    let nuovoTotale = 0;
-    let totaleGrezzo = 0;
-    const listaCarrello = document.getElementById("listaCarrello");
-    const carrelloContainer = document.getElementById("carrelloContainer");
 
-    if (listaCarrello) listaCarrello.innerHTML = "";
-    if (carrelloContainer) carrelloContainer.style.display = carrelloCliente.length === 0 ? "none" : "block";
-
-    carrelloCliente.forEach((item, index) => {
-        const costoRigaGrezzo = item.prezzo + (item.extraPrezzo || 0);
-        const costoRigaScontato = calcolaPrezzoConScontoPerPiatto(item, carrelloCliente);
-        
-        totaleGrezzo += costoRigaGrezzo;
-        nuovoTotale += costoRigaScontato;
-
-        if (listaCarrello) {
-            const divRiga = document.createElement("div");
-            divRiga.style.padding = "10px 0"; divRiga.style.borderBottom = "1px dashed #eee";
-            divRiga.style.display = "flex"; divRiga.style.justifyContent = "space-between";
-            divRiga.style.alignItems = "center"; divRiga.style.gap = "15px";
-
-            let htmlVarianti = "";
-            if (item.varianti && item.varianti.length > 0) {
-                let conteggio = {};
-                item.varianti.forEach(v => {
-                    let key = v.tipo + "_" + v.nome;
-                    if (!conteggio[key]) conteggio[key] = { tipo: v.tipo, nome: v.nome, count: 0 };
-                    conteggio[key].count++;
-                });
-                const variantiTxt = Object.values(conteggio).map(v => {
-                    let qTxt = v.count > 1 ? `${v.count}x ` : "";
-                    return v.tipo === "aggiunta" ? `<span style="color:green;">+ ${qTxt}${v.nome}</span>` : `<span style="color:red;">- Senza ${v.nome}</span>`;
-                }).join("<br>");
-                htmlVarianti = `<div style="font-size: 0.8em; color: #777; margin-top: 4px;">${variantiTxt}</div>`;
-            }
-            
-            let htmlCombo = "";
-            if (item.contorniScelti && item.contorniScelti.length > 0) {
-                const cTxt = item.contorniScelti.map((c, cIdx) => {
-                    let varsTxt = c.varianti && c.varianti.length > 0 ? " <small style='color:#777;'>(" + c.varianti.map(v => v.tipo==='aggiunta'?`+${v.nome}`:`-${v.nome}`).join(", ") + ")</small>" : "";
-                    return c.isGratis 
-                        ? `<span style="color:#2e7d32; font-weight:bold; cursor:pointer;" onclick="apriPopupVariantiContornoCliente(${index}, ${cIdx})">=> ${c.nome}${varsTxt}</span>` 
-                        : `<span style="color:#555; cursor:pointer;" onclick="apriPopupVariantiContornoCliente(${index}, ${cIdx})">=> ${c.nome} (+€${c.prezzoPagato.toFixed(2)})${varsTxt}</span>`;
-                }).join("<br>");
-                htmlCombo = `<div style="font-size: 0.85em; margin-top: 4px;">${cTxt}</div>`;
-            }
-
-            divRiga.innerHTML = `
-                <div style="flex: 1 1 auto; text-align: left; padding-right: 15px; word-break: break-word;">
-                    <b style="color: #333; font-size: 1.1em;">${item.nome}</b>
-                    ${htmlVarianti}
-                    ${htmlCombo}
-                </div>
-                <div style="flex: 0 0 auto; font-weight: bold; font-size: 1.1em; color: #4CAF50; white-space: nowrap; margin-right: 15px;">
-                    €${costoRigaGrezzo.toFixed(2)}
-                </div>
-                <button onclick="rimuoviDalCarrello(${index})" style="flex: 0 0 auto; background: #fff; color: #ff5252; border: 1px solid #ff5252; border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 0.9em; font-weight: bold; transition: 0.2s; white-space: nowrap;">Rimuovi</button>
-            `;
-            listaCarrello.appendChild(divRiga);
-        }
-    });
-
-    totale = Number(nuovoTotale.toFixed(2));
-    
-    const risparmio = totaleGrezzo - totale;
-    if (risparmio > 0.01 && listaCarrello) {
-        const divSconto = document.createElement("div");
-        divSconto.style.padding = "10px 0"; divSconto.style.color = "#d32f2f";
-        divSconto.style.fontWeight = "bold"; divSconto.style.textAlign = "right";
-        divSconto.innerHTML = `Sconto Applicato (Offerte): -€${risparmio.toFixed(2)}`;
-        listaCarrello.appendChild(divSconto);
-    }
-
-    const totaleSpan = document.getElementById("totaleCliente");
-    if (totaleSpan) totaleSpan.innerText = totale.toFixed(2);
-    
-    if (typeof menuItems !== 'undefined') {
-        Object.keys(menuItems).forEach(id => {
-            const btn = document.getElementById(`btn-add-${id}`);
-            if (btn && !btn.disabled && !btn.innerText.includes("Esaurito")) { 
-                const count = carrelloCliente.filter(item => item.id === id).length;
-                if (count > 0) { btn.innerHTML = `✅ Aggiunto (${count})`; btn.style.background = "#e8f5e9"; } 
-                else { btn.innerHTML = `+ Aggiungi`; btn.style.background = "transparent"; }
-            }
-        });
-    }
-}
 window.apriPopupVariantiContornoCliente = function(idxCarrello, idxContorno) {
     const piattoPadre = carrelloCliente[idxCarrello];
     const contorno = piattoPadre.contorniScelti[idxContorno];
