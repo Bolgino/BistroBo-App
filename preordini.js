@@ -728,7 +728,9 @@ async function initPreordiniClienti() {
     // 🟢 AGGIUNGI QUESTE DUE RIGHE ESATTAMENTE QUI:
     const snapExtra = await db.ref("impostazioni/sistemaExtraAbilitato").once("value");
     window.settings.sistemaExtraAbilitato = snapExtra.exists() ? snapExtra.val() : true;
-
+    // FAI CAPIRE A PREORDINI SE LE COMBO SONO ON O OFF
+    const snapCombo = await db.ref("impostazioni/piattiComboAbilitati").once("value");
+    window.settings.piattiComboAbilitati = snapCombo.exists() ? snapCombo.val() : false;
   // Carica menù
     Promise.all([
         db.ref("menu").once("value"),
@@ -896,8 +898,8 @@ async function initPreordiniClienti() {
     // Listener combinato ingredienti + bloccato
     function aggiornaDisponibilitaPiatti(menuData, ingredientiDB) {
         document.querySelectorAll(".menu-item").forEach(riga => {
-            // Cerchiamo il bottone invece della vecchia select
-            const btnAggiungi = riga.querySelector("button[onclick^='apriPopupPersonalizzaCliente']");
+            // Cerchiamo il bottone intercettando tutte le possibili azioni di click
+            const btnAggiungi = riga.querySelector("button[onclick^='apriPopupPersonalizzaCliente'], button[onclick^='aggiungiVeloceCarrello'], button[onclick^='apriPopupCombo']");
             const labelEsaurito = riga.querySelector(".piatto-esaurito-label");
             if (!btnAggiungi) return;
 
