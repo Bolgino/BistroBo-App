@@ -2366,32 +2366,57 @@ function separaComanda(items) {
     let bere = [];
     let snack = [];
 
-    // 🔹 Legge lo stato globale dell’impostazione
     const snackAbilitato = window.settings?.snackAbilitato === true;
 
-    items.forEach(i => {
-        const categoria = (i.categoria || "").toLowerCase();
-        const tipo = (i.tipo || "").toLowerCase();
-        const nome = (i.nome || "").toLowerCase();
+    function getDest(categoria, tipo, nome) {
+        const cat = (categoria || "").toLowerCase();
+        const tip = (tipo || "").toLowerCase();
+        const nom = (nome || "").toLowerCase();
 
-        if (categoria === "bevande" || tipo === "bere") {
-            bere.push(i);
-        } 
-        else if (
-            categoria === "snack" ||
-            categoria.includes("fritti") ||
-            tipo === "snack" ||
-            nome.includes("patatine") || nome.includes("fritto") // utile per casi pratici
-        ) {
-            if (snackAbilitato) {
-                snack.push(i);
-            } else {
-                cibo.push(i); // se snack disattivato → trattalo come cibo
-            }
-        } 
-        else {
-            cibo.push(i);
+        if (cat === "bevande" || tip === "bere") return "bere";
+        if (cat === "snack" || cat.includes("fritti") || tip === "snack" || nom.includes("patatine") || nom.includes("fritto")) {
+            return snackAbilitato ? "snack" : "cibo";
         }
+        return "cibo";
+    }
+
+    items.forEach(i => {
+        const destMain = getDest(i.categoria, i.tipo, i.nome);
+
+        let cloneCibo = null;
+        let cloneBere = null;
+        let cloneSnack = null;
+
+        const getClone = (dest) => {
+            if (dest === "cibo") {
+                if (!cloneCibo) cloneCibo = { ...i, isMainHere: false, contorniScelti: [] };
+                return cloneCibo;
+            }
+            if (dest === "bere") {
+                if (!cloneBere) cloneBere = { ...i, isMainHere: false, contorniScelti: [] };
+                return cloneBere;
+            }
+            if (dest === "snack") {
+                if (!cloneSnack) cloneSnack = { ...i, isMainHere: false, contorniScelti: [] };
+                return cloneSnack;
+            }
+        };
+
+        // 1. Assegna il Piatto Principale
+        getClone(destMain).isMainHere = true;
+
+        // 2. Smista i Contorni nelle rispettive stazioni
+        if (i.contorniScelti && i.contorniScelti.length > 0) {
+            i.contorniScelti.forEach(c => {
+                const destC = getDest(c.categoria, "", c.nome);
+                getClone(destC).contorniScelti.push(c);
+            });
+        }
+
+        // 3. Inserisci i cloni finali se contengono qualcosa (main o contorni)
+        if (cloneCibo) cibo.push(cloneCibo);
+        if (cloneBere) bere.push(cloneBere);
+        if (cloneSnack) snack.push(cloneSnack);
     });
 
     return { cibo, bere, snack };
@@ -3246,7 +3271,8 @@ function renderListaPiattiCombo(piattoCombo) {
                     nome: c.nome,
                     prezzoOriginale: c.prezzoBase,
                     prezzoPagato: (index >= maxGratis) ? c.prezzoBase : 0, 
-                    isGratis: (index < maxGratis)
+                    isGratis: (index < maxGratis),
+                    categoria: window.menuData[c.id]?.categoria || "cibi" // <--- AGGIUNTO QUESTO
                 });
             });
 
@@ -3402,12 +3428,10 @@ function caricaComandeCassa() {
 
       const { cibo, bere, snack } = separaComanda(c.piatti || []);
       function formattaPiatto(i) {
-          let base = `${i.quantita}x ${i.nome}`;
-          // Assicuriamoci che sia un array, anche se Firebase lo ha trasformato in oggetto
+          let varTxt = "";
           let variantiArray = i.varianti ? (Array.isArray(i.varianti) ? i.varianti : Object.values(i.varianti)) : [];
-
+          
           if (variantiArray.length > 0) {
-              // Raggruppiamo le occorrenze
               let conteggio = {};
               variantiArray.forEach(v => {
                   let key = v.tipo + "_" + v.nome;
@@ -3415,15 +3439,26 @@ function caricaComandeCassa() {
                   conteggio[key].count++;
               });
 
-              // Stampiamo con la quantità
-              let varTxt = Object.values(conteggio).map(v => {
+              let txt = Object.values(conteggio).map(v => {
                   let qTxt = v.count > 1 ? `${v.count}x ` : "";
                   if (v.tipo === "aggiunta") return `<span style="color:green; font-weight:bold;">+${qTxt}${v.nome}</span>`;
                   else return `<span style="color:red; font-weight:bold;">-${v.nome}</span>`;
               }).join(", ");
-              
-              base += ` <span style="font-size:0.85em;">(${varTxt})</span>`;
+              varTxt = ` <span style="font-size:0.85em;">(${txt})</span>`;
           }
+
+          let base = "";
+          if (i.isMainHere !== false) {
+              base = `${i.quantita}x ${i.nome}${varTxt}`;
+          } else {
+              base = `<span style="font-style:italic; color:#777;">[Di: ${i.quantita}x ${i.nome}]</span>`;
+          }
+
+          if (i.contorniScelti && i.contorniScelti.length > 0) {
+              let contorniHtml = i.contorniScelti.map(c => `↳ ${i.quantita}x ${c.nome}`).join("<br>");
+              base += `<br><span style="margin-left:15px; font-size:0.9em; color:#333;">${contorniHtml}</span>`;
+          }
+
           return base;
       }
 
@@ -4043,30 +4078,39 @@ async function caricaGestioneComandeAdmin() {
             }
            
             function formattaPiattoAdmin(i) {
-                  let base = `${i.quantita}x ${i.nome}`;
-			  // Assicuriamoci che sia un array, anche se Firebase lo ha trasformato in oggetto
-			  let variantiArray = i.varianti ? (Array.isArray(i.varianti) ? i.varianti : Object.values(i.varianti)) : [];
-	
-			  if (variantiArray.length > 0) {
-				  // Raggruppiamo le occorrenze
-				  let conteggio = {};
-				  variantiArray.forEach(v => {
-					  let key = v.tipo + "_" + v.nome;
-					  if (!conteggio[key]) conteggio[key] = { tipo: v.tipo, nome: v.nome, count: 0 };
-					  conteggio[key].count++;
-				  });
-	
-				  // Stampiamo con la quantità
-				  let varTxt = Object.values(conteggio).map(v => {
-					  let qTxt = v.count > 1 ? `${v.count}x ` : "";
-					  if (v.tipo === "aggiunta") return `<span style="color:green; font-weight:bold;">+${qTxt}${v.nome}</span>`;
-					  else return `<span style="color:red; font-weight:bold;">-${v.nome}</span>`;
-				  }).join(", ");
-				  
-				  base += ` <span style="font-size:0.85em;">(${varTxt})</span>`;
-			  }
-			  return base;
-		  }
+                let varTxt = "";
+                let variantiArray = i.varianti ? (Array.isArray(i.varianti) ? i.varianti : Object.values(i.varianti)) : [];
+                
+                if (variantiArray.length > 0) {
+                    let conteggio = {};
+                    variantiArray.forEach(v => {
+                        let key = v.tipo + "_" + v.nome;
+                        if (!conteggio[key]) conteggio[key] = { tipo: v.tipo, nome: v.nome, count: 0 };
+                        conteggio[key].count++;
+                    });
+
+                    let txt = Object.values(conteggio).map(v => {
+                        let qTxt = v.count > 1 ? `${v.count}x ` : "";
+                        if (v.tipo === "aggiunta") return `<span style="color:green; font-weight:bold;">+${qTxt}${v.nome}</span>`;
+                        else return `<span style="color:red; font-weight:bold;">-${v.nome}</span>`;
+                    }).join(", ");
+                    varTxt = ` <span style="font-size:0.85em;">(${txt})</span>`;
+                }
+
+                let base = "";
+                if (i.isMainHere !== false) {
+                    base = `${i.quantita}x ${i.nome}${varTxt}`;
+                } else {
+                    base = `<span style="font-style:italic; color:#777;">[Di: ${i.quantita}x ${i.nome}]</span>`;
+                }
+
+                if (i.contorniScelti && i.contorniScelti.length > 0) {
+                    let contorniHtml = i.contorniScelti.map(c => `↳ ${i.quantita}x ${c.nome}`).join("<br>");
+                    base += `<br><span style="margin-left:15px; font-size:0.9em; color:#333;">${contorniHtml}</span>`;
+                }
+
+                return base;
+            }
 
             const piattiCibo = cibo.map(formattaPiattoAdmin).join(" <br> ") || "—";
             const piattiBere = bere.map(formattaPiattoAdmin).join(" <br> ") || "—";
@@ -4995,45 +5039,102 @@ async function caricaComandePerRuolo(daFareDiv, storicoDiv, ruolo) {
             listaDiv.className = "orderContent";
             listaDiv.style.marginLeft = "2cm";
 
-            if(items.length === 0) listaDiv.innerText = "—";
-            else items.forEach(i => {
-                const p = document.createElement("div");
-                let variantiHtml = "";
-                if (i.varianti && i.varianti.length > 0) {
-                    variantiHtml = "<br>" + i.varianti.map(v => 
-                        v.tipo === "aggiunta" ? `<small style="color:green; font-weight:bold; margin-left:10px;">+ ${v.nome}</small>` : `<small style="color:red; font-weight:bold; margin-left:10px;">- Senza ${v.nome}</small>`
-                    ).join("<br>");
-                }
-                p.innerHTML = `<span>${i.quantita}x ${i.nome}</span>${variantiHtml}`;
-
-                if ((ruolo === "cucina" || ruolo === "bere" || (ruolo === "snack" && snackAbilitato)) && (c[statoKey] === "da fare" || c[statoKey] === "in elaborazione")) {
-
-                    const box = document.createElement("input");
-                    box.type = "checkbox";
-                    box.className = "tickItem";
+            if(items.length === 0) {
+                listaDiv.innerText = "—";
+            } else {
+                items.forEach(i => {
+                    const pContainer = document.createElement("div");
+                    pContainer.style.marginBottom = "8px"; // Distanzia un po' le portate
+                    
+                    const isActiveState = ((ruolo === "cucina" || ruolo === "bere" || (ruolo === "snack" && snackAbilitato)) && (c[statoKey] === "da fare" || c[statoKey] === "in elaborazione"));
+                    const isDisabled = (c[statoKey] === "da fare");
                     const comandaId = id;
 
-                    if (!window.tickState) window.tickState = {};
-                    if (!window.tickState[comandaId]) window.tickState[comandaId] = {};
+                    // --- 1. RENDERING PIATTO PRINCIPALE (se inviato a questo profilo) ---
+                    if (i.isMainHere !== false) {
+                        const mainDiv = document.createElement("div");
+                        let variantiHtml = "";
+                        if (i.varianti && i.varianti.length > 0) {
+                            variantiHtml = "<br>" + i.varianti.map(v => 
+                                v.tipo === "aggiunta" ? `<small style="color:green; font-weight:bold; margin-left:10px;">+ ${v.nome}</small>` : `<small style="color:red; font-weight:bold; margin-left:10px;">- Senza ${v.nome}</small>`
+                            ).join("<br>");
+                        }
 
-                    const voceKey = `${i.nome}-${i.quantita}`;
-                    if (window.tickState[comandaId][voceKey] === undefined) window.tickState[comandaId][voceKey] = false;
+                        if (isActiveState) {
+                            const box = document.createElement("input");
+                            box.type = "checkbox";
+                            box.className = "tickItem";
+                            
+                            if (!window.tickState) window.tickState = {};
+                            if (!window.tickState[comandaId]) window.tickState[comandaId] = {};
+                            const voceKey = `${i.nome}-${i.quantita}-main`;
+                            if (window.tickState[comandaId][voceKey] === undefined) window.tickState[comandaId][voceKey] = false;
+                            
+                            box.checked = window.tickState[comandaId][voceKey];
+                            box.disabled = isDisabled;
 
-                    box.checked = window.tickState[comandaId][voceKey];
-                    box.disabled = (c[statoKey] === "da fare");
+                            box.addEventListener("change", () => {
+                                window.tickState[comandaId][voceKey] = box.checked;
+                                const checkboxes = d.querySelectorAll(".tickItem");
+                                if (bComp) bComp.disabled = ![...checkboxes].every(cb => cb.checked);
+                            });
+                            mainDiv.appendChild(box);
+                        }
 
-                    box.addEventListener("change", () => {
-                        window.tickState[comandaId][voceKey] = box.checked;
-                        const checkboxes = d.querySelectorAll(".tickItem");
-                        const tuttiSpuntati = [...checkboxes].every(cb => cb.checked);
-                        if (bComp) bComp.disabled = !tuttiSpuntati;
-                    });
+                        const mainSpan = document.createElement("span");
+                        mainSpan.innerHTML = ` ${i.quantita}x ${i.nome}${variantiHtml}`;
+                        mainDiv.appendChild(mainSpan);
+                        pContainer.appendChild(mainDiv);
+                    } else {
+                        // Il piatto principale è altrove, mettiamo un testo di contesto
+                        const ctxDiv = document.createElement("div");
+                        ctxDiv.innerHTML = `<small style="color:#777;"><i>[Contorno di: ${i.quantita}x ${i.nome}]</i></small>`;
+                        pContainer.appendChild(ctxDiv);
+                    }
 
-                    p.prepend(box);
-                }
+                    // --- 2. RENDERING CONTORNI (Giustificati + Loro Checkbox) ---
+                    if (i.contorniScelti && i.contorniScelti.length > 0) {
+                        i.contorniScelti.forEach((contorno, cIdx) => {
+                            const cDiv = document.createElement("div");
+                            cDiv.style.marginLeft = "25px"; // Giustificato!
+                            cDiv.style.marginTop = "4px";
 
-                listaDiv.appendChild(p);
-            });
+                            let variantiContHtml = "";
+                            if (contorno.varianti && contorno.varianti.length > 0) {
+                                variantiContHtml = "<br>" + contorno.varianti.map(v => 
+                                    v.tipo === "aggiunta" ? `<small style="color:green; font-weight:bold; margin-left:10px;">+ ${v.nome}</small>` : `<small style="color:red; font-weight:bold; margin-left:10px;">- Senza ${v.nome}</small>`
+                                ).join("<br>");
+                            }
+
+                            if (isActiveState) {
+                                const cBox = document.createElement("input");
+                                cBox.type = "checkbox";
+                                cBox.className = "tickItem";
+                                
+                                const cVoceKey = `${i.nome}-contorno-${contorno.id || contorno.nome}-${cIdx}`;
+                                if (window.tickState[comandaId][cVoceKey] === undefined) window.tickState[comandaId][cVoceKey] = false;
+                                
+                                cBox.checked = window.tickState[comandaId][cVoceKey];
+                                cBox.disabled = isDisabled;
+
+                                cBox.addEventListener("change", () => {
+                                    window.tickState[comandaId][cVoceKey] = cBox.checked;
+                                    const checkboxes = d.querySelectorAll(".tickItem");
+                                    if (bComp) bComp.disabled = ![...checkboxes].every(cb => cb.checked);
+                                });
+                                cDiv.appendChild(cBox);
+                            }
+
+                            const cSpan = document.createElement("span");
+                            cSpan.innerHTML = ` ↳ ${i.quantita}x ${contorno.nome}${variantiContHtml}`;
+                            cDiv.appendChild(cSpan);
+                            pContainer.appendChild(cDiv);
+                        });
+                    }
+
+                    listaDiv.appendChild(pContainer);
+                });
+            }
             mainDiv.appendChild(listaDiv);
             d.appendChild(mainDiv);
 
@@ -7403,23 +7504,11 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
     // --- 1. DIVISIONE IN REPARTI ---
     let reparti = [];
     if (window.settings.scontriniSeparati) {
-        const cibi = items.filter(p => p.categoria !== 'bevande' && p.categoria !== 'snack');
-        const bere = items.filter(p => p.categoria === 'bevande');
-        const snack = items.filter(p => p.categoria === 'snack');
-        
-        if (cibi.length > 0) reparti.push({ nome: "CUCINA", items: cibi });
-        if (bere.length > 0) reparti.push({ nome: "BERE", items: bere });
-        
-        if (snack.length > 0) {
-            if (window.settings.snackAbilitato) {
-                reparti.push({ nome: "SNACK", items: snack });
-            } else {
-                // Se snack disattivato globalmente, li uniamo alla cucina
-                const cucIdx = reparti.findIndex(r => r.nome === "CUCINA");
-                if (cucIdx > -1) reparti[cucIdx].items.push(...snack);
-                else reparti.push({ nome: "CUCINA", items: snack });
-            }
-        }
+        // Usiamo il nuovo smistatore intelligente
+        const separati = separaComanda(items);
+        if (separati.cibo.length > 0) reparti.push({ nome: "CUCINA", items: separati.cibo });
+        if (separati.bere.length > 0) reparti.push({ nome: "BERE", items: separati.bere });
+        if (separati.snack.length > 0) reparti.push({ nome: "SNACK", items: separati.snack });
     } else {
         // Scontrino Unico
         reparti.push({ nome: null, items: items });
@@ -7427,172 +7516,138 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
 
     // --- 2. DISEGNO DEL PDF PER OGNI REPARTO ---
     reparti.forEach((reparto, index) => {
-        if (index > 0) {
-            doc.addPage(); // Genera un taglio della carta termica!
-        }
+        if (index > 0) doc.addPage();
 
         let y = 8;
         const margin = 4;
         const pageWidth = 80;
         const rightMargin = pageWidth - margin;
 
-        // INTESTAZIONE
-        doc.setFontSize(16);
-        doc.setFont("helvetica", "bold");
+        // INTESTAZIONE...
+        doc.setFontSize(16); doc.setFont("helvetica", "bold");
         const nomeStand = (cliente && cliente.nomeStand) ? cliente.nomeStand : (window.settings && window.settings.nomeStand ? window.settings.nomeStand : "BistroBò");
-        doc.text(nomeStand.toUpperCase(), pageWidth / 2, y, { align: "center" });
-        y += 6;
+        doc.text(nomeStand.toUpperCase(), pageWidth / 2, y, { align: "center" }); y += 6;
+        doc.setFontSize(10); doc.setFont("helvetica", "normal");
+        doc.text(`${dataOdierna} - Ore ${orario}`, pageWidth / 2, y, { align: "center" }); y += 6;
+        doc.text("-".repeat(45), pageWidth / 2, y, { align: "center" }); y += 8;
 
-        doc.setFontSize(10);
-        doc.setFont("helvetica", "normal");
-        doc.text(`${dataOdierna} - Ore ${orario}`, pageWidth / 2, y, { align: "center" });
-        y += 6;
-        doc.text("-".repeat(45), pageWidth / 2, y, { align: "center" });
-        y += 8;
-
-        // NUMERO COMANDA GIGANTE E NOME REPARTO (Più piccolo)
-        doc.setFontSize(24);
-        doc.setFont("helvetica", "bold");
-        doc.text(`COMANDA ${numeroComanda}`, pageWidth / 2, y, { align: "center" });
-        y += 7;
+        doc.setFontSize(24); doc.setFont("helvetica", "bold");
+        doc.text(`COMANDA ${numeroComanda}`, pageWidth / 2, y, { align: "center" }); y += 7;
 
         if (reparto.nome) {
-            doc.setFontSize(14);
-            doc.text(`*** ${reparto.nome} ***`, pageWidth / 2, y, { align: "center" });
-            y += 6;
+            doc.setFontSize(14); doc.text(`*** ${reparto.nome} ***`, pageWidth / 2, y, { align: "center" }); y += 6;
         }
 
-        doc.setFontSize(10);
-        doc.setFont("helvetica", "normal");
-        doc.text("-".repeat(45), pageWidth / 2, y, { align: "center" });
-        y += 6;
+        doc.setFontSize(10); doc.setFont("helvetica", "normal");
+        doc.text("-".repeat(45), pageWidth / 2, y, { align: "center" }); y += 6;
 
-        // DATI CLIENTE (Preordini)
         if (cliente && cliente.nome) {
-            doc.setFontSize(11);
-            doc.setFont("helvetica", "bold");
+            doc.setFontSize(11); doc.setFont("helvetica", "bold");
             doc.text(`Cliente: ${cliente.nome}`, margin, y); y += 5;
             if (cliente.telefono) { doc.setFont("helvetica", "normal"); doc.text(`Tel: ${cliente.telefono}`, margin, y); y += 5; }
             if (cliente.posizione) { doc.text(`Pos: ${cliente.posizione}`, margin, y); y += 5; }
-            doc.text("-".repeat(45), pageWidth / 2, y, { align: "center" });
-            y += 6;
+            doc.text("-".repeat(45), pageWidth / 2, y, { align: "center" }); y += 6;
         }
 
-        // LISTA PIATTI
-        doc.setFontSize(10);
-        doc.setFont("helvetica", "bold");
-        doc.text("Q.TA  DESCRIZIONE", margin, y);
-        doc.text("IMPORTO", rightMargin, y, { align: "right" });
-        y += 2;
-        doc.setFont("helvetica", "normal");
-        doc.text("-".repeat(45), pageWidth / 2, y, { align: "center" });
-        y += 5;
+        doc.setFontSize(10); doc.setFont("helvetica", "bold");
+        doc.text("Q.TA  DESCRIZIONE", margin, y); doc.text("IMPORTO", rightMargin, y, { align: "right" }); y += 2;
+        doc.setFont("helvetica", "normal"); doc.text("-".repeat(45), pageWidth / 2, y, { align: "center" }); y += 5;
 
         let totaleReparto = 0;
 
         reparto.items.forEach(p => {
-            let prezzoTotPiatto = 0;
-            // Torna a usare la funzione originale perfetta!
-            if (typeof calcolaPrezzoConSconto === "function") {
-                prezzoTotPiatto = calcolaPrezzoConSconto(p, items);
+            // SE IL PIATTO PRINCIPALE APPARTIENE A QUESTO REPARTO
+            if (p.isMainHere !== false) {
+                let prezzoTotPiatto = 0;
+                if (typeof calcolaPrezzoConSconto === "function") {
+                    prezzoTotPiatto = calcolaPrezzoConSconto(p, items);
+                } else {
+                    prezzoTotPiatto = (p.prezzo + (p.extraPrezzo || 0)) * (p.quantita || 1);
+                }
+                totaleReparto += prezzoTotPiatto;
+
+                doc.setFontSize(12); doc.setFont("helvetica", "bold");
+                doc.text(`${p.quantita}x`, margin, y);
+                const nomeSplit = doc.splitTextToSize(p.nome, 48);
+                doc.text(nomeSplit, margin + 8, y);
+                doc.text(`€ ${prezzoTotPiatto.toFixed(2)}`, rightMargin, y, { align: "right" });
+                y += (nomeSplit.length * 5); 
+
+                // Varianti Main
+                let variantiArray = p.varianti ? (Array.isArray(p.varianti) ? p.varianti : Object.values(p.varianti)) : [];
+                if (variantiArray.length > 0) {
+                    doc.setFontSize(10); doc.setFont("helvetica", "normal");
+                    let maxGratis = p.maxVariantiGratis || 0;
+                    let aggiunteCount = 0;
+
+                    variantiArray.filter(v => v.tipo === "rimozione").forEach(v => {
+                        doc.text(`   - NO ${v.nome}`, margin + 8, y); y += 4.5;
+                    });
+
+                    const aggiunte = variantiArray.filter(v => v.tipo === "aggiunta");
+                    const mappaAggiunte = {};
+                    aggiunte.forEach(v => {
+                        let prezzoAggiunta = 0;
+                        if (aggiunteCount >= maxGratis) { prezzoAggiunta = Number(v.prezzo || 0); }
+                        aggiunteCount++;
+                        if (!mappaAggiunte[v.nome]) mappaAggiunte[v.nome] = { nome: v.nome, count: 0, costoTot: 0 };
+                        mappaAggiunte[v.nome].count++; mappaAggiunte[v.nome].costoTot += prezzoAggiunta;
+                    });
+
+                    Object.values(mappaAggiunte).forEach(a => {
+                        const aqTxt = a.count > 1 ? `${a.count}x ` : "";
+                        doc.text(`   + ${aqTxt}${a.nome}`, margin + 8, y);
+                        const stringaCosto = a.costoTot > 0 ? `€ ${a.costoTot.toFixed(2)}` : `€ 0.00`;
+                        doc.text(stringaCosto, rightMargin, y, { align: "right" }); y += 4.5;
+                    });
+                }
             } else {
-                prezzoTotPiatto = (p.prezzo + (p.extraPrezzo || 0)) * (p.quantita || 1);
-            }
-            totaleReparto += prezzoTotPiatto;
-
-            doc.setFontSize(12);
-            doc.setFont("helvetica", "bold");
-            
-            doc.text(`${p.quantita}x`, margin, y);
-            const nomeSplit = doc.splitTextToSize(p.nome, 48);
-            doc.text(nomeSplit, margin + 8, y);
-            doc.text(`€ ${prezzoTotPiatto.toFixed(2)}`, rightMargin, y, { align: "right" });
-            y += (nomeSplit.length * 5); 
-
-            // VARIANTI
-            let variantiArray = p.varianti ? (Array.isArray(p.varianti) ? p.varianti : Object.values(p.varianti)) : [];
-            if (variantiArray.length > 0) {
-                doc.setFontSize(10);
-                doc.setFont("helvetica", "normal");
-                
-                let maxGratis = p.maxVariantiGratis || 0;
-                let aggiunteCount = 0;
-
-                const rimozioni = variantiArray.filter(v => v.tipo === "rimozione");
-                rimozioni.forEach(v => {
-                    doc.text(`   - NO ${v.nome}`, margin + 8, y);
-                    y += 4.5;
-                });
-
-                const aggiunte = variantiArray.filter(v => v.tipo === "aggiunta");
-                const mappaAggiunte = {};
-                aggiunte.forEach(v => {
-                    let prezzoAggiunta = 0;
-                    if (aggiunteCount >= maxGratis) { prezzoAggiunta = Number(v.prezzo || 0); }
-                    aggiunteCount++;
-                    
-                    if (!mappaAggiunte[v.nome]) mappaAggiunte[v.nome] = { nome: v.nome, count: 0, costoTot: 0 };
-                    mappaAggiunte[v.nome].count++;
-                    mappaAggiunte[v.nome].costoTot += prezzoAggiunta;
-                });
-
-                Object.values(mappaAggiunte).forEach(a => {
-                    const aqTxt = a.count > 1 ? `${a.count}x ` : "";
-                    doc.text(`   + ${aqTxt}${a.nome}`, margin + 8, y);
-                    const stringaCosto = a.costoTot > 0 ? `€ ${a.costoTot.toFixed(2)}` : `€ 0.00`;
-                    doc.text(stringaCosto, rightMargin, y, { align: "right" });
-                    y += 4.5;
-                });
+                // IL PIATTO PRINCIPALE NON E' QUI (Solo Contesto, es. per le Patatine in Snack)
+                doc.setFontSize(10); doc.setFont("helvetica", "italic");
+                doc.text(`[Di: ${p.quantita}x ${p.nome}]`, margin, y);
+                y += 5;
             }
             
             // --- STAMPA CONTORNI COMBO ---
             if (p.contorniScelti && p.contorniScelti.length > 0) {
-                doc.setFontSize(10);
-                doc.setFont("helvetica", "italic");
+                doc.setFontSize(10); doc.setFont("helvetica", "italic");
                 p.contorniScelti.forEach(c => {
-                    doc.text(`   => ${c.nome}`, margin + 8, y);
-                    const txtCosto = c.isGratis ? "INCLUSO" : `€ ${c.prezzoPagato.toFixed(2)}`;
+                    doc.text(`   => ${p.quantita}x ${c.nome}`, margin + 8, y);
+                    
+                    // Il costo del contorno è già calcolato nel totale di calcolaPrezzoConSconto(p)
+                    let txtCosto = "";
+                    if (p.isMainHere !== false) {
+                        txtCosto = c.isGratis ? "INCLUSO" : `€ ${(c.prezzoPagato || 0).toFixed(2)}`;
+                    } 
                     doc.text(txtCosto, rightMargin, y, { align: "right" });
                     y += 4.5;
+                    
+                    // Varianti Contorno
+                    if (c.varianti && c.varianti.length > 0) {
+                        c.varianti.forEach(v => {
+                            const pre = v.tipo === 'aggiunta' ? '+' : '-';
+                            doc.text(`       ${pre} ${v.nome}`, margin + 8, y); y += 4.5;
+                        });
+                    }
                 });
             }
-
             y += 2; 
         });
 
-        // TOTALE
-        doc.setFontSize(10);
-        doc.setFont("helvetica", "normal");
-        y += 2;
-        doc.text("-".repeat(45), pageWidth / 2, y, { align: "center" });
-        y += 8;
+        // TOTALE E NOTE...
+        doc.setFontSize(10); doc.setFont("helvetica", "normal"); y += 2;
+        doc.text("-".repeat(45), pageWidth / 2, y, { align: "center" }); y += 8;
+        doc.setFontSize(18); doc.setFont("helvetica", "bold");
+        doc.text("TOTALE", margin, y); doc.text(`€ ${totaleReparto.toFixed(2)}`, rightMargin, y, { align: "right" }); y += 8;
 
-        doc.setFontSize(18);
-        doc.setFont("helvetica", "bold");
-        doc.text("TOTALE", margin, y);
-        doc.text(`€ ${totaleReparto.toFixed(2)}`, rightMargin, y, { align: "right" });
-        y += 8;
-
-        // RESTO E NOTE
-        doc.setFontSize(11);
-        doc.setFont("helvetica", "normal");
-        if (cliente && cliente.restoRichiesto && cliente.restoRichiesto > 0) {
-            doc.text(`Da dare resto su: € ${cliente.restoRichiesto}`, margin, y);
-            y += 6;
-        }
-
+        doc.setFontSize(11); doc.setFont("helvetica", "normal");
+        if (cliente && cliente.restoRichiesto && cliente.restoRichiesto > 0) { doc.text(`Da dare resto su: € ${cliente.restoRichiesto}`, margin, y); y += 6; }
         if (note) {
-            y += 2;
-            doc.setFontSize(10);
-            doc.setFont("helvetica", "bold");
+            y += 2; doc.setFontSize(10); doc.setFont("helvetica", "bold");
             const noteSplit = doc.splitTextToSize(`NOTE: ${note}`, pageWidth - margin*2);
-            doc.text(noteSplit, margin, y);
-            y += (noteSplit.length * 5);
+            doc.text(noteSplit, margin, y); y += (noteSplit.length * 5);
         }
-
-        y += 5;
-        doc.setFontSize(10);
-        doc.setFont("helvetica", "italic");
+        y += 5; doc.setFontSize(10); doc.setFont("helvetica", "italic");
         doc.text("Grazie e Buon Appetito!", pageWidth / 2, y, { align: "center" });
     });
 
