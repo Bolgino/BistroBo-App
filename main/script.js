@@ -7658,10 +7658,20 @@ window.apriPopupVariantiContorno = function(idxPiatto, idxContorno) {
 
         const baseIds = (piattoOriginale.ingredienti || []).map(i => i.id);
 
+        // FIX: Recuperiamo sia ID che Nomi per retrocompatibilità
+        const baseIds = (piattoOriginale.ingredienti || []).map(i => i.id).filter(id => id);
+        const baseNomi = (piattoOriginale.ingredienti || []).map(i => (i.nome || "").trim().toLowerCase());
+
         Object.entries(window.ingredientData || {}).forEach(([id, ing]) => {
             const catsApp = ing.categorieApplicabili || [ing.categoria || "cibi"];
-            const catPiatto = (piattoOriginale.categoria || "cibi").toLowerCase();
-            const isBase = baseIds.includes(id);
+            
+            // FIX: Conversione vecchia categoria
+            let catPiatto = (piattoOriginale.categoria || "cibi").toLowerCase();
+            if (catPiatto === "cucina") catPiatto = "cibi";
+
+            // Riconoscimento ingrediente base migliorato
+            const isBase = baseIds.includes(id) || baseNomi.includes((ing.nome || "").trim().toLowerCase());
+            const isExtraFlag = (ing.usabileComeExtra === true) && catsApp.includes(catPiatto);
 	        const isExtraFlag = (ing.usabileComeExtra === true) && catsApp.includes(catPiatto);
 	
 	        let allowRemove = false;
