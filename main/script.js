@@ -2656,19 +2656,19 @@ function aggiornaComandaCorrente(){
         
         const prezzoPiattoAttuale = (i.prezzo + (i.extraPrezzo || 0));
 
+        const costoRigaScontato = calcolaPrezzoConSconto(i, comandaCorrente);
+        
         if(i.sconto){
             if(i.sconto.tipo === "percentuale"){
                 span.innerHTML = `<b style="color:#0056b3;">${i.quantita}x ${i.nome}</b> 
-                    <span style="text-decoration: line-through; color:red;">€${prezzoPiattoAttuale.toFixed(2)}</span> 
-                    <span style="color:red;">€${(calcolaPrezzoConSconto(i)/i.quantita).toFixed(2)}</span>` + testoVarianti;
-            } else if(i.sconto.tipo === "x_paga_y" || i.sconto.tipo === "x_paga_y_fisso"){
-                // MOSTRIAMO IL PREZZO INTERO ACCANTO AL NOME, LO SCONTO VA SUL TOTALE FINALE
-                span.innerHTML = `<b style="color:#0056b3;">${i.quantita}x ${i.nome}</b> (€${prezzoPiattoAttuale.toFixed(2)})` + testoVarianti;
+                    <span style="text-decoration: line-through; color:red;">€${(prezzoPiattoAttuale * i.quantita).toFixed(2)}</span> 
+                    <span style="color:red;">€${costoRigaScontato.toFixed(2)}</span>` + testoVarianti;
             } else {
-                span.innerHTML = `<b style="color:#0056b3;">${i.quantita}x ${i.nome}</b> (€${prezzoPiattoAttuale.toFixed(2)})` + testoVarianti;
+                // Per le promo X paghi Y mostriamo il totale già scontato bello pulito (Es: 5x Frittelle €4.00)
+                span.innerHTML = `<b style="color:#0056b3;">${i.quantita}x ${i.nome}</b> (€${costoRigaScontato.toFixed(2)})` + testoVarianti;
             }
         } else {
-            span.innerHTML = `<b style="color:#0056b3;">${i.quantita}x ${i.nome}</b> (€${prezzoPiattoAttuale.toFixed(2)})` + testoVarianti;
+            span.innerHTML = `<b style="color:#0056b3;">${i.quantita}x ${i.nome}</b> (€${(prezzoPiattoAttuale * i.quantita).toFixed(2)})` + testoVarianti;
         }
 
         // Il piatto è SEMPRE cliccabile, anche se gli extra a pagamento sono off, così si possono rimuovere gli ingredienti
@@ -3021,40 +3021,42 @@ function calcolaPrezzoConSconto(piatto, comandaIntera = null){
 
     if(!piatto.sconto) return prezzoBaseEExtra * q;
 
-    // Sconto percentuale si applica sempre sulla singola riga
     if(piatto.sconto.tipo === "percentuale"){
         return prezzoBaseEExtra * q * (1 - (Number(piatto.sconto.valore)||0)/100);
     } 
 
-    // Sconto Quantità (Prendi X Paghi Y): Calcola il totale guardando TUTTO IL CARRELLO
     if(piatto.sconto.tipo === "x_paga_y" || piatto.sconto.tipo === "x_paga_y_fisso"){
         let qTotale = q;
         if (comandaIntera && Array.isArray(comandaIntera)) {
-            // Somma le quantità di tutti i piatti con lo stesso nome, anche se sono su righe diverse
+            // Conta TUTTI i piatti uguali nel carrello per far scattare lo sconto globale
             qTotale = comandaIntera.filter(p => p.nome === piatto.nome).reduce((sum, p) => sum + (p.quantita || 1), 0);
         }
         
         const x = parseInt(piatto.sconto.valore.x);
-        const y = piatto.sconto.tipo === "x_paga_y" ? parseInt(piatto.sconto.valore.y) : parseFloat(piatto.sconto.valore.y);
-
         if (qTotale < x) return prezzoBaseEExtra * q;
 
         const numGruppi = Math.floor(qTotale / x);
-        const prezzoScontatoTotale = numGruppi * y * piatto.prezzo; 
-        const prezzoPienoTotale = (qTotale % x) * piatto.prezzo;
-        const costoTotaleBase = qTotale * piatto.prezzo; 
+        const resto = qTotale % x;
         
-        const scontoTotale = costoTotaleBase - (prezzoScontatoTotale + prezzoPienoTotale);
+        let costoScontatoIntero = 0;
+        if (piatto.sconto.tipo === "x_paga_y") {
+            const y = parseInt(piatto.sconto.valore.y);
+            costoScontatoIntero = (numGruppi * y * piatto.prezzo) + (resto * piatto.prezzo);
+        } else { // x_paga_y_fisso
+            const y = parseFloat(piatto.sconto.valore.y);
+            costoScontatoIntero = (numGruppi * y) + (resto * piatto.prezzo); // Es: 1 gruppo * 20€
+        }
 
-        // Distribuisci lo sconto in modo proporzionale a questa specifica riga
+        const costoTotaleBase = qTotale * piatto.prezzo; 
+        const scontoTotale = costoTotaleBase - costoScontatoIntero;
+
+        // Distribuisci lo sconto in modo proporzionale su questa riga
         const quotaSconto = (q / qTotale) * scontoTotale;
-        
         return (prezzoBaseEExtra * q) - quotaSconto;
     }
 
     return prezzoBaseEExtra * q;
 }
-
 // -------------------- SOLDI --------------------
 const soldi = [
     { val: 50, img: "img/banconota50.png" },
@@ -3270,17 +3272,27 @@ function renderListaPiattiCombo(piattoCombo) {
             });
 
             if (statoComboCorrente.contesto === "cassa") {
-                comandaCorrente.push({
-                    // RIMOSSO il parametro "id" che mandava in blocco Firebase!
-                    nome: piattoCombo.nome, 
-                    prezzo: piattoCombo.prezzo, 
-                    categoria: piattoCombo.categoria,
-                    varianti: [], 
-                    extraPrezzo: totaleExtra, 
-                    quantita: 1, 
-                    contorniScelti: contorniDaSalvare,
-                    sconto: piattoCombo.sconto || null 
-                });
+                // Raggruppa nel carrello se è identico!
+                let comboEsistente = comandaCorrente.find(x => 
+                    x.nome === piattoCombo.nome && 
+                    JSON.stringify(x.contorniScelti || []) === JSON.stringify(contorniDaSalvare) && 
+                    (!x.varianti || x.varianti.length === 0)
+                );
+
+                if (comboEsistente) {
+                    comboEsistente.quantita += 1;
+                } else {
+                    comandaCorrente.push({
+                        nome: piattoCombo.nome, 
+                        prezzo: piattoCombo.prezzo, 
+                        categoria: piattoCombo.categoria,
+                        varianti: [], 
+                        extraPrezzo: totaleExtra, 
+                        quantita: 1, 
+                        contorniScelti: contorniDaSalvare,
+                        sconto: piattoCombo.sconto || null 
+                    });
+                }
                 aggiornaComandaCorrente();
             } else if (statoComboCorrente.contesto === "preordine") {
                 if (typeof aggiungiComboCarrelloCliente === "function") {
