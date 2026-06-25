@@ -1035,30 +1035,25 @@ window.aggiungiVeloceCarrello = function(id) {
     }
 };
 
-  function calcolaPrezzoPreordine(piatto) {
-    const q = piatto.quantita || 1;
-    if (!piatto.sconto) return Number(piatto.prezzo || 0) * q;
+  function calcolaPrezzoPreordine(piatto) { 
+    const q = piatto.quantita || 1; 
+    const prezzoPiattoAttuale = (piatto.prezzo + (piatto.extraPrezzo || 0));
+    let costoRiga = prezzoPiattoAttuale * q;
 
-    const prezzo = Number(piatto.prezzo || 0);
-
-    if (piatto.sconto.tipo === "percentuale") {
-        return prezzo * q * (1 - (Number(piatto.sconto.valore) || 0) / 100);
-    } else if (piatto.sconto.tipo === "x_paga_y") {
-        const x = Number(piatto.sconto.valore.x || 1);
-        const y = Number(piatto.sconto.valore.y || 1);
-        const gruppi = Math.floor(q / x);
-        const rimanenti = q % x;
-        return (gruppi * y + rimanenti) * prezzo;
-    } else if (piatto.sconto.tipo === "x_paga_y_fisso") {
-        const x = Number(piatto.sconto.valore.x || 1);
-        const y = Number(piatto.sconto.valore.y || prezzo);
-        const gruppi = Math.floor(q / x);
-        const rimanenti = q % x;
-        return gruppi * y + rimanenti * prezzo;
+    if (piatto.sconto) {
+        if (piatto.sconto.tipo === "percentuale") {
+            costoRiga = costoRiga - (costoRiga * (piatto.sconto.valore / 100));
+        } else if (piatto.sconto.tipo === "fisso") {
+            costoRiga = costoRiga - (piatto.sconto.valore * q);
+        } else if (piatto.sconto.tipo === "quantita" && q >= piatto.sconto.quantitaMinima) {
+            const gruppi = Math.floor(q / piatto.sconto.quantitaMinima);
+            const resto = q % piatto.sconto.quantitaMinima;
+            costoRiga = (gruppi * piatto.sconto.prezzoScontato) + (resto * prezzoPiattoAttuale);
+        }
+        costoRiga = Math.max(0, costoRiga);
     }
-
-    return prezzo * q;
-  }
+    return costoRiga;
+}
 
   // 🔹 Disabilita "resto richiesto" se spunta "soldi giusti"
   const checkSoldi = document.getElementById("soldiGiusti");
@@ -1629,18 +1624,19 @@ function aggiornaRiepilogoCarrelloUI() {
         });
     }
 }
-window.aggiungiComboCarrelloCliente = function(piattoCombo, contorniDaSalvare, extraComboCalcolato) {
-    const prezzoBaseScontato = calcolaPrezzoConScontoPerPiattoSingolo(piattoCombo); 
+window.aggiungiComboCarrelloCliente = function(piattoCombo, idCombo, contorniDaSalvare, extraComboCalcolato) {
+    const prezzoBase = piattoCombo.prezzo; 
     
     carrelloCliente.push({
-        id: piattoCombo.id,
+        id: idCombo,
         nome: piattoCombo.nome,
-        prezzo: prezzoBaseScontato, 
+        prezzo: prezzoBase, 
         categoria: piattoCombo.categoria,
         varianti: [], 
         extraPrezzo: extraComboCalcolato, 
         quantita: 1,
-        contorniScelti: contorniDaSalvare
+        contorniScelti: contorniDaSalvare,
+        sconto: piattoCombo.sconto || null
     });
     
     if (typeof aggiornaRiepilogoCarrelloUI === "function") {
