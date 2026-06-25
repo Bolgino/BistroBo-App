@@ -825,9 +825,14 @@ async function initPreordiniClienti() {
             
             // 3. Bottone dinamico Intelligente
             let clickAction = "";
-            if (window.settings.piattiComboAbilitati && item.isCombo) {
-                clickAction = `apriPopupComboCliente('${id}')`; // <--- FUNZIONE CORRETTA!
+            if (item.isCombo && window.settings.piattiComboAbilitati) {
+                // Se è una combo, apre SEMPRE il modale per scegliere i contorni
+                clickAction = `apriPopupPersonalizzaCliente('${id}')`;
+            } else if (window.settings.sistemaExtraAbilitato) {
+                // Se gli extra sono attivi, apre il modale
+                clickAction = `apriPopupPersonalizzaCliente('${id}')`;
             } else {
+                // Altrimenti aggiunta rapida
                 clickAction = `aggiungiVeloceCarrello('${id}')`; 
             }
             
