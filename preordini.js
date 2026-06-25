@@ -1455,8 +1455,8 @@ function renderVariantiCliente(piatto, maxGratis) {
         btnContainer.style.display = "flex";
         btnContainer.style.alignItems = "center";
 
-        // RIMOZIONE (Solo ingredienti base)
-        if (isBase) {
+        // RIMOZIONE 
+        if (allowRemove) {
             const isRimosso = tempVariantiCliente.some(v => v.tipo === "rimozione" && v.id === ingId);
             const btnRemove = document.createElement("button");
             btnRemove.innerText = isRimosso ? "Annulla" : "- Togli";
@@ -1469,9 +1469,9 @@ function renderVariantiCliente(piatto, maxGratis) {
             btnContainer.appendChild(btnRemove);
         }
 
-        // AGGIUNTA MULTIPLA (Solo se Extra valido)
-        if (isExtraValido) {
-            const costoExtra = ing.prezzoExtra !== undefined ? Number(ing.prezzoExtra) : 0.50; 
+        // AGGIUNTA MULTIPLA
+        if (allowAdd) {
+            const costoExtra = ing.prezzoExtra !== undefined ? Number(ing.prezzoExtra) : 0.50;
             const qtyExtra = ing.qtyExtra !== undefined ? Number(ing.qtyExtra) : 1;
             
             const occorrenze = tempVariantiCliente.filter(v => v.tipo === "aggiunta" && v.id === ingId).length;
