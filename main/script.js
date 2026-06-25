@@ -5913,23 +5913,7 @@ function modificaPiattoMenu(menuId, piatto) {
         </div>
     `;
     overlay.appendChild(modal);
-    // POPOLIAMO LA LISTA DEI PIATTI COMBO IN MODIFICA (Deve stare qui, dopo l'appendChild!)
-	const containerEdit = document.getElementById("editPiattoDishesCombo");
-	if (containerEdit && window.menuData) {
-		let htmlPiattiEdit = "";
-		const piattiAmmessiGiaSalvati = piatto.piattiComboAmmessi || [];
-		
-		Object.entries(window.menuData).forEach(([pId, p]) => {
-			if (!p.isCombo && pId !== menuId) {
-				const isChecked = piattiAmmessiGiaSalvati.includes(pId) ? "checked" : "";
-				htmlPiattiEdit += `<label style="display:flex; align-items:center; margin-bottom:8px; cursor:pointer; padding: 5px; background: #fafafa; border: 1px solid #eee; border-radius: 4px;">
-								<input type="checkbox" class="combo-dish-cb-edit" value="${pId}" ${isChecked} style="margin-right: 10px; transform: scale(1.1);"> 
-								<span><b>${p.nome}</b> <small style="color:#777;">(${p.categoria})</small></span>
-							 </label>`;
-			}
-		});
-		containerEdit.innerHTML = htmlPiattiEdit || "<p style='color:#777; font-size:0.9em;'>Nessun piatto disponibile.</p>";
-	}
+    document.body.appendChild(overlay);
 
     const nomeInput = document.getElementById("editPiattoNome");
     const prezzoInput = document.getElementById("editPiattoPrezzo");
