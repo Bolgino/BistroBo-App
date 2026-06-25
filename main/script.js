@@ -2411,23 +2411,30 @@ function separaComanda(items) {
             i.contorniScelti.forEach(c => {
                 const destC = getDest(c.categoria, "", c.nome);
                 
-                // SE il contorno va in una stazione DIVERSA da quella del genitore, creiamo un piatto Fittizio e indipendente!
+                // SE il contorno va in una stazione DIVERSA da quella del genitore...
                 if (destC !== destMain) {
-                    const cloneContornoSlegato = JSON.parse(JSON.stringify(i));
-                    cloneContornoSlegato.isMainHere = true; 
-                    cloneContornoSlegato.contorniScelti = []; 
-					cloneContornoSlegato.isCombo = false; // Ferma il sistema dal credere che sia ancora un menu!
-                    cloneContornoSlegato.ingredienti = [];
-					cloneContornoSlegato.categoria = c.categoria || "Snack";
-                    cloneContornoSlegato.tipo = destC;
-                    
                     let varTxt = c.varianti && c.varianti.length > 0 ? " (" + c.varianti.map(v => v.tipo==='aggiunta'?`+${v.nome}`:`-${v.nome}`).join(", ") + ")" : "";
-                    cloneContornoSlegato.nome = `${c.nome}${varTxt} [Contorno di ${i.nome}]`;
-                    cloneContornoSlegato.varianti = []; 
+                    
+                    // Creiamo un oggetto PIATTO da zero, pulito e senza "scorie" del panino genitore
+                    const splitItem = {
+                        id: (i.id || "cont") + "_split_" + Math.floor(Math.random() * 10000),
+                        id_univoco: "split_" + Math.random().toString(36).substr(2, 9),
+                        nome: `${c.nome}${varTxt} [di ${i.nome}]`,
+                        prezzo: 0,
+                        quantita: i.quantita || 1,
+                        categoria: "Snack", 
+                        tipo: destC,
+                        isCombo: false,     // Fondamentale: la cucina lo tratterà come un piatto normalissimo
+                        isMainHere: true,   // Fondamentale: dice alla cucina di stamparlo
+                        varianti: [],       // (Le varianti le abbiamo già scritte direttamente nel nome)
+                        contorniScelti: [],
+                        ingredienti: [],
+                        note: i.note || ""
+                    };
 
-                    if (destC === "snack") snack.push(cloneContornoSlegato);
-                    if (destC === "cibo") cibo.push(cloneContornoSlegato);
-                    if (destC === "bere") bere.push(cloneContornoSlegato);
+                    if (destC === "snack") snack.push(splitItem);
+                    if (destC === "cibo") cibo.push(splitItem);
+                    if (destC === "bere") bere.push(splitItem);
 
                 } else {
                     // Stesso reparto -> Resta attaccato al genitore
