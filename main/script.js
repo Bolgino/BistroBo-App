@@ -2359,7 +2359,8 @@ document.getElementById("letteraComanda").addEventListener("input", function() {
     this.value = this.value.replace(/[^a-zA-Z]/g, '').toUpperCase();
 });
 // separa comanda in cibo/snack e bevande
-// separa comanda in cibo/snack e bevande
+
+// separa comanda in cibo/snack e bevande (VERSIONE PULITA E DEFINITIVA)
 function separaComanda(items) {
     if (!Array.isArray(items)) return { cibo: [], bere: [], snack: [] };
 
@@ -2382,52 +2383,33 @@ function separaComanda(items) {
     }
 
     items.forEach(i => {
+        // Troviamo la destinazione del Piatto Principale (es. Panino -> Cibo)
         const destMain = getDest(i.categoria, i.tipo, i.nome);
 
-        let cloneCibo = null;
-        let cloneBere = null;
-        let cloneSnack = null;
+        // Prepariamo il clone del piatto principale per la sua stazione
+        let cloneMain = JSON.parse(JSON.stringify({ ...i, isMainHere: true, contorniScelti: [] }));
 
-        const getClone = (dest) => {
-            if (dest === "cibo") {
-                if (!cloneCibo) cloneCibo = JSON.parse(JSON.stringify({ ...i, isMainHere: false, contorniScelti: [] }));
-                return cloneCibo;
-            }
-            if (dest === "bere") {
-                if (!cloneBere) cloneBere = JSON.parse(JSON.stringify({ ...i, isMainHere: false, contorniScelti: [] }));
-                return cloneBere;
-            }
-            if (dest === "snack") {
-                if (!cloneSnack) cloneSnack = JSON.parse(JSON.stringify({ ...i, isMainHere: false, contorniScelti: [] }));
-                return cloneSnack;
-            }
-        };
-
-        // 1. Assegna il Piatto Principale
-        getClone(destMain).isMainHere = true;
-
-        // 2. Smista i Contorni nelle rispettive stazioni
+        // Controlliamo eventuali contorni
         if (i.contorniScelti && i.contorniScelti.length > 0) {
             i.contorniScelti.forEach(c => {
-                const destC = getDest(c.categoria, "", c.nome);
-                
-                // SE il contorno va in una stazione DIVERSA da quella del genitore...
+                const destC = getDest(c.categoria, c.tipo, c.nome);
+
                 if (destC !== destMain) {
+                    // IL CONTORNO VA IN UN'ALTRA STAZIONE: Creiamo un piatto perfetto indipendente
                     let varTxt = c.varianti && c.varianti.length > 0 ? " (" + c.varianti.map(v => v.tipo==='aggiunta'?`+${v.nome}`:`-${v.nome}`).join(", ") + ")" : "";
                     
-                    // Creiamo un PIATTO da zero, pulito e senza "scorie" o vecchi ID del panino
                     const splitItem = {
-                        id: (i.id || "contorno") + "_split_" + Math.floor(Math.random() * 10000),
+                        id: (i.id || "cont") + "_split_" + Math.random().toString(36).substr(2, 5),
                         id_univoco: "split_" + Math.random().toString(36).substr(2, 9),
                         nome: `${c.nome}${varTxt} [di ${i.nome}]`,
                         prezzo: 0,
                         quantita: i.quantita || 1,
-                        categoria: c.categoria || "Snack",
+                        categoria: destC === "snack" ? "Snack" : "Cibo",
                         tipo: destC,
-                        isCombo: false,      // LA CUCINA LO TRATTERA' COME PIATTO NORMALE
-                        isMainHere: true,    // GLI DICE DI STAMPARLO NELLA CARD
-                        varianti: [],        // (Le varianti le abbiamo già scritte direttamente nel nome)
-                        contorniScelti: [],
+                        isCombo: false,     // Fondamentale per non farlo trattare come menu
+                        isMainHere: true,   // Fondamentale: impedisce la barretta "-"
+                        varianti: [],
+                        contorniScelti: [], // Niente sottomenu, quindi niente freccetta "↳"
                         ingredienti: [],
                         note: i.note || ""
                     };
@@ -2435,18 +2417,17 @@ function separaComanda(items) {
                     if (destC === "snack") snack.push(splitItem);
                     if (destC === "cibo") cibo.push(splitItem);
                     if (destC === "bere") bere.push(splitItem);
-
                 } else {
-                    // Stesso reparto -> Resta attaccato al genitore
-                    getClone(destC).contorniScelti.push(c);
+                    // IL CONTORNO VA NELLA STESSA STAZIONE: Lo lasciamo attaccato al genitore
+                    cloneMain.contorniScelti.push(c);
                 }
             });
         }
 
-        // 3. Inserisci i cloni finali del genitore
-        if (cloneCibo && cloneCibo.isMainHere) cibo.push(cloneCibo);
-        if (cloneBere && cloneBere.isMainHere) bere.push(cloneBere);
-        if (cloneSnack && cloneSnack.isMainHere) snack.push(cloneSnack);
+        // Infine, inseriamo il piatto principale nella sua stazione
+        if (destMain === "cibo") cibo.push(cloneMain);
+        if (destMain === "bere") bere.push(cloneMain);
+        if (destMain === "snack") snack.push(cloneMain);
     });
 
     return { cibo, bere, snack };
