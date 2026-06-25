@@ -2841,12 +2841,19 @@ function apriPopupVarianti(idx) {
         const isProssimaGratis = aggiunteFatte < maxGratis;
 
         listaDiv.innerHTML = "";
-        const baseIds = (piatto.ingredienti || []).map(i => i.id);
+        // FIX: Recuperiamo sia gli ID che i nomi esatti per compatibilità con i piatti vecchi
+        const baseIds = (piatto.ingredienti || []).map(i => i.id).filter(id => id);
+        const baseNomi = (piatto.ingredienti || []).map(i => (i.nome || "").trim().toLowerCase());
 
         Object.entries(window.ingredientData || {}).forEach(([id, ing]) => {
             const catsApp = ing.categorieApplicabili || [ing.categoria || "cibi"];
-            const catPiatto = (piatto.categoria || "cibi").toLowerCase(); // <--- CORRETTO: usa piatto.categoria
-            const isBase = baseIds.includes(id);
+            
+            // FIX: Se un piatto vecchio ha la vecchia categoria "cucina", la convertiamo in "cibi"
+            let catPiatto = (piatto.categoria || "cibi").toLowerCase();
+            if (catPiatto === "cucina") catPiatto = "cibi"; 
+
+            // Riconosce l'ingrediente base sia dall'ID che dal nome
+            const isBase = baseIds.includes(id) || baseNomi.includes((ing.nome || "").trim().toLowerCase());
             const isExtraFlag = (ing.usabileComeExtra === true) && catsApp.includes(catPiatto);
 
             let allowRemove = false;
@@ -4721,12 +4728,19 @@ function apriPopupVariantiAdmin(idx, comandaTemp, reserved, callback) {
         const isProssimaGratis = aggiunteFatte < maxGratis;
 
         listaDiv.innerHTML = "";
-        const baseIds = (piatto.ingredienti || []).map(i => i.id);
+        // FIX: Recuperiamo sia gli ID che i nomi esatti per compatibilità con i piatti vecchi
+        const baseIds = (piatto.ingredienti || []).map(i => i.id).filter(id => id);
+        const baseNomi = (piatto.ingredienti || []).map(i => (i.nome || "").trim().toLowerCase());
 
-       Object.entries(window.ingredientData || {}).forEach(([id, ing]) => {
+        Object.entries(window.ingredientData || {}).forEach(([id, ing]) => {
             const catsApp = ing.categorieApplicabili || [ing.categoria || "cibi"];
-            const catPiatto = (piatto.categoria || "cibi").toLowerCase(); // <--- CORRETTO: usa piatto.categoria
-            const isBase = baseIds.includes(id);
+            
+            // FIX: Se un piatto vecchio ha la vecchia categoria "cucina", la convertiamo in "cibi"
+            let catPiatto = (piatto.categoria || "cibi").toLowerCase();
+            if (catPiatto === "cucina") catPiatto = "cibi"; 
+
+            // Riconosce l'ingrediente base sia dall'ID che dal nome
+            const isBase = baseIds.includes(id) || baseNomi.includes((ing.nome || "").trim().toLowerCase());
             const isExtraFlag = (ing.usabileComeExtra === true) && catsApp.includes(catPiatto);
 
             let allowRemove = false;
