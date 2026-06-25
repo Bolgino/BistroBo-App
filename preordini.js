@@ -1726,7 +1726,7 @@ window.apriPopupVariantiContornoCliente = function(idxCarrello, idxContorno) {
 
             const isBase = baseIds.includes(ingId) || baseNomi.includes((ing.nome || "").trim().toLowerCase());
             const isExtraFlag = (ing.usabileComeExtra === true) && catsApp.includes(catPiatto);
-            const isExtraFlag = (ing.usabileComeExtra === true) && catsApp.includes(catPiatto);
+           
 
             let allowRemove = false;
             let allowAdd = false;
