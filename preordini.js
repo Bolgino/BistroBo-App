@@ -1567,14 +1567,23 @@ function calcolaPrezzoConScontoPerPiatto(piatto, comandaIntera) {
     if(piatto.sconto.tipo === "x_paga_y" || piatto.sconto.tipo === "x_paga_y_fisso"){
         let qTotale = comandaIntera.filter(p => p.id === piatto.id).reduce((sum, p) => sum + (p.quantita || 1), 0);
         const x = parseInt(piatto.sconto.valore.x);
-        const y = piatto.sconto.tipo === "x_paga_y" ? parseInt(piatto.sconto.valore.y) : parseFloat(piatto.sconto.valore.y);
 
         if (qTotale < x) return prezzoBaseEExtra * q;
 
         const numGruppi = Math.floor(qTotale / x);
-        const prezzoScontatoTotale = numGruppi * y * piatto.prezzo; 
-        const prezzoPienoTotale = (qTotale % x) * piatto.prezzo;
-        const scontoTotale = (qTotale * piatto.prezzo) - (prezzoScontatoTotale + prezzoPienoTotale);
+        const resto = qTotale % x;
+
+        let costoScontatoIntero = 0;
+        if (piatto.sconto.tipo === "x_paga_y") {
+            const y = parseInt(piatto.sconto.valore.y);
+            costoScontatoIntero = (numGruppi * y * piatto.prezzo) + (resto * piatto.prezzo);
+        } else { // x_paga_y_fisso
+            const y = parseFloat(piatto.sconto.valore.y);
+            costoScontatoIntero = (numGruppi * y) + (resto * piatto.prezzo);
+        }
+
+        const costoTotaleBase = qTotale * piatto.prezzo;
+        const scontoTotale = costoTotaleBase - costoScontatoIntero;
 
         return (prezzoBaseEExtra * q) - ((q / qTotale) * scontoTotale);
     }
