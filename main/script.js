@@ -2646,7 +2646,7 @@ function aggiornaComandaCorrente(){
         // --- NUOVO BLOCCO CONTORNI COMBO ---
         if (i.contorniScelti && i.contorniScelti.length > 0) {
             const cTxt = i.contorniScelti.map(c => {
-                return c.isGratis ? `<span style="color:green;">+ ${c.nome} (Incluso)</span>` : `<span style="color:#d9534f;">+ ${c.nome} (+€${c.prezzoPagato.toFixed(2)})</span>`;
+                return c.isGratis ? `<span style="color:green;">+ ${c.nome} (Incluso)</span>` : `<span style="color:#555;">+ ${c.nome} (+€${c.prezzoPagato.toFixed(2)})</span>`;
             }).join("<br>");
             testoVarianti += `<br><small style="font-weight:bold;">${cTxt}</small>`;
         }
@@ -3154,29 +3154,32 @@ function renderListaPiattiCombo(piattoCombo) {
         listaDiv.innerHTML = "<p>Nessun contorno disponibile al momento.</p>";
     }
 
-    // --- CALCOLO INTELLIGENTE SCONTI PER I CONTORNI ---
+   // --- CALCOLO INTELLIGENTE SCONTI PER I CONTORNI ---
     let contorniPagamento = statoComboCorrente.contorniSelezionati.slice(maxGratis);
     let gruppiPagamento = {};
     contorniPagamento.forEach(c => {
-        if (!gruppiPagamento[c.id]) gruppiPagamento[c.id] = { ...c, count: 0 };
-        gruppiPagamento[c.id].count++;
+        const key = c.id || c.nome;
+        if (!gruppiPagamento[key]) gruppiPagamento[key] = { ...c, count: 0 };
+        gruppiPagamento[key].count++;
     });
 
     let totaleExtra = 0;
     Object.values(gruppiPagamento).forEach(g => {
-        const pOriginale = window.menuData[g.id] || {};
+        const pOriginale = (window.menuData && g.id) ? window.menuData[g.id] : {};
         let costoGruppo = g.prezzoBase * g.count; 
 
         if (pOriginale.sconto) {
             const sc = pOriginale.sconto;
             if (sc.tipo === "percentuale") {
                 costoGruppo -= (costoGruppo * (sc.valore / 100));
-            } else if (sc.tipo === "fisso") {
-                costoGruppo -= (sc.valore * g.count);
-            } else if (sc.tipo === "quantita" && g.count >= sc.quantitaMinima) {
-                const numGruppi = Math.floor(g.count / sc.quantitaMinima);
-                const resto = g.count % sc.quantitaMinima;
-                costoGruppo = (numGruppi * sc.prezzoScontato) + (resto * g.prezzoBase);
+            } else if (sc.tipo === "x_paga_y") {
+                const x = parseInt(sc.valore.x);
+                const y = parseInt(sc.valore.y);
+                costoGruppo = (Math.floor(g.count / x) * y + (g.count % x)) * g.prezzoBase;
+            } else if (sc.tipo === "x_paga_y_fisso") {
+                const x = parseInt(sc.valore.x);
+                const y = parseFloat(sc.valore.y);
+                costoGruppo = (Math.floor(g.count / x) * y) + (g.count % x) * g.prezzoBase;
             }
         }
         totaleExtra += Math.max(0, costoGruppo);
@@ -3184,6 +3187,8 @@ function renderListaPiattiCombo(piattoCombo) {
 
     const extraEl = document.getElementById("totaleExtraCombo");
     if(extraEl) extraEl.innerText = totaleExtra.toFixed(2);
+
+   
 
     const quantitaTotaleScelta = statoComboCorrente.contorniSelezionati.length;
 
@@ -3237,7 +3242,7 @@ function renderListaPiattiCombo(piattoCombo) {
 
             if (statoComboCorrente.contesto === "cassa") {
                 comandaCorrente.push({
-                    id: statoComboCorrente.piattoId, // FIX: Risolve il blocco dell'invio comanda per ID mancante
+                    // RIMOSSO il parametro "id" che mandava in blocco Firebase!
                     nome: piattoCombo.nome, 
                     prezzo: piattoCombo.prezzo, 
                     categoria: piattoCombo.categoria,
@@ -3245,12 +3250,12 @@ function renderListaPiattiCombo(piattoCombo) {
                     extraPrezzo: totaleExtra, 
                     quantita: 1, 
                     contorniScelti: contorniDaSalvare,
-                    sconto: piattoCombo.sconto || null // FIX: Assicura che le combo ricevano gli sconti del piatto principale!
+                    sconto: piattoCombo.sconto || null 
                 });
                 aggiornaComandaCorrente();
             } else if (statoComboCorrente.contesto === "preordine") {
                 if (typeof aggiungiComboCarrelloCliente === "function") {
-                    aggiungiComboCarrelloCliente(piattoCombo, statoComboCorrente.piattoId, contorniDaSalvare, totaleExtra); // FIX: Passato l'ID
+                    aggiungiComboCarrelloCliente(piattoCombo, null, contorniDaSalvare, totaleExtra);
                 }
             }
         };
@@ -7489,24 +7494,12 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
 
         reparto.items.forEach(p => {
             let prezzoTotPiatto = 0;
-            const prezzoPiattoAttuale = (p.prezzo + (p.extraPrezzo || 0));
-            let costoRiga = prezzoPiattoAttuale * (p.quantita || 1);
-
-            // APPLICAZIONE SCONTI REALE COME IN CASSA
-            if (p.sconto) {
-                if (p.sconto.tipo === "percentuale") {
-                    costoRiga = costoRiga - (costoRiga * (p.sconto.valore / 100));
-                } else if (p.sconto.tipo === "fisso") {
-                    costoRiga = costoRiga - (p.sconto.valore * (p.quantita || 1));
-                } else if (p.sconto.tipo === "quantita" && (p.quantita || 1) >= p.sconto.quantitaMinima) {
-                    const gruppi = Math.floor((p.quantita || 1) / p.sconto.quantitaMinima);
-                    const resto = (p.quantita || 1) % p.sconto.quantitaMinima;
-                    costoRiga = (gruppi * p.sconto.prezzoScontato) + (resto * prezzoPiattoAttuale);
-                }
-                costoRiga = Math.max(0, costoRiga);
+            // Torna a usare la funzione originale perfetta!
+            if (typeof calcolaPrezzoConSconto === "function") {
+                prezzoTotPiatto = calcolaPrezzoConSconto(p);
+            } else {
+                prezzoTotPiatto = (p.prezzo + (p.extraPrezzo || 0)) * (p.quantita || 1);
             }
-            prezzoTotPiatto = costoRiga;
-
             totaleReparto += prezzoTotPiatto;
 
             doc.setFontSize(12);
