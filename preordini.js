@@ -1428,10 +1428,19 @@ function renderVariantiCliente(piatto, maxGratis) {
         const catPiatto = (piatto.categoria || "cibi").toLowerCase();
         
         const isBase = baseIds.includes(ingId);
-        const isExtraValido = window.settings.sistemaExtraAbilitato && (ing.usabileComeExtra === true) && catsApp.includes(catPiatto);
+        const isExtraFlag = (ing.usabileComeExtra === true) && catsApp.includes(catPiatto);
 
-        // Se non è base e non è extra valido per questa categoria, salta
-        if (!isBase && !isExtraValido) return;
+        let allowRemove = false;
+        let allowAdd = false;
+
+        if (window.settings.sistemaExtraAbilitato) {
+            if (isBase) allowRemove = true;
+            if (isExtraFlag) allowAdd = true;
+        } else {
+            if (isBase && isExtraFlag) allowRemove = true;
+        }
+
+        if (!allowRemove && !allowAdd) return;
 
         const row = document.createElement("div");
         row.style.display = "flex";
@@ -1711,9 +1720,19 @@ window.apriPopupVariantiContornoCliente = function(idxCarrello, idxContorno) {
             const catsApp = ing.categorieApplicabili || [ing.categoria || "cibi"];
             const catPiatto = (piattoOriginale.categoria || "cibi").toLowerCase();
             const isBase = baseIds.includes(ingId);
-            const isExtraValido = window.settings.sistemaExtraAbilitato && (ing.usabileComeExtra === true) && catsApp.includes(catPiatto);
+        const isExtraFlag = (ing.usabileComeExtra === true) && catsApp.includes(catPiatto);
 
-            if (!isBase && !isExtraValido) return;
+        let allowRemove = false;
+        let allowAdd = false;
+
+        if (window.settings.sistemaExtraAbilitato) {
+            if (isBase) allowRemove = true;
+            if (isExtraFlag) allowAdd = true;
+        } else {
+            if (isBase && isExtraFlag) allowRemove = true;
+        }
+
+        if (!allowRemove && !allowAdd) return;
 
             const row = document.createElement("div");
             row.className = "ingrediente-row-cliente";
