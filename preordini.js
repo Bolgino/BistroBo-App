@@ -1714,8 +1714,6 @@ window.apriPopupVariantiContornoCliente = function(idxCarrello, idxContorno) {
         const aggiunteFatte = tempVariantiCliente.filter(v => v.tipo === "aggiunta").length;
         const isProssimaGratis = aggiunteFatte < maxGratis;
 
-        const baseIds = (piattoOriginale.ingredienti || []).map(i => i.id);
-
         // FIX: Recuperiamo sia ID che Nomi per retrocompatibilità
         const baseIds = (piattoOriginale.ingredienti || []).map(i => i.id).filter(id => id);
         const baseNomi = (piattoOriginale.ingredienti || []).map(i => (i.nome || "").trim().toLowerCase());
