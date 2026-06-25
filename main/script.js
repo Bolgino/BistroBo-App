@@ -2416,6 +2416,8 @@ function separaComanda(items) {
                     const cloneContornoSlegato = JSON.parse(JSON.stringify(i));
                     cloneContornoSlegato.isMainHere = true; 
                     cloneContornoSlegato.contorniScelti = []; 
+					cloneContornoSlegato.isCombo = false; // Ferma il sistema dal credere che sia ancora un menu!
+                    cloneContornoSlegato.ingredienti = [];
                     
                     let varTxt = c.varianti && c.varianti.length > 0 ? " (" + c.varianti.map(v => v.tipo==='aggiunta'?`+${v.nome}`:`-${v.nome}`).join(", ") + ")" : "";
                     cloneContornoSlegato.nome = `${c.nome}${varTxt} [Contorno di ${i.nome}]`;
