@@ -2359,6 +2359,7 @@ document.getElementById("letteraComanda").addEventListener("input", function() {
     this.value = this.value.replace(/[^a-zA-Z]/g, '').toUpperCase();
 });
 // separa comanda in cibo/snack e bevande
+// separa comanda in cibo/snack e bevande
 function separaComanda(items) {
     if (!Array.isArray(items)) return { cibo: [], bere: [], snack: [] };
 
@@ -2389,15 +2390,15 @@ function separaComanda(items) {
 
         const getClone = (dest) => {
             if (dest === "cibo") {
-                if (!cloneCibo) cloneCibo = { ...i, isMainHere: false, contorniScelti: [] };
+                if (!cloneCibo) cloneCibo = JSON.parse(JSON.stringify({ ...i, isMainHere: false, contorniScelti: [] }));
                 return cloneCibo;
             }
             if (dest === "bere") {
-                if (!cloneBere) cloneBere = { ...i, isMainHere: false, contorniScelti: [] };
+                if (!cloneBere) cloneBere = JSON.parse(JSON.stringify({ ...i, isMainHere: false, contorniScelti: [] }));
                 return cloneBere;
             }
             if (dest === "snack") {
-                if (!cloneSnack) cloneSnack = { ...i, isMainHere: false, contorniScelti: [] };
+                if (!cloneSnack) cloneSnack = JSON.parse(JSON.stringify({ ...i, isMainHere: false, contorniScelti: [] }));
                 return cloneSnack;
             }
         };
@@ -2409,14 +2410,32 @@ function separaComanda(items) {
         if (i.contorniScelti && i.contorniScelti.length > 0) {
             i.contorniScelti.forEach(c => {
                 const destC = getDest(c.categoria, "", c.nome);
-                getClone(destC).contorniScelti.push(c);
+                
+                // SE il contorno va in una stazione DIVERSA da quella del genitore, creiamo un piatto Fittizio e indipendente!
+                if (destC !== destMain) {
+                    const cloneContornoSlegato = JSON.parse(JSON.stringify(i));
+                    cloneContornoSlegato.isMainHere = true; 
+                    cloneContornoSlegato.contorniScelti = []; 
+                    
+                    let varTxt = c.varianti && c.varianti.length > 0 ? " (" + c.varianti.map(v => v.tipo==='aggiunta'?`+${v.nome}`:`-${v.nome}`).join(", ") + ")" : "";
+                    cloneContornoSlegato.nome = `${c.nome}${varTxt} [Contorno di ${i.nome}]`;
+                    cloneContornoSlegato.varianti = []; 
+
+                    if (destC === "snack") snack.push(cloneContornoSlegato);
+                    if (destC === "cibo") cibo.push(cloneContornoSlegato);
+                    if (destC === "bere") bere.push(cloneContornoSlegato);
+
+                } else {
+                    // Stesso reparto -> Resta attaccato al genitore
+                    getClone(destC).contorniScelti.push(c);
+                }
             });
         }
 
-        // 3. Inserisci i cloni finali se contengono qualcosa (main o contorni)
-        if (cloneCibo) cibo.push(cloneCibo);
-        if (cloneBere) bere.push(cloneBere);
-        if (cloneSnack) snack.push(cloneSnack);
+        // 3. Inserisci i cloni finali del genitore
+        if (cloneCibo && cloneCibo.isMainHere) cibo.push(cloneCibo);
+        if (cloneBere && cloneBere.isMainHere) bere.push(cloneBere);
+        if (cloneSnack && cloneSnack.isMainHere) snack.push(cloneSnack);
     });
 
     return { cibo, bere, snack };
@@ -3291,7 +3310,7 @@ function renderListaPiattiCombo(piattoCombo) {
                         nome: piattoCombo.nome, 
                         prezzo: piattoCombo.prezzo, 
                         categoria: piattoCombo.categoria,
-                        ingredienti: piattoCombo.ingredienti || [], // <--- AGGIUNGI QUESTA RIGA!
+                        ingredienti: piattoCombo.ingredienti ? JSON.parse(JSON.stringify(piattoCombo.ingredienti)) : [],
                         varianti: [], 
                         extraPrezzo: totaleExtra, 
                         quantita: 1, 
