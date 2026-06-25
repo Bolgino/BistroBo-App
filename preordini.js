@@ -1716,10 +1716,18 @@ window.apriPopupVariantiContornoCliente = function(idxCarrello, idxContorno) {
 
         const baseIds = (piattoOriginale.ingredienti || []).map(i => i.id);
 
+        // FIX: Recuperiamo sia ID che Nomi per retrocompatibilità
+        const baseIds = (piattoOriginale.ingredienti || []).map(i => i.id).filter(id => id);
+        const baseNomi = (piattoOriginale.ingredienti || []).map(i => (i.nome || "").trim().toLowerCase());
+
         Object.entries(ingredientiGlobali || {}).forEach(([ingId, ing]) => {
             const catsApp = ing.categorieApplicabili || [ing.categoria || "cibi"];
-            const catPiatto = (piatto.categoria || "cibi").toLowerCase(); // <--- CORRETTO: usa piatto.categoria
-            const isBase = baseIds.includes(ingId);
+            
+            let catPiatto = (piattoOriginale.categoria || "cibi").toLowerCase();
+            if (catPiatto === "cucina") catPiatto = "cibi";
+
+            const isBase = baseIds.includes(ingId) || baseNomi.includes((ing.nome || "").trim().toLowerCase());
+            const isExtraFlag = (ing.usabileComeExtra === true) && catsApp.includes(catPiatto);
             const isExtraFlag = (ing.usabileComeExtra === true) && catsApp.includes(catPiatto);
 
             let allowRemove = false;
