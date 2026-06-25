@@ -7656,7 +7656,7 @@ window.apriPopupVariantiContorno = function(idxPiatto, idxContorno) {
         const isProssimaGratis = aggiunteFatte < maxGratis;
         listaDiv.innerHTML = "";
 
-        const baseIds = (piattoOriginale.ingredienti || []).map(i => i.id);
+        
 
         // FIX: Recuperiamo sia ID che Nomi per retrocompatibilità
         const baseIds = (piattoOriginale.ingredienti || []).map(i => i.id).filter(id => id);
