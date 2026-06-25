@@ -7669,7 +7669,7 @@ window.apriPopupVariantiContorno = function(idxPiatto, idxContorno) {
             nomeSpan.innerText = ing.nome;
             const btnContainer = document.createElement("div");
 
-            if (isBase) {
+            if (allowRemove) {
                 const btnRemove = document.createElement("button");
                 const isRimosso = tempVarianti.some(v => v.tipo === "rimozione" && v.id === id);
                 if (isRimosso) {
@@ -7690,8 +7690,8 @@ window.apriPopupVariantiContorno = function(idxPiatto, idxContorno) {
                 btnContainer.appendChild(btnRemove);
             }
 
-            if (isExtraValido) {
-                const costoExtra = ing.prezzoExtra !== undefined ? Number(ing.prezzoExtra) : 0.50; 
+            if (allowAdd) {
+                const costoExtra = ing.prezzoExtra !== undefined ? Number(ing.prezzoExtra) : 0.50;
                 const qtyExtra = ing.qtyExtra !== undefined ? Number(ing.qtyExtra) : 1;
                 const occorrenze = tempVarianti.filter(v => v.tipo === "aggiunta" && v.id === id).length;
 
