@@ -1850,22 +1850,78 @@ window.apriPopupVariantiContornoCliente = function(idxCarrello, idxContorno) {
 }
 
     
-window.aggiungiComboCarrelloCliente = function(piattoCombo, idCombo, contorniDaSalvare, extraComboCalcolato) {
-    carrelloCliente.push({
-        id: idCombo,
-        nome: piattoCombo.nome,
-        prezzo: piattoCombo.prezzo, 
-        categoria: piattoCombo.categoria,
-        ingredienti: piattoCombo.ingredienti ? JSON.parse(JSON.stringify(piattoCombo.ingredienti)) : [],
-        varianti: [], 
-        extraPrezzo: extraComboCalcolato, 
-        quantita: 1,
-        contorniScelti: contorniDaSalvare,
-        sconto: piattoCombo.sconto || null
+// separa comanda in cibo/snack e bevande (VERSIONE DEFINITIVA)
+function separaComanda(items) {
+    if (!Array.isArray(items)) return { cibo: [], bere: [], snack: [] };
+
+    let cibo = [];
+    let bere = [];
+    let snack = [];
+
+    const snackAbilitato = window.settings?.snackAbilitato === true;
+
+    function getDest(categoria, tipo, nome) {
+        const cat = (categoria || "").toLowerCase();
+        const tip = (tipo || "").toLowerCase();
+        const nom = (nome || "").toLowerCase();
+
+        if (cat === "bevande" || tip === "bere") return "bere";
+        if (cat === "snack" || cat.includes("fritti") || tip === "snack" || nom.includes("patatine") || nom.includes("fritto")) {
+            return snackAbilitato ? "snack" : "cibo";
+        }
+        return "cibo";
+    }
+
+    items.forEach(i => {
+        // Troviamo la destinazione del Piatto Principale (es. Panino -> Cibo)
+        const destMain = getDest(i.categoria, i.tipo, i.nome);
+
+        // Prepariamo il clone del piatto principale
+        let cloneMain = JSON.parse(JSON.stringify({ ...i, isMainHere: true, contorniScelti: [] }));
+
+        // Controlliamo eventuali contorni
+        if (i.contorniScelti && i.contorniScelti.length > 0) {
+            i.contorniScelti.forEach(c => {
+                const destC = getDest(c.categoria, c.tipo, c.nome);
+
+                if (destC !== destMain) {
+                    // IL CONTORNO VA IN UN'ALTRA STAZIONE (es. Patatine in Snack) -> Creiamo un piatto perfetto indipendente!
+                    let varTxt = c.varianti && c.varianti.length > 0 ? " (" + c.varianti.map(v => v.tipo==='aggiunta'?`+${v.nome}`:`-${v.nome}`).join(", ") + ")" : "";
+                    
+                    const splitItem = {
+                        id: (i.id || "cont") + "_split_" + Math.random().toString(36).substr(2, 5),
+                        id_univoco: "split_" + Math.random().toString(36).substr(2, 9),
+                        nome: `${c.nome}${varTxt} [di ${i.nome}]`,
+                        prezzo: 0,
+                        quantita: i.quantita || 1,
+                        categoria: destC === "snack" ? "Snack" : "Cibo",
+                        tipo: destC,
+                        isCombo: false,     // Fondamentale per non farlo trattare come menu
+                        isMainHere: true,   // Fondamentale: impedisce la barretta "-"
+                        varianti: [],
+                        contorniScelti: [], 
+                        ingredienti: [],
+                        note: i.note || ""
+                    };
+
+                    if (destC === "snack") snack.push(splitItem);
+                    if (destC === "cibo") cibo.push(splitItem);
+                    if (destC === "bere") bere.push(splitItem);
+                } else {
+                    // IL CONTORNO VA NELLA STESSA STAZIONE -> Lo lasciamo attaccato al genitore
+                    cloneMain.contorniScelti.push(c);
+                }
+            });
+        }
+
+        // Infine, inseriamo il piatto principale nella sua stazione
+        if (destMain === "cibo") cibo.push(cloneMain);
+        if (destMain === "bere") bere.push(cloneMain);
+        if (destMain === "snack") snack.push(cloneMain);
     });
-    
-    if (typeof aggiornaRiepilogoCarrelloUI === "function") aggiornaRiepilogoCarrelloUI();
-};
+
+    return { cibo, bere, snack };
+}
 
 // Permette al cliente di cancellare un piatto se ci ha ripensato
 function rimuoviDalCarrello(index) {
