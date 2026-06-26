@@ -563,7 +563,7 @@ function impostaMetodoPagamento(id, metodo) {
     preordiniRef.child(id).update({ metodoPagamento: metodo });
 }
 
-// ===================== AGGIUNGI PREORDINE COME COMANDA =====================
+// ===================== AGGIUNGI PREORDINE COME COMANDA E SCALA INGREDIENTI =====================
 async function aggiungiPreordineAlleComande(id) {
     const snap = await preordiniRef.child(id).once("value");
     if (!snap.exists()) return;
@@ -574,28 +574,39 @@ async function aggiungiPreordineAlleComande(id) {
     const numeroBase = await getProssimoNumero(lettera);
     const numeroComandaFinale = numeroBase + lettera;
 
-    // 2️⃣ Usa separaComanda per capire chi deve preparare cosa, includendo i contorni!
+    // 🔥 2️⃣ SCALA INGREDIENTI DAL MAGAZZINO (Come fa la Cassa!)
+    // Dobbiamo estrarre la funzione di calcolo dal file principale (se esiste) o calcolarli.
+    if (typeof calcolaRichiesteDaPiatti === "function" && typeof applicaDecrementiIngredienti === "function") {
+        const richieste = calcolaRichiesteDaPiatti(p.piatti || []);
+        const resIng = await applicaDecrementiIngredienti(richieste);
+        if (!resIng.success) {
+            notifypreordini("❌ Errore scalo magazzino: " + (resIng.message || "ingredienti insufficienti"), "error");
+            // Scegli tu se bloccare la comanda (return) o mandarla comunque. Solitamente si manda comunque con avviso:
+        }
+    }
+
+    // 3️⃣ Usa separaComanda per capire chi deve preparare cosa, dividendo perfettamente i contorni
     const { cibo, bere, snack } = separaComanda(p.piatti || []);
 
-    // 3️⃣ Stati categorie (se la stazione ha piatti da fare, segna "da fare", altrimenti "completato")
+    // 4️⃣ Stati categorie
     const statoCucina = cibo.length > 0 ? "da fare" : "completato";
     const statoBere = bere.length > 0 ? "da fare" : "completato";
     const statoSnack = window.settings.snackAbilitato && snack.length > 0 ? "da fare" : "completato";
 
-    // 4️⃣ noteDestinazioni
+    // 5️⃣ noteDestinazioni
     let noteDestinazioni = ["cucina"];
     if (window.settings.noteDestinazioniAbilitate) {
         if (bere.length > 0) noteDestinazioni.push("bere");
         if (window.settings.snackAbilitato && snack.length > 0) noteDestinazioni.push("snack");
     }
 
-    // 5️⃣ Commento asporto
+    // 6️⃣ Commento asporto
     const commentoAsporto = (window.settings.asportoAbilitato && p.asporto) ? "ASPORTO" : null;
 
-    // 6️⃣ Metodo pagamento predefinito
+    // 7️⃣ Metodo pagamento predefinito
     const metodoPagamento = p.metodoPagamento || "contanti";
 
-    // 7️⃣ Costruzione oggetto comanda: SALVIAMO I PIATTI INTACTI CON TUTTI I CONTORNI E VARIANTI!
+    // 8️⃣ Costruzione oggetto comanda
     const nuovaComanda = {
         numero: numeroComandaFinale,
         piatti: p.piatti || [],
@@ -611,25 +622,22 @@ async function aggiungiPreordineAlleComande(id) {
         preordine: true
     };
 
-    // 8️⃣ Controllo duplicati
-    const existing = await db.ref("comande")
-        .orderByChild("numero")
-        .equalTo(numeroComandaFinale)
-        .once("value");
+    // 9️⃣ Controllo duplicati
+    const existing = await db.ref("comande").orderByChild("numero").equalTo(numeroComandaFinale).once("value");
     if (existing.exists()) {
         notifypreordini(`❌ Comanda ${numeroComandaFinale} già presente!`, "error");
         return;
     }
 
+    // Salvataggio ed eliminazione dal preordine
     await db.ref("comande").push(nuovaComanda);
     await preordiniRef.child(id).remove();
 
-    // 🔹 Rimuovi dal set dei preordini notificati così può suonare di nuovo
     window.comandeNotificate.delete(id);
     localStorage.setItem("comandeNotificate", JSON.stringify([...window.comandeNotificate]));
 
-    // 🔹 Stampa automatica comanda se abilitata
-    if (window.settings.stampaAutomaticaComande) {
+    // Stampa automatica comanda se abilitata
+    if (window.settings.stampaAutomaticaComande && typeof stampaComanda === "function") {
         const datiDellaStampa = {
             nome: p.nome,
             telefono: p.telefono,
@@ -637,12 +645,10 @@ async function aggiungiPreordineAlleComande(id) {
             nomeStand: window.settings.nomeStand,
             restoRichiesto: p.restoRichiesto
         };
-        
         stampaComanda(p.piatti || [], numeroComandaFinale, p.note || "", datiDellaStampa);
     }
 
-    // 🔟 Conferma visiva
-    notifypreordini(`✅ Preordine ${numeroComandaFinale} aggiunto come comanda!`, "info");
+    notifypreordini(`✅ Preordine ${numeroComandaFinale} confermato e ingredienti scalati!`, "info");
 }
 async function eliminaPreordine(id) {
   await preordiniRef.child(id).remove();
@@ -1656,7 +1662,9 @@ function renderVariantiCliente(piatto, maxGratis) {
 }
 // Calcola lo sconto per la singola unità
 function calcolaPrezzoConScontoPerPiattoSingolo(piatto) {
-    let p = Number(piatto.prezzo || 0);
+    if (!piatto) return 0;
+    // Cerca il prezzo in vari campi possibili a seconda se è Piatto o Contorno
+    let p = Number(piatto.prezzo !== undefined ? piatto.prezzo : (piatto.prezzoOriginale !== undefined ? piatto.prezzoOriginale : 0));
     if (piatto.sconto && piatto.sconto.tipo === "percentuale") {
         p = p * (1 - (Number(piatto.sconto.valore) || 0) / 100);
     }
@@ -1812,29 +1820,34 @@ window.apriPopupVariantiContornoCliente = function(idxCarrello, idxContorno) {
 
     renderVariantiContorno();
 
-    const btnSalva = document.getElementById("confermaPersonalizzaCliente");
-    btnSalva.onclick = () => {
-        contorno.varianti = tempVariantiCliente;
-        let ext = 0;
-        tempVariantiCliente.filter(v => v.tipo === "aggiunta").forEach((v, idx) => { if (idx >= maxGratis) ext += Number(v.prezzo || 0); });
-        contorno.extraPrezzo = ext;
+    // 🔥 FIX: Usa l'ID corretto del bottone Salva!
+    const btnSalva = document.getElementById("btnConfermaPersonalizzazione");
+    if(btnSalva) {
+        btnSalva.onclick = () => {
+            contorno.varianti = tempVariantiCliente;
+            let ext = 0;
+            tempVariantiCliente.filter(v => v.tipo === "aggiunta").forEach((v, idx) => { if (idx >= maxGratis) ext += Number(v.prezzo || 0); });
+            contorno.extraPrezzo = ext;
 
-        // Ricalcola il totale extra del piattoPadre
-        let nuovoExtraPrezzoPiatto = 0;
-        piattoPadre.contorniScelti.forEach(c => { nuovoExtraPrezzoPiatto += (c.prezzoPagato || 0) + (c.extraPrezzo || 0); });
-        let extVarPiatto = 0; const mxGr = piattoPadre.maxVariantiGratis || 0;
-        (piattoPadre.varianti || []).filter(v => v.tipo === "aggiunta").forEach((v, index) => { if (index >= mxGr) extVarPiatto += Number(v.prezzo || 0); });
-        
-        piattoPadre.extraPrezzo = extVarPiatto + nuovoExtraPrezzoPiatto;
+            // Ricalcola il totale extra del piattoPadre
+            let nuovoExtraPrezzoPiatto = 0;
+            piattoPadre.contorniScelti.forEach(c => { nuovoExtraPrezzoPiatto += (c.prezzoPagato || 0) + (c.extraPrezzo || 0); });
+            let extVarPiatto = 0; const mxGr = piattoPadre.maxVariantiGratis || 0;
+            (piattoPadre.varianti || []).filter(v => v.tipo === "aggiunta").forEach((v, index) => { if (index >= mxGr) extVarPiatto += Number(v.prezzo || 0); });
+            
+            piattoPadre.extraPrezzo = extVarPiatto + nuovoExtraPrezzoPiatto;
 
-        chiudiPopupPersonalizza();
-        aggiornaRiepilogoCarrelloUI();
-    };
+            chiudiPopupPersonalizza();
+            aggiornaRiepilogoCarrelloUI();
+        };
+    }
 
-    const btnAnnulla = document.getElementById("annullaPersonalizzaCliente");
-    btnAnnulla.onclick = () => { chiudiPopupPersonalizza(); };
+    // 🔥 FIX: Usa l'ID corretto del bottone Annulla!
+    const btnAnnulla = document.getElementById("btnAnnullaPersonalizzazione");
+    if(btnAnnulla) {
+        btnAnnulla.onclick = () => { chiudiPopupPersonalizza(); };
+    }
 }
-
     
 // separa comanda in cibo/snack e bevande (VERSIONE DEFINITIVA)
 function separaComanda(items) {
