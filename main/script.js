@@ -5081,31 +5081,39 @@ async function caricaComandePerRuolo(daFareDiv, storicoDiv, ruolo) {
                    // --- 1. RENDERING PIATTO PRINCIPALE (se inviato a questo profilo) ---
                     if (i.isMainHere !== false) {
                         const mainDiv = document.createElement("div");
+                        mainDiv.style.display = "flex";          
+                        mainDiv.style.alignItems = "flex-start";
+                        mainDiv.style.marginBottom = "4px";
+                        
                         let variantiHtml = "";
                         
-                        // 🔥 FIX: Firebase può salvare gli array come oggetti. Li convertiamo in modo sicuro.
+                        // Firebase salva a volte gli array come oggetti, sicurezza prima di tutto
                         let varArr = i.varianti ? (Array.isArray(i.varianti) ? i.varianti : Object.values(i.varianti)) : [];
                         
                         if (varArr.length > 0) {
-                            // 🔹 Raggruppa le varianti (es: "2x +Maionese") per una UI più pulita
                             let conteggio = {};
                             varArr.forEach(v => {
+                                if (!v || !v.tipo) return;
                                 let key = v.tipo + "_" + v.nome;
                                 if (!conteggio[key]) conteggio[key] = { tipo: v.tipo, nome: v.nome, count: 0 };
                                 conteggio[key].count++;
                             });
 
-                            variantiHtml = "<br>" + Object.values(conteggio).map(v => 
+                            // Grafica classica ripristinata: testi piccoli a capo
+                            variantiHtml = Object.values(conteggio).map(v => 
                                 v.tipo === "aggiunta" 
-                                    ? `<small style="color:green; font-weight:bold; margin-left:10px;">+ ${v.count > 1 ? v.count + 'x ' : ''}${v.nome}</small>` 
-                                    : `<small style="color:red; font-weight:bold; margin-left:10px;">- Senza ${v.nome}</small>`
-                            ).join("<br>");
+                                    ? `<div style="margin-top:2px;"><small style="color:green; font-weight:bold; margin-left:10px;">+ ${v.count > 1 ? v.count + 'x ' : ''}${v.nome}</small></div>` 
+                                    : `<div style="margin-top:2px;"><small style="color:red; font-weight:bold; margin-left:10px;">- Senza ${v.nome}</small></div>`
+                            ).join("");
                         }
 
+                        // --- LOGICA CHECKBOX (INVARIATA) ---
                         if (isActiveState) {
                             const box = document.createElement("input");
                             box.type = "checkbox";
                             box.className = "tickItem";
+                            box.style.marginRight = "10px";
+                            box.style.marginTop = "3px"; // Allinea bene la spunta
                             
                             if (!window.tickState) window.tickState = {};
                             if (!window.tickState[comandaId]) window.tickState[comandaId] = {};
@@ -5123,18 +5131,28 @@ async function caricaComandePerRuolo(daFareDiv, storicoDiv, ruolo) {
                             mainDiv.appendChild(box);
                         }
 
-                        const mainSpan = document.createElement("span");
-                        mainSpan.innerHTML = ` ${i.quantita}x ${i.nome}${variantiHtml}`;
-                        mainDiv.appendChild(mainSpan);
+                        // 🔥 RISOLTO ERRORE TESTO HTML: Creiamo un div e usiamo .innerHTML!
+                        const textDiv = document.createElement("div");
+                        textDiv.style.display = "flex";
+                        textDiv.style.flexDirection = "column";
+
+                        textDiv.innerHTML = `<span> ${i.quantita}x ${i.nome}</span>${variantiHtml}`;
+
+                        if (i.note && i.note.trim() !== "") {
+                            textDiv.innerHTML += `<div style="margin-top:2px;"><small style="color:#d9534f; margin-left:10px;">📝 Note: ${i.note}</small></div>`;
+                        }
+
+                        mainDiv.appendChild(textDiv);
                         pContainer.appendChild(mainDiv);
+                        
                     } else {
                         // Il piatto principale è altrove, mettiamo un testo di contesto
                         const ctxDiv = document.createElement("div");
                         ctxDiv.innerHTML = `<small style="color:#777;"><i>[Contorno di: ${i.quantita}x ${i.nome}]</i></small>`;
                         pContainer.appendChild(ctxDiv);
                     }
+
                     // --- 2. RENDERING CONTORNI (Giustificati + Loro Checkbox) ---
-                    // 🔥 FIX: Protezione conversione array/oggetto anche per i contorni
                     let contorniArr = i.contorniScelti ? (Array.isArray(i.contorniScelti) ? i.contorniScelti : Object.values(i.contorniScelti)) : [];
                     
                     if (contorniArr.length > 0) {
@@ -5142,6 +5160,8 @@ async function caricaComandePerRuolo(daFareDiv, storicoDiv, ruolo) {
                             const cDiv = document.createElement("div");
                             cDiv.style.marginLeft = "25px"; // Giustificato!
                             cDiv.style.marginTop = "4px";
+                            cDiv.style.display = "flex";
+                            cDiv.style.alignItems = "flex-start";
 
                             let variantiContHtml = "";
                             let varContArr = contorno.varianti ? (Array.isArray(contorno.varianti) ? contorno.varianti : Object.values(contorno.varianti)) : [];
@@ -5149,24 +5169,29 @@ async function caricaComandePerRuolo(daFareDiv, storicoDiv, ruolo) {
                             if (varContArr.length > 0) {
                                 let conteggioC = {};
                                 varContArr.forEach(v => {
+                                    if (!v || !v.tipo) return;
                                     let key = v.tipo + "_" + v.nome;
                                     if (!conteggioC[key]) conteggioC[key] = { tipo: v.tipo, nome: v.nome, count: 0 };
                                     conteggioC[key].count++;
                                 });
 
-                                variantiContHtml = "<br>" + Object.values(conteggioC).map(v => 
+                                variantiContHtml = Object.values(conteggioC).map(v => 
                                     v.tipo === "aggiunta" 
-                                        ? `<small style="color:green; font-weight:bold; margin-left:10px;">+ ${v.count > 1 ? v.count + 'x ' : ''}${v.nome}</small>` 
-                                        : `<small style="color:red; font-weight:bold; margin-left:10px;">- Senza ${v.nome}</small>`
-                                ).join("<br>");
+                                        ? `<div style="margin-top:2px;"><small style="color:green; font-weight:bold; margin-left:10px;">+ ${v.count > 1 ? v.count + 'x ' : ''}${v.nome}</small></div>` 
+                                        : `<div style="margin-top:2px;"><small style="color:red; font-weight:bold; margin-left:10px;">- Senza ${v.nome}</small></div>`
+                                ).join("");
                             }
 
-                            if (isActiveState) {
+                            if (isActiveState && window.settings && window.settings.checkContorniSingoli) {
                                 const cBox = document.createElement("input");
                                 cBox.type = "checkbox";
                                 cBox.className = "tickItem";
-                                
-                                const cVoceKey = `${i.nome}-contorno-${contorno.id || contorno.nome}-${cIdx}`;
+                                cBox.style.marginRight = "10px";
+                                cBox.style.marginTop = "3px";
+
+                                if (!window.tickState) window.tickState = {};
+                                if (!window.tickState[comandaId]) window.tickState[comandaId] = {};
+                                const cVoceKey = `${contorno.nome}-${cIdx}-cont`;
                                 if (window.tickState[comandaId][cVoceKey] === undefined) window.tickState[comandaId][cVoceKey] = false;
                                 
                                 cBox.checked = window.tickState[comandaId][cVoceKey];
@@ -5180,9 +5205,13 @@ async function caricaComandePerRuolo(daFareDiv, storicoDiv, ruolo) {
                                 cDiv.appendChild(cBox);
                             }
 
-                            const cSpan = document.createElement("span");
-                            cSpan.innerHTML = `${i.quantita}x ${contorno.nome}${variantiContHtml}`;
-                            cDiv.appendChild(cSpan);
+                            // 🔥 Assicuriamoci che anche i contorni usino innerHTML!
+                            const cTextDiv = document.createElement("div");
+                            cTextDiv.style.display = "flex";
+                            cTextDiv.style.flexDirection = "column";
+                            cTextDiv.innerHTML = `<span> ↳ ${contorno.nome}</span>${variantiContHtml}`;
+                            
+                            cDiv.appendChild(cTextDiv);
                             pContainer.appendChild(cDiv);
                         });
                     }
