@@ -787,20 +787,22 @@ async function initPreordiniClienti() {
             const topDiv = document.createElement("div");
             topDiv.className = "menu-item-top";
             topDiv.style.display = "flex";
-            topDiv.style.justifyContent = "space-between";
+            topDiv.style.justifyContent = "center"; // 🔥 Centra forzatamente il contenitore
             topDiv.style.alignItems = "center";
-            topDiv.style.gap = "10px";
+            topDiv.style.position = "relative";     // 🔥 Necessario per incollare il prezzo a destra
+            topDiv.style.minHeight = "35px";        // Previene sfasamenti
             
             const prezzoHtml = item.sconto && item.sconto.tipo === "percentuale"
-                ? `<span style="text-align: right;">
+                ? `<span style="text-align: right; display:inline-block;">
                     <span style="text-decoration: line-through; color:#888; font-size: 0.9em;">€${item.prezzo.toFixed(2)}</span><br>
                     <span style="font-weight:bold; color:#d9534f;">€${(item.prezzo * (1 - item.sconto.valore / 100)).toFixed(2)}</span>
                    </span>`
                 : `<span>€${item.prezzo.toFixed(2)}</span>`;
             
+            // 🔥 Posizionamento Assoluto per il prezzo: rimane a destra senza spingere il titolo fuori centro!
             topDiv.innerHTML = `
-                <span class="piatto-nome" style="flex:1; font-weight:bold;">${item.nome}</span>
-                <span class="piatto-prezzo">${prezzoHtml}</span>
+                <span class="piatto-nome" style="font-weight:bold; text-align:center; padding:0 50px;">${item.nome}</span>
+                <span class="piatto-prezzo" style="position:absolute; right:0; top:50%; transform:translateY(-50%);">${prezzoHtml}</span>
             `;
             
             // 2. Sconto e Ingredienti
@@ -808,7 +810,7 @@ async function initPreordiniClienti() {
             
             // Aggiunta label sconto se presente
             if (item.sconto) {
-                dettagliDiv += `<div class="piatto-sconto" style="color:#d9534f; font-weight:bold; font-size:0.85em; margin-bottom: 5px;">
+                dettagliDiv += `<div class="piatto-sconto" style="color:#d9534f; text-align:center; font-weight:bold; font-size:0.85em; margin-bottom: 5px;">
                     ${item.sconto.tipo === "percentuale" ? `${item.sconto.valore}% di sconto`
                     : item.sconto.tipo === "x_paga_y" ? `Prendi ${item.sconto.valore.x} Paga ${item.sconto.valore.y}`
                     : item.sconto.tipo === "x_paga_y_fisso" ? `Prendi ${item.sconto.valore.x} Paga €${item.sconto.valore.y.toFixed(2)}`
@@ -818,7 +820,7 @@ async function initPreordiniClienti() {
             
             // Aggiunta ingredienti
             if (item.ingredienti && item.ingredienti.length) {
-                dettagliDiv += `<div class="piatto-ingredienti" style="font-size:0.85em; color:#555; margin-bottom: 10px;">
+                dettagliDiv += `<div class="piatto-ingredienti" style="text-align:center; font-size:0.85em; color:#555; margin-bottom: 10px;">
                     ${item.ingredienti.map(i => `${i.nome}${i.qtyPerUnit ? ` (${i.qtyPerUnit}${i.unita||""})`:""}`).join(", ")}
                 </div>`;
             }
@@ -826,13 +828,11 @@ async function initPreordiniClienti() {
             // 3. Bottone dinamico Intelligente
             let clickAction = "";
             if (item.isCombo && window.settings.piattiComboAbilitati) {
-                // Se è una combo, apre SEMPRE il modale per scegliere i contorni
+                // Se è una combo, apre il modale per scegliere i contorni
                 clickAction = `apriPopupComboCliente('${id}')`; 
-            } else if (window.settings.sistemaExtraAbilitato) {
-                // Se gli extra sono attivi, apre il modale
-                clickAction = `apriPopupPersonalizzaCliente('${id}')`;
             } else {
-                // Altrimenti aggiunta rapida
+                // 🔥 FIX MODALE: Aggiunta rapida al carrello! (Niente popup extra qui)
+                // Gli extra si apriranno SOLO cliccando il nome del piatto dentro il carrello.
                 clickAction = `aggiungiVeloceCarrello('${id}')`; 
             }
             
