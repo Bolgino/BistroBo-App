@@ -5084,9 +5084,23 @@ async function caricaComandePerRuolo(daFareDiv, storicoDiv, ruolo) {
                     if (i.isMainHere !== false) {
                         const mainDiv = document.createElement("div");
                         let variantiHtml = "";
-                        if (i.varianti && i.varianti.length > 0) {
-                            variantiHtml = "<br>" + i.varianti.map(v => 
-                                v.tipo === "aggiunta" ? `<small style="color:green; font-weight:bold; margin-left:10px;">+ ${v.nome}</small>` : `<small style="color:red; font-weight:bold; margin-left:10px;">- Senza ${v.nome}</small>`
+                        
+                        // 🔥 FIX: Firebase può salvare gli array come oggetti. Li convertiamo in modo sicuro.
+                        let varArr = i.varianti ? (Array.isArray(i.varianti) ? i.varianti : Object.values(i.varianti)) : [];
+                        
+                        if (varArr.length > 0) {
+                            // 🔹 Raggruppa le varianti (es: "2x +Maionese") per una UI più pulita
+                            let conteggio = {};
+                            varArr.forEach(v => {
+                                let key = v.tipo + "_" + v.nome;
+                                if (!conteggio[key]) conteggio[key] = { tipo: v.tipo, nome: v.nome, count: 0 };
+                                conteggio[key].count++;
+                            });
+
+                            variantiHtml = "<br>" + Object.values(conteggio).map(v => 
+                                v.tipo === "aggiunta" 
+                                    ? `<small style="color:green; font-weight:bold; margin-left:10px;">+ ${v.count > 1 ? v.count + 'x ' : ''}${v.nome}</small>` 
+                                    : `<small style="color:red; font-weight:bold; margin-left:10px;">- Senza ${v.nome}</small>`
                             ).join("<br>");
                         }
 
@@ -5123,16 +5137,30 @@ async function caricaComandePerRuolo(daFareDiv, storicoDiv, ruolo) {
                     }
 
                     // --- 2. RENDERING CONTORNI (Giustificati + Loro Checkbox) ---
-                    if (i.contorniScelti && i.contorniScelti.length > 0) {
-                        i.contorniScelti.forEach((contorno, cIdx) => {
+                    // 🔥 FIX: Protezione conversione array/oggetto anche per i contorni
+                    let contorniArr = i.contorniScelti ? (Array.isArray(i.contorniScelti) ? i.contorniScelti : Object.values(i.contorniScelti)) : [];
+                    
+                    if (contorniArr.length > 0) {
+                        contorniArr.forEach((contorno, cIdx) => {
                             const cDiv = document.createElement("div");
                             cDiv.style.marginLeft = "25px"; // Giustificato!
                             cDiv.style.marginTop = "4px";
 
                             let variantiContHtml = "";
-                            if (contorno.varianti && contorno.varianti.length > 0) {
-                                variantiContHtml = "<br>" + contorno.varianti.map(v => 
-                                    v.tipo === "aggiunta" ? `<small style="color:green; font-weight:bold; margin-left:10px;">+ ${v.nome}</small>` : `<small style="color:red; font-weight:bold; margin-left:10px;">- Senza ${v.nome}</small>`
+                            let varContArr = contorno.varianti ? (Array.isArray(contorno.varianti) ? contorno.varianti : Object.values(contorno.varianti)) : [];
+                            
+                            if (varContArr.length > 0) {
+                                let conteggioC = {};
+                                varContArr.forEach(v => {
+                                    let key = v.tipo + "_" + v.nome;
+                                    if (!conteggioC[key]) conteggioC[key] = { tipo: v.tipo, nome: v.nome, count: 0 };
+                                    conteggioC[key].count++;
+                                });
+
+                                variantiContHtml = "<br>" + Object.values(conteggioC).map(v => 
+                                    v.tipo === "aggiunta" 
+                                        ? `<small style="color:green; font-weight:bold; margin-left:10px;">+ ${v.count > 1 ? v.count + 'x ' : ''}${v.nome}</small>` 
+                                        : `<small style="color:red; font-weight:bold; margin-left:10px;">- Senza ${v.nome}</small>`
                                 ).join("<br>");
                             }
 
