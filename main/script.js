@@ -3455,34 +3455,99 @@ function caricaComandeCassa() {
 
       const { cibo, bere, snack } = separaComanda(c.piatti || []);
       function formattaPiatto(i) {
+          // --- MAGIA PER PIATTO PRINCIPALE ---
+          let nomePulito = i.nome || "";
           let varTxt = "";
           let variantiArray = i.varianti ? (Array.isArray(i.varianti) ? i.varianti : Object.values(i.varianti)) : [];
           
+          const regex = /\s*\(([\+\-].*?)\)/;
+          const matchMain = nomePulito.match(regex);
+          
+          if (matchMain) {
+              nomePulito = nomePulito.replace(regex, "").trim();
+              if (variantiArray.length === 0) {
+                  let estratti = matchMain[1].split(",");
+                  estratti.forEach(ex => {
+                      ex = ex.trim();
+                      if (ex.startsWith("+")) variantiArray.push({ tipo: "aggiunta", nome: ex.substring(1).trim() });
+                      else if (ex.startsWith("-")) {
+                          let n = ex.substring(1).trim();
+                          if (n.toLowerCase().startsWith("senza ")) n = n.substring(6).trim();
+                          variantiArray.push({ tipo: "rimozione", nome: n });
+                      }
+                  });
+              }
+          }
+
           if (variantiArray.length > 0) {
               let conteggio = {};
               variantiArray.forEach(v => {
+                  if (!v || !v.tipo) return;
                   let key = v.tipo + "_" + v.nome;
                   if (!conteggio[key]) conteggio[key] = { tipo: v.tipo, nome: v.nome, count: 0 };
                   conteggio[key].count++;
               });
 
               let txt = Object.values(conteggio).map(v => {
+                  let nomeExtra = v.nome.charAt(0).toUpperCase() + v.nome.slice(1);
                   let qTxt = v.count > 1 ? `${v.count}x ` : "";
-                  if (v.tipo === "aggiunta") return `<span style="color:green; font-weight:bold;">+${qTxt}${v.nome}</span>`;
-                  else return `<span style="color:red; font-weight:bold;">-${v.nome}</span>`;
+                  if (v.tipo === "aggiunta") return `<span style="color:green; font-weight:bold;">+ ${qTxt}${nomeExtra}</span>`;
+                  else return `<span style="color:red; font-weight:bold;">- Senza ${nomeExtra}</span>`;
               }).join(", ");
               varTxt = ` <span style="font-size:0.85em;">(${txt})</span>`;
           }
 
           let base = "";
           if (i.isMainHere !== false) {
-              base = `${i.quantita}x ${i.nome}${varTxt}`;
+              base = `${i.quantita}x ${nomePulito}${varTxt}`;
           } else {
-              base = `<span style="font-style:italic; color:#777;">[Di: ${i.quantita}x ${i.nome}]</span>`;
+              base = `<span style="font-style:italic; color:#777;">[Di: ${i.quantita}x ${nomePulito}]</span>`;
           }
 
+          // --- MAGIA PER CONTORNI ---
           if (i.contorniScelti && i.contorniScelti.length > 0) {
-              let contorniHtml = i.contorniScelti.map(c => `↳ ${i.quantita}x ${c.nome}`).join("<br>");
+              let contorniHtml = i.contorniScelti.map(c => {
+                  let cNome = c.nome || "";
+                  let cVarTxt = "";
+                  let cVarArray = c.varianti ? (Array.isArray(c.varianti) ? c.varianti : Object.values(c.varianti)) : [];
+                  
+                  const matchCont = cNome.match(regex);
+                  if (matchCont) {
+                      cNome = cNome.replace(regex, "").trim();
+                      if (cVarArray.length === 0) {
+                          let estratti = matchCont[1].split(",");
+                          estratti.forEach(ex => {
+                              ex = ex.trim();
+                              if (ex.startsWith("+")) cVarArray.push({ tipo: "aggiunta", nome: ex.substring(1).trim() });
+                              else if (ex.startsWith("-")) {
+                                  let n = ex.substring(1).trim();
+                                  if (n.toLowerCase().startsWith("senza ")) n = n.substring(6).trim();
+                                  cVarArray.push({ tipo: "rimozione", nome: n });
+                              }
+                          });
+                      }
+                  }
+
+                  if (cVarArray.length > 0) {
+                      let conteggioC = {};
+                      cVarArray.forEach(v => {
+                          if (!v || !v.tipo) return;
+                          let key = v.tipo + "_" + v.nome;
+                          if (!conteggioC[key]) conteggioC[key] = { tipo: v.tipo, nome: v.nome, count: 0 };
+                          conteggioC[key].count++;
+                      });
+                      let txtC = Object.values(conteggioC).map(v => {
+                          let nomeExtra = v.nome.charAt(0).toUpperCase() + v.nome.slice(1);
+                          let qTxt = v.count > 1 ? `${v.count}x ` : "";
+                          if (v.tipo === "aggiunta") return `<span style="color:green; font-weight:bold;">+ ${qTxt}${nomeExtra}</span>`;
+                          else return `<span style="color:red; font-weight:bold;">- Senza ${nomeExtra}</span>`;
+                      }).join(", ");
+                      cVarTxt = ` <span style="font-size:0.85em;">(${txtC})</span>`;
+                  }
+
+                  return `↳ ${i.quantita}x ${cNome}${cVarTxt}`;
+              }).join("<br>");
+              
               base += `<br><span style="margin-left:15px; font-size:0.9em; color:#333;">${contorniHtml}</span>`;
           }
 
@@ -4105,34 +4170,99 @@ async function caricaGestioneComandeAdmin() {
             }
            
             function formattaPiattoAdmin(i) {
+                // --- MAGIA PER PIATTO PRINCIPALE ---
+                let nomePulito = i.nome || "";
                 let varTxt = "";
                 let variantiArray = i.varianti ? (Array.isArray(i.varianti) ? i.varianti : Object.values(i.varianti)) : [];
                 
+                const regex = /\s*\(([\+\-].*?)\)/;
+                const matchMain = nomePulito.match(regex);
+                
+                if (matchMain) {
+                    nomePulito = nomePulito.replace(regex, "").trim();
+                    if (variantiArray.length === 0) {
+                        let estratti = matchMain[1].split(",");
+                        estratti.forEach(ex => {
+                            ex = ex.trim();
+                            if (ex.startsWith("+")) variantiArray.push({ tipo: "aggiunta", nome: ex.substring(1).trim() });
+                            else if (ex.startsWith("-")) {
+                                let n = ex.substring(1).trim();
+                                if (n.toLowerCase().startsWith("senza ")) n = n.substring(6).trim();
+                                variantiArray.push({ tipo: "rimozione", nome: n });
+                            }
+                        });
+                    }
+                }
+
                 if (variantiArray.length > 0) {
                     let conteggio = {};
                     variantiArray.forEach(v => {
+                        if (!v || !v.tipo) return;
                         let key = v.tipo + "_" + v.nome;
                         if (!conteggio[key]) conteggio[key] = { tipo: v.tipo, nome: v.nome, count: 0 };
                         conteggio[key].count++;
                     });
 
                     let txt = Object.values(conteggio).map(v => {
+                        let nomeExtra = v.nome.charAt(0).toUpperCase() + v.nome.slice(1);
                         let qTxt = v.count > 1 ? `${v.count}x ` : "";
-                        if (v.tipo === "aggiunta") return `<span style="color:green; font-weight:bold;">+${qTxt}${v.nome}</span>`;
-                        else return `<span style="color:red; font-weight:bold;">-${v.nome}</span>`;
+                        if (v.tipo === "aggiunta") return `<span style="color:green; font-weight:bold;">+ ${qTxt}${nomeExtra}</span>`;
+                        else return `<span style="color:red; font-weight:bold;">- Senza ${nomeExtra}</span>`;
                     }).join(", ");
                     varTxt = ` <span style="font-size:0.85em;">(${txt})</span>`;
                 }
 
                 let base = "";
                 if (i.isMainHere !== false) {
-                    base = `${i.quantita}x ${i.nome}${varTxt}`;
+                    base = `${i.quantita}x ${nomePulito}${varTxt}`;
                 } else {
-                    base = `<span style="font-style:italic; color:#777;">[Di: ${i.quantita}x ${i.nome}]</span>`;
+                    base = `<span style="font-style:italic; color:#777;">[Di: ${i.quantita}x ${nomePulito}]</span>`;
                 }
 
+                // --- MAGIA PER CONTORNI ---
                 if (i.contorniScelti && i.contorniScelti.length > 0) {
-                    let contorniHtml = i.contorniScelti.map(c => `↳ ${i.quantita}x ${c.nome}`).join("<br>");
+                    let contorniHtml = i.contorniScelti.map(c => {
+                        let cNome = c.nome || "";
+                        let cVarTxt = "";
+                        let cVarArray = c.varianti ? (Array.isArray(c.varianti) ? c.varianti : Object.values(c.varianti)) : [];
+                        
+                        const matchCont = cNome.match(regex);
+                        if (matchCont) {
+                            cNome = cNome.replace(regex, "").trim();
+                            if (cVarArray.length === 0) {
+                                let estratti = matchCont[1].split(",");
+                                estratti.forEach(ex => {
+                                    ex = ex.trim();
+                                    if (ex.startsWith("+")) cVarArray.push({ tipo: "aggiunta", nome: ex.substring(1).trim() });
+                                    else if (ex.startsWith("-")) {
+                                        let n = ex.substring(1).trim();
+                                        if (n.toLowerCase().startsWith("senza ")) n = n.substring(6).trim();
+                                        cVarArray.push({ tipo: "rimozione", nome: n });
+                                    }
+                                });
+                            }
+                        }
+
+                        if (cVarArray.length > 0) {
+                            let conteggioC = {};
+                            cVarArray.forEach(v => {
+                                if (!v || !v.tipo) return;
+                                let key = v.tipo + "_" + v.nome;
+                                if (!conteggioC[key]) conteggioC[key] = { tipo: v.tipo, nome: v.nome, count: 0 };
+                                conteggioC[key].count++;
+                            });
+                            let txtC = Object.values(conteggioC).map(v => {
+                                let nomeExtra = v.nome.charAt(0).toUpperCase() + v.nome.slice(1);
+                                let qTxt = v.count > 1 ? `${v.count}x ` : "";
+                                if (v.tipo === "aggiunta") return `<span style="color:green; font-weight:bold;">+ ${qTxt}${nomeExtra}</span>`;
+                                else return `<span style="color:red; font-weight:bold;">- Senza ${nomeExtra}</span>`;
+                            }).join(", ");
+                            cVarTxt = ` <span style="font-size:0.85em;">(${txtC})</span>`;
+                        }
+
+                        return `↳ ${i.quantita}x ${cNome}${cVarTxt}`;
+                    }).join("<br>");
+                    
                     base += `<br><span style="margin-left:15px; font-size:0.9em; color:#333;">${contorniHtml}</span>`;
                 }
 
@@ -5236,7 +5366,7 @@ async function caricaComandePerRuolo(daFareDiv, storicoDiv, ruolo) {
                                 }).join("");
                             }
 
-                            if (isActiveState && window.settings && window.settings.checkContorniSingoli) {
+                            if (isActiveState) {
                                 const cBox = document.createElement("input");
                                 cBox.type = "checkbox";
                                 cBox.className = "tickItem";
