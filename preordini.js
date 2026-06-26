@@ -1928,4 +1928,176 @@ function rimuoviDalCarrello(index) {
     carrelloCliente.splice(index, 1);
     aggiornaRiepilogoCarrelloUI();
 }
+// ================= GESTIONE PIATTI COMBO CLIENTI =================
+let statoComboCliente = { piattoId: null, contorniSelezionati: [] };
 
+window.chiudiPopupCombo = function() {
+    const p = document.getElementById("popupCombo");
+    if(p) p.style.display = "none";
+};
+
+// Questa è la funzione corretta cercata dal click del bottone "Aggiungi"
+window.apriPopupComboCliente = function(id) {
+    const piatto = menuItems[id];
+    if (!piatto) return;
+
+    statoComboCliente = { piattoId: id, contorniSelezionati: [] };
+    const titoloEl = document.getElementById("titoloCombo");
+    if(titoloEl) titoloEl.innerText = `Scegli i contorni per: ${piatto.nome}`;
+    
+    const popupEl = document.getElementById("popupCombo");
+    if(popupEl) popupEl.style.display = "flex";
+
+    renderListaPiattiComboCliente(piatto);
+};
+
+function renderListaPiattiComboCliente(piattoCombo) {
+    const listaDiv = document.getElementById("listaPiattiCombo");
+    if (!listaDiv) return;
+    listaDiv.innerHTML = "";
+    
+    const maxGratis = piattoCombo.maxContorniGratis || 0;
+    const arrayIDValidi = piattoCombo.piattiComboAmmessi || []; 
+
+    const infoGratisEl = document.getElementById("infoComboGratis");
+    if(infoGratisEl) {
+        infoGratisEl.innerText = maxGratis > 0 
+            ? `Hai diritto a ${maxGratis} contorn${maxGratis > 1 ? 'i' : 'o'} GRATIS!` 
+            : `Nessun contorno gratis incluso, verranno calcolati a prezzo di listino.`;
+    }
+
+    let piattiAmmessi = [];
+    Object.entries(menuItems || {}).forEach(([pId, p]) => {
+        if (arrayIDValidi.includes(pId) && !p.bloccato) {
+            piattiAmmessi.push({ id: pId, ...p });
+        }
+    });
+
+    if (piattiAmmessi.length === 0) {
+        listaDiv.innerHTML = "<p>Nessun contorno disponibile al momento.</p>";
+    }
+
+    // Calcolo intelligente dei prezzi extra dei contorni oltre la soglia gratuita
+    let contorniPagamento = statoComboCliente.contorniSelezionati.slice(maxGratis);
+    let gruppiPagamento = {};
+    contorniPagamento.forEach(c => {
+        const key = c.id || c.nome;
+        if (!gruppiPagamento[key]) gruppiPagamento[key] = { ...c, count: 0 };
+        gruppiPagamento[key].count++;
+    });
+
+    let totaleExtra = 0;
+    Object.values(gruppiPagamento).forEach(g => {
+        const pOriginale = menuItems[g.id] || {};
+        let costoGruppo = g.prezzoBase * g.count; 
+
+        if (pOriginale.sconto) {
+            const sc = pOriginale.sconto;
+            if (sc.tipo === "percentuale") {
+                costoGruppo -= (costoGruppo * (sc.valore / 100));
+            } else if (sc.tipo === "x_paga_y") {
+                const x = parseInt(sc.valore.x);
+                const y = parseInt(sc.valore.y);
+                costoGruppo = (Math.floor(g.count / x) * y + (g.count % x)) * g.prezzoBase;
+            } else if (sc.tipo === "x_paga_y_fisso") {
+                const x = parseInt(sc.valore.x);
+                const y = parseFloat(sc.valore.y);
+                costoGruppo = (Math.floor(g.count / x) * y) + (g.count % x) * g.prezzoBase;
+            }
+        }
+        totaleExtra += Math.max(0, costoGruppo);
+    });
+
+    const extraEl = document.getElementById("totaleExtraCombo");
+    if(extraEl) extraEl.innerText = totaleExtra.toFixed(2);
+
+    const quantitaTotaleScelta = statoComboCliente.contorniSelezionati.length;
+
+    piattiAmmessi.forEach(pAmmesso => {
+        const occorrenze = statoComboCliente.contorniSelezionati.filter(c => c.id === pAmmesso.id).length;
+        
+        let prezzoDaMostrare = pAmmesso.prezzo;
+        if (pAmmesso.sconto && pAmmesso.sconto.tipo === "percentuale") {
+            prezzoDaMostrare -= (prezzoDaMostrare * (pAmmesso.sconto.valore / 100));
+        }
+        prezzoDaMostrare = Math.max(0, prezzoDaMostrare);
+        
+        const btnPrezzoTxt = (quantitaTotaleScelta < maxGratis) ? "GRATIS" : `+€${prezzoDaMostrare.toFixed(2)}`;
+
+        const row = document.createElement("div");
+        row.style.display = "flex";
+        row.style.justifyContent = "space-between";
+        row.style.alignItems = "center";
+        row.style.padding = "8px 0";
+        row.style.borderBottom = "1px solid #eee";
+
+        row.innerHTML = `
+            <div style="flex:1; text-align: left;"><b>${pAmmesso.nome}</b> <small style="color:#777;">(€${pAmmesso.prezzo.toFixed(2)})</small></div>
+            <div style="display:flex; align-items:center; gap:8px;">
+                ${occorrenze > 0 ? `
+                    <button onclick="rimuoviContornoComboCliente('${pAmmesso.id}')" style="background:#ccc; border:none; padding:5px 12px; border-radius:6px; font-weight:bold; cursor:pointer;">-</button>
+                    <span style="font-weight:bold;">${occorrenze}</span>
+                ` : ''}
+                <button onclick="aggiungiContornoComboCliente('${pAmmesso.id}')" style="background:#4CAF50; color:white; border:none; padding:5px 10px; border-radius:6px; font-weight:bold; cursor:pointer;">${occorrenze > 0 ? '+' : btnPrezzoTxt}</button>
+            </div>
+        `;
+        listaDiv.appendChild(row);
+    });
+
+    const btnConferma = document.getElementById("btnConfermaCombo");
+    if(btnConferma) {
+        btnConferma.onclick = () => {
+            chiudiPopupCombo();
+            let contorniDaSalvare = [];
+            statoComboCliente.contorniSelezionati.forEach((c, index) => {
+                contorniDaSalvare.push({
+                    id: c.id, 
+                    nome: c.nome,
+                    prezzoOriginale: c.prezzoBase,
+                    prezzoPagato: (index >= maxGratis) ? c.prezzoBase : 0, 
+                    isGratis: (index < maxGratis),
+                    categoria: menuItems[c.id]?.categoria || "cibi"
+                });
+            });
+
+            const prezzoBaseScontato = calcolaPrezzoConScontoPerPiattoSingolo(piattoCombo); 
+
+            // Inseriamo il piatto combo configurato nel carrello dei preordini
+            carrelloCliente.push({
+                id: piattoCombo.id || statoComboCliente.piattoId,
+                nome: piattoCombo.nome, 
+                prezzo: prezzoBaseScontato, 
+                categoria: piattoCombo.categoria,
+                ingredienti: piattoCombo.ingredienti ? JSON.parse(JSON.stringify(piattoCombo.ingredienti)) : [],
+                varianti: [], 
+                extraPrezzo: totaleExtra, 
+                quantita: 1, 
+                maxVariantiGratis: piattoCombo.maxVariantiGratis || 0,
+                contorniScelti: contorniDaSalvare,
+                sconto: piattoCombo.sconto || null 
+            });
+            
+            if (typeof aggiornaRiepilogoCarrelloUI === "function") {
+                aggiornaRiepilogoCarrelloUI();
+            }
+        };
+    }
+}
+
+window.aggiungiContornoComboCliente = function(idPiattino) {
+    const p = menuItems[idPiattino];
+    if (!p) return;
+    statoComboCliente.contorniSelezionati.push({ 
+        id: idPiattino, 
+        nome: p.nome, 
+        prezzoBase: p.prezzo 
+    });
+    renderListaPiattiComboCliente(menuItems[statoComboCliente.piattoId]);
+};
+
+window.rimuoviContornoComboCliente = function(idPiattino) {
+    const arr = statoComboCliente.contorniSelezionati;
+    const index = arr.map(e => e.id).lastIndexOf(idPiattino);
+    if (index > -1) arr.splice(index, 1);
+    renderListaPiattiComboCliente(menuItems[statoComboCliente.piattoId]);
+};
