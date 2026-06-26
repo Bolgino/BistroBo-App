@@ -5081,11 +5081,6 @@ async function caricaComandePerRuolo(daFareDiv, storicoDiv, ruolo) {
                    // --- 1. RENDERING PIATTO PRINCIPALE (se inviato a questo profilo) ---
                     if (i.isMainHere !== false) {
                         const mainDiv = document.createElement("div");
-                        mainDiv.style.display = "flex";             // Nuova impaginazione Flexbox
-                        mainDiv.style.alignItems = "flex-start";    // Allinea in alto la spunta col testo
-                        mainDiv.style.marginBottom = "8px";         // Spazio tra i piatti
-                        mainDiv.style.width = "100%";
-
                         let variantiHtml = "";
                         
                         // 🔥 FIX: Firebase può salvare gli array come oggetti. Li convertiamo in modo sicuro.
@@ -5100,29 +5095,17 @@ async function caricaComandePerRuolo(daFareDiv, storicoDiv, ruolo) {
                                 conteggio[key].count++;
                             });
 
-                            // 🔥 Nuove Etichette grafiche a blocchetti (verde/rosso) con andata a capo automatica (wrap)
-                            variantiHtml = `<div style="display:flex; flex-wrap:wrap; margin-top:4px; gap:4px;">` + 
-                                Object.values(conteggio).map(v => 
+                            variantiHtml = "<br>" + Object.values(conteggio).map(v => 
                                 v.tipo === "aggiunta" 
-                                    ? `<span style="display:inline-block; color:#155724; background:#d4edda; border:1px solid #c3e6cb; padding:2px 8px; border-radius:6px; font-weight:bold; font-size:0.85em;">+ ${v.count > 1 ? v.count + 'x ' : ''}${v.nome}</span>` 
-                                    : `<span style="display:inline-block; color:#721c24; background:#f8d7da; border:1px solid #f5c6cb; padding:2px 8px; border-radius:6px; font-weight:bold; font-size:0.85em;">- Senza ${v.nome}</span>`
-                            ).join("") + `</div>`;
+                                    ? `<small style="color:green; font-weight:bold; margin-left:10px;">+ ${v.count > 1 ? v.count + 'x ' : ''}${v.nome}</small>` 
+                                    : `<small style="color:red; font-weight:bold; margin-left:10px;">- Senza ${v.nome}</small>`
+                            ).join("<br>");
                         }
 
-                        // Contenitore per il testo (Nome + Etichette + Note)
-                        const mainSpan = document.createElement("div");
-                        mainSpan.style.display = "flex";
-                        mainSpan.style.flexDirection = "column";
-                        mainSpan.style.lineHeight = "1.2";
-                        
-                        // --- LA TUA LOGICA CHECKBOX (INTATTA) ---
                         if (isActiveState) {
                             const box = document.createElement("input");
                             box.type = "checkbox";
                             box.className = "tickItem";
-                            box.style.transform = "scale(1.5)";       // Ingrandiamo un po' la spunta
-                            box.style.marginRight = "15px";           // Spazio dalla scritta
-                            box.style.marginTop = "4px";              // Centratura verticale
                             
                             if (!window.tickState) window.tickState = {};
                             if (!window.tickState[comandaId]) window.tickState[comandaId] = {};
@@ -5136,31 +5119,12 @@ async function caricaComandePerRuolo(daFareDiv, storicoDiv, ruolo) {
                                 window.tickState[comandaId][voceKey] = box.checked;
                                 const checkboxes = d.querySelectorAll(".tickItem");
                                 if (bComp) bComp.disabled = ![...checkboxes].every(cb => cb.checked);
-                                
-                                // (Opzionale) Sbarra il testo quando spunti la casella
-                                if(box.checked) {
-                                    mainSpan.style.textDecoration = "line-through";
-                                    mainSpan.style.color = "gray";
-                                } else {
-                                    mainSpan.style.textDecoration = "none";
-                                    mainSpan.style.color = "#222";
-                                }
                             });
                             mainDiv.appendChild(box);
                         }
 
-                        const hasNota = (i.note && i.note.trim() !== "");
-                        const isGiaSpuntato = (isActiveState && window.tickState && window.tickState[comandaId] && window.tickState[comandaId][`${i.nome}-${i.quantita}-main`]);
-                        
-                        // Inseriamo Nome, Grafica Etichette e Note dentro la colonna di testo
-                        mainSpan.innerHTML = `
-                            <span style="font-size: 1.15em; font-weight: bold; color: ${isGiaSpuntato ? 'gray' : '#222'}; text-decoration: ${isGiaSpuntato ? 'line-through' : 'none'};">
-                                ${i.quantita}x ${i.nome}
-                            </span>
-                            ${variantiHtml}
-                            ${hasNota ? `<span style="color:#d9534f; font-weight:bold; font-size:0.85em; margin-top:4px;">📝 Note: ${i.note}</span>` : ""}
-                        `;
-
+                        const mainSpan = document.createElement("span");
+                        mainSpan.innerHTML = ` ${i.quantita}x ${i.nome}${variantiHtml}`;
                         mainDiv.appendChild(mainSpan);
                         pContainer.appendChild(mainDiv);
                     } else {
