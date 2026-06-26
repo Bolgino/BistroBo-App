@@ -973,22 +973,21 @@ window.aggiungiVeloceCarrello = function(id) {
     const piatto = menuItems[id];
     if (!piatto) return;
     
-    const prezzoBaseScontato = calcolaPrezzoConScontoPerPiattoSingolo(piatto); 
-    
     carrelloCliente.push({
         id: id,
         nome: piatto.nome,
-        prezzo: prezzoBaseScontato, 
+        prezzo: piatto.prezzo, // 🔥 Usiamo sempre il prezzo puro per permettere i calcoli 3x2
+        sconto: piatto.sconto || null, // 🔥 Fondamentale per i 3x2
         categoria: piatto.categoria,
-        varianti: [], // Nessuna variante concessa!
+        ingredienti: piatto.ingredienti ? JSON.parse(JSON.stringify(piatto.ingredienti)) : [],
+        varianti: [], 
+        contorniScelti: [],
         extraPrezzo: 0,
         quantita: 1,
         maxVariantiGratis: piatto.maxVariantiGratis || 0
     });
     
-    if (typeof aggiornaRiepilogoCarrelloUI === "function") {
-        aggiornaRiepilogoCarrelloUI();
-    }
+    if (typeof aggiornaRiepilogoCarrelloUI === "function") aggiornaRiepilogoCarrelloUI();
 };
 
   // ASSICURATI DI AVERE QUESTA MATEMATICA SUL LATO CLIENTI PER GLI SCONTI!
@@ -1661,15 +1660,17 @@ function renderVariantiCliente(piatto, maxGratis) {
         } else {
             // AGGIUNTA COME PIATTO NUOVO
             carrelloCliente.push({
-                id: idPiattoInModifica,
+                id: idPiattoInModifica, // Salva l'ID Firebase originale per gli sconti
                 nome: piatto.nome,
                 prezzo: piatto.prezzo, 
+                sconto: piatto.sconto || null, // 🔥 Manteniamo lo sconto!
                 categoria: piatto.categoria,
-                ingredienti: piatto.ingredienti || [],
+                ingredienti: piatto.ingredienti ? JSON.parse(JSON.stringify(piatto.ingredienti)) : [],
                 varianti: tempVariantiCliente,
+                contorniScelti: [],
                 extraPrezzo: extraFinali,
                 quantita: 1,
-                sconto: piatto.sconto || null
+                maxVariantiGratis: piatto.maxVariantiGratis || 0
             });
         }
         
@@ -1795,34 +1796,27 @@ window.apriPopupVariantiContornoCliente = function(idxCarrello, idxContorno) {
 
     renderVariantiContorno();
 
-    // 🔥 FIX: Usa l'ID corretto del bottone Salva!
+    // 🔥 FIX: Salvataggio isolato per il contorno (non tocca il piatto principale!)
     const btnSalva = document.getElementById("btnConfermaPersonalizzazione");
     if(btnSalva) {
         btnSalva.onclick = () => {
             contorno.varianti = tempVariantiCliente;
             let ext = 0;
-            tempVariantiCliente.filter(v => v.tipo === "aggiunta").forEach((v, idx) => { if (idx >= maxGratis) ext += Number(v.prezzo || 0); });
-            contorno.extraPrezzo = ext;
-
-            // Ricalcola il totale extra del piattoPadre
-            let nuovoExtraPrezzoPiatto = 0;
-            piattoPadre.contorniScelti.forEach(c => { nuovoExtraPrezzoPiatto += (c.prezzoPagato || 0) + (c.extraPrezzo || 0); });
-            let extVarPiatto = 0; const mxGr = piattoPadre.maxVariantiGratis || 0;
-            (piattoPadre.varianti || []).filter(v => v.tipo === "aggiunta").forEach((v, index) => { if (index >= mxGr) extVarPiatto += Number(v.prezzo || 0); });
-            
-            piattoPadre.extraPrezzo = extVarPiatto + nuovoExtraPrezzoPiatto;
+            tempVariantiCliente.filter(v => v.tipo === "aggiunta").forEach((v, idx) => { 
+                if (idx >= maxGratis) ext += Number(v.prezzo || 0); 
+            });
+            contorno.extraPrezzo = ext; // Salva l'extra SOLO nel contorno
 
             chiudiPopupPersonalizza();
             aggiornaRiepilogoCarrelloUI();
         };
     }
 
-    // 🔥 FIX: Usa l'ID corretto del bottone Annulla!
     const btnAnnulla = document.getElementById("btnAnnullaPersonalizzazione");
     if(btnAnnulla) {
         btnAnnulla.onclick = () => { chiudiPopupPersonalizza(); };
     }
-}
+} // <-- fine funzione apriPopupVariantiContornoCliente
     
 // separa comanda in cibo/snack e bevande (VERSIONE DEFINITIVA)
 function separaComanda(items) {
