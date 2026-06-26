@@ -1175,26 +1175,31 @@ window.aggiungiVeloceCarrello = function(id) {
         };
     };
 }
+// ==========================================
+// FUNZIONI DEL CARRELLO VISIVO (CLIENTE)
+// ==========================================
+
 function calcolaPrezzoConScontoPerPiatto(piatto, comandaIntera) {
     const q = piatto.quantita || 1;
-    const prezzoBaseEExtra = (piatto.prezzo || 0) + (piatto.extraPrezzo || 0);
+    
+    // 🔥 FIX SCONTI E CONTORNI: Il prezzo base della riga deve includere ANCHE il costo dei contorni a pagamento!
+    let costoContorni = 0;
+    if (piatto.contorniScelti && piatto.contorniScelti.length > 0) {
+        piatto.contorniScelti.forEach(c => costoContorni += (c.prezzoPagato || 0));
+    }
+    const prezzoBaseEExtra = (piatto.prezzo || 0) + (piatto.extraPrezzo || 0) + costoContorni;
 
-    // Se non ha sconto registrato, usa il prezzo pieno
     if (!piatto.sconto) return prezzoBaseEExtra * q;
 
-    // Sconto Percentuale
     if (piatto.sconto.tipo === "percentuale") {
-        return prezzoBaseEExtra * q * (1 - (Number(piatto.sconto.valore) || 0) / 100);
+        return prezzoBaseEExtra * q * (1 - (Number(piatto.sconto.valore)||0)/100);
     } 
 
-    // Sconti x_paga_y e x_paga_y_fisso
     if (piatto.sconto.tipo === "x_paga_y" || piatto.sconto.tipo === "x_paga_y_fisso") {
-        // Poiché nel carrello clienti i piatti uguali sono su righe separate (q = 1), 
-        // calcoliamo quante volte questo IDENTICO ID piatto compare in tutto il carrello
+        // 🔥 FIX SCONTI x_paga_y: Contiamo quanti piatti dello stesso ID ci sono nell'intero carrello.
         let qTotale = comandaIntera.filter(p => p.id === piatto.id).length;
         const x = parseInt(piatto.sconto.valore.x);
 
-        // Se non raggiungiamo la soglia dell'offerta, niente sconto
         if (qTotale < x) return prezzoBaseEExtra * q;
 
         const numGruppi = Math.floor(qTotale / x);
@@ -1212,10 +1217,9 @@ function calcolaPrezzoConScontoPerPiatto(piatto, comandaIntera) {
         const costoTotaleBase = qTotale * piatto.prezzo;
         const scontoTotale = costoTotaleBase - costoScontatoIntero;
 
-        // Ripartiamo lo sconto totale matematicamente su questa singola riga (q)
+        // Ritorniamo il prezzo della riga meno la quota proporzionale dello sconto
         return (prezzoBaseEExtra * q) - ((q / qTotale) * scontoTotale);
     }
-
     return prezzoBaseEExtra * q;
 }
 
@@ -1228,13 +1232,18 @@ function aggiornaRiepilogoCarrelloUI() {
     if (listaCarrello) listaCarrello.innerHTML = "";
     if (carrelloContainer) carrelloContainer.style.display = carrelloCliente.length === 0 ? "none" : "block";
 
-    // 🔹 NOTA INFORMATIVA SOLO SE EXTRA È ON
     if (listaCarrello && carrelloCliente.length > 0 && window.settings.sistemaExtraAbilitato) {
-         listaCarrello.innerHTML = "<div style='font-size:0.85em; color:#777; font-style:italic; margin-bottom:5px; text-align:center;'>Clicca sul nome di un piatto per aggiungere o togliere ingredienti.</div>";
+         listaCarrello.innerHTML = "<div style='font-size:0.85em; color:#777; font-style:italic; margin-bottom:5px; text-align:center;'>Clicca sul nome di un piatto o di un contorno per aggiungere o togliere ingredienti.</div>";
     }
 
     carrelloCliente.forEach((item, index) => {
-        const costoRigaGrezzo = item.prezzo + (item.extraPrezzo || 0);
+        // 🔥 FIX TOTALI: Calcolo corretto del costo grezzo della riga includendo i contorni pagati extra
+        let costoContorniPagati = 0;
+        if (item.contorniScelti && item.contorniScelti.length > 0) {
+            item.contorniScelti.forEach(c => costoContorniPagati += (c.prezzoPagato || 0));
+        }
+        
+        const costoRigaGrezzo = (item.prezzo || 0) + (item.extraPrezzo || 0) + costoContorniPagati;
         const costoRigaScontato = calcolaPrezzoConScontoPerPiatto(item, carrelloCliente);
         
         totaleGrezzo += costoRigaGrezzo;
@@ -1266,7 +1275,6 @@ function aggiornaRiepilogoCarrelloUI() {
                 const cTxt = item.contorniScelti.map((c, cIdx) => {
                     let varsTxt = c.varianti && c.varianti.length > 0 ? " <small style='color:#777;'>(" + c.varianti.map(v => v.tipo==='aggiunta'?`+${v.nome}`:`-${v.nome}`).join(", ") + ")</small>" : "";
                     
-                    // 🔹 Rende i contorni cliccabili SOLO se Extra è ON
                     const clickStr = window.settings.sistemaExtraAbilitato ? `onclick="apriPopupVariantiContornoCliente(${index}, ${cIdx})"` : "";
                     const curStr = window.settings.sistemaExtraAbilitato ? "cursor:pointer; text-decoration:underline;" : "cursor:default;";
 
@@ -1277,7 +1285,6 @@ function aggiornaRiepilogoCarrelloUI() {
                 htmlCombo = `<div style="font-size: 0.85em; margin-top: 4px;">${cTxt}</div>`;
             }
 
-            // 🔹 Rende il piatto cliccabile SOLO se Extra è ON
             const onclickStr = window.settings.sistemaExtraAbilitato ? `onclick="apriPopupPersonalizzaClienteModifica(${index})"` : "";
             const cursorStr = window.settings.sistemaExtraAbilitato ? "cursor: pointer; text-decoration: underline;" : "cursor: default;";
 
@@ -1298,6 +1305,7 @@ function aggiornaRiepilogoCarrelloUI() {
 
     totale = Number(nuovoTotale.toFixed(2));
     
+    // 🔥 FIX SCONTI UI: Mostriamo il riepilogo "Sconto Applicato" se c'è un risparmio
     const risparmio = totaleGrezzo - totale;
     if (risparmio > 0.01 && listaCarrello) {
         const divSconto = document.createElement("div");
@@ -1679,46 +1687,6 @@ function calcolaPrezzoConScontoPerPiattoSingolo(piatto) {
     }
     return p;
 }
-// ==========================================
-// FUNZIONI DEL CARRELLO VISIVO (CLIENTE)
-// ==========================================
-
-function calcolaPrezzoConScontoPerPiatto(piatto, comandaIntera) {
-    const q = piatto.quantita || 1;
-    const prezzoBaseEExtra = piatto.prezzo + (piatto.extraPrezzo || 0);
-
-    if(!piatto.sconto) return prezzoBaseEExtra * q;
-    if(piatto.sconto.tipo === "percentuale"){
-        return prezzoBaseEExtra * q * (1 - (Number(piatto.sconto.valore)||0)/100);
-    } 
-
-    if(piatto.sconto.tipo === "x_paga_y" || piatto.sconto.tipo === "x_paga_y_fisso"){
-        let qTotale = comandaIntera.filter(p => p.id === piatto.id).reduce((sum, p) => sum + (p.quantita || 1), 0);
-        const x = parseInt(piatto.sconto.valore.x);
-
-        if (qTotale < x) return prezzoBaseEExtra * q;
-
-        const numGruppi = Math.floor(qTotale / x);
-        const resto = qTotale % x;
-
-        let costoScontatoIntero = 0;
-        if (piatto.sconto.tipo === "x_paga_y") {
-            const y = parseInt(piatto.sconto.valore.y);
-            costoScontatoIntero = (numGruppi * y * piatto.prezzo) + (resto * piatto.prezzo);
-        } else { // x_paga_y_fisso
-            const y = parseFloat(piatto.sconto.valore.y);
-            costoScontatoIntero = (numGruppi * y) + (resto * piatto.prezzo);
-        }
-
-        const costoTotaleBase = qTotale * piatto.prezzo;
-        const scontoTotale = costoTotaleBase - costoScontatoIntero;
-
-        return (prezzoBaseEExtra * q) - ((q / qTotale) * scontoTotale);
-    }
-    return prezzoBaseEExtra * q;
-}
-
-
 window.apriPopupVariantiContornoCliente = function(idxCarrello, idxContorno) {
     const piattoPadre = carrelloCliente[idxCarrello];
     const contorno = piattoPadre.contorniScelti[idxContorno];
@@ -1746,13 +1714,11 @@ window.apriPopupVariantiContornoCliente = function(idxCarrello, idxContorno) {
         const aggiunteFatte = tempVariantiCliente.filter(v => v.tipo === "aggiunta").length;
         const isProssimaGratis = aggiunteFatte < maxGratis;
 
-        // FIX: Recuperiamo sia ID che Nomi per retrocompatibilità
         const baseIds = (piattoOriginale.ingredienti || []).map(i => i.id).filter(id => id);
         const baseNomi = (piattoOriginale.ingredienti || []).map(i => (i.nome || "").trim().toLowerCase());
 
         Object.entries(ingredientiGlobali || {}).forEach(([ingId, ing]) => {
             const catsApp = ing.categorieApplicabili || [ing.categoria || "cibi"];
-            
             let catPiatto = (piattoOriginale.categoria || "cibi").toLowerCase();
             if (catPiatto === "cucina") catPiatto = "cibi";
 
@@ -1769,7 +1735,6 @@ window.apriPopupVariantiContornoCliente = function(idxCarrello, idxContorno) {
                 if (isBase && isExtraFlag) allowRemove = true;
             }
 
-            // Se non può né togliere né aggiungere, salta questo ingrediente
             if (!allowRemove && !allowAdd) return;
 
             const row = document.createElement("div");
@@ -1791,7 +1756,8 @@ window.apriPopupVariantiContornoCliente = function(idxCarrello, idxContorno) {
                 btnRemove.onclick = () => {
                     if (isRimosso) tempVariantiCliente = tempVariantiCliente.filter(v => !(v.tipo === "rimozione" && v.id === ingId));
                     else tempVariantiCliente.push({ tipo: "rimozione", id: ingId, nome: ing.nome });
-                    renderVariantiContorno(); // 🔥 FIX: Chiamata corretta
+                    // 🔥 FIX: Chiama la funzione corretta senza parametri!
+                    renderVariantiContorno();
                 };
                 btnContainer.appendChild(btnRemove);
             }
@@ -1806,18 +1772,19 @@ window.apriPopupVariantiContornoCliente = function(idxCarrello, idxContorno) {
                     btnMinus.onclick = () => {
                         const rIndex = [...tempVariantiCliente].reverse().findIndex(v => v.tipo === "aggiunta" && v.id === ingId);
                         if (rIndex !== -1) tempVariantiCliente.splice(tempVariantiCliente.length - 1 - rIndex, 1);
-                        renderVariantiContorno(); // 🔥 FIX: Chiamata corretta
+                        // 🔥 FIX: Chiama la funzione corretta senza parametri!
+                        renderVariantiContorno();
                     };
                     const spanCount = document.createElement("span"); spanCount.innerText = occorrenze; spanCount.style.cssText = "margin:0 8px; font-weight:bold;";
                     const btnPlus = document.createElement("button"); btnPlus.innerText = "+"; btnPlus.style.cssText = "background:#4CAF50; color:white; padding:4px 10px; border-radius:5px; border:none;";
-                    btnPlus.onclick = () => { tempVariantiCliente.push({ tipo: "aggiunta", id: ingId, nome: ing.nome, qty: 1, prezzo: costoExtra }); renderVariantiContorno(); }; // 🔥 FIX: Chiamata corretta
+                    btnPlus.onclick = () => { tempVariantiCliente.push({ tipo: "aggiunta", id: ingId, nome: ing.nome, qty: 1, prezzo: costoExtra }); renderVariantiContorno(); }; // 🔥 FIX
 
                     wrapperAdd.appendChild(btnMinus); wrapperAdd.appendChild(spanCount); wrapperAdd.appendChild(btnPlus);
                 } else {
                     const btnAdd = document.createElement("button");
                     btnAdd.innerText = isProssimaGratis ? `+ Gratis` : `+ €${costoExtra.toFixed(2)}`;
                     btnAdd.style.cssText = "background:#4CAF50; color:white; padding:5px 10px; border-radius:5px; border:none;";
-                    btnAdd.onclick = () => { tempVariantiCliente.push({ tipo: "aggiunta", id: ingId, nome: ing.nome, qty: 1, prezzo: costoExtra }); renderVariantiContorno(); }; // 🔥 FIX: Chiamata corretta
+                    btnAdd.onclick = () => { tempVariantiCliente.push({ tipo: "aggiunta", id: ingId, nome: ing.nome, qty: 1, prezzo: costoExtra }); renderVariantiContorno(); }; // 🔥 FIX
                     wrapperAdd.appendChild(btnAdd);
                 }
                 btnContainer.appendChild(wrapperAdd);
