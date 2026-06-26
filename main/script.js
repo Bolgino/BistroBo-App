@@ -2411,20 +2411,19 @@ function separaComanda(items) {
                 
                 // SE il contorno va in una stazione DIVERSA da quella del genitore...
                 if (destC !== destMain) {
-                    // 🔥 Niente più varTxt: non convertiamo le varianti in testo!
                     
-                    // Creiamo un PIATTO da zero, pulito e senza "scorie" o vecchi ID del panino
+                    // 🔥 NESSUN varTxt QUI! Lasciamo l'array varianti intatto per i colori e usiamo JSON per clonarlo
                     const splitItem = {
                         id: (i.id || "contorno") + "_split_" + Math.floor(Math.random() * 10000),
                         id_univoco: "split_" + Math.random().toString(36).substr(2, 9),
-                        nome: `${c.nome} [di ${i.nome}]`, // Il nome resta pulito senza le varianti attaccate
+                        nome: `${c.nome} [di ${i.nome}]`, 
                         prezzo: 0,
                         quantita: i.quantita || 1,
                         categoria: c.categoria || "Snack",
                         tipo: destC,
-                        isCombo: false,      // LA CUCINA LO TRATTERA' COME PIATTO NORMALE
-                        isMainHere: true,    // GLI DICE DI STAMPARLO NELLA CARD
-                        varianti: c.varianti || [], // 🔥 IL TRUCCO: Passiamo l'array originale delle varianti (così scatta il rosso/verde!)
+                        isCombo: false,      
+                        isMainHere: true,    
+                        varianti: c.varianti ? JSON.parse(JSON.stringify(c.varianti)) : [], // Salva l'array puro!
                         contorniScelti: [],
                         ingredienti: [],
                         note: i.note || ""
@@ -2435,7 +2434,6 @@ function separaComanda(items) {
                     if (destC === "bere") bere.push(splitItem);
 
                 } else {
-                    // Stesso reparto -> Resta attaccato al genitore
                     getClone(destC).contorniScelti.push(c);
                 }
             });
@@ -5080,9 +5078,14 @@ async function caricaComandePerRuolo(daFareDiv, storicoDiv, ruolo) {
                     const isDisabled = (c[statoKey] === "da fare");
                     const comandaId = id;
 
-                    // --- 1. RENDERING PIATTO PRINCIPALE (se inviato a questo profilo) ---
+                   // --- 1. RENDERING PIATTO PRINCIPALE (se inviato a questo profilo) ---
                     if (i.isMainHere !== false) {
                         const mainDiv = document.createElement("div");
+                        mainDiv.style.display = "flex";             // Nuova impaginazione Flexbox
+                        mainDiv.style.alignItems = "flex-start";    // Allinea in alto la spunta col testo
+                        mainDiv.style.marginBottom = "8px";         // Spazio tra i piatti
+                        mainDiv.style.width = "100%";
+
                         let variantiHtml = "";
                         
                         // 🔥 FIX: Firebase può salvare gli array come oggetti. Li convertiamo in modo sicuro.
@@ -5097,17 +5100,29 @@ async function caricaComandePerRuolo(daFareDiv, storicoDiv, ruolo) {
                                 conteggio[key].count++;
                             });
 
-                            variantiHtml = "<br>" + Object.values(conteggio).map(v => 
+                            // 🔥 Nuove Etichette grafiche a blocchetti (verde/rosso) con andata a capo automatica (wrap)
+                            variantiHtml = `<div style="display:flex; flex-wrap:wrap; margin-top:4px; gap:4px;">` + 
+                                Object.values(conteggio).map(v => 
                                 v.tipo === "aggiunta" 
-                                    ? `<small style="color:green; font-weight:bold; margin-left:10px;">+ ${v.count > 1 ? v.count + 'x ' : ''}${v.nome}</small>` 
-                                    : `<small style="color:red; font-weight:bold; margin-left:10px;">- Senza ${v.nome}</small>`
-                            ).join("<br>");
+                                    ? `<span style="display:inline-block; color:#155724; background:#d4edda; border:1px solid #c3e6cb; padding:2px 8px; border-radius:6px; font-weight:bold; font-size:0.85em;">+ ${v.count > 1 ? v.count + 'x ' : ''}${v.nome}</span>` 
+                                    : `<span style="display:inline-block; color:#721c24; background:#f8d7da; border:1px solid #f5c6cb; padding:2px 8px; border-radius:6px; font-weight:bold; font-size:0.85em;">- Senza ${v.nome}</span>`
+                            ).join("") + `</div>`;
                         }
 
+                        // Contenitore per il testo (Nome + Etichette + Note)
+                        const mainSpan = document.createElement("div");
+                        mainSpan.style.display = "flex";
+                        mainSpan.style.flexDirection = "column";
+                        mainSpan.style.lineHeight = "1.2";
+                        
+                        // --- LA TUA LOGICA CHECKBOX (INTATTA) ---
                         if (isActiveState) {
                             const box = document.createElement("input");
                             box.type = "checkbox";
                             box.className = "tickItem";
+                            box.style.transform = "scale(1.5)";       // Ingrandiamo un po' la spunta
+                            box.style.marginRight = "15px";           // Spazio dalla scritta
+                            box.style.marginTop = "4px";              // Centratura verticale
                             
                             if (!window.tickState) window.tickState = {};
                             if (!window.tickState[comandaId]) window.tickState[comandaId] = {};
@@ -5121,12 +5136,31 @@ async function caricaComandePerRuolo(daFareDiv, storicoDiv, ruolo) {
                                 window.tickState[comandaId][voceKey] = box.checked;
                                 const checkboxes = d.querySelectorAll(".tickItem");
                                 if (bComp) bComp.disabled = ![...checkboxes].every(cb => cb.checked);
+                                
+                                // (Opzionale) Sbarra il testo quando spunti la casella
+                                if(box.checked) {
+                                    mainSpan.style.textDecoration = "line-through";
+                                    mainSpan.style.color = "gray";
+                                } else {
+                                    mainSpan.style.textDecoration = "none";
+                                    mainSpan.style.color = "#222";
+                                }
                             });
                             mainDiv.appendChild(box);
                         }
 
-                        const mainSpan = document.createElement("span");
-                        mainSpan.innerHTML = ` ${i.quantita}x ${i.nome}${variantiHtml}`;
+                        const hasNota = (i.note && i.note.trim() !== "");
+                        const isGiaSpuntato = (isActiveState && window.tickState && window.tickState[comandaId] && window.tickState[comandaId][`${i.nome}-${i.quantita}-main`]);
+                        
+                        // Inseriamo Nome, Grafica Etichette e Note dentro la colonna di testo
+                        mainSpan.innerHTML = `
+                            <span style="font-size: 1.15em; font-weight: bold; color: ${isGiaSpuntato ? 'gray' : '#222'}; text-decoration: ${isGiaSpuntato ? 'line-through' : 'none'};">
+                                ${i.quantita}x ${i.nome}
+                            </span>
+                            ${variantiHtml}
+                            ${hasNota ? `<span style="color:#d9534f; font-weight:bold; font-size:0.85em; margin-top:4px;">📝 Note: ${i.note}</span>` : ""}
+                        `;
+
                         mainDiv.appendChild(mainSpan);
                         pContainer.appendChild(mainDiv);
                     } else {
@@ -5135,7 +5169,6 @@ async function caricaComandePerRuolo(daFareDiv, storicoDiv, ruolo) {
                         ctxDiv.innerHTML = `<small style="color:#777;"><i>[Contorno di: ${i.quantita}x ${i.nome}]</i></small>`;
                         pContainer.appendChild(ctxDiv);
                     }
-
                     // --- 2. RENDERING CONTORNI (Giustificati + Loro Checkbox) ---
                     // 🔥 FIX: Protezione conversione array/oggetto anche per i contorni
                     let contorniArr = i.contorniScelti ? (Array.isArray(i.contorniScelti) ? i.contorniScelti : Object.values(i.contorniScelti)) : [];
