@@ -5163,8 +5163,35 @@ async function caricaComandePerRuolo(daFareDiv, storicoDiv, ruolo) {
                             cDiv.style.display = "flex";
                             cDiv.style.alignItems = "flex-start";
 
-                            let variantiContHtml = "";
+                            // 🔥 NUOVO FIX: Estrae le varianti incastrate nel nome come testo " (+ maionese)"
+                            let nomePulito = contorno.nome || "";
                             let varContArr = contorno.varianti ? (Array.isArray(contorno.varianti) ? contorno.varianti : Object.values(contorno.varianti)) : [];
+                            
+                            // Il "cacciatore" di parentesi: cerca qualsiasi cosa scritta tra parentesi che inizi con + o -
+                            const regex = /\s*\(([\+\-].*?)\)/;
+                            const match = nomePulito.match(regex);
+                            
+                            if (match) {
+                                // 1. Togliamo la parte brutta dal nome (es: "Patatine fritte" resta pulito)
+                                nomePulito = nomePulito.replace(regex, "").trim(); 
+                                
+                                // 2. Se le varianti non erano nell'array, le convertiamo magicamente noi!
+                                if (varContArr.length === 0) {
+                                    let estratti = match[1].split(","); // Gestisce anche extra multipli separati da virgola
+                                    estratti.forEach(ex => {
+                                        ex = ex.trim();
+                                        if (ex.startsWith("+")) {
+                                            varContArr.push({ tipo: "aggiunta", nome: ex.substring(1).trim() });
+                                        } else if (ex.startsWith("-")) {
+                                            let n = ex.substring(1).trim();
+                                            if (n.toLowerCase().startsWith("senza ")) n = n.substring(6).trim();
+                                            varContArr.push({ tipo: "rimozione", nome: n });
+                                        }
+                                    });
+                                }
+                            }
+
+                            let variantiContHtml = "";
                             
                             if (varContArr.length > 0) {
                                 let conteggioC = {};
@@ -5175,11 +5202,13 @@ async function caricaComandePerRuolo(daFareDiv, storicoDiv, ruolo) {
                                     conteggioC[key].count++;
                                 });
 
-                                variantiContHtml = Object.values(conteggioC).map(v => 
-                                    v.tipo === "aggiunta" 
-                                        ? `<div style="margin-top:2px;"><small style="color:green; font-weight:bold; margin-left:10px;">+ ${v.count > 1 ? v.count + 'x ' : ''}${v.nome}</small></div>` 
-                                        : `<div style="margin-top:2px;"><small style="color:red; font-weight:bold; margin-left:10px;">- Senza ${v.nome}</small></div>`
-                                ).join("");
+                                variantiContHtml = Object.values(conteggioC).map(v => {
+                                    // Mette la prima lettera maiuscola per eleganza (es: maionese -> Maionese)
+                                    let nomeExtra = v.nome.charAt(0).toUpperCase() + v.nome.slice(1);
+                                    return v.tipo === "aggiunta" 
+                                        ? `<div style="margin-top:2px;"><small style="color:green; font-weight:bold; margin-left:10px;">+ ${v.count > 1 ? v.count + 'x ' : ''}${nomeExtra}</small></div>` 
+                                        : `<div style="margin-top:2px;"><small style="color:red; font-weight:bold; margin-left:10px;">- Senza ${nomeExtra}</small></div>`
+                                }).join("");
                             }
 
                             if (isActiveState && window.settings && window.settings.checkContorniSingoli) {
@@ -5191,7 +5220,8 @@ async function caricaComandePerRuolo(daFareDiv, storicoDiv, ruolo) {
 
                                 if (!window.tickState) window.tickState = {};
                                 if (!window.tickState[comandaId]) window.tickState[comandaId] = {};
-                                const cVoceKey = `${contorno.nome}-${cIdx}-cont`;
+                                // Usiamo il nome originale come chiave per non far "dimenticare" le spunte salvate
+                                const cVoceKey = `${contorno.nome}-${cIdx}-cont`; 
                                 if (window.tickState[comandaId][cVoceKey] === undefined) window.tickState[comandaId][cVoceKey] = false;
                                 
                                 cBox.checked = window.tickState[comandaId][cVoceKey];
@@ -5205,11 +5235,11 @@ async function caricaComandePerRuolo(daFareDiv, storicoDiv, ruolo) {
                                 cDiv.appendChild(cBox);
                             }
 
-                            // 🔥 Assicuriamoci che anche i contorni usino innerHTML!
                             const cTextDiv = document.createElement("div");
                             cTextDiv.style.display = "flex";
                             cTextDiv.style.flexDirection = "column";
-                            cTextDiv.innerHTML = `<span> ↳ ${contorno.nome}</span>${variantiContHtml}`;
+                            // 🔥 Usiamo il nomePulito e gli passiamo la nuova grafica!
+                            cTextDiv.innerHTML = `<span> ↳ ${nomePulito}</span>${variantiContHtml}`;
                             
                             cDiv.appendChild(cTextDiv);
                             pContainer.appendChild(cDiv);
