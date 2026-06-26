@@ -3044,49 +3044,48 @@ numInput.addEventListener("input", aggiornaStatoInvio);
 letteraInput.addEventListener("input", aggiornaStatoInvio);
 document.getElementById("quantita").addEventListener("change", aggiornaStatoInvio);
 // --- FUNZIONE CALCOLO SCONTO (AGGIORNATA PER VARIANTI) ---
-function calcolaPrezzoConSconto(piatto, bypassQuantita = false) {
-    if (!piatto) return 0;
-    const q = bypassQuantita ? 1 : (piatto.quantita || 1);
-    
-    // 1. Raccogliamo i costi extra derivanti dai contorni
-    let costoContorni = 0;
-    if (piatto.contorniScelti && piatto.contorniScelti.length > 0) {
-        piatto.contorniScelti.forEach(c => costoContorni += (c.prezzoPagato || 0) + (c.extraPrezzo || 0));
-    }
-    
-    // 2. Prezzo reale della singola unità
-    const p = (piatto.prezzo || 0) + (piatto.extraPrezzo || 0) + costoContorni;
+function calcolaPrezzoConSconto(piatto, comandaIntera = null){
+    if (!checkOnline(true)) return;
+    const q = piatto.quantita || 1;
+    const prezzoBaseEExtra = piatto.prezzo + (piatto.extraPrezzo || 0);
 
-    // 3. Sconto Percentuale
-    if (piatto.sconto && piatto.sconto.tipo === "percentuale") {
-        return p * q * (1 - (Number(piatto.sconto.valore) || 0) / 100);
-    }
-    
-    // 4. Sconti 3x2 e fissi
-    if (piatto.sconto && (piatto.sconto.tipo === "x_paga_y" || piatto.sconto.tipo === "x_paga_y_fisso")) {
+    if(!piatto.sconto) return prezzoBaseEExtra * q;
+
+    if(piatto.sconto.tipo === "percentuale"){
+        return prezzoBaseEExtra * q * (1 - (Number(piatto.sconto.valore)||0)/100);
+    } 
+
+    if(piatto.sconto.tipo === "x_paga_y" || piatto.sconto.tipo === "x_paga_y_fisso"){
+        let qTotale = q;
+        if (comandaIntera && Array.isArray(comandaIntera)) {
+            // Conta TUTTI i piatti uguali nel carrello per far scattare lo sconto globale
+            qTotale = comandaIntera.filter(p => p.nome === piatto.nome).reduce((sum, p) => sum + (p.quantita || 1), 0);
+        }
+        
         const x = parseInt(piatto.sconto.valore.x);
-        if (piatto.quantita < x) return p * q; // Soglia non raggiunta
+        if (qTotale < x) return prezzoBaseEExtra * q;
 
-        const numGruppi = Math.floor(piatto.quantita / x);
-        const resto = piatto.quantita % x;
+        const numGruppi = Math.floor(qTotale / x);
+        const resto = qTotale % x;
         
         let costoScontatoIntero = 0;
         if (piatto.sconto.tipo === "x_paga_y") {
             const y = parseInt(piatto.sconto.valore.y);
             costoScontatoIntero = (numGruppi * y * piatto.prezzo) + (resto * piatto.prezzo);
-        } else {
+        } else { // x_paga_y_fisso
             const y = parseFloat(piatto.sconto.valore.y);
-            costoScontatoIntero = (numGruppi * y) + (resto * piatto.prezzo);
+            costoScontatoIntero = (numGruppi * y) + (resto * piatto.prezzo); // Es: 1 gruppo * 20€
         }
-        
-        const costoTotaleBase = piatto.quantita * piatto.prezzo;
+
+        const costoTotaleBase = qTotale * piatto.prezzo; 
         const scontoTotale = costoTotaleBase - costoScontatoIntero;
-        
-        // Applichiamo la frazione di sconto sulla riga
-        return (p * q) - ((q / piatto.quantita) * scontoTotale); 
+
+        // Distribuisci lo sconto in modo proporzionale su questa riga
+        const quotaSconto = (q / qTotale) * scontoTotale;
+        return (prezzoBaseEExtra * q) - quotaSconto;
     }
-    
-    return p * q;
+
+    return prezzoBaseEExtra * q;
 }
 // -------------------- SOLDI --------------------
 const soldi = [
@@ -8073,27 +8072,22 @@ window.apriPopupVariantiContorno = function(idxPiatto, idxContorno) {
 
     renderListaIngredientiContorno();
     modal.appendChild(listaDiv);
-	// 🔥 FIX: Salva gli extra SOLO nel contorno, senza sovrascrivere il piatto!
-    const btnSalva = document.getElementById("btnConfermaPersonalizzazione");
-    if(btnSalva) {
-        btnSalva.onclick = () => {
-            contorno.varianti = tempVarianti;
-            let ext = 0;
-            tempVarianti.filter(v => v.tipo === "aggiunta").forEach((v, idx) => { 
-                if (idx >= maxGratis) ext += Number(v.prezzo || 0); 
-            });
-            contorno.extraPrezzo = ext; 
-            
-            chiudiPopupPersonalizza();
-            if(typeof aggiornaComandaCorrente === 'function') aggiornaComandaCorrente();
-        };
-    }
 
-    const btnAnnulla = document.getElementById("btnAnnullaPersonalizzazione");
-    if(btnAnnulla) {
-        btnAnnulla.onclick = () => { chiudiPopupPersonalizza(); };
-    }
-}
+    const actionDiv = document.createElement("div"); actionDiv.className = "modal-actions";
+    const btnAnnulla = document.createElement("button"); btnAnnulla.className = "btn-chiudi"; btnAnnulla.innerText = "Annulla"; btnAnnulla.onclick = () => overlay.remove();
+    const btnSalva = document.createElement("button"); btnSalva.className = "btn-salva"; btnSalva.innerText = "Salva";
+    btnSalva.onclick = () => {
+        contorno.varianti = tempVarianti; contorno.extraPrezzo = tempExtraPrezzo;
+        let nuovoExtraPrezzoPiatto = 0;
+        piattoPadre.contorniScelti.forEach(c => { nuovoExtraPrezzoPiatto += (c.prezzoPagato || 0); nuovoExtraPrezzoPiatto += (c.extraPrezzo || 0); });
+        let extraVariantiPiatto = 0; const maxGratisPiatto = piattoPadre.maxVariantiGratis || 0;
+        (piattoPadre.varianti || []).filter(v => v.tipo === "aggiunta").forEach((v, index) => { if (index >= maxGratisPiatto) extraVariantiPiatto += Number(v.prezzo || 0); });
+        piattoPadre.extraPrezzo = extraVariantiPiatto + nuovoExtraPrezzoPiatto;
+        aggiornaComandaCorrente();
+        overlay.remove();
+    };
+    actionDiv.appendChild(btnAnnulla); actionDiv.appendChild(btnSalva); modal.appendChild(actionDiv); overlay.appendChild(modal); document.body.appendChild(overlay);
+};
 //OROLOGIO
 async function inizializzaOrologio() {
     try {
