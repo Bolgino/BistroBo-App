@@ -2411,20 +2411,20 @@ function separaComanda(items) {
                 
                 // SE il contorno va in una stazione DIVERSA da quella del genitore...
                 if (destC !== destMain) {
-                    let varTxt = c.varianti && c.varianti.length > 0 ? " (" + c.varianti.map(v => v.tipo==='aggiunta'?`+${v.nome}`:`-${v.nome}`).join(", ") + ")" : "";
+                    // 🔥 Niente più varTxt: non convertiamo le varianti in testo!
                     
                     // Creiamo un PIATTO da zero, pulito e senza "scorie" o vecchi ID del panino
                     const splitItem = {
                         id: (i.id || "contorno") + "_split_" + Math.floor(Math.random() * 10000),
                         id_univoco: "split_" + Math.random().toString(36).substr(2, 9),
-                        nome: `${c.nome}${varTxt} [di ${i.nome}]`,
+                        nome: `${c.nome} [di ${i.nome}]`, // Il nome resta pulito senza le varianti attaccate
                         prezzo: 0,
                         quantita: i.quantita || 1,
                         categoria: c.categoria || "Snack",
                         tipo: destC,
                         isCombo: false,      // LA CUCINA LO TRATTERA' COME PIATTO NORMALE
                         isMainHere: true,    // GLI DICE DI STAMPARLO NELLA CARD
-                        varianti: [],        // (Le varianti le abbiamo già scritte direttamente nel nome)
+                        varianti: c.varianti || [], // 🔥 IL TRUCCO: Passiamo l'array originale delle varianti (così scatta il rosso/verde!)
                         contorniScelti: [],
                         ingredienti: [],
                         note: i.note || ""
