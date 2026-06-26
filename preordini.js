@@ -1181,25 +1181,30 @@ window.aggiungiVeloceCarrello = function(id) {
 function calcolaPrezzoConScontoPerPiatto(piatto, comandaIntera) {
     const q = piatto.quantita || 1;
     
-    // 🔥 FIX SCONTI E CONTORNI: Il prezzo base della riga deve includere ANCHE il costo dei contorni a pagamento!
+    // 1. Sommiamo tutti i costi extra dei contorni (Prezzo base del contorno + le sue varianti a pagamento)
     let costoContorni = 0;
     if (piatto.contorniScelti && piatto.contorniScelti.length > 0) {
-        piatto.contorniScelti.forEach(c => costoContorni += (c.prezzoPagato || 0));
+        piatto.contorniScelti.forEach(c => costoContorni += (c.prezzoPagato || 0) + (c.extraPrezzo || 0));
     }
-    const prezzoBaseEExtra = (piatto.prezzo || 0) + (piatto.extraPrezzo || 0) + costoContorni;
+    
+    // 2. Prezzo totale grezzo della singola riga
+    const prezzoRigaSenzaSconto = (piatto.prezzo || 0) + (piatto.extraPrezzo || 0) + costoContorni;
 
-    if (!piatto.sconto) return prezzoBaseEExtra * q;
+    if(!piatto.sconto) return prezzoRigaSenzaSconto * q;
 
-    if (piatto.sconto.tipo === "percentuale") {
-        return prezzoBaseEExtra * q * (1 - (Number(piatto.sconto.valore)||0)/100);
+    // 3. Sconto percentuale applicato SOLAMENTE sul prezzo base del piatto (non sugli extra)
+    if(piatto.sconto.tipo === "percentuale"){
+        const scontoNetto = (piatto.prezzo || 0) * ((Number(piatto.sconto.valore)||0)/100);
+        return (prezzoRigaSenzaSconto - scontoNetto) * q;
     } 
 
-    if (piatto.sconto.tipo === "x_paga_y" || piatto.sconto.tipo === "x_paga_y_fisso") {
-        // 🔥 FIX SCONTI x_paga_y: Contiamo quanti piatti dello stesso ID ci sono nell'intero carrello.
+    // 4. Sconti 3x2, ecc..
+    if(piatto.sconto.tipo === "x_paga_y" || piatto.sconto.tipo === "x_paga_y_fisso"){
+        // Conta quante volte compare questo stesso ID in tutto il carrello preordini
         let qTotale = comandaIntera.filter(p => p.id === piatto.id).length;
         const x = parseInt(piatto.sconto.valore.x);
 
-        if (qTotale < x) return prezzoBaseEExtra * q;
+        if (qTotale < x) return prezzoRigaSenzaSconto * q; // Soglia non raggiunta
 
         const numGruppi = Math.floor(qTotale / x);
         const resto = qTotale % x;
@@ -1208,7 +1213,7 @@ function calcolaPrezzoConScontoPerPiatto(piatto, comandaIntera) {
         if (piatto.sconto.tipo === "x_paga_y") {
             const y = parseInt(piatto.sconto.valore.y);
             costoScontatoIntero = (numGruppi * y * piatto.prezzo) + (resto * piatto.prezzo);
-        } else { // x_paga_y_fisso
+        } else { 
             const y = parseFloat(piatto.sconto.valore.y);
             costoScontatoIntero = (numGruppi * y) + (resto * piatto.prezzo);
         }
@@ -1216,12 +1221,11 @@ function calcolaPrezzoConScontoPerPiatto(piatto, comandaIntera) {
         const costoTotaleBase = qTotale * piatto.prezzo;
         const scontoTotale = costoTotaleBase - costoScontatoIntero;
 
-        // Ritorniamo il prezzo della riga meno la quota proporzionale dello sconto
-        return (prezzoBaseEExtra * q) - ((q / qTotale) * scontoTotale);
+        // Ritorniamo il prezzo della riga sottraendo la quota parte di sconto calcolata per questa unità
+        return (prezzoRigaSenzaSconto * q) - ((q / qTotale) * scontoTotale);
     }
-    return prezzoBaseEExtra * q;
+    return prezzoRigaSenzaSconto * q;
 }
-
 function aggiornaRiepilogoCarrelloUI() {
     let nuovoTotale = 0;
     let totaleGrezzo = 0;
@@ -1796,7 +1800,7 @@ window.apriPopupVariantiContornoCliente = function(idxCarrello, idxContorno) {
 
     renderVariantiContorno();
 
-    // 🔥 FIX: Salvataggio isolato per il contorno (non tocca il piatto principale!)
+    // 🔥 FIX: Salva l'extra SOLO nel contorno!
     const btnSalva = document.getElementById("btnConfermaPersonalizzazione");
     if(btnSalva) {
         btnSalva.onclick = () => {
@@ -1805,7 +1809,7 @@ window.apriPopupVariantiContornoCliente = function(idxCarrello, idxContorno) {
             tempVariantiCliente.filter(v => v.tipo === "aggiunta").forEach((v, idx) => { 
                 if (idx >= maxGratis) ext += Number(v.prezzo || 0); 
             });
-            contorno.extraPrezzo = ext; // Salva l'extra SOLO nel contorno
+            contorno.extraPrezzo = ext; 
 
             chiudiPopupPersonalizza();
             aggiornaRiepilogoCarrelloUI();
