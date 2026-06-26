@@ -5086,9 +5086,32 @@ async function caricaComandePerRuolo(daFareDiv, storicoDiv, ruolo) {
                         mainDiv.style.marginBottom = "4px";
                         
                         let variantiHtml = "";
-                        
-                        // Firebase salva a volte gli array come oggetti, sicurezza prima di tutto
                         let varArr = i.varianti ? (Array.isArray(i.varianti) ? i.varianti : Object.values(i.varianti)) : [];
+                        let nomePulito = i.nome || "";
+
+                        // 🔥 FIX DEFINITIVO: Puliamo il nome e creiamo l'extra grafico anche quando il contorno diventa "Piatto Principale" nello Snack!
+                        const regex = /\s*\(([\+\-].*?)\)/;
+                        const match = nomePulito.match(regex);
+                        
+                        if (match) {
+                            // 1. Togliamo l'extra scritto male dal nome (es: "Patatine Fritte [di Hamburger]")
+                            nomePulito = nomePulito.replace(regex, "").trim(); 
+                            
+                            // 2. Trasformiamo la scritta nel bottone verde/rosso
+                            if (varArr.length === 0) {
+                                let estratti = match[1].split(","); 
+                                estratti.forEach(ex => {
+                                    ex = ex.trim();
+                                    if (ex.startsWith("+")) {
+                                        varArr.push({ tipo: "aggiunta", nome: ex.substring(1).trim() });
+                                    } else if (ex.startsWith("-")) {
+                                        let n = ex.substring(1).trim();
+                                        if (n.toLowerCase().startsWith("senza ")) n = n.substring(6).trim();
+                                        varArr.push({ tipo: "rimozione", nome: n });
+                                    }
+                                });
+                            }
+                        }
                         
                         if (varArr.length > 0) {
                             let conteggio = {};
@@ -5099,12 +5122,13 @@ async function caricaComandePerRuolo(daFareDiv, storicoDiv, ruolo) {
                                 conteggio[key].count++;
                             });
 
-                            // Grafica classica ripristinata: testi piccoli a capo
-                            variantiHtml = Object.values(conteggio).map(v => 
-                                v.tipo === "aggiunta" 
-                                    ? `<div style="margin-top:2px;"><small style="color:green; font-weight:bold; margin-left:10px;">+ ${v.count > 1 ? v.count + 'x ' : ''}${v.nome}</small></div>` 
-                                    : `<div style="margin-top:2px;"><small style="color:red; font-weight:bold; margin-left:10px;">- Senza ${v.nome}</small></div>`
-                            ).join("");
+                            // Grafica compatta e pulita
+                            variantiHtml = Object.values(conteggio).map(v => {
+                                let nomeExtra = v.nome.charAt(0).toUpperCase() + v.nome.slice(1);
+                                return v.tipo === "aggiunta" 
+                                    ? `<div style="margin-top:2px;"><small style="color:green; font-weight:bold; margin-left:10px;">+ ${v.count > 1 ? v.count + 'x ' : ''}${nomeExtra}</small></div>` 
+                                    : `<div style="margin-top:2px;"><small style="color:red; font-weight:bold; margin-left:10px;">- Senza ${nomeExtra}</small></div>`
+                            }).join("");
                         }
 
                         // --- LOGICA CHECKBOX (INVARIATA) ---
@@ -5113,10 +5137,11 @@ async function caricaComandePerRuolo(daFareDiv, storicoDiv, ruolo) {
                             box.type = "checkbox";
                             box.className = "tickItem";
                             box.style.marginRight = "10px";
-                            box.style.marginTop = "3px"; // Allinea bene la spunta
+                            box.style.marginTop = "3px"; 
                             
                             if (!window.tickState) window.tickState = {};
                             if (!window.tickState[comandaId]) window.tickState[comandaId] = {};
+                            // Usiamo il nome originale come chiave per non far saltare le spunte salvate
                             const voceKey = `${i.nome}-${i.quantita}-main`;
                             if (window.tickState[comandaId][voceKey] === undefined) window.tickState[comandaId][voceKey] = false;
                             
@@ -5131,12 +5156,12 @@ async function caricaComandePerRuolo(daFareDiv, storicoDiv, ruolo) {
                             mainDiv.appendChild(box);
                         }
 
-                        // 🔥 RISOLTO ERRORE TESTO HTML: Creiamo un div e usiamo .innerHTML!
                         const textDiv = document.createElement("div");
                         textDiv.style.display = "flex";
                         textDiv.style.flexDirection = "column";
 
-                        textDiv.innerHTML = `<span> ${i.quantita}x ${i.nome}</span>${variantiHtml}`;
+                        // 🔥 Usiamo nomePulito al posto di i.nome
+                        textDiv.innerHTML = `<span> ${i.quantita}x ${nomePulito}</span>${variantiHtml}`;
 
                         if (i.note && i.note.trim() !== "") {
                             textDiv.innerHTML += `<div style="margin-top:2px;"><small style="color:#d9534f; margin-left:10px;">📝 Note: ${i.note}</small></div>`;
