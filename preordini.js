@@ -574,31 +574,20 @@ async function aggiungiPreordineAlleComande(id) {
     const numeroBase = await getProssimoNumero(lettera);
     const numeroComandaFinale = numeroBase + lettera;
 
-    // 2️⃣ Dividi i piatti per ruolo
-    let piattiCucina = p.piatti?.filter(i => i.categoria !== "bevande" && i.categoria !== "snack") || [];
-    let piattiBere = p.piatti?.filter(i => i.categoria === "bevande") || [];
-    let piattiSnack = p.piatti?.filter(i => i.categoria === "snack") || [];
+    // 2️⃣ Usa separaComanda per capire chi deve preparare cosa, includendo i contorni!
+    const { cibo, bere, snack } = separaComanda(p.piatti || []);
 
-    // ✅ Se snack disabilitati, sposta in cucina
-    if (!window.settings.snackAbilitato && piattiSnack.length > 0) {
-        piattiCucina = [...piattiCucina, ...piattiSnack];
-        piattiSnack = [];
-    }
-
-    // 3️⃣ Stati categorie
-    const statoCucina = piattiCucina.length ? "da fare" : "completato";
-    const statoBere = piattiBere.length ? "da fare" : "completato";
-    const statoSnack = window.settings.snackAbilitato && piattiSnack.length ? "da fare" : "completato";
+    // 3️⃣ Stati categorie (se la stazione ha piatti da fare, segna "da fare", altrimenti "completato")
+    const statoCucina = cibo.length > 0 ? "da fare" : "completato";
+    const statoBere = bere.length > 0 ? "da fare" : "completato";
+    const statoSnack = window.settings.snackAbilitato && snack.length > 0 ? "da fare" : "completato";
 
     // 4️⃣ noteDestinazioni
     let noteDestinazioni = ["cucina"];
-
     if (window.settings.noteDestinazioniAbilitate) {
-        // Se attivo → manda note dove ci sono piatti reali
-        if (piattiBere.length) noteDestinazioni.push("bere");
-        if (window.settings.snackAbilitato && piattiSnack.length) noteDestinazioni.push("snack");
+        if (bere.length > 0) noteDestinazioni.push("bere");
+        if (window.settings.snackAbilitato && snack.length > 0) noteDestinazioni.push("snack");
     }
-
 
     // 5️⃣ Commento asporto
     const commentoAsporto = (window.settings.asportoAbilitato && p.asporto) ? "ASPORTO" : null;
@@ -606,15 +595,10 @@ async function aggiungiPreordineAlleComande(id) {
     // 6️⃣ Metodo pagamento predefinito
     const metodoPagamento = p.metodoPagamento || "contanti";
 
-
-    // 7️⃣ Costruzione oggetto comanda
+    // 7️⃣ Costruzione oggetto comanda: SALVIAMO I PIATTI INTACTI CON TUTTI I CONTORNI E VARIANTI!
     const nuovaComanda = {
         numero: numeroComandaFinale,
-        piatti: [
-            ...piattiCucina.map(pi => ({ ...pi, destinazione: "cucina", maxVariantiGratis: pi.maxVariantiGratis || 0 })),
-            ...piattiBere.map(pi => ({ ...pi, destinazione: "bere", maxVariantiGratis: pi.maxVariantiGratis || 0 })),
-            ...piattiSnack.map(pi => ({ ...pi, destinazione: "snack", maxVariantiGratis: pi.maxVariantiGratis || 0 }))
-        ],
+        piatti: p.piatti || [],
         statoCucina,
         statoBere,
         ...(window.settings.snackAbilitato && { statoSnack }),
@@ -654,9 +638,7 @@ async function aggiungiPreordineAlleComande(id) {
             restoRichiesto: p.restoRichiesto
         };
         
-        // Chiamiamo stampaComanda UNA SOLA VOLTA passando tutti i piatti insieme.
-        // Sarà lei al suo interno a dividere le pagine del PDF se window.settings.scontriniSeparati è ON!
-        stampaComanda([...piattiCucina, ...piattiBere, ...piattiSnack], numeroComandaFinale, p.note || "", datiDellaStampa);
+        stampaComanda(p.piatti || [], numeroComandaFinale, p.note || "", datiDellaStampa);
     }
 
     // 🔟 Conferma visiva
@@ -1082,15 +1064,19 @@ window.aggiungiVeloceCarrello = function(id) {
             }
         }
 
-        // 🔹 Costruisci lista piatti
+        // 🔹 Costruisci lista piatti MANTENENDO CONTORNI E VARIANTI
         const piatti = carrelloCliente.map(c => {
             return {
                 nome: c.nome,
-                prezzo: c.prezzo, // Questo è il prezzo base
-                extraPrezzo: c.extraPrezzo,
-                varianti: c.varianti,
+                prezzo: c.prezzo,
+                extraPrezzo: c.extraPrezzo || 0,
+                varianti: c.varianti || [],
+                contorniScelti: c.contorniScelti || [],
+                ingredienti: c.ingredienti || [],
                 quantita: 1, // È sempre 1 perché ogni configurazione è unica
-                categoria: c.categoria
+                categoria: c.categoria,
+                isCombo: c.isCombo || false,
+                maxVariantiGratis: c.maxVariantiGratis || 0
             };
         });
 
