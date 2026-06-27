@@ -162,6 +162,51 @@ function initPreordiniInterni() {
 
 
 }
+function formattaPrezzoSingolo(pi) {
+    if (typeof calcolaPrezzoConSconto === "function") {
+        return (calcolaPrezzoConSconto(pi) / (pi.quantita || 1)).toFixed(2);
+    }
+    return (Number(pi.prezzo || 0) + Number(pi.extraPrezzo || 0)).toFixed(2);
+}
+
+function generaHtmlVariantiPreordine(pi) {
+    let html = "";
+    // Varianti del piatto principale
+    if (pi.varianti && pi.varianti.length > 0) {
+        let conteggio = {};
+        pi.varianti.forEach(v => {
+            let key = v.tipo + "_" + v.nome;
+            if (!conteggio[key]) conteggio[key] = { tipo: v.tipo, nome: v.nome, count: 0 };
+            conteggio[key].count++;
+        });
+        const varTxt = Object.values(conteggio).map(v => {
+            let qTxt = v.count > 1 ? `${v.count}x ` : "";
+            return v.tipo === "aggiunta" ? `<span style="color:green; font-weight:bold;">+ ${qTxt}${v.nome}</span>` : `<span style="color:red; font-weight:bold;">- Senza ${v.nome}</span>`;
+        }).join(", ");
+        html += `<div style="font-size:0.8em; color:#333; margin-top:2px;">${varTxt}</div>`;
+    }
+    // Contorni e relative varianti
+    if (pi.contorniScelti && pi.contorniScelti.length > 0) {
+        const cTxt = pi.contorniScelti.map(c => {
+            let cVarTxt = "";
+            if (c.varianti && c.varianti.length > 0) {
+                let conteggioC = {};
+                c.varianti.forEach(v => {
+                    let key = v.tipo + "_" + v.nome;
+                    if (!conteggioC[key]) conteggioC[key] = { tipo: v.tipo, nome: v.nome, count: 0 };
+                    conteggioC[key].count++;
+                });
+                cVarTxt = " <small style='color:#777;'>(" + Object.values(conteggioC).map(v => {
+                    let qTxt = v.count > 1 ? `${v.count}x ` : "";
+                    return v.tipo === "aggiunta" ? `<span style="color:green; font-weight:bold;">+${qTxt}${v.nome}</span>` : `<span style="color:red; font-weight:bold;">-${v.nome}</span>`;
+                }).join(", ") + ")</small>";
+            }
+            return `↳ ${c.nome}${cVarTxt}`;
+        }).join("<br>");
+        html += `<div style="font-size:0.85em; color:#d9534f; font-weight:bold; margin-top:3px;">Contorni:<br>${cTxt}</div>`;
+    }
+    return html;
+}
 // === Render Preordini Admin ===
 async function renderPreordiniAdmin(data) {
     const lista = document.getElementById("listaPreordiniAdmin");
@@ -206,13 +251,6 @@ async function renderPreordiniAdmin(data) {
             piattiSnack = [];
         }
         
-        function formattaPrezzoSingolo(pi) {
-            if (typeof calcolaPrezzoConSconto === "function") {
-                return (calcolaPrezzoConSconto(pi) / (pi.quantita || 1)).toFixed(2);
-            }
-            return (Number(pi.prezzo || 0) + Number(pi.extraPrezzo || 0)).toFixed(2);
-        }
-
         let totale = 0;
         [...piattiCibo, ...piattiBere, ...piattiSnack].forEach(pi => {
             if (typeof calcolaPrezzoConSconto === "function") {
@@ -242,52 +280,40 @@ async function renderPreordiniAdmin(data) {
 
             <div class="order-body">
                 ${piattiCibo.map(pi => `
-                    <div>
-                        ${pi.quantita}× ${pi.nome} (€${formattaPrezzoSingolo(pi)})
+                    <div style="margin-bottom:6px;">
+                        <b>${pi.quantita}× ${pi.nome}</b> (€${formattaPrezzoSingolo(pi)})
                         ${pi.ingredienti && pi.ingredienti.length
                             ? `<div style="font-size:0.75em; color:#555;">
                                 Ingredienti: ${pi.ingredienti.map(i => `${i.nome}${i.qtyPerUnit ? ` (${i.qtyPerUnit}${i.unita || ""})` : ""}`).join(", ")}
                             </div>`
                             : ""}
-                        ${pi.contorniScelti && pi.contorniScelti.length 
-                            ? `<div style="font-size:0.85em; color:#d9534f; font-weight:bold; margin-top:3px;">
-                                Contorni: ${pi.contorniScelti.map(c => c.nome).join(" + ")}
-                               </div>`
-                            : ""}
+                        ${generaHtmlVariantiPreordine(pi)}
                     </div>
                 `).join("")}
                 ${piattiBere.map(pi => `
-                    <div>
-                        ${pi.quantita}× ${pi.nome} (€${formattaPrezzoSingolo(pi)})
+                    <div style="margin-bottom:6px;">
+                        <b>${pi.quantita}× ${pi.nome}</b> (€${formattaPrezzoSingolo(pi)})
                         ${pi.ingredienti && pi.ingredienti.length
                             ? `<div style="font-size:0.75em; color:#555;">
                                 Ingredienti: ${pi.ingredienti.map(i => `${i.nome}${i.qtyPerUnit ? ` (${i.qtyPerUnit}${i.unita || ""})` : ""}`).join(", ")}
                             </div>`
                             : ""}
-                        ${pi.contorniScelti && pi.contorniScelti.length 
-                            ? `<div style="font-size:0.85em; color:#d9534f; font-weight:bold; margin-top:3px;">
-                                Contorni: ${pi.contorniScelti.map(c => c.nome).join(" + ")}
-                               </div>`
-                            : ""}
+                        ${generaHtmlVariantiPreordine(pi)}
                     </div>
                 `).join("")}
                 ${piattiSnack.map(pi => `
-                    <div>
-                        ${pi.quantita}× ${pi.nome} (€${formattaPrezzoSingolo(pi)})
+                    <div style="margin-bottom:6px;">
+                        <b>${pi.quantita}× ${pi.nome}</b> (€${formattaPrezzoSingolo(pi)})
                         ${pi.ingredienti && pi.ingredienti.length
                             ? `<div style="font-size:0.75em; color:#555;">
                                 Ingredienti: ${pi.ingredienti.map(i => `${i.nome}${i.qtyPerUnit ? ` (${i.qtyPerUnit}${i.unita || ""})` : ""}`).join(", ")}
                             </div>`
                             : ""}
-                        ${pi.contorniScelti && pi.contorniScelti.length 
-                            ? `<div style="font-size:0.85em; color:#d9534f; font-weight:bold; margin-top:3px;">
-                                Contorni: ${pi.contorniScelti.map(c => c.nome).join(" + ")}
-                               </div>`
-                            : ""}
+                        ${generaHtmlVariantiPreordine(pi)}
                     </div>
                 `).join("")}
                 ${p.note ? `
-                <div><i>Note: ${p.note}</i></div>
+                <div style="margin-top:8px;"><i>Note: ${p.note}</i></div>
                 ${window.settings.noteDestinazioniAbilitate ? `
                     <div style="margin-top:4px; font-size:0.85em;">
                         <b>Invia note a:</b>
@@ -300,7 +326,6 @@ async function renderPreordiniAdmin(data) {
                     </div>
                 ` : ""}
                 ` : ""}
-
             </div>
 
 
@@ -451,52 +476,40 @@ function renderPreordiniCassa(data) {
 
             <div class="order-body">
                 ${piattiCibo.map(pi => `
-                    <div>
-                        ${pi.quantita}× ${pi.nome} (€${formattaPrezzoSingolo(pi)})
+                    <div style="margin-bottom:6px;">
+                        <b>${pi.quantita}× ${pi.nome}</b> (€${formattaPrezzoSingolo(pi)})
                         ${pi.ingredienti && pi.ingredienti.length
                             ? `<div style="font-size:0.75em; color:#555;">
                                 Ingredienti: ${pi.ingredienti.map(i => `${i.nome}${i.qtyPerUnit ? ` (${i.qtyPerUnit}${i.unita || ""})` : ""}`).join(", ")}
                             </div>`
                             : ""}
-                        ${pi.contorniScelti && pi.contorniScelti.length 
-                            ? `<div style="font-size:0.85em; color:#d9534f; font-weight:bold; margin-top:3px;">
-                                Contorni: ${pi.contorniScelti.map(c => c.nome).join(" + ")}
-                               </div>`
-                            : ""}
+                        ${generaHtmlVariantiPreordine(pi)}
                     </div>
                 `).join("")}
                 ${piattiBere.map(pi => `
-                    <div>
-                       ${pi.quantita}× ${pi.nome} (€${formattaPrezzoSingolo(pi)})
+                    <div style="margin-bottom:6px;">
+                        <b>${pi.quantita}× ${pi.nome}</b> (€${formattaPrezzoSingolo(pi)})
                         ${pi.ingredienti && pi.ingredienti.length
                             ? `<div style="font-size:0.75em; color:#555;">
                                 Ingredienti: ${pi.ingredienti.map(i => `${i.nome}${i.qtyPerUnit ? ` (${i.qtyPerUnit}${i.unita || ""})` : ""}`).join(", ")}
                             </div>`
                             : ""}
-                        ${pi.contorniScelti && pi.contorniScelti.length 
-                            ? `<div style="font-size:0.85em; color:#d9534f; font-weight:bold; margin-top:3px;">
-                                Contorni: ${pi.contorniScelti.map(c => c.nome).join(" + ")}
-                               </div>`
-                            : ""}
+                        ${generaHtmlVariantiPreordine(pi)}
                     </div>
                 `).join("")}
                 ${piattiSnack.map(pi => `
-                    <div>
-                        ${pi.quantita}× ${pi.nome} (€${formattaPrezzoSingolo(pi)})
+                    <div style="margin-bottom:6px;">
+                        <b>${pi.quantita}× ${pi.nome}</b> (€${formattaPrezzoSingolo(pi)})
                         ${pi.ingredienti && pi.ingredienti.length
                             ? `<div style="font-size:0.75em; color:#555;">
                                 Ingredienti: ${pi.ingredienti.map(i => `${i.nome}${i.qtyPerUnit ? ` (${i.qtyPerUnit}${i.unita || ""})` : ""}`).join(", ")}
                             </div>`
                             : ""}
-                        ${pi.contorniScelti && pi.contorniScelti.length 
-                            ? `<div style="font-size:0.85em; color:#d9534f; font-weight:bold; margin-top:3px;">
-                                Contorni: ${pi.contorniScelti.map(c => c.nome).join(" + ")}
-                               </div>`
-                            : ""}
+                        ${generaHtmlVariantiPreordine(pi)}
                     </div>
                 `).join("")}
                 ${p.note ? `
-                <div><i>Note: ${p.note}</i></div>
+                <div style="margin-top:8px;"><i>Note: ${p.note}</i></div>
                 ${window.settings.noteDestinazioniAbilitate ? `
                     <div style="margin-top:4px; font-size:0.85em;">
                         <b>Invia note a:</b>
@@ -509,7 +522,6 @@ function renderPreordiniCassa(data) {
                     </div>
                 ` : ""}
                 ` : ""}
-
             </div>
 
             <div class="order-footer">
@@ -1181,30 +1193,21 @@ window.aggiungiVeloceCarrello = function(id) {
 function calcolaPrezzoConScontoPerPiatto(piatto, comandaIntera) {
     const q = piatto.quantita || 1;
     
-    // 1. Sommiamo tutti i costi extra dei contorni (Prezzo base del contorno + le sue varianti a pagamento)
-    let costoContorni = 0;
-    if (piatto.contorniScelti && piatto.contorniScelti.length > 0) {
-        piatto.contorniScelti.forEach(c => costoContorni += (c.prezzoPagato || 0) + (c.extraPrezzo || 0));
-    }
-    
-    // 2. Prezzo totale grezzo della singola riga
-    const prezzoRigaSenzaSconto = (piatto.prezzo || 0) + (piatto.extraPrezzo || 0) + costoContorni;
+    // Niente più somme dinamiche dei contorni qui, l'extraPrezzo gestisce già tutto in armonia!
+    const prezzoRigaSenzaSconto = (piatto.prezzo || 0) + (piatto.extraPrezzo || 0);
 
     if(!piatto.sconto) return prezzoRigaSenzaSconto * q;
 
-    // 3. Sconto percentuale applicato SOLAMENTE sul prezzo base del piatto (non sugli extra)
     if(piatto.sconto.tipo === "percentuale"){
         const scontoNetto = (piatto.prezzo || 0) * ((Number(piatto.sconto.valore)||0)/100);
         return (prezzoRigaSenzaSconto - scontoNetto) * q;
     } 
 
-    // 4. Sconti 3x2, ecc..
     if(piatto.sconto.tipo === "x_paga_y" || piatto.sconto.tipo === "x_paga_y_fisso"){
-        // Conta quante volte compare questo stesso ID in tutto il carrello preordini
         let qTotale = comandaIntera.filter(p => p.id === piatto.id).length;
         const x = parseInt(piatto.sconto.valore.x);
 
-        if (qTotale < x) return prezzoRigaSenzaSconto * q; // Soglia non raggiunta
+        if (qTotale < x) return prezzoRigaSenzaSconto * q;
 
         const numGruppi = Math.floor(qTotale / x);
         const resto = qTotale % x;
@@ -1221,7 +1224,6 @@ function calcolaPrezzoConScontoPerPiatto(piatto, comandaIntera) {
         const costoTotaleBase = qTotale * piatto.prezzo;
         const scontoTotale = costoTotaleBase - costoScontatoIntero;
 
-        // Ritorniamo il prezzo della riga sottraendo la quota parte di sconto calcolata per questa unità
         return (prezzoRigaSenzaSconto * q) - ((q / qTotale) * scontoTotale);
     }
     return prezzoRigaSenzaSconto * q;
@@ -1240,13 +1242,8 @@ function aggiornaRiepilogoCarrelloUI() {
     }
 
     carrelloCliente.forEach((item, index) => {
-        // 🔥 FIX TOTALI: Calcolo corretto del costo grezzo della riga includendo i contorni pagati extra
-        let costoContorniPagati = 0;
-        if (item.contorniScelti && item.contorniScelti.length > 0) {
-            item.contorniScelti.forEach(c => costoContorniPagati += (c.prezzoPagato || 0) + (c.extraPrezzo || 0));
-        }
-        
-        const costoRigaGrezzo = (item.prezzo || 0) + (item.extraPrezzo || 0) + costoContorniPagati;
+        // FIX TOTALI: Usiamo direttamente extraPrezzo senza ricalcolare al volo i contorni
+        const costoRigaGrezzo = (item.prezzo || 0) + (item.extraPrezzo || 0);
         const costoRigaScontato = calcolaPrezzoConScontoPerPiatto(item, carrelloCliente);
         
         totaleGrezzo += costoRigaGrezzo;
@@ -1667,16 +1664,23 @@ function renderVariantiCliente(piatto, maxGratis) {
         });
 
         if (typeof idPiattoInModifica === "number") {
-            // MODIFICA PIATTO ESISTENTE NEL CARRELLO
             carrelloCliente[idPiattoInModifica].varianti = tempVariantiCliente;
-            carrelloCliente[idPiattoInModifica].extraPrezzo = extraFinali; // <-- SOLO extraFinali! Niente somme dei contorni qui.
+            
+            // SOMMIAMO I CONTORNI ALL'EXTRA
+            let costoContorni = 0;
+            if (carrelloCliente[idPiattoInModifica].contorniScelti) {
+                carrelloCliente[idPiattoInModifica].contorniScelti.forEach(c => {
+                    costoContorni += (c.prezzoPagato || 0) + (c.extraPrezzo || 0);
+                });
+            }
+            carrelloCliente[idPiattoInModifica].extraPrezzo = extraFinali + costoContorni;
         } else {
             // AGGIUNTA COME PIATTO NUOVO
             carrelloCliente.push({
-                id: idPiattoInModifica, // Salva l'ID Firebase originale per gli sconti
+                id: idPiattoInModifica,
                 nome: piatto.nome,
                 prezzo: piatto.prezzo, 
-                sconto: piatto.sconto || null, // 🔥 Manteniamo lo sconto!
+                sconto: piatto.sconto || null,
                 categoria: piatto.categoria,
                 ingredienti: piatto.ingredienti ? JSON.parse(JSON.stringify(piatto.ingredienti)) : [],
                 varianti: tempVariantiCliente,
@@ -1819,6 +1823,20 @@ window.apriPopupVariantiContornoCliente = function(idxCarrello, idxContorno) {
                 if (idx >= maxGratis) ext += Number(v.prezzo || 0); 
             });
             contorno.extraPrezzo = ext; 
+
+            // RICOLCOLA L'EXTRA DEL PIATTO PADRE (Esattamente come fa la Cassa)
+            let nuovoExtraMain = 0;
+            if (piattoPadre.varianti) {
+                piattoPadre.varianti.filter(v => v.tipo === "aggiunta").forEach((v, idx) => {
+                    if (idx >= (piattoPadre.maxVariantiGratis || 0)) nuovoExtraMain += Number(v.prezzo || 0);
+                });
+            }
+            if (piattoPadre.contorniScelti) {
+                piattoPadre.contorniScelti.forEach(c => {
+                    nuovoExtraMain += (c.prezzoPagato || 0) + (c.extraPrezzo || 0);
+                });
+            }
+            piattoPadre.extraPrezzo = nuovoExtraMain;
 
             chiudiPopupPersonalizza();
             aggiornaRiepilogoCarrelloUI();
