@@ -406,21 +406,28 @@
 		<div id="incassiTab" class="tabContent">
 		    <h3>Statistiche Incassi</h3>
 		    
-		    <div id="filtroStatisticheContainer" style="margin-bottom: 15px; background: #f5f5f5; padding: 10px; border-radius: 8px; border: 1px solid #ccc;">
-		        <label style="font-weight: bold;">Seleziona Dati:</label>
-		        <select id="filtroStatistiche" style="padding: 5px; margin-left: 10px; border-radius: 4px;">
-		            <option value="correnti">Turno Attuale (Non archiviate)</option>
-		            <option value="tutte">Globale (Tutta la Sagra)</option>
+		    <div id="statsSubTabs" style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
+		        <button class="tabBtn active" id="btnStatCorrente">Turno Attuale</button>
+		        <button class="tabBtn" id="btnStatGlobale">Totale Globale (Sagra)</button>
+		    </div>
+		
+		    <div class="settingItem" id="filtroStatisticheContainer" style="display:none; border-left: 4px solid #9C27B0;">
+		        <div class="settingLabel">
+		            <span>Archivio Turni Precedenti 📦</span>
+		            <small>Consulta i dati di un singolo turno archiviato in passato.</small>
+		        </div>
+		        <select id="filtroStatistiche" style="padding: 6px 10px; border-radius: 6px; border: 1px solid #ccc; font-weight: bold; outline: none; background: #fff; cursor: pointer;">
+		            <option value="">-- Seleziona turno --</option>
 		            </select>
 		    </div>
 		
-		    <div style="margin-bottom:10px;">
-		        <button id="generaExcelBtn">📊 Esporta Excel</button>
-		        <button id="generaPdfBtn">📄 Esporta PDF</button>
+		    <div style="margin-bottom:15px; display:flex; gap:10px;">
+		        <button id="generaExcelBtn" class="toggleBtn" style="background:#4CAF50; color:white; font-size:1em;">📊 Esporta Excel</button>
+		        <button id="generaPdfBtn" class="toggleBtn" style="background:#f44336; color:white; font-size:1em;">📄 Esporta PDF</button>
 		    </div>
+		    
 		    <div id="contenutoStatistiche"></div>
 		</div>
-
 		<!-- Ingredienti -->
 		<div id="ingredientiTab" class="tabContent">
 		    <h3>Ingredienti</h3>
