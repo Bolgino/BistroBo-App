@@ -2822,7 +2822,6 @@ function getIngredientiEffettivi(p) {
     return Object.values(mappa);
 }
 
-// ================= POPUP VARIANTI =================
 // ================= POPUP VARIANTI CASSA (UNIFICATO E OTTIMIZZATO) =================
 function apriPopupVarianti(idx) {
     const piatto = comandaCorrente[idx];
@@ -2994,7 +2993,16 @@ function apriPopupVarianti(idx) {
     btnSalva.innerText = "Salva";
     btnSalva.onclick = () => {
         piatto.varianti = tempVarianti;
-        piatto.extraPrezzo = tempExtraPrezzo;
+        
+        // FIX: Recuperiamo i costi dei contorni e li sommiamo all'extra del piatto
+        let costoContorni = 0;
+        if (piatto.contorniScelti && piatto.contorniScelti.length > 0) {
+            piatto.contorniScelti.forEach(c => {
+                costoContorni += (c.prezzoPagato || 0) + (c.extraPrezzo || 0);
+            });
+        }
+        piatto.extraPrezzo = tempExtraPrezzo + costoContorni;
+        
         aggiornaComandaCorrente();
         overlay.remove();
     };
@@ -5063,7 +5071,16 @@ function apriPopupVariantiAdmin(idx, comandaTemp, reserved, callback) {
         }
 
         piatto.varianti = tempVarianti;
-        piatto.extraPrezzo = tempExtraPrezzo;
+        
+        // FIX: Recuperiamo i costi dei contorni anche nell'admin
+        let costoContorni = 0;
+        if (piatto.contorniScelti && piatto.contorniScelti.length > 0) {
+            piatto.contorniScelti.forEach(c => {
+                costoContorni += (c.prezzoPagato || 0) + (c.extraPrezzo || 0);
+            });
+        }
+        piatto.extraPrezzo = tempExtraPrezzo + costoContorni;
+
         overlay.remove();
         if (callback) callback();
     };
