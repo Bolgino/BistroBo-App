@@ -1030,6 +1030,22 @@ function initImpostazioniToggle() {
 	        window.settings.piattiComboAbilitati = val;
 	    });
 	}
+	// ================= SISTEMA A GIORNATE =================
+	const toggleGiornateBtn = document.getElementById("toggleGiornateBtn");
+	const boxArchivia = document.getElementById("boxArchiviaComande");
+	const giornateRef = db.ref("impostazioni/sistemaGiornateAbilitato");
+	
+	if (toggleGiornateBtn) {
+	    initToggle(toggleGiornateBtn, giornateRef, {on: "ON", off: "OFF"}, false, val => {
+	        window.settings.sistemaGiornateAbilitato = val;
+	        // Mostra il box archiviazione se ON, altrimenti lo nasconde
+	        if (boxArchivia) boxArchivia.style.display = val ? "flex" : "none";
+	        
+	        // Opzionale: Nascondere il tasto "Cancella tutte le comande (rosso)" se le giornate sono attive per evitare errori
+	        const boxCancella = document.getElementById("cancellaComandeBtn")?.parentElement;
+	        if(boxCancella) boxCancella.style.display = val ? "none" : "flex";
+	    });
+	}
 }
 function initTickNoteDestinazioni() {
     // 🔹 Mostra/nasconde i tick destinazioni note in base all'impostazione
@@ -1102,6 +1118,163 @@ if (settingLetteraPreordini && inputLetteraPreordini) {
         window.settings.letteraPreordini = val;
         inputLetteraPreordini.value = val;
     });
+}
+// ================= ARCHIVIA COMANDE =================
+const archiviaComandeBtn = document.getElementById("archiviaComandeBtn");
+if (archiviaComandeBtn) {
+    archiviaComandeBtn.onclick = async () => {
+        if (!checkOnline(true)) return;
+
+        // Controlliamo se ci sono comande da archiviare
+        const snapComande = await db.ref("comande").once("value");
+        if (!snapComande.exists()) {
+            notify("⚠️ Nessuna comanda presente da archiviare.", "warn");
+            return;
+        }
+
+        // Generiamo un nome di default (es: "15/08/2026 - 23:30")
+        const now = new Date();
+        const defaultName = `${now.toLocaleDateString('it-IT')} - ${now.toLocaleTimeString('it-IT', {hour: '2-digit', minute:'2-digit'})}`;
+
+        // Creiamo un modale personalizzato per chiedere il nome del turno
+        const overlay = document.createElement("div");
+        overlay.className = "modal-overlay";
+        overlay.style.zIndex = "10005";
+        
+        const modal = document.createElement("div");
+        modal.className = "modal-varianti";
+        modal.innerHTML = `
+            <h3>📦 Archivia Turno</h3>
+            <p style="font-size: 0.9em; color: #555;">Le comande verranno rimosse dai monitor attuali e salvate nello storico delle statistiche.</p>
+            <label><b>Nome Turno / Giornata:</b></label>
+            <input type="text" id="nomeTurnoInput" value="Turno ${defaultName}" style="width: 100%; padding: 10px; margin-top: 10px; border-radius: 6px; border: 1px solid #ccc; font-size: 1.1em;">
+            
+            <div class="modal-actions" style="margin-top: 20px;">
+                <button class="btn-chiudi" id="annullaArchiviaBtn">Annulla</button>
+                <button class="btn-salva" id="confermaArchiviaBtn" style="background-color: #4CAF50;">Archivia Ora</button>
+            </div>
+        `;
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+
+        document.getElementById("annullaArchiviaBtn").onclick = () => overlay.remove();
+        
+        document.getElementById("confermaArchiviaBtn").onclick = async () => {
+            const nomeTurno = document.getElementById("nomeTurnoInput").value.trim() || defaultName;
+            document.getElementById("confermaArchiviaBtn").disabled = true;
+            document.getElementById("confermaArchiviaBtn").innerText = "Archiviazione...";
+
+            try {
+                // 1. Leggi il fondo cassa attuale (se vuoi salvarlo nello storico)
+                const snapFondo = await db.ref("impostazioni/fondoCassa").once("value");
+                const fondoCassa = snapFondo.val() || 0;
+
+                // 2. Salva in storico_giornate
+                const nuovoArchivioRef = db.ref("storico_giornate").push();
+                await nuovoArchivioRef.set({
+                    nome: nomeTurno,
+                    timestamp: Date.now(),
+                    fondoCassa: fondoCassa,
+                    comande: snapComande.val()
+                });
+
+                // 3. Cancella le comande attive, il contatore e il fondo cassa
+                await db.ref("comande").remove();
+                await db.ref("impostazioni/contatoreComande").set(0); 
+                await db.ref("impostazioni/fondoCassa").remove(); 
+
+                notify(`✅ Turno "${nomeTurno}" archiviato con successo!`, "success");
+                
+                // Pulisci l'interfaccia admin
+                const listaComandeAdmin = document.getElementById("listaComandeAdmin");
+                if (listaComandeAdmin) listaComandeAdmin.innerHTML = "";
+
+                overlay.remove();
+            } catch (error) {
+                console.error(error);
+                notify("❌ Errore durante l'archiviazione: " + error.message, "error");
+                document.getElementById("confermaArchiviaBtn").disabled = false;
+            }
+        };
+    };
+}// ================= ARCHIVIA COMANDE =================
+const archiviaComandeBtn = document.getElementById("archiviaComandeBtn");
+if (archiviaComandeBtn) {
+    archiviaComandeBtn.onclick = async () => {
+        if (!checkOnline(true)) return;
+
+        // Controlliamo se ci sono comande da archiviare
+        const snapComande = await db.ref("comande").once("value");
+        if (!snapComande.exists()) {
+            notify("⚠️ Nessuna comanda presente da archiviare.", "warn");
+            return;
+        }
+
+        // Generiamo un nome di default (es: "15/08/2026 - 23:30")
+        const now = new Date();
+        const defaultName = `${now.toLocaleDateString('it-IT')} - ${now.toLocaleTimeString('it-IT', {hour: '2-digit', minute:'2-digit'})}`;
+
+        // Creiamo un modale personalizzato per chiedere il nome del turno
+        const overlay = document.createElement("div");
+        overlay.className = "modal-overlay";
+        overlay.style.zIndex = "10005";
+        
+        const modal = document.createElement("div");
+        modal.className = "modal-varianti";
+        modal.innerHTML = `
+            <h3>📦 Archivia Turno</h3>
+            <p style="font-size: 0.9em; color: #555;">Le comande verranno rimosse dai monitor attuali e salvate nello storico delle statistiche.</p>
+            <label><b>Nome Turno / Giornata:</b></label>
+            <input type="text" id="nomeTurnoInput" value="Turno ${defaultName}" style="width: 100%; padding: 10px; margin-top: 10px; border-radius: 6px; border: 1px solid #ccc; font-size: 1.1em;">
+            
+            <div class="modal-actions" style="margin-top: 20px;">
+                <button class="btn-chiudi" id="annullaArchiviaBtn">Annulla</button>
+                <button class="btn-salva" id="confermaArchiviaBtn" style="background-color: #4CAF50;">Archivia Ora</button>
+            </div>
+        `;
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+
+        document.getElementById("annullaArchiviaBtn").onclick = () => overlay.remove();
+        
+        document.getElementById("confermaArchiviaBtn").onclick = async () => {
+            const nomeTurno = document.getElementById("nomeTurnoInput").value.trim() || defaultName;
+            document.getElementById("confermaArchiviaBtn").disabled = true;
+            document.getElementById("confermaArchiviaBtn").innerText = "Archiviazione...";
+
+            try {
+                // 1. Leggi il fondo cassa attuale (se vuoi salvarlo nello storico)
+                const snapFondo = await db.ref("impostazioni/fondoCassa").once("value");
+                const fondoCassa = snapFondo.val() || 0;
+
+                // 2. Salva in storico_giornate
+                const nuovoArchivioRef = db.ref("storico_giornate").push();
+                await nuovoArchivioRef.set({
+                    nome: nomeTurno,
+                    timestamp: Date.now(),
+                    fondoCassa: fondoCassa,
+                    comande: snapComande.val()
+                });
+
+                // 3. Cancella le comande attive, il contatore e il fondo cassa
+                await db.ref("comande").remove();
+                await db.ref("impostazioni/contatoreComande").set(0); 
+                await db.ref("impostazioni/fondoCassa").remove(); 
+
+                notify(`✅ Turno "${nomeTurno}" archiviato con successo!`, "success");
+                
+                // Pulisci l'interfaccia admin
+                const listaComandeAdmin = document.getElementById("listaComandeAdmin");
+                if (listaComandeAdmin) listaComandeAdmin.innerHTML = "";
+
+                overlay.remove();
+            } catch (error) {
+                console.error(error);
+                notify("❌ Errore durante l'archiviazione: " + error.message, "error");
+                document.getElementById("confermaArchiviaBtn").disabled = false;
+            }
+        };
+    };
 }
 // =====================================================
 // 🔹 Aggiunge "Snack" nei menu a tendina ruoli se attivo
@@ -6440,135 +6613,190 @@ function modificaPiattoMenu(menuId, piatto) {
     };
 }
 // -------------------- STATISTICHE ADMIN --------------------
+// Aggiungiamo un event listener al filtro per ricaricare le statistiche quando cambia
+document.addEventListener("DOMContentLoaded", () => {
+    const filtroSelect = document.getElementById("filtroStatistiche");
+    if(filtroSelect) {
+        filtroSelect.addEventListener("change", caricaStatistiche);
+    }
+});
+
 async function caricaStatistiche() {
     if (!checkOnline(true)) return;
     showLoader();
-  // Assicuro che esista il contenitore (non ricreo i bottoni se sono già in HTML)
-  const incassiTab = document.getElementById("incassiTab");
-  if (!document.getElementById("contenutoStatistiche")) {
-    incassiTab.innerHTML = `
-      <h3>Statistiche Incassi</h3>
-      <div style="margin-bottom:10px;">
-        <button id="generaExcelBtn">📊 Esporta Excel</button>
-        <button id="generaPdfBtn">📄 Esporta PDF</button>
-      </div>
-      <div id="contenutoStatistiche"></div>
-    `;
-  }
-  const contenuto = document.getElementById("contenutoStatistiche");
 
-    // 🔹 LEGGI IL FONDO CASSA DAL DATABASE
-    const snapFondo = await db.ref("impostazioni/fondoCassa").once("value");
-    const fondoCassa = parseFloat(snapFondo.val()) || 0;
+    const contenuto = document.getElementById("contenutoStatistiche");
+    const filtroSelect = document.getElementById("filtroStatistiche");
+    const filtroSelezionato = filtroSelect ? filtroSelect.value : "correnti";
 
-    const snap = await db.ref("comande").once("value");
-    const comande = snap.val() || {};
-    let totaleComande = 0;
-    let totaleIncasso = 0;
-    let totalePos = 0;
-    let totaleContanti = 0;
-    let incassoAsporto = 0;
-    const piattiMap = {}; 
-    const ingrMap = {}; 
-    const incassiIngredienti = {}; 
-    const listaComande = [];
+    try {
+        // 1. Carica le comande correnti e lo storico
+        const [snapComande, snapStorico, snapFondoCorrente] = await Promise.all([
+            db.ref("comande").once("value"),
+            db.ref("storico_giornate").once("value"),
+            db.ref("impostazioni/fondoCassa").once("value")
+        ]);
 
-    for (const id in comande) {
-        // [IL CICLO FOR RIMANE UGUALE, NON CAMBIA NULLA]
-        const c = comande[id];
-        totaleComande++;
-        let totaleComanda = 0;
-        (c.piatti || []).forEach(p => {
-            const q = Number(p.quantita || 0);
-            const prezzoTot = calcolaPrezzoConSconto(p);
-            totaleComanda += prezzoTot;
-            
-            if (!piattiMap[p.nome]) piattiMap[p.nome] = { quantita: 0, incasso: 0 };
-            piattiMap[p.nome].quantita += q;
-            piattiMap[p.nome].incasso += prezzoTot;
-            
-            (p.ingredienti || []).forEach(ing => {
-                const qty = (Number(ing.qtyPerUnit) || 1) * q;
-                ingrMap[ing.nome] = (ingrMap[ing.nome] || 0) + qty;
-                incassiIngredienti[ing.nome] = (incassiIngredienti[ing.nome] || 0) + prezzoTot;
+        const comandeCorrenti = snapComande.val() || {};
+        const storicoGiornate = snapStorico.val() || {};
+        let fondoCassaTotale = 0;
+        
+        // Variabile che conterrà TUTTE le comande da analizzare in base al filtro
+        let comandeDaAnalizzare = {};
+
+        // 2. Popola il menu a tendina (solo la prima volta o se ci sono nuovi turni)
+        if (filtroSelect && filtroSelect.options.length <= 2) {
+            Object.keys(storicoGiornate).forEach(key => {
+                const turno = storicoGiornate[key];
+                const opt = document.createElement("option");
+                opt.value = key; // L'ID del turno archiviato
+                opt.innerText = `Archivio: ${turno.nome}`;
+                filtroSelect.appendChild(opt);
             });
-        });
-        
-        if (c.metodoPagamento === "pos") {
-            totalePos += totaleComanda;
-        } else {
-            totaleContanti += totaleComanda;
         }
-        
-        totaleIncasso += totaleComanda;
-        if (c.commento) incassoAsporto += totaleComanda;
 
-        listaComande.push({
-            id,
-            numero: c.numero,
-            lettera: c.lettera,
-            totale: totaleComanda,
-            piatti: (c.piatti || []).map(p => p.quantita + "x " + p.nome).join(", "),
-            data: c.timestamp
-        });
+        // 3. Applica il Filtro Logico
+        if (filtroSelezionato === "correnti") {
+            comandeDaAnalizzare = comandeCorrenti;
+            fondoCassaTotale = parseFloat(snapFondoCorrente.val()) || 0;
+            document.getElementById("filtroStatisticheContainer").style.borderLeft = "4px solid #2196F3"; // Blu
+
+        } else if (filtroSelezionato === "tutte") {
+            // Unisci le correnti + tutti gli storici
+            comandeDaAnalizzare = { ...comandeCorrenti };
+            fondoCassaTotale = parseFloat(snapFondoCorrente.val()) || 0;
+            
+            Object.values(storicoGiornate).forEach(turno => {
+                if (turno.comande) {
+                    Object.assign(comandeDaAnalizzare, turno.comande);
+                }
+                fondoCassaTotale += (parseFloat(turno.fondoCassa) || 0);
+            });
+            document.getElementById("filtroStatisticheContainer").style.borderLeft = "4px solid #9C27B0"; // Viola
+
+        } else {
+            // Un turno specifico archiviato
+            const turnoScelto = storicoGiornate[filtroSelezionato];
+            if (turnoScelto && turnoScelto.comande) {
+                comandeDaAnalizzare = turnoScelto.comande;
+                fondoCassaTotale = parseFloat(turnoScelto.fondoCassa) || 0;
+            }
+            document.getElementById("filtroStatisticheContainer").style.borderLeft = "4px solid #4CAF50"; // Verde
+        }
+
+
+        // 4. DA QUI IN POI, IL CALCOLO È IDENTICO AL TUO CODICE ORIGINALE!
+        let totaleComande = 0;
+        let totaleIncasso = 0;
+        let totalePos = 0;
+        let totaleContanti = 0;
+        let incassoAsporto = 0;
+        const piattiMap = {}; 
+        const ingrMap = {}; 
+        const incassiIngredienti = {}; 
+        const listaComande = [];
+
+        for (const id in comandeDaAnalizzare) {
+            const c = comandeDaAnalizzare[id];
+            totaleComande++;
+            let totaleComanda = 0;
+            
+            (c.piatti || []).forEach(p => {
+                const q = Number(p.quantita || 0);
+                const prezzoTot = calcolaPrezzoConSconto(p);
+                totaleComanda += prezzoTot;
+                
+                if (!piattiMap[p.nome]) piattiMap[p.nome] = { quantita: 0, incasso: 0 };
+                piattiMap[p.nome].quantita += q;
+                piattiMap[p.nome].incasso += prezzoTot;
+                
+                (p.ingredienti || []).forEach(ing => {
+                    const qty = (Number(ing.qtyPerUnit) || 1) * q;
+                    ingrMap[ing.nome] = (ingrMap[ing.nome] || 0) + qty;
+                    incassiIngredienti[ing.nome] = (incassiIngredienti[ing.nome] || 0) + prezzoTot;
+                });
+            });
+            
+            if (c.metodoPagamento === "pos") {
+                totalePos += totaleComanda;
+            } else {
+                totaleContanti += totaleComanda;
+            }
+            
+            totaleIncasso += totaleComanda;
+            if (c.commento) incassoAsporto += totaleComanda;
+
+            listaComande.push({
+                id,
+                numero: c.numero,
+                lettera: c.lettera,
+                totale: totaleComanda,
+                piatti: (c.piatti || []).map(p => p.quantita + "x " + p.nome).join(", "),
+                data: c.timestamp
+            });
+        }
+
+        const piattiByQuantita = Object.entries(piattiMap).sort((a,b) => b[1].quantita - a[1].quantita);
+        const piattiByIncasso = Object.entries(piattiMap).sort((a,b) => b[1].incasso - a[1].incasso);
+        const ingrByQuantita = Object.entries(ingrMap).sort((a,b) => b[1] - a[1]);
+        const ingrIncassiArray = Object.entries(incassiIngredienti).map(([n,i]) => ({ nome: n, incasso: i }));
+
+        window.statistiche = {
+            totaleComande,
+            totaleIncasso,
+            totalePos,
+            totaleContanti,
+            incassoAsporto,
+            piattiByQuantita,
+            piattiByIncasso,
+            ingrByQuantita,
+            ingrIncassiArray,
+            listaComande,
+            fondoCassa: fondoCassaTotale, 
+            titoloReport: filtroSelect.options[filtroSelect.selectedIndex].innerText // Salviamo il nome per PDF/Excel
+        };
+
+        const rows = piattiByQuantita.map(([nome, v]) => 
+            `<tr><td style="text-align:left; padding:6px;">${nome}</td><td style="text-align:center; padding:6px;">${v.quantita}</td><td style="text-align:right; padding:6px;">€${v.incasso.toFixed(2)}</td></tr>`
+        ).join("");
+
+        contenuto.innerHTML = `
+            <h3 style="color:blue;">Report: ${window.statistiche.titoloReport}</h3>
+            <p><b>Numero totale comande:</b> ${totaleComande}</p>
+            <p><b>Fondo Cassa Iniziale:</b> €${fondoCassaTotale.toFixed(2)}</p>
+            <p><b>Incasso POS:</b> €${totalePos.toFixed(2)}</p>
+            <p><b>Incasso Contanti:</b> €${totaleContanti.toFixed(2)}</p>
+            <p><b>Di cui Asporto:</b> €${incassoAsporto.toFixed(2)}</p>
+            <hr style="margin:15px 0; border: 1px solid #ccc;">
+            <p style="font-size: 1.1em;"><b>SOLDI IN CASSA (Fondo + Contanti):</b> <span style="color:green; font-weight:bold;">€${(fondoCassaTotale + totaleContanti).toFixed(2)}</span></p>
+            <p style="font-size: 1.1em;"><b>GUADAGNO (tolto fondo cassa):</b> <span style="color:blue; font-weight:bold;">€${totaleIncasso.toFixed(2)}</span></p>
+            
+            <table border="0" style="width:100%; border-collapse:collapse; margin-top:20px;">
+            <thead>
+            <tr style="border-bottom:2px solid #444;">
+                <th style="text-align:left; padding:6px;">Piatto</th>
+                <th style="text-align:center; padding:6px;">Quantità</th>
+                <th style="text-align:right; padding:6px;">Incasso</th>
+            </tr>
+            </thead>
+            <tbody>
+            ${rows.replace(/<\/tr>/g,"</tr><tr style='border-bottom:1px solid #ccc;'></tr>")}
+            </tbody>
+        </table>
+        `;
+
+        // Ricollego i bottoni
+        const excelBtn = document.getElementById("generaExcelBtn");
+        const pdfBtn = document.getElementById("generaPdfBtn");
+        if (excelBtn) excelBtn.onclick = generaExcel;
+        if (pdfBtn) pdfBtn.onclick = generaPdf;
+
+    } catch (error) {
+        console.error(error);
+        notify("Errore caricamento statistiche: " + error.message, "error");
+    } finally {
+        hideLoader();
     }
-
-    const piattiByQuantita = Object.entries(piattiMap).sort((a,b) => b[1].quantita - a[1].quantita);
-    const piattiByIncasso = Object.entries(piattiMap).sort((a,b) => b[1].incasso - a[1].incasso);
-    const ingrByQuantita = Object.entries(ingrMap).sort((a,b) => b[1] - a[1]);
-    const ingrIncassiArray = Object.entries(incassiIngredienti).map(([n,i]) => ({ nome: n, incasso: i }));
-
-    window.statistiche = {
-        totaleComande,
-        totaleIncasso,
-        totalePos,
-        totaleContanti,
-        incassoAsporto,
-        piattiByQuantita,
-        piattiByIncasso,
-        ingrByQuantita,
-        ingrIncassiArray,
-        listaComande,
-        fondoCassa // 🔹 SALVO IL FONDO CASSA IN MEMORIA PER EXCEL E PDF
-    };
-
-    const rows = piattiByQuantita.map(([nome, v]) => 
-        `<tr><td style="text-align:left; padding:6px;">${nome}</td><td style="text-align:center; padding:6px;">${v.quantita}</td><td style="text-align:right; padding:6px;">€${v.incasso.toFixed(2)}</td></tr>`
-    ).join("");
-
-    contenuto.innerHTML = `
-        <h3 style="color:blue;">Statistiche Vendite</h3>
-        <p><b>Numero totale comande:</b> ${totaleComande}</p>
-        <p><b>Fondo Cassa Iniziale:</b> €${fondoCassa.toFixed(2)}</p>
-        <p><b>Incasso POS:</b> €${totalePos.toFixed(2)}</p>
-        <p><b>Incasso Contanti:</b> €${totaleContanti.toFixed(2)}</p>
-        <p><b>Di cui Asporto:</b> €${incassoAsporto.toFixed(2)}</p>
-        <hr style="margin:15px 0; border: 1px solid #ccc;">
-        <p style="font-size: 1.1em;"><b>SOLDI TOTALI IN CASSA (Fondo + Contanti):</b> <span style="color:green; font-weight:bold;">€${(fondoCassa + totaleContanti).toFixed(2)}</span></p>
-        <p style="font-size: 1.1em;"><b>GUADAGNO (tolto fondo cassa):</b> <span style="color:blue; font-weight:bold;">€${totaleIncasso.toFixed(2)}</span></p>
-        
-        <table border="0" style="width:100%; border-collapse:collapse; margin-top:20px;">
-        <thead>
-        <tr style="border-bottom:2px solid #444;">
-            <th style="text-align:left; padding:6px;">Piatto</th>
-            <th style="text-align:center; padding:6px;">Quantità</th>
-            <th style="text-align:right; padding:6px;">Incasso</th>
-        </tr>
-        </thead>
-        <tbody>
-        ${rows.replace(/<\/tr>/g,"</tr><tr style='border-bottom:1px solid #ccc;'></tr>")}
-        </tbody>
-    </table>
-    `;
-
-
-
-  // ricollego i bottoni (se esistono)
-  const excelBtn = document.getElementById("generaExcelBtn");
-  const pdfBtn = document.getElementById("generaPdfBtn");
-  if (excelBtn) excelBtn.onclick = generaExcel;
-  if (pdfBtn) pdfBtn.onclick = generaPdf;
-  hideLoader();
 }
 // --- EXCEL PDF ---
 async function generaExcel() {
