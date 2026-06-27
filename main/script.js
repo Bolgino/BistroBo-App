@@ -1160,15 +1160,18 @@ if (archiviaComandeBtn) {
         
         const modal = document.createElement("div");
         modal.className = "modal-varianti";
+        // Aggiungiamo padding interno controllato e bordi sicuri
+        modal.style.padding = "25px";
+        modal.style.boxSizing = "border-box";
         modal.innerHTML = `
-            <h3>📦 Archivia Turno</h3>
-            <p style="font-size: 0.9em; color: #555;">Le comande verranno rimosse dai monitor attuali e salvate nello storico delle statistiche.</p>
-            <label><b>Nome Turno / Giornata:</b></label>
-            <input type="text" id="nomeTurnoInput" value="Turno ${defaultName}" style="width: 100%; padding: 10px; margin-top: 10px; border-radius: 6px; border: 1px solid #ccc; font-size: 1.1em;">
+            <h3 style="margin-bottom: 10px;">📦 Archivia Turno</h3>
+            <p style="font-size: 0.9em; color: #555; margin-bottom: 15px;">Le comande verranno rimosse dai monitor attuali e salvate nello storico.</p>
+            <label style="display:block; text-align:left; font-weight:bold; margin-bottom:5px;">Nome Turno / Giornata:</label>
+            <input type="text" id="nomeTurnoInput" value="Turno ${defaultName}" style="width: 100%; box-sizing: border-box; padding: 10px; margin-bottom: 10px; border-radius: 6px; border: 1px solid #ccc; font-size: 1.1em; outline: none;">
             
-            <div class="modal-actions" style="margin-top: 20px;">
-                <button class="btn-chiudi" id="annullaArchiviaBtn">Annulla</button>
-                <button class="btn-salva" id="confermaArchiviaBtn" style="background-color: #4CAF50;">Archivia Ora</button>
+            <div class="modal-actions" style="margin-top: 20px; display: flex; gap: 10px;">
+                <button class="btn-chiudi" id="annullaArchiviaBtn" style="flex: 1; margin:0;">Annulla</button>
+                <button class="btn-salva" id="confermaArchiviaBtn" style="flex: 1; margin:0; background-color: #4CAF50;">Archivia Ora</button>
             </div>
         `;
         overlay.appendChild(modal);
@@ -6552,12 +6555,46 @@ function modificaPiattoMenu(menuId, piatto) {
     };
 }
 // -------------------- STATISTICHE ADMIN --------------------
-// Aggiungiamo un event listener al filtro per ricaricare le statistiche quando cambia
+// ================= LOGICA STATISTICHE (Tab e Filtri) =================
+let modalitaStatistiche = "corrente"; // Può essere "corrente", "globale" o l'ID di un turno
+
 document.addEventListener("DOMContentLoaded", () => {
+    const btnCorrente = document.getElementById("btnStatCorrente");
+    const btnGlobale = document.getElementById("btnStatGlobale");
     const filtroSelect = document.getElementById("filtroStatistiche");
-    if(filtroSelect) {
-        filtroSelect.addEventListener("change", caricaStatistiche);
-    }
+    
+    // Click su "Turno Attuale"
+    if(btnCorrente) btnCorrente.addEventListener("click", () => {
+        btnCorrente.classList.add("active");
+        btnGlobale.classList.remove("active");
+        if(filtroSelect) filtroSelect.value = ""; // Resetta la tendina
+        modalitaStatistiche = "corrente";
+        caricaStatistiche();
+    });
+    
+    // Click su "Totale Globale"
+    if(btnGlobale) btnGlobale.addEventListener("click", () => {
+        btnGlobale.classList.add("active");
+        btnCorrente.classList.remove("active");
+        if(filtroSelect) filtroSelect.value = ""; // Resetta la tendina
+        modalitaStatistiche = "globale";
+        caricaStatistiche();
+    });
+    
+    // Selezione dalla tendina "Archivio"
+    if(filtroSelect) filtroSelect.addEventListener("change", () => {
+        if(filtroSelect.value !== "") {
+            // Spegne le due tab se si sceglie un archivio specifico
+            btnCorrente.classList.remove("active");
+            btnGlobale.classList.remove("active");
+            modalitaStatistiche = filtroSelect.value;
+        } else {
+            // Se si seleziona "-- Seleziona turno --", torna al turno attuale
+            btnCorrente.click();
+            return;
+        }
+        caricaStatistiche();
+    });
 });
 
 async function caricaStatistiche() {
@@ -6566,10 +6603,10 @@ async function caricaStatistiche() {
 
     const contenuto = document.getElementById("contenutoStatistiche");
     const filtroSelect = document.getElementById("filtroStatistiche");
-    const filtroSelezionato = filtroSelect ? filtroSelect.value : "correnti";
+    const filtroContainer = document.getElementById("filtroStatisticheContainer");
+    const statsSubTabs = document.getElementById("statsSubTabs");
 
     try {
-        // 1. Carica le comande correnti e lo storico
         const [snapComande, snapStorico, snapFondoCorrente] = await Promise.all([
             db.ref("comande").once("value"),
             db.ref("storico_giornate").once("value"),
@@ -6579,29 +6616,40 @@ async function caricaStatistiche() {
         const comandeCorrenti = snapComande.val() || {};
         const storicoGiornate = snapStorico.val() || {};
         let fondoCassaTotale = 0;
-        
-        // Variabile che conterrà TUTTE le comande da analizzare in base al filtro
         let comandeDaAnalizzare = {};
-
-        // 2. Popola il menu a tendina (solo la prima volta o se ci sono nuovi turni)
-        if (filtroSelect && filtroSelect.options.length <= 2) {
-            Object.keys(storicoGiornate).forEach(key => {
-                const turno = storicoGiornate[key];
-                const opt = document.createElement("option");
-                opt.value = key; // L'ID del turno archiviato
-                opt.innerText = `Archivio: ${turno.nome}`;
-                filtroSelect.appendChild(opt);
-            });
+        
+        // 1. Verifica se il Sistema a Giornate è attivo
+        const sistemaGiornateAttivo = window.settings && window.settings.sistemaGiornateAbilitato;
+        
+        if (sistemaGiornateAttivo) {
+            // Mostra tutto il blocco delle tab e del filtro
+            if (statsSubTabs) statsSubTabs.style.display = "flex";
+            if (filtroContainer) filtroContainer.style.display = "flex";
+            
+            // Popola il menu a tendina preservando la scelta attuale
+            const currentVal = filtroSelect ? filtroSelect.value : "";
+            if (filtroSelect) {
+                filtroSelect.innerHTML = `<option value="">-- Seleziona turno --</option>`;
+                Object.keys(storicoGiornate).forEach(key => {
+                    const turno = storicoGiornate[key];
+                    const opt = document.createElement("option");
+                    opt.value = key;
+                    opt.innerText = `📦 ${turno.nome}`;
+                    if (key === currentVal) opt.selected = true;
+                    filtroSelect.appendChild(opt);
+                });
+            }
+        } else {
+            // SISTEMA DISATTIVATO: Nascondi UI di filtraggio avanzato
+            if (statsSubTabs) statsSubTabs.style.display = "none";
+            if (filtroContainer) filtroContainer.style.display = "none";
         }
 
-        // 3. Applica il Filtro Logico
-        if (filtroSelezionato === "correnti") {
-            comandeDaAnalizzare = comandeCorrenti;
-            fondoCassaTotale = parseFloat(snapFondoCorrente.val()) || 0;
-            document.getElementById("filtroStatisticheContainer").style.borderLeft = "4px solid #2196F3"; // Blu
+        const isSistemaOff = !sistemaGiornateAttivo;
 
-        } else if (filtroSelezionato === "tutte") {
-            // Unisci le correnti + tutti gli storici
+        // 2. SMISTAMENTO LOGICO DATI
+        if (isSistemaOff || modalitaStatistiche === "globale") {
+            // UNISCE TUTTO: Correnti + Storici
             comandeDaAnalizzare = { ...comandeCorrenti };
             fondoCassaTotale = parseFloat(snapFondoCorrente.val()) || 0;
             
@@ -6611,20 +6659,28 @@ async function caricaStatistiche() {
                 }
                 fondoCassaTotale += (parseFloat(turno.fondoCassa) || 0);
             });
-            document.getElementById("filtroStatisticheContainer").style.borderLeft = "4px solid #9C27B0"; // Viola
+            window.titoloReportStatistiche = isSistemaOff ? "Globale (Sistema Giornate OFF)" : "Totale Globale Sagra";
+
+        } else if (modalitaStatistiche === "corrente") {
+            // SOLO TURNO ATTUALE
+            comandeDaAnalizzare = comandeCorrenti;
+            fondoCassaTotale = parseFloat(snapFondoCorrente.val()) || 0;
+            window.titoloReportStatistiche = "Turno Attuale (Non archiviate)";
 
         } else {
-            // Un turno specifico archiviato
-            const turnoScelto = storicoGiornate[filtroSelezionato];
+            // UN TURNO ARCHIVIATO SPECIFICO
+            const turnoScelto = storicoGiornate[modalitaStatistiche];
             if (turnoScelto && turnoScelto.comande) {
                 comandeDaAnalizzare = turnoScelto.comande;
                 fondoCassaTotale = parseFloat(turnoScelto.fondoCassa) || 0;
+                window.titoloReportStatistiche = "Archivio: " + turnoScelto.nome;
+            } else {
+                comandeDaAnalizzare = {};
+                window.titoloReportStatistiche = "Nessun dato trovato";
             }
-            document.getElementById("filtroStatisticheContainer").style.borderLeft = "4px solid #4CAF50"; // Verde
         }
 
-
-        // 4. DA QUI IN POI, IL CALCOLO È IDENTICO AL TUO CODICE ORIGINALE!
+        // 3. CALCOLO STATISTICHE MATEMATICHE 
         let totaleComande = 0;
         let totaleIncasso = 0;
         let totalePos = 0;
@@ -6681,18 +6737,10 @@ async function caricaStatistiche() {
         const ingrIncassiArray = Object.entries(incassiIngredienti).map(([n,i]) => ({ nome: n, incasso: i }));
 
         window.statistiche = {
-            totaleComande,
-            totaleIncasso,
-            totalePos,
-            totaleContanti,
-            incassoAsporto,
-            piattiByQuantita,
-            piattiByIncasso,
-            ingrByQuantita,
-            ingrIncassiArray,
-            listaComande,
-            fondoCassa: fondoCassaTotale, 
-            titoloReport: filtroSelect.options[filtroSelect.selectedIndex].innerText // Salviamo il nome per PDF/Excel
+            totaleComande, totaleIncasso, totalePos, totaleContanti, incassoAsporto,
+            piattiByQuantita, piattiByIncasso, ingrByQuantita, ingrIncassiArray,
+            listaComande, fondoCassa: fondoCassaTotale, 
+            titoloReport: window.titoloReportStatistiche
         };
 
         const rows = piattiByQuantita.map(([nome, v]) => 
@@ -6700,31 +6748,30 @@ async function caricaStatistiche() {
         ).join("");
 
         contenuto.innerHTML = `
-            <h3 style="color:blue;">Report: ${window.statistiche.titoloReport}</h3>
+            <h3 style="color:blue; border-bottom: 2px solid #ccc; padding-bottom: 5px;">Report: ${window.titoloReportStatistiche}</h3>
             <p><b>Numero totale comande:</b> ${totaleComande}</p>
-            <p><b>Fondo Cassa Iniziale:</b> €${fondoCassaTotale.toFixed(2)}</p>
+            <p><b>Fondo Cassa Base:</b> €${fondoCassaTotale.toFixed(2)}</p>
             <p><b>Incasso POS:</b> €${totalePos.toFixed(2)}</p>
             <p><b>Incasso Contanti:</b> €${totaleContanti.toFixed(2)}</p>
             <p><b>Di cui Asporto:</b> €${incassoAsporto.toFixed(2)}</p>
             <hr style="margin:15px 0; border: 1px solid #ccc;">
             <p style="font-size: 1.1em;"><b>SOLDI IN CASSA (Fondo + Contanti):</b> <span style="color:green; font-weight:bold;">€${(fondoCassaTotale + totaleContanti).toFixed(2)}</span></p>
-            <p style="font-size: 1.1em;"><b>GUADAGNO (tolto fondo cassa):</b> <span style="color:blue; font-weight:bold;">€${totaleIncasso.toFixed(2)}</span></p>
+            <p style="font-size: 1.1em;"><b>GUADAGNO REALE:</b> <span style="color:blue; font-weight:bold;">€${totaleIncasso.toFixed(2)}</span></p>
             
             <table border="0" style="width:100%; border-collapse:collapse; margin-top:20px;">
-            <thead>
-            <tr style="border-bottom:2px solid #444;">
-                <th style="text-align:left; padding:6px;">Piatto</th>
-                <th style="text-align:center; padding:6px;">Quantità</th>
-                <th style="text-align:right; padding:6px;">Incasso</th>
-            </tr>
-            </thead>
-            <tbody>
-            ${rows.replace(/<\/tr>/g,"</tr><tr style='border-bottom:1px solid #ccc;'></tr>")}
-            </tbody>
-        </table>
+                <thead>
+                    <tr style="border-bottom:2px solid #444;">
+                        <th style="text-align:left; padding:6px;">Piatto</th>
+                        <th style="text-align:center; padding:6px;">Quantità</th>
+                        <th style="text-align:right; padding:6px;">Incasso</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rows.replace(/<\/tr>/g,"</tr><tr style='border-bottom:1px solid #eee;'></tr>")}
+                </tbody>
+            </table>
         `;
 
-        // Ricollego i bottoni
         const excelBtn = document.getElementById("generaExcelBtn");
         const pdfBtn = document.getElementById("generaPdfBtn");
         if (excelBtn) excelBtn.onclick = generaExcel;
