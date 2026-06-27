@@ -1243,7 +1243,8 @@ function aggiornaRiepilogoCarrelloUI() {
         // 🔥 FIX TOTALI: Calcolo corretto del costo grezzo della riga includendo i contorni pagati extra
         let costoContorniPagati = 0;
         if (item.contorniScelti && item.contorniScelti.length > 0) {
-            item.contorniScelti.forEach(c => costoContorniPagati += (c.prezzoPagato || 0));
+            // FIX: Aggiunto c.extraPrezzo per far figurare il prezzo extra delle salse sui contorni
+            item.contorniScelti.forEach(c => costoContorniPagati += (c.prezzoPagato || 0) + (c.extraPrezzo || 0));
         }
         
         const costoRigaGrezzo = (item.prezzo || 0) + (item.extraPrezzo || 0) + costoContorniPagati;
@@ -1660,7 +1661,15 @@ function renderVariantiCliente(piatto, maxGratis) {
         if (typeof idPiattoInModifica === "number") {
             // MODIFICA PIATTO ESISTENTE NEL CARRELLO
             carrelloCliente[idPiattoInModifica].varianti = tempVariantiCliente;
-            carrelloCliente[idPiattoInModifica].extraPrezzo = extraFinali;
+            
+            // FIX: Sommiamo agli extra del piatto anche gli extra passati dei contorni
+            let costoContorni = 0;
+            if (carrelloCliente[idPiattoInModifica].contorniScelti && carrelloCliente[idPiattoInModifica].contorniScelti.length > 0) {
+                carrelloCliente[idPiattoInModifica].contorniScelti.forEach(c => {
+                    costoContorni += (c.prezzoPagato || 0) + (c.extraPrezzo || 0);
+                });
+            }
+            carrelloCliente[idPiattoInModifica].extraPrezzo = extraFinali + costoContorni;
         } else {
             // AGGIUNTA COME PIATTO NUOVO
             carrelloCliente.push({
