@@ -282,33 +282,21 @@ async function renderPreordiniAdmin(data) {
                 ${piattiCibo.map(pi => `
                     <div style="margin-bottom:6px;">
                         <b>${pi.quantita}× ${pi.nome}</b> (€${formattaPrezzoSingolo(pi)})
-                        ${pi.ingredienti && pi.ingredienti.length
-                            ? `<div style="font-size:0.75em; color:#555;">
-                                Ingredienti: ${pi.ingredienti.map(i => `${i.nome}${i.qtyPerUnit ? ` (${i.qtyPerUnit}${i.unita || ""})` : ""}`).join(", ")}
-                            </div>`
-                            : ""}
+                        
                         ${generaHtmlVariantiPreordine(pi)}
                     </div>
                 `).join("")}
                 ${piattiBere.map(pi => `
                     <div style="margin-bottom:6px;">
                         <b>${pi.quantita}× ${pi.nome}</b> (€${formattaPrezzoSingolo(pi)})
-                        ${pi.ingredienti && pi.ingredienti.length
-                            ? `<div style="font-size:0.75em; color:#555;">
-                                Ingredienti: ${pi.ingredienti.map(i => `${i.nome}${i.qtyPerUnit ? ` (${i.qtyPerUnit}${i.unita || ""})` : ""}`).join(", ")}
-                            </div>`
-                            : ""}
+                        
                         ${generaHtmlVariantiPreordine(pi)}
                     </div>
                 `).join("")}
                 ${piattiSnack.map(pi => `
                     <div style="margin-bottom:6px;">
                         <b>${pi.quantita}× ${pi.nome}</b> (€${formattaPrezzoSingolo(pi)})
-                        ${pi.ingredienti && pi.ingredienti.length
-                            ? `<div style="font-size:0.75em; color:#555;">
-                                Ingredienti: ${pi.ingredienti.map(i => `${i.nome}${i.qtyPerUnit ? ` (${i.qtyPerUnit}${i.unita || ""})` : ""}`).join(", ")}
-                            </div>`
-                            : ""}
+                        
                         ${generaHtmlVariantiPreordine(pi)}
                     </div>
                 `).join("")}
@@ -478,33 +466,21 @@ function renderPreordiniCassa(data) {
                 ${piattiCibo.map(pi => `
                     <div style="margin-bottom:6px;">
                         <b>${pi.quantita}× ${pi.nome}</b> (€${formattaPrezzoSingolo(pi)})
-                        ${pi.ingredienti && pi.ingredienti.length
-                            ? `<div style="font-size:0.75em; color:#555;">
-                                Ingredienti: ${pi.ingredienti.map(i => `${i.nome}${i.qtyPerUnit ? ` (${i.qtyPerUnit}${i.unita || ""})` : ""}`).join(", ")}
-                            </div>`
-                            : ""}
+                        
                         ${generaHtmlVariantiPreordine(pi)}
                     </div>
                 `).join("")}
                 ${piattiBere.map(pi => `
                     <div style="margin-bottom:6px;">
                         <b>${pi.quantita}× ${pi.nome}</b> (€${formattaPrezzoSingolo(pi)})
-                        ${pi.ingredienti && pi.ingredienti.length
-                            ? `<div style="font-size:0.75em; color:#555;">
-                                Ingredienti: ${pi.ingredienti.map(i => `${i.nome}${i.qtyPerUnit ? ` (${i.qtyPerUnit}${i.unita || ""})` : ""}`).join(", ")}
-                            </div>`
-                            : ""}
+                        
                         ${generaHtmlVariantiPreordine(pi)}
                     </div>
                 `).join("")}
                 ${piattiSnack.map(pi => `
                     <div style="margin-bottom:6px;">
                         <b>${pi.quantita}× ${pi.nome}</b> (€${formattaPrezzoSingolo(pi)})
-                        ${pi.ingredienti && pi.ingredienti.length
-                            ? `<div style="font-size:0.75em; color:#555;">
-                                Ingredienti: ${pi.ingredienti.map(i => `${i.nome}${i.qtyPerUnit ? ` (${i.qtyPerUnit}${i.unita || ""})` : ""}`).join(", ")}
-                            </div>`
-                            : ""}
+                        
                         ${generaHtmlVariantiPreordine(pi)}
                     </div>
                 `).join("")}
