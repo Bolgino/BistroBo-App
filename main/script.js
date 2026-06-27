@@ -600,23 +600,43 @@ function initImpostazioniToggle() {
             if (!checkOnline(true)) return;
 
             // Usa disonotify con pulsanti conferma / annulla
-            disonotify("⚠️ Sei sicuro di voler eliminare tutte le comande? Questa operazione non può essere annullata.", {
-                confirmText: "Elimina",
+            disonotify("⚠️ Vuoi eliminare le comande attuali e azzerare la cassa? (Se il sistema a giornate è attivo, verranno eliminati anche tutti gli archivi storici!)", {
+                confirmText: "Pialla Tutto 🚨",
                 showCancel: true,
                 cancelText: "Annulla",
                 onConfirm: async () => {
                     try {
+                        showLoader();
+                        // 1. Cancella comande attuali, contatore e cassa
                         await db.ref("comande").remove();
                         await db.ref("impostazioni/contatoreComande").set(0); 
-                        // 🔹 AZZERA IL FONDO CASSA A FINE SERATA
                         await db.ref("impostazioni/fondoCassa").remove(); 
                         
-                        notify("✅ Tutte le comande sono state eliminate e il fondo cassa azzerato!", "info");
+                        // 2. Cancella l'intero archivio delle giornate
+                        await db.ref("storico_giornate").remove();
+                        
+                        notify("✅ Database completamente resettato (Comande + Archivi)!", "info");
 
+                        // Pulisce l'interfaccia UI admin
                         const listaComandeAdmin = document.getElementById("listaComandeAdmin");
                         if (listaComandeAdmin) listaComandeAdmin.innerHTML = "";
+                        
+                        // Resetta il filtro delle statistiche
+                        const filtroSelect = document.getElementById("filtroStatistiche");
+                        if (filtroSelect) {
+                            filtroSelect.innerHTML = `
+                                <option value="correnti">Turno Attuale (Non archiviate)</option>
+                                <option value="tutte">Globale (Tutta la Sagra)</option>
+                            `;
+                        }
+                        
+                        // Ricarica la schermata se è in Statistiche
+                        if (typeof caricaStatistiche === "function") caricaStatistiche();
+                        
+                        hideLoader();
                     } catch (err) {
                         console.error(err);
+                        hideLoader();
                         notify("❌ Errore durante l'eliminazione: " + err.message, "error");
                     }
                 },
@@ -1041,9 +1061,6 @@ function initImpostazioniToggle() {
 	        // Mostra il box archiviazione se ON, altrimenti lo nasconde
 	        if (boxArchivia) boxArchivia.style.display = val ? "flex" : "none";
 	        
-	        // Opzionale: Nascondere il tasto "Cancella tutte le comande (rosso)" se le giornate sono attive per evitare errori
-	        const boxCancella = document.getElementById("cancellaComandeBtn")?.parentElement;
-	        if(boxCancella) boxCancella.style.display = val ? "none" : "flex";
 	    });
 	}
 }
