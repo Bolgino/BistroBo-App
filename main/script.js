@@ -5716,7 +5716,7 @@ async function caricaIngredientiPerRuolo(ruolo) {
     const container = document.getElementById(tabId);
     if (!container) return;
 
-    container.innerHTML = "Caricamento ingredienti...";
+    container.innerHTML = "<div style='color:white; text-align:center; padding:20px;'>Caricamento ingredienti...</div>";
 
     db.ref("ingredienti").on("value", async snap => {
         const data = snap.val() || {};
@@ -5754,22 +5754,32 @@ async function caricaIngredientiPerRuolo(ruolo) {
             categorie[ing.categoria].push({ id, ...ing });
         });
 
-        // SE NON CI SONO INGREDIENTI PER QUESTO RUOLO:
+        // SE NON CI SONO INGREDIENTI PER QUESTO RUOLO (Ora con sfondo bianco in stile Admin):
         if (Object.keys(categorie).length === 0) {
              let msgIngr = "La dispensa è vuota... aria fritta stasera? 🌬️";
              if (ruolo === "cucina") msgIngr = "Niente ingredienti per te. Oggi si ordina la pizza! 🍕";
              if (ruolo === "bere") msgIngr = "Cantina vuota. Fai scorrere l'acqua del rubinetto! 🚰";
              if (ruolo === "snack") msgIngr = "Niente patatine o fritti... Mettiti a dieta! 🥕";
              
-             container.innerHTML = `<div style='text-align:center; padding: 30px; color: #777; font-style: italic; font-size: 1.1em;'>${msgIngr}</div>`;
+             container.innerHTML = `<div style='background: white; border-radius: 12px; padding: 40px; text-align:center; color: #555; font-style: italic; font-size: 1.2em; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin: 20px auto; max-width: 800px;'>${msgIngr}</div>`;
              return;
         }
 
-        // 🔹 NUOVO RESTYLING UNIFICATO (STILE ADMIN - SENZA TITOLI CATEGORIA)
+        // 🔹 CREIAMO IL CONTENITORE BIANCO (CARD) STILE ADMIN
+        const whiteCard = document.createElement("div");
+        whiteCard.style.background = "#ffffff";
+        whiteCard.style.borderRadius = "12px";
+        whiteCard.style.padding = "20px";
+        whiteCard.style.boxShadow = "0 4px 15px rgba(0,0,0,0.1)";
+        whiteCard.style.maxWidth = "1000px";
+        whiteCard.style.margin = "20px auto"; // Centra la card nella pagina
+
         const listWrapper = document.createElement("div");
         listWrapper.className = "ingredienti-list";
 
         Object.entries(categorie).forEach(([cat, items]) => {
+            // Rimosso il titolo H3 (es: Bevande) come da te richiesto
+
             items.forEach(ing => {
                 const itemDiv = document.createElement("div");
                 itemDiv.className = "ingrediente-item";
@@ -5781,7 +5791,7 @@ async function caricaIngredientiPerRuolo(ruolo) {
                 nameSpan.innerText = ing.nome;
                 nomeDiv.appendChild(nameSpan);
 
-                // Contenitore Controlli Allineati
+                // Contenitore Controlli Allineati (Destra)
                 const controlliDiv = document.createElement("div");
                 controlliDiv.className = "ingrediente-controlli";
 
@@ -5793,7 +5803,6 @@ async function caricaIngredientiPerRuolo(ruolo) {
                 qtyInput.step = "any";
                 qtyInput.value = ing.rimanente === null || ing.rimanente === undefined ? "" : ing.rimanente;
                 
-                // Viene mantenuta l'attivazione della tua funzione speciale di incremento!
                 abilitaIncrementoDinamico(qtyInput); 
                 
                 qtyInput.onchange = async (e) => {
@@ -5808,7 +5817,7 @@ async function caricaIngredientiPerRuolo(ruolo) {
                 // Unità di misura
                 const unitaSpan = document.createElement("span");
                 unitaSpan.innerText = ing.unita || "pz";
-                unitaSpan.style.width = "40px";
+                unitaSpan.style.width = "30px";
                 unitaSpan.style.textAlign = "center";
                 unitaSpan.style.fontWeight = "bold";
                 unitaSpan.style.color = "#555";
@@ -5819,6 +5828,8 @@ async function caricaIngredientiPerRuolo(ruolo) {
                 const isEsaurito = (ing.rimanente === 0);
                 statoSpan.style.color = isEsaurito ? "red" : "green";
                 statoSpan.innerText = isEsaurito ? "Esaurito" : "Disponibile";
+                statoSpan.style.width = "85px"; // Larghezza fissa per allineare i bottoni
+                statoSpan.style.textAlign = "center";
 
                 // Bottone Imposta Disponibile
                 const btnDisp = document.createElement("button");
@@ -5836,24 +5847,24 @@ async function caricaIngredientiPerRuolo(ruolo) {
                     await db.ref(`ingredienti/${ing.id}`).update({ rimanente: 0, disponibile: false });
                 };
 
-                // Appendiamo i controlli nel blocco destro
+                // Assemblaggio elementi a destra
                 controlliDiv.appendChild(qtyInput);
                 controlliDiv.appendChild(unitaSpan);
                 controlliDiv.appendChild(statoSpan);
                 controlliDiv.appendChild(btnDisp);
                 controlliDiv.appendChild(btnEs);
 
-                // Uniamo blocco sinistro e destro nella riga della card
+                // Inserimento righe complete
                 itemDiv.appendChild(nomeDiv);
                 itemDiv.appendChild(controlliDiv);
 
-                // Aggiungiamo la card alla lista globale
                 listWrapper.appendChild(itemDiv);
             });
         });
 
-        // Iniettiamo la lista completata nel tab attivo di riferimento
-        container.appendChild(listWrapper);
+        // Montiamo tutto nel DOM
+        whiteCard.appendChild(listWrapper);
+        container.appendChild(whiteCard);
     });
 }
 // -------------------- UTENTI --------------------
