@@ -5710,8 +5710,8 @@ async function caricaComandePerRuolo(daFareDiv, storicoDiv, ruolo) {
 async function caricaIngredientiPerRuolo(ruolo) {
     if (!checkOnline(true)) return;
     const tabId = ruolo === "cucina" ? "ingredientiCucinaTab" :
-                    ruolo === "bere" ? "ingredientiBereTab" :
-                    "ingredientiSnackTab"; // nuovo tab per snack
+                  ruolo === "bere" ? "ingredientiBereTab" :
+                  "ingredientiSnackTab"; // nuovo tab per snack
 
     const container = document.getElementById(tabId);
     if (!container) return;
@@ -5746,8 +5746,6 @@ async function caricaIngredientiPerRuolo(ruolo) {
             categorieRuolo = ["bevande"];
         }
 
-
-
         // Raggruppa ingredienti per categoria
         const categorie = {};
         Object.entries(data).forEach(([id, ing]) => {
@@ -5755,7 +5753,8 @@ async function caricaIngredientiPerRuolo(ruolo) {
             if (!categorie[ing.categoria]) categorie[ing.categoria] = [];
             categorie[ing.categoria].push({ id, ...ing });
         });
-		// SE NON CI SONO INGREDIENTI PER QUESTO RUOLO:
+
+        // SE NON CI SONO INGREDIENTI PER QUESTO RUOLO:
         if (Object.keys(categorie).length === 0) {
              let msgIngr = "La dispensa è vuota... aria fritta stasera? 🌬️";
              if (ruolo === "cucina") msgIngr = "Niente ingredienti per te. Oggi si ordina la pizza! 🍕";
@@ -5766,39 +5765,37 @@ async function caricaIngredientiPerRuolo(ruolo) {
              return;
         }
 
-        // Per ogni categoria
+        // 🔹 NUOVO RESTYLING UNIFICATO (STILE ADMIN - SENZA TITOLI CATEGORIA)
+        const listWrapper = document.createElement("div");
+        listWrapper.className = "ingredienti-list";
+
         Object.entries(categorie).forEach(([cat, items]) => {
-            const catDiv = document.createElement("div");
-            const h3 = document.createElement("h3");
-            h3.innerText = cat.charAt(0).toUpperCase() + cat.slice(1);
-            catDiv.appendChild(h3);
-
             items.forEach(ing => {
-                const row = document.createElement("div");
-                row.style.display = "flex";
-                row.style.alignItems = "center";
-                row.style.gap = "8px";
-                row.style.marginBottom = "6px";
+                const itemDiv = document.createElement("div");
+                itemDiv.className = "ingrediente-item";
 
-                // Nome ingrediente
+                // Contenitore Nome
+                const nomeDiv = document.createElement("div");
+                nomeDiv.className = "ingrediente-nome";
                 const nameSpan = document.createElement("span");
                 nameSpan.innerText = ing.nome;
-                nameSpan.style.flex = "1";
+                nomeDiv.appendChild(nameSpan);
 
-                // 🔹 Nuovo span per l'unità di misura
-                const unitaSpan = document.createElement("span");
-                unitaSpan.innerText = ing.unita || "pz"; // default "pz"
-                unitaSpan.style.width = "40px";          // puoi regolare la larghezza
-                unitaSpan.style.textAlign = "center";
+                // Contenitore Controlli Allineati
+                const controlliDiv = document.createElement("div");
+                controlliDiv.className = "ingrediente-controlli";
 
-                // Quantità
+                // Input Quantità Rimanente
                 const qtyInput = document.createElement("input");
                 qtyInput.type = "number";
+                qtyInput.className = "quantita-input";
                 qtyInput.min = 0;
-                abilitaIncrementoDinamico(qtyInput);
-                qtyInput.value = ing.rimanente === null || ing.rimanente === undefined ? "" : ing.rimanente;
-                qtyInput.style.width = "70px";
                 qtyInput.step = "any";
+                qtyInput.value = ing.rimanente === null || ing.rimanente === undefined ? "" : ing.rimanente;
+                
+                // Viene mantenuta l'attivazione della tua funzione speciale di incremento!
+                abilitaIncrementoDinamico(qtyInput); 
+                
                 qtyInput.onchange = async (e) => {
                     let newQty = e.target.value === "" ? null : parseFloat(e.target.value);
                     if (newQty !== null && (isNaN(newQty) || newQty < 0)) newQty = 0;
@@ -5808,47 +5805,55 @@ async function caricaIngredientiPerRuolo(ruolo) {
                     });
                 };
 
+                // Unità di misura
+                const unitaSpan = document.createElement("span");
+                unitaSpan.innerText = ing.unita || "pz";
+                unitaSpan.style.width = "40px";
+                unitaSpan.style.textAlign = "center";
+                unitaSpan.style.fontWeight = "bold";
+                unitaSpan.style.color = "#555";
 
-                // Stato
+                // Testo dello Stato Corrente
                 const statoSpan = document.createElement("span");
-                statoSpan.style.fontWeight = "bold";
+                statoSpan.className = "stato-text";
                 const isEsaurito = (ing.rimanente === 0);
                 statoSpan.style.color = isEsaurito ? "red" : "green";
                 statoSpan.innerText = isEsaurito ? "Esaurito" : "Disponibile";
 
-                // Bottone disponibile
+                // Bottone Imposta Disponibile
                 const btnDisp = document.createElement("button");
+                btnDisp.className = "action-btn btn-disponibile";
                 btnDisp.innerText = "Disponibile";
                 btnDisp.onclick = async () => {
                     await db.ref(`ingredienti/${ing.id}`).update({ rimanente: null, disponibile: true });
                 };
 
-                // Bottone esaurito
+                // Bottone Imposta Esaurito
                 const btnEs = document.createElement("button");
+                btnEs.className = "action-btn btn-esaurito";
                 btnEs.innerText = "Esaurito";
                 btnEs.onclick = async () => {
                     await db.ref(`ingredienti/${ing.id}`).update({ rimanente: 0, disponibile: false });
                 };
 
-                // Append elementi con stile simile ad admin
-                row.appendChild(nameSpan);
-                row.appendChild(qtyInput);
-                row.appendChild(unitaSpan);
-                row.appendChild(statoSpan);
-                row.appendChild(btnDisp);
-                row.appendChild(btnEs);
+                // Appendiamo i controlli nel blocco destro
+                controlliDiv.appendChild(qtyInput);
+                controlliDiv.appendChild(unitaSpan);
+                controlliDiv.appendChild(statoSpan);
+                controlliDiv.appendChild(btnDisp);
+                controlliDiv.appendChild(btnEs);
 
-                // Aggiungi al div categoria
-                catDiv.appendChild(row);
+                // Uniamo blocco sinistro e destro nella riga della card
+                itemDiv.appendChild(nomeDiv);
+                itemDiv.appendChild(controlliDiv);
 
-                // linea orizzontale
-                const hr = document.createElement("hr");
-                hr.style.margin = "4px 0";
-                catDiv.appendChild(hr);
+                // Aggiungiamo la card alla lista globale
+                listWrapper.appendChild(itemDiv);
             });
-
-            container.appendChild(catDiv);
         });
+
+        // Iniettiamo la lista completata nel tab attivo di riferimento
+        container.appendChild(listWrapper);
     });
 }
 // -------------------- UTENTI --------------------
