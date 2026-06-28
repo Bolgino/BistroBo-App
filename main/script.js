@@ -6297,13 +6297,14 @@ function caricaMenuAdmin(){
     const div = document.getElementById("menuAdmin");
     db.ref("menu").on("value", snap => {
         div.innerHTML = "";
+		const data = snap.val() || {};
+        const categorie = { cibi: [], bevande: [], snack: [] };
 // --- EMPTY STATE MENU ADMIN ---
             if (Object.keys(data).length === 0) {
                 div.innerHTML = "<div style='text-align:center; padding: 30px; color: #777; font-style: italic; font-size: 1.1em;'>Il menu è tristemente vuoto. Aggiungi qualche prelibatezza! 🍔</div>";
                 return;
             }
-        const data = snap.val() || {};
-        const categorie = { cibi: [], bevande: [], snack: [] };
+        
 
         for(let id in data){
             const piatto = data[id];
