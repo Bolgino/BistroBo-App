@@ -8708,3 +8708,112 @@ document.querySelectorAll("#cassaDiv .tabBtn").forEach(b=>{
 });
 // attiva di default "Aggiungi Comanda"
 document.getElementById("aggiungiComandaTab").classList.add("active");
+
+// ======================================================================
+// AGGIUNTA A FINE SCRIPT: STILE INGREDIENTI, CONTATORI ED EMPTY STATES
+// (Non tocca né modifica le funzioni originali dell'app, osserva solo il DOM)
+// ======================================================================
+document.addEventListener("DOMContentLoaded", () => {
+    
+    // 1. Funzione intelligente per calcolare e aggiornare i numeri nei titoli
+    function aggiornaContatoriUI() {
+        const checkCount = (containerId, badgeId) => {
+            const container = document.getElementById(containerId);
+            const badge = document.getElementById(badgeId);
+            if (container && badge) {
+                // Conta solo gli elementi reali, scartando i messaggi di "Vuoto"
+                const elementi = Array.from(container.children).filter(el => !el.dataset.empty);
+                badge.innerText = elementi.length;
+            }
+        };
+        checkCount("daFareComandeContainer", "conteggioCucina");
+        checkCount("daBereComandeContainer", "conteggioBere");
+        checkCount("daSnackComandeContainer", "conteggioSnack");
+        checkCount("comandeCassa", "conteggioComande");
+        checkCount("listaComandeAdmin", "conteggioComandeAdmin");
+    }
+
+    // 2. Observer: Scatta automaticamente quando le liste vengono aggiornate
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach(mutation => {
+            const target = mutation.target;
+            
+            aggiornaContatoriUI();
+
+            // --- EMPTY STATES (Messaggi Simpatici) ---
+            if (target.children.length === 0) {
+                let messaggio = "Nessun dato presente.";
+                let emoji = "📭";
+                
+                if (target.id === "daFareComandeContainer" || target.id === "daBereComandeContainer" || target.id === "daSnackComandeContainer") {
+                    messaggio = "Nessuna comanda in attesa. Ottimo lavoro!";
+                    emoji = "🎉";
+                } else if (target.id.includes("storico")) {
+                    messaggio = "Non ci sono comande completate, inizia a lavorare!";
+                    emoji = "💪";
+                } else if (target.id === "listaPreordiniCassa" || target.id === "listaPreordiniAdmin") {
+                    messaggio = "Nessun preordine al momento. Tutto tranquillo!";
+                    emoji = "🏖️";
+                } else if (target.id.includes("menu") && target.id.includes("Container")) {
+                    messaggio = "Il menu è vuoto. Bisogna chiedere all'Admin di inserire i piatti!";
+                    emoji = "🍽️";
+                } else if (target.id.includes("ingredienti") && target.id.includes("Container")) {
+                    messaggio = "Nessun ingrediente assegnato a questo reparto.";
+                    emoji = "🛒";
+                } else if (target.id === "comandeCassa" || target.id === "listaComandeAdmin") {
+                    messaggio = "Nessuna comanda inviata per ora.";
+                    emoji = "📝";
+                } else {
+                    return; // Se è un div non mappato, non fare niente
+                }
+
+                // Inserisce il messaggio col tratteggio
+                target.innerHTML = `<div data-empty="true" style="text-align:center; padding: 40px 20px; color:#777; font-size:1.1em; background:#fdfdfd; border-radius:12px; border:2px dashed #ddd; margin-top: 10px; width: 100%; box-sizing: border-box;"><span style="font-size: 2em; display: block; margin-bottom: 10px;">${emoji}</span><b>${messaggio}</b></div>`;
+            }
+
+            // --- RESTYLING MAGICO DEGLI INGREDIENTI ---
+            if (target.id === "ingredientiCucinaContainer" || target.id === "ingredientiBereContainer" || target.id === "ingredientiSnackContainer") {
+                // Se c'è il messaggio di vuoto, non stilizzare nulla
+                if(target.children[0] && target.children[0].dataset.empty) return; 
+                
+                target.style.display = "grid";
+                target.style.gridTemplateColumns = "repeat(auto-fill, minmax(150px, 1fr))";
+                target.style.gap = "15px";
+
+                Array.from(target.children).forEach(el => {
+                    // Cerca i vecchi div degli ingredienti e li trasforma in bellissimi cartellini
+                    if(el.tagName === "DIV" && !el.dataset.styled) {
+                        el.dataset.styled = "true";
+                        el.style.background = "#f1f8e9";
+                        el.style.border = "1px solid #c5e1a5";
+                        el.style.borderRadius = "8px";
+                        el.style.padding = "15px";
+                        el.style.textAlign = "center";
+                        el.style.boxShadow = "0 2px 4px rgba(0,0,0,0.05)";
+                        el.innerHTML = el.innerHTML.replace("<b>", "<b style='display:block; font-size:1.2em; color:#2e7d32; margin-bottom:5px;'>");
+                    }
+                });
+            }
+        });
+    });
+
+    // Avvia l'osservatore su tutte le liste importanti del gestionale
+    const contenitoriDaMonitorare = [
+        "daFareComandeContainer", "daBereComandeContainer", "daSnackComandeContainer",
+        "storicoComandeContainer", "storicoBereComandeContainer", "storicoSnackComandeContainer",
+        "ingredientiCucinaContainer", "ingredientiBereContainer", "ingredientiSnackContainer",
+        "menuCucinaContainer", "menuBereContainer", "menuSnackContainer",
+        "listaPreordiniCassa", "listaPreordiniAdmin", "comandeCassa", "listaComandeAdmin"
+    ];
+
+    setTimeout(() => {
+        contenitoriDaMonitorare.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                observer.observe(el, { childList: true });
+                // Forza un trigger invisibile all'avvio per mostrare subito le frasi dove serve
+                if(el.children.length === 0) el.innerHTML = ""; 
+            }
+        });
+    }, 1500); 
+});
