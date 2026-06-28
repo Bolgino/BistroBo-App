@@ -3572,7 +3572,7 @@ function caricaComandeCassa() {
 
     // Se non ci sono comande
     if (!snap.exists()) {
-      div.innerHTML = "<i>Nessuna comanda presente</i>";
+      div.innerHTML = "<i>Gli chef si stanno girando i pollici... Dacci dentro con gli ordini! 👨‍🍳😴</i>";
       document.getElementById("conteggioComande").innerText = 0;
       hideLoader(); // ✅ nasconde comunque la rotellina
       return;
