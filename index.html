@@ -115,7 +115,6 @@
 	<div id="cassaDiv" class="hidden">
 		<h2>Cassa</h2>
 		
-		<!-- Pulsanti tab -->
 		<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
 			
 			<div>
@@ -135,25 +134,25 @@
 			</div>
 		</div>
 
-		<!-- Contenuto tab Aggiungi Comanda -->
 		<div id="aggiungiComandaTab" class="tabContent active">
-		    <div style="display:flex; gap:20px;">
-		        <div style="flex:1; border:1px solid #ccc; padding:10px;">
-		            <h3>Comanda Corrente</h3>
+		    <div style="display:flex; gap:20px; flex-wrap: wrap;">
+		        
+                <div style="flex:1; background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-top: 5px solid #8BC34A;">
+		            <h3 style="margin-top:0; color: #8BC34A; border-bottom: 2px solid #eee; padding-bottom: 10px;">🛒 Comanda Corrente</h3>
 		            <span id="labelNumeroLettera">Numero e Lettera Comanda:</span> 
-		            <input type="number" id="numComanda" min="1" style="width:60px;">
-		            <input type="text" id="letteraComanda" maxlength="1" style="width:40px;" pattern="[A-Za-z]"><br><br>
+		            <input type="number" id="numComanda" min="1" style="width:60px; padding: 6px; border-radius: 6px; border: 1px solid #ccc;">
+		            <input type="text" id="letteraComanda" maxlength="1" style="width:40px; padding: 6px; border-radius: 6px; border: 1px solid #ccc;" pattern="[A-Za-z]"><br><br>
 		            
 		            <div id="asportoContainer" style="display:none; margin:8px 0;">
 		                <label>
-		                    <input type="checkbox" id="checkAsporto">
+		                    <input type="checkbox" id="checkAsporto" style="transform: scale(1.2); margin-right: 5px;">
 		                    <b class="asportoText">ASPORTO</b>
 		                </label>
 		            </div>
 		
-		            <span id="quantitaContainer">
+		            <span id="quantitaContainer" style="font-weight: bold;">
 		                Quantità: 
-		                <select id="quantita" class="selectQty">
+		                <select id="quantita" class="selectQty" style="padding: 4px; border-radius: 6px; border: 1px solid #ccc;">
 		                    <option value="">--</option>
 		                    <script>
 		                        for(let i=1;i<=20;i++){
@@ -164,10 +163,10 @@
 		            </span>
 		
 		            <div id="comandaCorrente" 
-		                 style="height:250px; padding:5px; border:1px solid #ccc; border-radius:5px; overflow-y:auto; margin-bottom:15px;">
+		                 style="height:250px; padding:10px; border:1px solid #ddd; border-radius:8px; overflow-y:auto; margin-bottom:15px; margin-top: 10px; background: #fafafa;">
 		            </div>
 		
-		            <label for="noteComanda"><b>Note:</b></label><br>
+		            <label for="noteComanda" style="color: #555;"><b>Note:</b></label><br>
 		            <div id="noteDestinazioniDiv" style="display:none; margin-bottom:6px;">
 		                <label><input type="checkbox" id="tickCucina" checked> Cucina</label>
 		                <label style="margin-left:10px;"><input type="checkbox" id="tickBere"> Bere</label>
@@ -176,39 +175,37 @@
 		                </label>
 		            </div>
 		
-		            <textarea id="noteComanda" placeholder="Note comanda (es. allergie, richieste)" 
-		                style="width:98%; height:150px; resize:vertical; border:1px solid #ccc; border-radius:3px; padding:8px 5px 8px 0px; text-align:left;"></textarea>
+		            <textarea id="noteComanda" placeholder="Note comanda (es. allergie, richieste particolari...)" 
+		                style="width:98%; height:100px; resize:vertical; border:1px solid #ddd; border-radius:8px; padding:10px; text-align:left; outline: none; background: #fdfdfd;"></textarea>
 		        </div>
 		
-		
-		        <div style="flex:1; border:1px solid #ccc; padding:10px;">
-		            <div id="menuCibi"><h3>Cibi</h3></div>
-		            <div id="menuBevande"><h3>Bevande</h3></div>
-		            <div id="menuSnack"><h3>Snack</h3></div>
+                <div style="flex:1; background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-top: 5px solid #FF9800;">
+		            <div id="menuCibi"></div>
+		            <div id="menuBevande"></div>
+		            <div id="menuSnack"></div>
 		        </div>
 		    </div>
 		
 		    <div id="totaleDiv" class="stickyBar" style="margin-top:15px;">
 		        <div class="stickyLeft">
-		            <b style="color:red;">Totale: €<span id="totale">0.00</span></b>
+		            <b style="color:red; font-size: 1.3em;">Totale: €<span id="totale">0.00</span></b>
 		
 		            <span id="rigaRestoPagato">
-		                <b style="color:green;">Pagato: €<span id="totalePagato">0.00</span></b>
-		                <b>
+		                <b style="color:green; font-size: 1.1em;">Pagato: €<span id="totalePagato">0.00</span></b>
+		                <b style="font-size: 1.1em;">
 		                    Resto: €<span id="restoDovuto">0.00</span>
 		                    <span id="suggerimentoResto" style="font-size:0.9em; color:blue;"></span>
 		                </b>
 		            </span>
 		            <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
 		                <label for="metodoPagamento" style="margin:0;"><b>Metodo pagamento:</b></label>
-		                <select id="metodoPagamento" style="width:120px; height:28px;">
+		                <select id="metodoPagamento" style="width:120px; height:32px; border-radius: 6px; border: 1px solid #ccc; font-weight: bold;">
 		                    <option value="contanti" selected>Contanti</option>
 		                    <option value="pos">POS</option>
 		                </select>
 		            </div>
 		
 		            <button id="inviaComandaBtn" class="stickyBtn">Invia Comanda</button>
-		
 		        </div>
 		
 		        <div id="pannelloSoldiDestra" class="stickyRight">
@@ -218,36 +215,51 @@
 		        </div>
 		    </div>
 		</div>
-		<!-- Tab Lista Comande -->
+
 		<div id="listaComandeTab" class="tabContent">
-			<h3>Comande inviate (<span id="conteggioComande">0</span>):</h3>
-			<input type="text" id="cercaComandaCassa" 
-				placeholder="🔍 Cerca numero comanda..." 
-				style="margin:10px 0; width:100%; padding:5px; font-size:16px;">
-			<div id="comandeCassa"></div>
-		</div>
-		<!-- Tab Ingredienti Critici -->
-		<div id="ingredientiCriticiTab" class="tabContent">
-			<h3>Ingredienti Critici</h3>
-			<div id="listaIngredientiCritici"></div>
-		</div>
-		<!-- CHAT INTERNA -->
-		<div id="chatCassaTab" class="tabContent">
-			<h3>Chat interna</h3>
-			<div id="chatContainerCassa" class="chat-container"></div>
-			<div class="chat-input-bar">
-				<input type="text" id="chatInputCassa" placeholder="Scrivi un messaggio...">
-				<button id="chatSendCassaBtn" title="Invia messaggio">➤</button>
-			</div>
-		</div>
-		<div id="preordiniTab" class="tabContent">
-			<h3>Preordini</h3>
-			<div id="listaPreordiniCassa"></div>
+            <div style="background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-top: 5px solid #2196F3;">
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:15px;">
+                    <h3 style="margin:0; color: #2196F3; font-size: 1.3em;">🧾 Comande Inviate (<span id="conteggioComande">0</span>)</h3>
+                </div>
+                <input type="text" id="cercaComandaCassa" placeholder="🔍 Cerca numero comanda..." style="margin-bottom:15px; width:100%; padding:10px; font-size:1em; border-radius:8px; border:1px solid #ccc; box-sizing:border-box;">
+                <div id="comandeCassa"></div>
+            </div>
 		</div>
 
+		<div id="ingredientiCriticiTab" class="tabContent">
+            <div style="background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-top: 5px solid #F44336;">
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:15px;">
+                    <h3 style="margin:0; color: #F44336; font-size: 1.3em;">⚠️ Ingredienti Critici</h3>
+                </div>
+			    <div id="listaIngredientiCritici"></div>
+            </div>
+		</div>
+
+		<div id="chatCassaTab" class="tabContent">
+            <div style="background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-top: 5px solid #00BCD4;">
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:15px;">
+                    <h3 style="margin:0; color: #00BCD4; font-size: 1.3em;">💬 Chat interna</h3>
+                </div>
+                <div id="chatContainerCassa" class="chat-container"></div>
+                <div class="chat-input-bar">
+                    <input type="text" id="chatInputCassa" placeholder="Scrivi un messaggio...">
+                    <button id="chatSendCassaBtn" title="Invia messaggio">➤</button>
+                </div>
+            </div>
+		</div>
+
+		<div id="preordiniTab" class="tabContent">
+            <div style="background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-top: 5px solid #E91E63;">
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:15px;">
+                    <h3 style="margin:0; color: #E91E63; font-size: 1.3em;">📩 Preordini Clienti</h3>
+                </div>
+			    <div id="listaPreordiniCassa">
+                    <div style='text-align:center; padding: 20px; color: #777; font-style: italic;'>Nessun preordine all'orizzonte. 📅</div>
+                </div>
+            </div>
+		</div>
 
 	</div>
-
 	<!-- ================= CUCINA ================= -->
 	<div id="cucinaDiv" class="hidden">
 		<h2>Cucina</h2>
