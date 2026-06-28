@@ -5711,42 +5711,33 @@ async function caricaIngredientiPerRuolo(ruolo) {
     if (!checkOnline(true)) return;
     const tabId = ruolo === "cucina" ? "ingredientiCucinaTab" :
                   ruolo === "bere" ? "ingredientiBereTab" :
-                  "ingredientiSnackTab"; // nuovo tab per snack
+                  "ingredientiSnackTab";
 
     const container = document.getElementById(tabId);
     if (!container) return;
 
-    container.innerHTML = "<div style='color:white; text-align:center; padding:20px;'>Caricamento ingredienti...</div>";
+    container.innerHTML = "Caricamento ingredienti...";
 
     db.ref("ingredienti").on("value", async snap => {
         const data = snap.val() || {};
         container.innerHTML = "";
 
-        // 🔹 Aggiorna globalmente le unità anche per i menu dei ruoli
         window.ingredientData = data;
+        if (typeof aggiornaMenuRuolo === "function") aggiornaMenuRuolo();
 
-        // 🔹 Se esiste una funzione di aggiornamento menu per ruolo, richiamala
-        if (typeof aggiornaMenuRuolo === "function") {
-            aggiornaMenuRuolo();
-        }
-
-        // 🔹 Filtra categorie in base al ruolo
         let categorieRuolo;
-
         if (ruolo === "cucina") {
             const snapSnack = await db.ref("impostazioni/snackAbilitato").once("value");
             const snackAttivo = snapSnack.exists() && snapSnack.val() === true;
-            // Se snack disabilitato → includi snack in cibi
             categorieRuolo = snackAttivo ? ["cibi"] : ["cibi", "snack"];
         } else if (ruolo === "snack") {
             const snapSnack = await db.ref("impostazioni/snackAbilitato").once("value");
             const snackAttivo = snapSnack.exists() && snapSnack.val() === true;
             categorieRuolo = snackAttivo ? ["snack"] : [];
-        } else { // ruolo === "bere"
+        } else {
             categorieRuolo = ["bevande"];
         }
 
-        // Raggruppa ingredienti per categoria
         const categorie = {};
         Object.entries(data).forEach(([id, ing]) => {
             if (!categorieRuolo.includes(ing.categoria)) return;
@@ -5754,7 +5745,6 @@ async function caricaIngredientiPerRuolo(ruolo) {
             categorie[ing.categoria].push({ id, ...ing });
         });
 
-        // SE NON CI SONO INGREDIENTI PER QUESTO RUOLO (Ora con sfondo bianco in stile Admin):
         if (Object.keys(categorie).length === 0) {
              let msgIngr = "La dispensa è vuota... aria fritta stasera? 🌬️";
              if (ruolo === "cucina") msgIngr = "Niente ingredienti per te. Oggi si ordina la pizza! 🍕";
@@ -5765,46 +5755,36 @@ async function caricaIngredientiPerRuolo(ruolo) {
              return;
         }
 
-        // 🔹 CREIAMO IL CONTENITORE BIANCO (CARD) STILE ADMIN
-        const whiteCard = document.createElement("div");
-        whiteCard.style.background = "#ffffff";
-        whiteCard.style.borderRadius = "12px";
-        whiteCard.style.padding = "20px";
-        whiteCard.style.boxShadow = "0 4px 15px rgba(0,0,0,0.1)";
-        whiteCard.style.maxWidth = "1000px";
-        whiteCard.style.margin = "20px auto"; // Centra la card nella pagina
-
-        const listWrapper = document.createElement("div");
-        listWrapper.className = "ingredienti-list";
+        // Il box bianco elegante in stile Admin
+        const wrapperCard = document.createElement("div");
+        wrapperCard.style.background = "#fff";
+        wrapperCard.style.borderRadius = "12px";
+        wrapperCard.style.padding = "20px";
+        wrapperCard.style.boxShadow = "0 8px 20px rgba(0,0,0,0.15)";
+        wrapperCard.style.maxWidth = "800px";
+        wrapperCard.style.margin = "20px auto";
+        wrapperCard.style.color = "#000";
 
         Object.entries(categorie).forEach(([cat, items]) => {
-            // Rimosso il titolo H3 (es: Bevande) come da te richiesto
-
             items.forEach(ing => {
-                const itemDiv = document.createElement("div");
-                itemDiv.className = "ingrediente-item";
+                // 🔹 LA MAGIA: Copiato e incollato dal VERO stile flex di Admin! 🔹
+                const row = document.createElement("div");
+                row.style.display = "flex";
+                row.style.alignItems = "center";
+                row.style.gap = "8px";
+                row.style.marginBottom = "6px";
 
-                // Contenitore Nome
-                const nomeDiv = document.createElement("div");
-                nomeDiv.className = "ingrediente-nome";
                 const nameSpan = document.createElement("span");
                 nameSpan.innerText = ing.nome;
-                nomeDiv.appendChild(nameSpan);
+                nameSpan.style.flex = "1";
 
-                // Contenitore Controlli Allineati (Destra)
-                const controlliDiv = document.createElement("div");
-                controlliDiv.className = "ingrediente-controlli";
-
-                // Input Quantità Rimanente
                 const qtyInput = document.createElement("input");
                 qtyInput.type = "number";
-                qtyInput.className = "quantita-input";
                 qtyInput.min = 0;
+                if(typeof abilitaIncrementoDinamico === "function") abilitaIncrementoDinamico(qtyInput);
+                qtyInput.value = (ing.rimanente === null || ing.rimanente === undefined) ? "" : ing.rimanente;
+                qtyInput.style.width = "70px";
                 qtyInput.step = "any";
-                qtyInput.value = ing.rimanente === null || ing.rimanente === undefined ? "" : ing.rimanente;
-                
-                abilitaIncrementoDinamico(qtyInput); 
-                
                 qtyInput.onchange = async (e) => {
                     let newQty = e.target.value === "" ? null : parseFloat(e.target.value);
                     if (newQty !== null && (isNaN(newQty) || newQty < 0)) newQty = 0;
@@ -5814,57 +5794,51 @@ async function caricaIngredientiPerRuolo(ruolo) {
                     });
                 };
 
-                // Unità di misura
                 const unitaSpan = document.createElement("span");
                 unitaSpan.innerText = ing.unita || "pz";
                 unitaSpan.style.width = "30px";
                 unitaSpan.style.textAlign = "center";
-                unitaSpan.style.fontWeight = "bold";
-                unitaSpan.style.color = "#555";
 
-                // Testo dello Stato Corrente
                 const statoSpan = document.createElement("span");
-                statoSpan.className = "stato-text";
+                statoSpan.style.fontWeight = "bold";
                 const isEsaurito = (ing.rimanente === 0);
                 statoSpan.style.color = isEsaurito ? "red" : "green";
                 statoSpan.innerText = isEsaurito ? "Esaurito" : "Disponibile";
-                statoSpan.style.width = "85px"; // Larghezza fissa per allineare i bottoni
-                statoSpan.style.textAlign = "center";
+                statoSpan.style.width = "85px"; // fissa per evitare disallineamenti
 
-                // Bottone Imposta Disponibile
                 const btnDisp = document.createElement("button");
-                btnDisp.className = "action-btn btn-disponibile";
                 btnDisp.innerText = "Disponibile";
+                btnDisp.style.padding = "8px 12px";
                 btnDisp.onclick = async () => {
                     await db.ref(`ingredienti/${ing.id}`).update({ rimanente: null, disponibile: true });
                 };
 
-                // Bottone Imposta Esaurito
                 const btnEs = document.createElement("button");
-                btnEs.className = "action-btn btn-esaurito";
                 btnEs.innerText = "Esaurito";
+                btnEs.style.padding = "8px 12px";
                 btnEs.onclick = async () => {
                     await db.ref(`ingredienti/${ing.id}`).update({ rimanente: 0, disponibile: false });
                 };
 
-                // Assemblaggio elementi a destra
-                controlliDiv.appendChild(qtyInput);
-                controlliDiv.appendChild(unitaSpan);
-                controlliDiv.appendChild(statoSpan);
-                controlliDiv.appendChild(btnDisp);
-                controlliDiv.appendChild(btnEs);
+                row.appendChild(nameSpan);
+                row.appendChild(qtyInput);
+                row.appendChild(unitaSpan);
+                row.appendChild(statoSpan);
+                row.appendChild(btnDisp);
+                row.appendChild(btnEs);
 
-                // Inserimento righe complete
-                itemDiv.appendChild(nomeDiv);
-                itemDiv.appendChild(controlliDiv);
+                wrapperCard.appendChild(row);
 
-                listWrapper.appendChild(itemDiv);
+                // Linea separatrice
+                const hr = document.createElement("hr");
+                hr.style.margin = "4px 0";
+                hr.style.border = "none";
+                hr.style.borderTop = "1px solid #eee";
+                wrapperCard.appendChild(hr);
             });
         });
 
-        // Montiamo tutto nel DOM
-        whiteCard.appendChild(listWrapper);
-        container.appendChild(whiteCard);
+        container.appendChild(wrapperCard);
     });
 }
 // -------------------- UTENTI --------------------
@@ -7719,6 +7693,9 @@ function riproduciSuonoNotifica() {
 
 // ------------------- NOTIFY (toast informativi) -------------------
 function notify(msg, type = "info") {
+	const msgLower = msg.toLowerCase();
+    if (msgLower.includes("nuovo messaggio") && window.aggiungiNotificaBadge) window.aggiungiNotificaBadge("chat");
+    if (msgLower.includes("nuova comanda") && window.aggiungiNotificaBadge) window.aggiungiNotificaBadge("comande");
     const div = document.createElement("div");
     div.className = `toast ${type}`;
 
@@ -8611,55 +8588,52 @@ async function aggiornaStatoConTermine(id, chiaveStato, nuovoStato) {
         notify("Errore aggiornamento stato", "error");
     }
 }
-// ================= BADGE NOTIFICHE CHAT GLOBALE =================
-window.chatMessaggiVisti = 0;
-window.numeroMessaggiChat = 0;
-window.chatInizializzata = false;
+// ================= GESTIONE BADGE NOTIFICHE TAB (WHATSAPP STYLE) =================
+window.badgeCounts = window.badgeCounts || {};
 
-db.ref("chat").on("value", snap => {
-    const messaggi = snap.val() || {};
-    const conteggio = Object.keys(messaggi).length;
-    window.numeroMessaggiChat = conteggio;
+window.aggiungiNotificaBadge = function(tipo) {
+    // Scopre quali tab cercare in base al tipo di notifica
+    let tabSelector = "";
+    if (tipo === "chat") tabSelector = "[data-tab*='chat' i]";
+    if (tipo === "preordini") tabSelector = "[data-tab*='preordin' i]";
+    if (tipo === "comande") tabSelector = "[data-tab*='daFare' i], [data-tab*='daBere' i], [data-tab*='daSnack' i], [data-tab*='comande' i]";
 
-    if (!window.chatInizializzata) {
-        window.chatMessaggiVisti = conteggio; // Al primo caricamento, li consideriamo tutti visti
-        window.chatInizializzata = true;
-        return;
-    }
+    const bottoni = Array.from(document.querySelectorAll(`.tabBtn${tabSelector}`));
+    
+    bottoni.forEach(btn => {
+        // Ignora i bottoni dei profili che in questo momento sono nascosti (es. sei Admin e ignora i bottoni Cucina)
+        if (btn.closest(".hidden") || btn.style.display === "none") return;
+        
+        const tabId = btn.dataset.tab;
+        const tabElement = document.getElementById(tabId);
+        
+        // Se la tab è già attiva (l'utente la sta guardando), non mettiamo la notifica
+        if (tabElement && tabElement.classList.contains("active")) return;
 
-    const daVedere = conteggio - window.chatMessaggiVisti;
-
-    if (daVedere > 0) {
-        // Controlla se almeno una tab chat è attualmente aperta sullo schermo
-        const tabsChat = ["chatAdminTab", "cassaChatTab", "cucinaChatTab", "bereChatTab", "snackChatTab"];
-        const isChatActive = tabsChat.some(id => {
-            const el = document.getElementById(id);
-            return el && el.style.display === "block";
-        });
-
-        if (!isChatActive) {
-            // Se la chat è chiusa, mostra i badge e aggiorna il numero!
-            document.querySelectorAll('.chat-badge').forEach(b => {
-                b.innerText = daVedere;
-                b.style.display = 'inline-block';
-            });
-            // Suona la notifica se abilitata
-            if (window.settings && window.settings.suonoChat) playSound();
-        } else {
-            // Se la chat è già aperta, li stiamo leggendo in diretta
-            window.chatMessaggiVisti = conteggio;
+        window.badgeCounts[tabId] = (window.badgeCounts[tabId] || 0) + 1;
+        
+        let badge = btn.querySelector(".badge-notifica");
+        if (!badge) {
+            badge = document.createElement("span");
+            badge.className = "badge-notifica";
+            // Stile inline pallino rosso tipo WhatsApp
+            badge.style.cssText = "background-color: #ff3b30; color: white; border-radius: 50%; padding: 2px 6px; font-size: 0.85em; font-weight: bold; margin-left: 6px; vertical-align: super; position: relative; z-index: 10; box-shadow: 0 2px 4px rgba(0,0,0,0.2);";
+            btn.appendChild(badge);
         }
-    }
-});
-
-// Funzione chiamata quando clicchiamo il pulsante "Chat" nelle tab
-window.azzeraBadgeChat = function() {
-    window.chatMessaggiVisti = window.numeroMessaggiChat;
-    document.querySelectorAll('.chat-badge').forEach(b => {
-        b.style.display = 'none';
-        b.innerText = '0';
+        badge.innerText = window.badgeCounts[tabId];
     });
 };
+
+// Azzera il numerino rosso appena l'utente clicca sulla tab
+document.addEventListener("click", e => {
+    const btn = e.target.closest(".tabBtn");
+    if (btn) {
+        const tabId = btn.dataset.tab;
+        window.badgeCounts[tabId] = 0;
+        const badge = btn.querySelector(".badge-notifica");
+        if (badge) badge.remove();
+    }
+});
 // Funzione di calcolo e visualizzazione media
 function calcolaEVisualizzaTempoMedio(comandeSnapshot) {
     const boxCassa = document.getElementById("boxTempoMedioCassa");
