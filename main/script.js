@@ -3342,7 +3342,7 @@ function renderListaPiattiCombo(piattoCombo) {
     });
 
     if (piattiAmmessi.length === 0) {
-        listaDiv.innerHTML = "<p>Nessun contorno disponibile al momento.</p>";
+        listaDiv.innerHTML = "<p>Nessun contorno disponibile al momento. Mangerai il piatto da solo... 😢</p>";
     }
 
    // --- CALCOLO INTELLIGENTE SCONTI PER I CONTORNI ---
@@ -3840,7 +3840,7 @@ async function caricaIngredienti() {
     ingredientData = data; 
     container.innerHTML = "";
     if (Object.keys(data).length === 0) {
-      container.innerHTML = "<i>Nessun ingrediente presente</i>";
+      container.innerHTML = "<i>La dispensa rimbomba... Vai a fare la spesa e aggiungi qualche ingrediente! 🛒🍅</i>";
       return;
     }
 
@@ -5755,6 +5755,16 @@ async function caricaIngredientiPerRuolo(ruolo) {
             if (!categorie[ing.categoria]) categorie[ing.categoria] = [];
             categorie[ing.categoria].push({ id, ...ing });
         });
+		// SE NON CI SONO INGREDIENTI PER QUESTO RUOLO:
+        if (Object.keys(categorie).length === 0) {
+             let msgIngr = "La dispensa è vuota... aria fritta stasera? 🌬️";
+             if (ruolo === "cucina") msgIngr = "Niente ingredienti per te. Oggi si ordina la pizza! 🍕";
+             if (ruolo === "bere") msgIngr = "Cantina vuota. Fai scorrere l'acqua del rubinetto! 🚰";
+             if (ruolo === "snack") msgIngr = "Niente patatine o fritti... Mettiti a dieta! 🥕";
+             
+             container.innerHTML = `<div style='text-align:center; padding: 30px; color: #777; font-style: italic; font-size: 1.1em;'>${msgIngr}</div>`;
+             return;
+        }
 
         // Per ogni categoria
         Object.entries(categorie).forEach(([cat, items]) => {
@@ -5936,6 +5946,11 @@ async function caricaUtenti(){
     db.ref("utenti").on("value", snap => {
         attesaList.innerHTML = "";
         categorie.forEach(cat => { categorieDiv[cat].innerHTML = ""; });
+		// AGGIUNGI QUESTO BLOCCO:
+        if (!snap.exists() || snap.numChildren() === 1) { // === 1 per ignorare l'admin predefinito
+             div.innerHTML = "<div style='text-align:center; padding: 30px; color: #777; font-style: italic; font-size: 1.1em;'>Sei l'unico sopravvissuto... o forse devi ancora invitare il resto della squadra! 🕵️‍♂️</div>";
+             return;
+        }
 
         snap.forEach(s => {
             const u = s.val();
@@ -7156,7 +7171,10 @@ function caricaScontiAdmin() {
 
     db.ref("menu").once("value").then(snap => {
         const data = snap.val() || {};
-
+        if (Object.keys(data).length === 0) {
+            div.innerHTML = "<div style='text-align:center; padding: 30px; color: #777; font-style: italic; font-size: 1.1em;'>Nessun piatto, nessuno sconto. Prima cucina, poi pensa ai saldi! 💸</div>";
+            return;
+        }
         for(let id in data){
             const piatto = data[id];
 
