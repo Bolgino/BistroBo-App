@@ -1160,7 +1160,6 @@ if (archiviaComandeBtn) {
         
         const modal = document.createElement("div");
         modal.className = "modal-varianti";
-        // Aggiungiamo padding interno controllato e bordi sicuri
         modal.style.padding = "25px";
         modal.style.boxSizing = "border-box";
         modal.innerHTML = `
@@ -6554,58 +6553,124 @@ function modificaPiattoMenu(menuId, piatto) {
         }
     };
 }
-// -------------------- STATISTICHE ADMIN --------------------
-// ================= LOGICA STATISTICHE (Tab e Filtri) =================
-let modalitaStatistiche = "corrente"; // Può essere "corrente", "globale" o l'ID di un turno
-
+// ================= LOGICA STATISTICHE (Affiancate) =================
 document.addEventListener("DOMContentLoaded", () => {
-    const btnCorrente = document.getElementById("btnStatCorrente");
-    const btnGlobale = document.getElementById("btnStatGlobale");
     const filtroSelect = document.getElementById("filtroStatistiche");
-    
-    // Click su "Turno Attuale"
-    if(btnCorrente) btnCorrente.addEventListener("click", () => {
-        btnCorrente.classList.add("active");
-        btnGlobale.classList.remove("active");
-        if(filtroSelect) filtroSelect.value = ""; // Resetta la tendina
-        modalitaStatistiche = "corrente";
-        caricaStatistiche();
-    });
-    
-    // Click su "Totale Globale"
-    if(btnGlobale) btnGlobale.addEventListener("click", () => {
-        btnGlobale.classList.add("active");
-        btnCorrente.classList.remove("active");
-        if(filtroSelect) filtroSelect.value = ""; // Resetta la tendina
-        modalitaStatistiche = "globale";
-        caricaStatistiche();
-    });
-    
-    // Selezione dalla tendina "Archivio"
-    if(filtroSelect) filtroSelect.addEventListener("change", () => {
-        if(filtroSelect.value !== "") {
-            // Spegne le due tab se si sceglie un archivio specifico
-            btnCorrente.classList.remove("active");
-            btnGlobale.classList.remove("active");
-            modalitaStatistiche = filtroSelect.value;
-        } else {
-            // Se si seleziona "-- Seleziona turno --", torna al turno attuale
-            btnCorrente.click();
-            return;
-        }
-        caricaStatistiche();
-    });
+    if(filtroSelect) {
+        filtroSelect.addEventListener("change", caricaStatistiche);
+    }
 });
+
+window.statisticheGlobale = {};
+window.statisticheTurno = {};
+
+// Funzione Helper per calcolare i totali senza dover duplicare il codice
+function analizzaComande(comandeObj, fondoCassaTot) {
+    let totaleComande = 0;
+    let totaleIncasso = 0;
+    let totalePos = 0;
+    let totaleContanti = 0;
+    let incassoAsporto = 0;
+    const piattiMap = {}; 
+    const ingrMap = {}; 
+    const incassiIngredienti = {}; 
+    const listaComande = [];
+
+    for (const id in comandeObj) {
+        const c = comandeObj[id];
+        totaleComande++;
+        let totaleComanda = 0;
+        
+        (c.piatti || []).forEach(p => {
+            const q = Number(p.quantita || 0);
+            const prezzoTot = calcolaPrezzoConSconto(p);
+            totaleComanda += prezzoTot;
+            
+            if (!piattiMap[p.nome]) piattiMap[p.nome] = { quantita: 0, incasso: 0 };
+            piattiMap[p.nome].quantita += q;
+            piattiMap[p.nome].incasso += prezzoTot;
+            
+            (p.ingredienti || []).forEach(ing => {
+                const qty = (Number(ing.qtyPerUnit) || 1) * q;
+                ingrMap[ing.nome] = (ingrMap[ing.nome] || 0) + qty;
+                incassiIngredienti[ing.nome] = (incassiIngredienti[ing.nome] || 0) + prezzoTot;
+            });
+        });
+        
+        if (c.metodoPagamento === "pos") {
+            totalePos += totaleComanda;
+        } else {
+            totaleContanti += totaleComanda;
+        }
+        
+        totaleIncasso += totaleComanda;
+        if (c.commento) incassoAsporto += totaleComanda;
+
+        listaComande.push({
+            id, numero: c.numero, lettera: c.lettera,
+            totale: totaleComanda,
+            piatti: (c.piatti || []).map(p => p.quantita + "x " + p.nome).join(", "),
+            data: c.timestamp
+        });
+    }
+
+    const piattiByQuantita = Object.entries(piattiMap).sort((a,b) => b[1].quantita - a[1].quantita);
+    const piattiByIncasso = Object.entries(piattiMap).sort((a,b) => b[1].incasso - a[1].incasso);
+    const ingrByQuantita = Object.entries(ingrMap).sort((a,b) => b[1] - a[1]);
+    const ingrIncassiArray = Object.entries(incassiIngredienti).map(([n,i]) => ({ nome: n, incasso: i }));
+
+    return {
+        totaleComande, totaleIncasso, totalePos, totaleContanti, incassoAsporto,
+        piattiByQuantita, piattiByIncasso, ingrByQuantita, ingrIncassiArray,
+        listaComande, fondoCassa: fondoCassaTot
+    };
+}
+
+// Genera e inietta l'HTML per le statistiche (usato per entrambi i box)
+function renderHtmlStatistiche(elementId, stats) {
+    const contenuto = document.getElementById(elementId);
+    if (!contenuto) return;
+
+    const rows = stats.piattiByQuantita.map(([nome, v]) => 
+        `<tr><td style="text-align:left; padding:8px;">${nome}</td><td style="text-align:center; padding:8px; font-weight:bold;">${v.quantita}</td><td style="text-align:right; padding:8px; color:#2e7d32;">€${v.incasso.toFixed(2)}</td></tr>`
+    ).join("");
+
+    contenuto.innerHTML = `
+        <div style="font-size: 1.05em;">
+            <p style="margin: 4px 0;"><b>Totale comande:</b> ${stats.totaleComande}</p>
+            <p style="margin: 4px 0;"><b>Fondo Cassa Base:</b> €${stats.fondoCassa.toFixed(2)}</p>
+            <p style="margin: 4px 0;"><b>POS:</b> €${stats.totalePos.toFixed(2)} | <b>Contanti:</b> €${stats.totaleContanti.toFixed(2)}</p>
+            
+            <div style="background: #f9f9f9; padding: 12px; border-radius: 8px; margin: 15px 0; border: 1px solid #ddd;">
+                <p style="margin: 0 0 5px 0;"><b>CASSA (Fondo + Contanti):</b> <span style="color:green; font-weight:bold; font-size:1.1em;">€${(stats.fondoCassa + stats.totaleContanti).toFixed(2)}</span></p>
+                <p style="margin: 0;"><b>GUADAGNO REALE:</b> <span style="color:blue; font-weight:bold; font-size:1.1em;">€${stats.totaleIncasso.toFixed(2)}</span></p>
+            </div>
+        </div>
+        
+        <table border="0" style="width:100%; border-collapse:collapse; margin-top:10px; font-size: 0.95em;">
+            <thead>
+                <tr style="border-bottom:2px solid #444; background: #f1f1f1;">
+                    <th style="text-align:left; padding:8px; border-radius: 6px 0 0 6px;">Piatto</th>
+                    <th style="text-align:center; padding:8px;">Qtà</th>
+                    <th style="text-align:right; padding:8px; border-radius: 0 6px 6px 0;">Incasso</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${rows.replace(/<\/tr>/g,"</tr><tr style='border-bottom:1px solid #eee;'></tr>")}
+            </tbody>
+        </table>
+    `;
+}
 
 async function caricaStatistiche() {
     if (!checkOnline(true)) return;
     showLoader();
 
-    const contenuto = document.getElementById("contenutoStatistiche");
     const filtroSelect = document.getElementById("filtroStatistiche");
     const filtroContainer = document.getElementById("filtroStatisticheContainer");
-    const statsSubTabs = document.getElementById("statsSubTabs");
-
+    const boxTurnoPreciso = document.getElementById("boxTurnoPreciso");
+    const titoloTurnoPreciso = document.getElementById("titoloTurnoPreciso");
+    
     try {
         const [snapComande, snapStorico, snapFondoCorrente] = await Promise.all([
             db.ref("comande").once("value"),
@@ -6615,167 +6680,70 @@ async function caricaStatistiche() {
 
         const comandeCorrenti = snapComande.val() || {};
         const storicoGiornate = snapStorico.val() || {};
-        let fondoCassaTotale = 0;
-        let comandeDaAnalizzare = {};
+        const fondoCassaCorrente = parseFloat(snapFondoCorrente.val()) || 0;
         
-        // 1. Verifica se il Sistema a Giornate è attivo
+        // 1. POPOLA TENDINA
+        const currentVal = filtroSelect ? filtroSelect.value : "correnti";
+        if (filtroSelect) {
+            filtroSelect.innerHTML = `<option value="correnti">Turno Attuale (Non archiviate)</option>`;
+            Object.keys(storicoGiornate).forEach(key => {
+                const turno = storicoGiornate[key];
+                const opt = document.createElement("option");
+                opt.value = key;
+                opt.innerText = `📦 ${turno.nome}`;
+                if (key === currentVal) opt.selected = true;
+                filtroSelect.appendChild(opt);
+            });
+        }
+
+        // 2. MOSTRA/NASCONDI PANNELLI
         const sistemaGiornateAttivo = window.settings && window.settings.sistemaGiornateAbilitato;
         
         if (sistemaGiornateAttivo) {
-            // Mostra tutto il blocco delle tab e del filtro
-            if (statsSubTabs) statsSubTabs.style.display = "flex";
-            if (filtroContainer) filtroContainer.style.display = "flex";
-            
-            // Popola il menu a tendina preservando la scelta attuale
-            const currentVal = filtroSelect ? filtroSelect.value : "";
-            if (filtroSelect) {
-                filtroSelect.innerHTML = `<option value="">-- Seleziona turno --</option>`;
-                Object.keys(storicoGiornate).forEach(key => {
-                    const turno = storicoGiornate[key];
-                    const opt = document.createElement("option");
-                    opt.value = key;
-                    opt.innerText = `📦 ${turno.nome}`;
-                    if (key === currentVal) opt.selected = true;
-                    filtroSelect.appendChild(opt);
-                });
-            }
+            if(filtroContainer) filtroContainer.style.display = "flex";
+            if(boxTurnoPreciso) boxTurnoPreciso.style.display = "block";
         } else {
-            // SISTEMA DISATTIVATO: Nascondi UI di filtraggio avanzato
-            if (statsSubTabs) statsSubTabs.style.display = "none";
-            if (filtroContainer) filtroContainer.style.display = "none";
+            if(filtroContainer) filtroContainer.style.display = "none";
+            if(boxTurnoPreciso) boxTurnoPreciso.style.display = "none";
         }
 
-        const isSistemaOff = !sistemaGiornateAttivo;
+        // 3. CALCOLA GLOBALE (Correnti + Tutti gli Archivi)
+        let comandeGlobale = { ...comandeCorrenti };
+        let fondoGlobale = fondoCassaCorrente;
+        Object.values(storicoGiornate).forEach(turno => {
+            if (turno.comande) Object.assign(comandeGlobale, turno.comande);
+            fondoGlobale += (parseFloat(turno.fondoCassa) || 0);
+        });
+        
+        window.statisticheGlobale = analizzaComande(comandeGlobale, fondoGlobale);
+        window.statisticheGlobale.titoloReport = "Totale Globale Sagra";
+        renderHtmlStatistiche("contenutoStatisticheGlobale", window.statisticheGlobale);
 
-        // 2. SMISTAMENTO LOGICO DATI
-        if (isSistemaOff || modalitaStatistiche === "globale") {
-            // UNISCE TUTTO: Correnti + Storici
-            comandeDaAnalizzare = { ...comandeCorrenti };
-            fondoCassaTotale = parseFloat(snapFondoCorrente.val()) || 0;
-            
-            Object.values(storicoGiornate).forEach(turno => {
-                if (turno.comande) {
-                    Object.assign(comandeDaAnalizzare, turno.comande);
+        // 4. CALCOLA TURNO SPECIFICO (Solo se il sistema a giornate è attivo)
+        if (sistemaGiornateAttivo) {
+            let comandeTurno = {};
+            let fondoTurno = 0;
+            let nomeReportTurno = "Turno Corrente";
+
+            if (currentVal === "correnti") {
+                comandeTurno = comandeCorrenti;
+                fondoTurno = fondoCassaCorrente;
+                nomeReportTurno = "Turno Attuale (Non archiviate)";
+                if(titoloTurnoPreciso) titoloTurnoPreciso.innerHTML = "⏱️ Turno Attuale";
+            } else {
+                const turnoScelto = storicoGiornate[currentVal];
+                if (turnoScelto) {
+                    comandeTurno = turnoScelto.comande || {};
+                    fondoTurno = parseFloat(turnoScelto.fondoCassa) || 0;
+                    nomeReportTurno = `Archivio: ${turnoScelto.nome}`;
+                    if(titoloTurnoPreciso) titoloTurnoPreciso.innerHTML = `📦 ${turnoScelto.nome}`;
                 }
-                fondoCassaTotale += (parseFloat(turno.fondoCassa) || 0);
-            });
-            window.titoloReportStatistiche = isSistemaOff ? "Globale (Sistema Giornate OFF)" : "Totale Globale Sagra";
-
-        } else if (modalitaStatistiche === "corrente") {
-            // SOLO TURNO ATTUALE
-            comandeDaAnalizzare = comandeCorrenti;
-            fondoCassaTotale = parseFloat(snapFondoCorrente.val()) || 0;
-            window.titoloReportStatistiche = "Turno Attuale (Non archiviate)";
-
-        } else {
-            // UN TURNO ARCHIVIATO SPECIFICO
-            const turnoScelto = storicoGiornate[modalitaStatistiche];
-            if (turnoScelto && turnoScelto.comande) {
-                comandeDaAnalizzare = turnoScelto.comande;
-                fondoCassaTotale = parseFloat(turnoScelto.fondoCassa) || 0;
-                window.titoloReportStatistiche = "Archivio: " + turnoScelto.nome;
-            } else {
-                comandeDaAnalizzare = {};
-                window.titoloReportStatistiche = "Nessun dato trovato";
             }
+
+            window.statisticheTurno = analizzaComande(comandeTurno, fondoTurno);
+            window.statisticheTurno.titoloReport = nomeReportTurno;
+            renderHtmlStatistiche("contenutoStatisticheTurno", window.statisticheTurno);
         }
-
-        // 3. CALCOLO STATISTICHE MATEMATICHE 
-        let totaleComande = 0;
-        let totaleIncasso = 0;
-        let totalePos = 0;
-        let totaleContanti = 0;
-        let incassoAsporto = 0;
-        const piattiMap = {}; 
-        const ingrMap = {}; 
-        const incassiIngredienti = {}; 
-        const listaComande = [];
-
-        for (const id in comandeDaAnalizzare) {
-            const c = comandeDaAnalizzare[id];
-            totaleComande++;
-            let totaleComanda = 0;
-            
-            (c.piatti || []).forEach(p => {
-                const q = Number(p.quantita || 0);
-                const prezzoTot = calcolaPrezzoConSconto(p);
-                totaleComanda += prezzoTot;
-                
-                if (!piattiMap[p.nome]) piattiMap[p.nome] = { quantita: 0, incasso: 0 };
-                piattiMap[p.nome].quantita += q;
-                piattiMap[p.nome].incasso += prezzoTot;
-                
-                (p.ingredienti || []).forEach(ing => {
-                    const qty = (Number(ing.qtyPerUnit) || 1) * q;
-                    ingrMap[ing.nome] = (ingrMap[ing.nome] || 0) + qty;
-                    incassiIngredienti[ing.nome] = (incassiIngredienti[ing.nome] || 0) + prezzoTot;
-                });
-            });
-            
-            if (c.metodoPagamento === "pos") {
-                totalePos += totaleComanda;
-            } else {
-                totaleContanti += totaleComanda;
-            }
-            
-            totaleIncasso += totaleComanda;
-            if (c.commento) incassoAsporto += totaleComanda;
-
-            listaComande.push({
-                id,
-                numero: c.numero,
-                lettera: c.lettera,
-                totale: totaleComanda,
-                piatti: (c.piatti || []).map(p => p.quantita + "x " + p.nome).join(", "),
-                data: c.timestamp
-            });
-        }
-
-        const piattiByQuantita = Object.entries(piattiMap).sort((a,b) => b[1].quantita - a[1].quantita);
-        const piattiByIncasso = Object.entries(piattiMap).sort((a,b) => b[1].incasso - a[1].incasso);
-        const ingrByQuantita = Object.entries(ingrMap).sort((a,b) => b[1] - a[1]);
-        const ingrIncassiArray = Object.entries(incassiIngredienti).map(([n,i]) => ({ nome: n, incasso: i }));
-
-        window.statistiche = {
-            totaleComande, totaleIncasso, totalePos, totaleContanti, incassoAsporto,
-            piattiByQuantita, piattiByIncasso, ingrByQuantita, ingrIncassiArray,
-            listaComande, fondoCassa: fondoCassaTotale, 
-            titoloReport: window.titoloReportStatistiche
-        };
-
-        const rows = piattiByQuantita.map(([nome, v]) => 
-            `<tr><td style="text-align:left; padding:6px;">${nome}</td><td style="text-align:center; padding:6px;">${v.quantita}</td><td style="text-align:right; padding:6px;">€${v.incasso.toFixed(2)}</td></tr>`
-        ).join("");
-
-        contenuto.innerHTML = `
-            <h3 style="color:blue; border-bottom: 2px solid #ccc; padding-bottom: 5px;">Report: ${window.titoloReportStatistiche}</h3>
-            <p><b>Numero totale comande:</b> ${totaleComande}</p>
-            <p><b>Fondo Cassa Base:</b> €${fondoCassaTotale.toFixed(2)}</p>
-            <p><b>Incasso POS:</b> €${totalePos.toFixed(2)}</p>
-            <p><b>Incasso Contanti:</b> €${totaleContanti.toFixed(2)}</p>
-            <p><b>Di cui Asporto:</b> €${incassoAsporto.toFixed(2)}</p>
-            <hr style="margin:15px 0; border: 1px solid #ccc;">
-            <p style="font-size: 1.1em;"><b>SOLDI IN CASSA (Fondo + Contanti):</b> <span style="color:green; font-weight:bold;">€${(fondoCassaTotale + totaleContanti).toFixed(2)}</span></p>
-            <p style="font-size: 1.1em;"><b>GUADAGNO REALE:</b> <span style="color:blue; font-weight:bold;">€${totaleIncasso.toFixed(2)}</span></p>
-            
-            <table border="0" style="width:100%; border-collapse:collapse; margin-top:20px;">
-                <thead>
-                    <tr style="border-bottom:2px solid #444;">
-                        <th style="text-align:left; padding:6px;">Piatto</th>
-                        <th style="text-align:center; padding:6px;">Quantità</th>
-                        <th style="text-align:right; padding:6px;">Incasso</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${rows.replace(/<\/tr>/g,"</tr><tr style='border-bottom:1px solid #eee;'></tr>")}
-                </tbody>
-            </table>
-        `;
-
-        const excelBtn = document.getElementById("generaExcelBtn");
-        const pdfBtn = document.getElementById("generaPdfBtn");
-        if (excelBtn) excelBtn.onclick = generaExcel;
-        if (pdfBtn) pdfBtn.onclick = generaPdf;
 
     } catch (error) {
         console.error(error);
@@ -6784,6 +6752,18 @@ async function caricaStatistiche() {
         hideLoader();
     }
 }
+
+// Wrapper magico per indirizzare i PDF e gli Excel verso il blocco corretto
+window.esportaStatistiche = function(tipo, formato) {
+    if (tipo === 'globale') {
+        window.statistiche = window.statisticheGlobale;
+    } else {
+        window.statistiche = window.statisticheTurno;
+    }
+
+    if (formato === 'excel' && typeof generaExcel === 'function') generaExcel();
+    else if (formato === 'pdf' && typeof generaPdf === 'function') generaPdf();
+};
 // --- EXCEL PDF ---
 async function generaExcel() {
     if (!checkOnline(true)) return;
