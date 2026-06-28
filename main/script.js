@@ -5709,22 +5709,31 @@ async function caricaComandePerRuolo(daFareDiv, storicoDiv, ruolo) {
 }
 async function caricaIngredientiPerRuolo(ruolo) {
     if (!checkOnline(true)) return;
-    const tabId = ruolo === "cucina" ? "ingredientiCucinaTab" :
-                  ruolo === "bere" ? "ingredientiBereTab" :
-                  "ingredientiSnackTab";
+    
+    // 🔴 LA CHIAVE ERA QUI: Dobbiamo puntare al Container interno, non alla Tab intera, 
+    // altrimenti distruggiamo il box bianco creato nel tuo index.html!
+    const containerId = ruolo === "cucina" ? "ingredientiCucinaContainer" :
+                        ruolo === "bere" ? "ingredientiBereContainer" :
+                        "ingredientiSnackContainer";
 
-    const container = document.getElementById(tabId);
+    const container = document.getElementById(containerId);
     if (!container) return;
 
     container.innerHTML = "Caricamento ingredienti...";
 
     db.ref("ingredienti").on("value", async snap => {
         const data = snap.val() || {};
-        container.innerHTML = "";
+        container.innerHTML = ""; // Ora svuota solo l'interno del box bianco!
 
+        // Aggiorna globalmente le unità anche per i menu dei ruoli
         window.ingredientData = data;
-        if (typeof aggiornaMenuRuolo === "function") aggiornaMenuRuolo();
 
+        // Se esiste una funzione di aggiornamento menu per ruolo, richiamala
+        if (typeof aggiornaMenuRuolo === "function") {
+            aggiornaMenuRuolo();
+        }
+
+        // Filtra categorie in base al ruolo
         let categorieRuolo;
         if (ruolo === "cucina") {
             const snapSnack = await db.ref("impostazioni/snackAbilitato").once("value");
@@ -5738,6 +5747,7 @@ async function caricaIngredientiPerRuolo(ruolo) {
             categorieRuolo = ["bevande"];
         }
 
+        // Raggruppa ingredienti per categoria
         const categorie = {};
         Object.entries(data).forEach(([id, ing]) => {
             if (!categorieRuolo.includes(ing.categoria)) return;
@@ -5745,26 +5755,24 @@ async function caricaIngredientiPerRuolo(ruolo) {
             categorie[ing.categoria].push({ id, ...ing });
         });
 
+        // SE NON CI SONO INGREDIENTI
         if (Object.keys(categorie).length === 0) {
              let msgIngr = "La dispensa è vuota... aria fritta stasera? 🌬️";
              if (ruolo === "cucina") msgIngr = "Niente ingredienti per te. Oggi si ordina la pizza! 🍕";
              if (ruolo === "bere") msgIngr = "Cantina vuota. Fai scorrere l'acqua del rubinetto! 🚰";
              if (ruolo === "snack") msgIngr = "Niente patatine o fritti... Mettiti a dieta! 🥕";
              
-             container.innerHTML = `<div style='background: white; border-radius: 12px; padding: 40px; text-align:center; color: #555; font-style: italic; font-size: 1.2em; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin: 20px auto; max-width: 800px;'>${msgIngr}</div>`;
+             container.innerHTML = `<div style='text-align:center; padding: 30px; color: #777; font-style: italic; font-size: 1.1em;'>${msgIngr}</div>`;
              return;
         }
 
-        // Il box globale per gli ingredienti (identico a quello invisibile generato per l'admin)
         const fragment = document.createDocumentFragment();
-        
-        // UNICO contenitore (così eredita gli stili in CSS senza spaccarsi)
-        const wrapperList = document.createElement("div");
 
         Object.entries(categorie).forEach(([cat, items]) => {
-            // NESSUN TITOLO H3
+            // Nessun titolo H3 per la categoria, come richiesto
+
             items.forEach(ing => {
-                // RICREO L'IDENTICO DOM DELL'ADMIN
+                // 🔹 CREAZIONE DELLA RIGA 1:1 IDENTICA AD ADMIN 🔹
                 const row = document.createElement("div");
                 row.style.display = "flex";
                 row.style.alignItems = "center";
@@ -5794,13 +5802,10 @@ async function caricaIngredientiPerRuolo(ruolo) {
                     });
                 };
 
-                // Unità (es. pz, kg) - In admin c'è un Select, qui per i dipendenti mettiamo solo testo
+                // Unità di misura (testo semplice invece della select di Admin)
                 const unitaSpan = document.createElement("span");
                 unitaSpan.innerText = ing.unita || "pz";
-                unitaSpan.style.width = "30px";
-                unitaSpan.style.textAlign = "center";
-                unitaSpan.style.fontSize = "0.9em";
-                unitaSpan.style.color = "#555";
+                unitaSpan.style.marginRight = "5px";
 
                 // Stato
                 const statoSpan = document.createElement("span");
@@ -5808,12 +5813,10 @@ async function caricaIngredientiPerRuolo(ruolo) {
                 const isEsaurito = (ing.rimanente === 0);
                 statoSpan.style.color = isEsaurito ? "red" : "green";
                 statoSpan.innerText = isEsaurito ? "Esaurito" : "Disponibile";
-                statoSpan.style.width = "85px"; // fissa per evitare salti grafici
 
-                // Bottone Disponibile
+                // Bottone Disponibile (senza stili inline che lo sformano)
                 const btnDisp = document.createElement("button");
                 btnDisp.innerText = "Disponibile";
-                btnDisp.style.padding = "8px 12px";
                 btnDisp.onclick = async () => {
                     await db.ref(`ingredienti/${ing.id}`).update({ rimanente: null, disponibile: true });
                 };
@@ -5821,7 +5824,6 @@ async function caricaIngredientiPerRuolo(ruolo) {
                 // Bottone Esaurito
                 const btnEs = document.createElement("button");
                 btnEs.innerText = "Esaurito";
-                btnEs.style.padding = "8px 12px";
                 btnEs.onclick = async () => {
                     await db.ref(`ingredienti/${ing.id}`).update({ rimanente: 0, disponibile: false });
                 };
@@ -5833,16 +5835,15 @@ async function caricaIngredientiPerRuolo(ruolo) {
                 row.appendChild(btnDisp);
                 row.appendChild(btnEs);
 
-                wrapperList.appendChild(row);
+                fragment.appendChild(row);
 
+                // Linea separatrice
                 const hr = document.createElement("hr");
                 hr.style.margin = "4px 0";
-                hr.style.borderTop = "1px solid #eee";
-                wrapperList.appendChild(hr);
+                fragment.appendChild(hr);
             });
         });
 
-        fragment.appendChild(wrapperList);
         container.appendChild(fragment);
     });
 }
