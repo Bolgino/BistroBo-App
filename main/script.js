@@ -5710,8 +5710,6 @@ async function caricaComandePerRuolo(daFareDiv, storicoDiv, ruolo) {
 async function caricaIngredientiPerRuolo(ruolo) {
     if (!checkOnline(true)) return;
     
-    // 🔴 LA CHIAVE ERA QUI: Dobbiamo puntare al Container interno, non alla Tab intera, 
-    // altrimenti distruggiamo il box bianco creato nel tuo index.html!
     const containerId = ruolo === "cucina" ? "ingredientiCucinaContainer" :
                         ruolo === "bere" ? "ingredientiBereContainer" :
                         "ingredientiSnackContainer";
@@ -5723,17 +5721,11 @@ async function caricaIngredientiPerRuolo(ruolo) {
 
     db.ref("ingredienti").on("value", async snap => {
         const data = snap.val() || {};
-        container.innerHTML = ""; // Ora svuota solo l'interno del box bianco!
+        container.innerHTML = "";
 
-        // Aggiorna globalmente le unità anche per i menu dei ruoli
         window.ingredientData = data;
+        if (typeof aggiornaMenuRuolo === "function") aggiornaMenuRuolo();
 
-        // Se esiste una funzione di aggiornamento menu per ruolo, richiamala
-        if (typeof aggiornaMenuRuolo === "function") {
-            aggiornaMenuRuolo();
-        }
-
-        // Filtra categorie in base al ruolo
         let categorieRuolo;
         if (ruolo === "cucina") {
             const snapSnack = await db.ref("impostazioni/snackAbilitato").once("value");
@@ -5747,7 +5739,6 @@ async function caricaIngredientiPerRuolo(ruolo) {
             categorieRuolo = ["bevande"];
         }
 
-        // Raggruppa ingredienti per categoria
         const categorie = {};
         Object.entries(data).forEach(([id, ing]) => {
             if (!categorieRuolo.includes(ing.categoria)) return;
@@ -5755,7 +5746,6 @@ async function caricaIngredientiPerRuolo(ruolo) {
             categorie[ing.categoria].push({ id, ...ing });
         });
 
-        // SE NON CI SONO INGREDIENTI
         if (Object.keys(categorie).length === 0) {
              let msgIngr = "La dispensa è vuota... aria fritta stasera? 🌬️";
              if (ruolo === "cucina") msgIngr = "Niente ingredienti per te. Oggi si ordina la pizza! 🍕";
@@ -5769,29 +5759,43 @@ async function caricaIngredientiPerRuolo(ruolo) {
         const fragment = document.createDocumentFragment();
 
         Object.entries(categorie).forEach(([cat, items]) => {
-            // Nessun titolo H3 per la categoria, come richiesto
-
             items.forEach(ing => {
-                // 🔹 CREAZIONE DELLA RIGA 1:1 IDENTICA AD ADMIN 🔹
+                // 🔹 CONTENITORE RIGA 
                 const row = document.createElement("div");
                 row.style.display = "flex";
+                row.style.justifyContent = "space-between"; // Spinge nome a sx, controlli a dx
                 row.style.alignItems = "center";
-                row.style.gap = "8px";
-                row.style.marginBottom = "6px";
-
-                // Nome
-                const nameSpan = document.createElement("span");
+                row.style.flexWrap = "wrap"; // Salva l'impaginazione su schermi piccoli
+                row.style.gap = "10px";
+                row.style.padding = "8px 0";
+                
+                // 🔹 BLOCCO 1: NOME A SINISTRA
+                const nameSpan = document.createElement("div");
                 nameSpan.innerText = ing.nome;
-                nameSpan.style.flex = "1";
+                nameSpan.style.fontWeight = "bold";
+                nameSpan.style.flex = "1 1 120px"; // Occupa lo spazio disponibile
+                
+                // 🔹 BLOCCO 2: GRUPPO CONTROLLI A DESTRA
+                const controls = document.createElement("div");
+                controls.style.display = "flex";
+                controls.style.alignItems = "center";
+                controls.style.gap = "8px"; // Distanza identica e fissa tra input e testi
+                controls.style.flexWrap = "wrap";
 
-                // Input quantità
+                // Input quantità (ora con altezza e bordi fissi per allinearsi ai bottoni)
                 const qtyInput = document.createElement("input");
                 qtyInput.type = "number";
                 qtyInput.min = 0;
-                abilitaIncrementoDinamico(qtyInput);
+                if(typeof abilitaIncrementoDinamico === "function") abilitaIncrementoDinamico(qtyInput);
                 qtyInput.value = (ing.rimanente === null || typeof ing.rimanente === "undefined") ? "" : ing.rimanente;
                 qtyInput.style.width = "70px";
                 qtyInput.step = "any";
+                qtyInput.style.height = "32px";
+                qtyInput.style.padding = "0 6px";
+                qtyInput.style.margin = "0";
+                qtyInput.style.border = "1px solid #ccc";
+                qtyInput.style.borderRadius = "6px";
+                qtyInput.style.boxSizing = "border-box";
 
                 qtyInput.onchange = async (e) => {
                     let newQty = e.target.value === "" ? null : parseFloat(e.target.value);
@@ -5802,10 +5806,12 @@ async function caricaIngredientiPerRuolo(ruolo) {
                     });
                 };
 
-                // Unità di misura (testo semplice invece della select di Admin)
+                // Unità di misura
                 const unitaSpan = document.createElement("span");
                 unitaSpan.innerText = ing.unita || "pz";
-                unitaSpan.style.marginRight = "5px";
+                unitaSpan.style.minWidth = "25px";
+                unitaSpan.style.textAlign = "center";
+                unitaSpan.style.color = "#555";
 
                 // Stato
                 const statoSpan = document.createElement("span");
@@ -5813,33 +5819,39 @@ async function caricaIngredientiPerRuolo(ruolo) {
                 const isEsaurito = (ing.rimanente === 0);
                 statoSpan.style.color = isEsaurito ? "red" : "green";
                 statoSpan.innerText = isEsaurito ? "Esaurito" : "Disponibile";
+                statoSpan.style.minWidth = "85px"; // Evita che balli quando cambia la parola
+                statoSpan.style.textAlign = "center";
 
-                // Bottone Disponibile (senza stili inline che lo sformano)
+                // Bottoni 
                 const btnDisp = document.createElement("button");
                 btnDisp.innerText = "Disponibile";
                 btnDisp.onclick = async () => {
                     await db.ref(`ingredienti/${ing.id}`).update({ rimanente: null, disponibile: true });
                 };
 
-                // Bottone Esaurito
                 const btnEs = document.createElement("button");
                 btnEs.innerText = "Esaurito";
                 btnEs.onclick = async () => {
                     await db.ref(`ingredienti/${ing.id}`).update({ rimanente: 0, disponibile: false });
                 };
 
+                // Assembliamo i pezzi!
+                controls.appendChild(qtyInput);
+                controls.appendChild(unitaSpan);
+                controls.appendChild(statoSpan);
+                controls.appendChild(btnDisp);
+                controls.appendChild(btnEs);
+
                 row.appendChild(nameSpan);
-                row.appendChild(qtyInput);
-                row.appendChild(unitaSpan);
-                row.appendChild(statoSpan);
-                row.appendChild(btnDisp);
-                row.appendChild(btnEs);
+                row.appendChild(controls);
 
                 fragment.appendChild(row);
 
                 // Linea separatrice
                 const hr = document.createElement("hr");
-                hr.style.margin = "4px 0";
+                hr.style.margin = "0";
+                hr.style.border = "none";
+                hr.style.borderTop = "1px solid #eee";
                 fragment.appendChild(hr);
             });
         });
