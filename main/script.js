@@ -4279,9 +4279,9 @@ async function caricaGestioneComandeAdmin() {
         }
 
         if (!snap.exists() || snap.numChildren() === 0) {
-            listaDiv.innerHTML = "<i>Nessuna comanda presente</i>";
-            document.getElementById("conteggioComandeAdmin").innerText = 0;
-            return;
+            listaDiv.innerHTML = "<div style='text-align:center; padding: 30px; color: #777; font-style: italic; font-size: 1.1em;'>Tutto tranquillo qui. Nessuna comanda nel sistema. 🏖️</div>";
+			document.getElementById("conteggioComandeAdmin").innerText = 0;
+			return;
         }
 
 
@@ -5691,13 +5691,20 @@ async function caricaComandePerRuolo(daFareDiv, storicoDiv, ruolo) {
         const counterSpan = document.getElementById(counterSpanId);
         if (counterSpan) counterSpan.innerText = countDaFare;
 
-        // --- 2. FRASI SIMPATICHE (EMPTY STATES) ---
+        // --- EMPTY STATES CUCINA / BERE / SNACK ---
         if (daFareContainer.children.length === 0) {
-             daFareContainer.innerHTML = `<div style="text-align:center; padding: 30px; color: #777; font-size: 1.1em; background: #f9f9f9; border-radius: 8px; border: 1px dashed #ccc;">Nessuna comanda in coda. Caffettino? ☕😎</div>`;
+            let msg = ruoloEffettivo === "cucina" ? "Nessuna comanda in coda. Pentole a riposo! 🍳" :
+                      ruoloEffettivo === "bere"   ? "Nessuna bevanda da preparare. Shaker a riposo! 🍹" :
+                                                    "Nessuno snack in coda. Friggitrice in pausa! 🍟";
+            daFareContainer.innerHTML = `<div style='text-align:center; padding: 20px; color: #777; font-style: italic; font-size: 1.1em;'>${msg}</div>`;
         }
         if (storicoContainer.children.length === 0) {
-             storicoContainer.innerHTML = `<div style="text-align:center; padding: 30px; color: #777; font-size: 1.1em; background: #f9f9f9; border-radius: 8px; border: 1px dashed #ccc;">Lo storico piange. Daje, accendiamo i motori! 🔥🚀</div>`;
+            let msg = ruoloEffettivo === "cucina" ? "Ancora nessun piatto completato. Accendi i fuochi! 🔥" :
+                      ruoloEffettivo === "bere"   ? "Nessun drink servito. Stappa qualcosa! 🍾" :
+                                                    "Ancora nessuno snack servito. Scalda l'olio! 🍿";
+            storicoContainer.innerHTML = `<div style='text-align:center; padding: 20px; color: #777; font-style: italic; font-size: 1.1em;'>${msg}</div>`;
         }
+
     });
 }
 async function caricaIngredientiPerRuolo(ruolo) {
@@ -6290,7 +6297,11 @@ function caricaMenuAdmin(){
     const div = document.getElementById("menuAdmin");
     db.ref("menu").on("value", snap => {
         div.innerHTML = "";
-
+// --- EMPTY STATE MENU ADMIN ---
+            if (Object.keys(data).length === 0) {
+                div.innerHTML = "<div style='text-align:center; padding: 30px; color: #777; font-style: italic; font-size: 1.1em;'>Il menu è tristemente vuoto. Aggiungi qualche prelibatezza! 🍔</div>";
+                return;
+            }
         const data = snap.val() || {};
         const categorie = { cibi: [], bevande: [], snack: [] };
 
@@ -6308,7 +6319,10 @@ function caricaMenuAdmin(){
 
             if(categorie[cat].length === 0){
                 const p = document.createElement("p");
-                p.innerText = "Nessun piatto";
+                p.innerText = "Nessun piatto in questa categoria. 🍽️";
+                p.style.fontStyle = "italic";
+                p.style.color = "#777";
+                p.style.textAlign = "center";
                 div.appendChild(p);
             }
 
