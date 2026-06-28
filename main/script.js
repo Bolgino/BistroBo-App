@@ -605,41 +605,49 @@ function initImpostazioniToggle() {
                 showCancel: true,
                 cancelText: "Annulla",
                 onConfirm: async () => {
-                    try {
-                        showLoader();
-                        // 1. Cancella comande attuali, contatore e cassa
-                        await db.ref("comande").remove();
-                        await db.ref("impostazioni/contatoreComande").set(0); 
-                        await db.ref("impostazioni/fondoCassa").remove(); 
-                        
-                        // 2. Cancella l'intero archivio delle giornate
-                        await db.ref("storico_giornate").remove();
-                        
-                        notify("✅ Database completamente resettato (Comande + Archivi)!", "info");
+                        try {
+                            showLoader();
+                            
+                            // 1. Cancella comande attuali, PREORDINI, contatore e cassa
+                            await db.ref("comande").remove();
+                            await db.ref("preordini").remove(); // 🔥 ELIMINA I PREORDINI PENDENTI
+                            await db.ref("impostazioni/contatoreComande").set(0); 
+                            await db.ref("impostazioni/fondoCassa").remove(); 
+                            
+                            // 2. Cancella l'intero archivio delle giornate (se abilitato)
+                            await db.ref("storico_giornate").remove();
+                            
+                            notify("✅ Database completamente resettato (Comande, Preordini e Archivi)!", "info");
 
-                        // Pulisce l'interfaccia UI admin
-                        const listaComandeAdmin = document.getElementById("listaComandeAdmin");
-                        if (listaComandeAdmin) listaComandeAdmin.innerHTML = "";
-                        
-                        // Resetta il filtro delle statistiche
-                        const filtroSelect = document.getElementById("filtroStatistiche");
-                        if (filtroSelect) {
-                            filtroSelect.innerHTML = `
-                                <option value="correnti">Turno Attuale (Non archiviate)</option>
-                                <option value="tutte">Globale (Tutta la Sagra)</option>
-                            `;
+                            // Pulisce l'interfaccia UI admin
+                            const listaComandeAdmin = document.getElementById("listaComandeAdmin");
+                            if (listaComandeAdmin) listaComandeAdmin.innerHTML = "";
+                            
+                            // Svuota anche l'interfaccia dei preordini (se ti trovi in Admin/Cassa)
+                            const listaPreordiniAdmin = document.getElementById("listaPreordiniAdmin");
+                            if (listaPreordiniAdmin) listaPreordiniAdmin.innerHTML = "";
+                            const listaPreordiniCassa = document.getElementById("listaPreordiniCassa");
+                            if (listaPreordiniCassa) listaPreordiniCassa.innerHTML = "";
+                            
+                            // Resetta il filtro delle statistiche
+                            const filtroSelect = document.getElementById("filtroStatistiche");
+                            if (filtroSelect) {
+                                filtroSelect.innerHTML = `
+                                    <option value="correnti">Turno Attuale (Non archiviate)</option>
+                                    <option value="tutte">Globale (Tutta la Sagra)</option>
+                                `;
+                            }
+                            
+                            // Ricarica la schermata se è in Statistiche
+                            if (typeof caricaStatistiche === "function") caricaStatistiche();
+                            
+                            hideLoader();
+                        } catch (err) {
+                            console.error(err);
+                            hideLoader();
+                            notify("❌ Errore durante l'eliminazione: " + err.message, "error");
                         }
-                        
-                        // Ricarica la schermata se è in Statistiche
-                        if (typeof caricaStatistiche === "function") caricaStatistiche();
-                        
-                        hideLoader();
-                    } catch (err) {
-                        console.error(err);
-                        hideLoader();
-                        notify("❌ Errore durante l'eliminazione: " + err.message, "error");
-                    }
-                },
+                    },
                 onCancel: () => {
                     notify("Operazione annullata", "attenzione");
                 }
@@ -6593,8 +6601,16 @@ function analizzaComande(comandeObj, fondoCassaTot) {
             const prezzoTot = calcolaPrezzoConSconto(p);
             totaleComanda += prezzoTot;
             
-            // Calcolo "Solo Extra" (Soldi derivanti unicamente da +Aggiunte o Contorni a pagamento)
-            const extraGenerato = Number(p.extraPrezzo || 0) * q;
+            // 🔥 FIX CALCOLO EXTRA:
+            // Sottraiamo il costo base pagato per i contorni dal totale extraPrezzo. 
+            // Così otterremo SOLO i soldi guadagnati dalle "+Aggiunte" vere e proprie (sia sul piatto che sul contorno)
+            let veroExtraIngredienti = Number(p.extraPrezzo || 0);
+            (p.contorniScelti || []).forEach(contorno => {
+                veroExtraIngredienti -= Number(contorno.prezzoPagato || 0); 
+            });
+            
+            // Usiamo Math.max per sicurezza, evitiamo mai numeri negativi per errori matematici JS
+            const extraGenerato = Math.max(0, veroExtraIngredienti) * q;
             incassoSoloExtra += extraGenerato;
             
             if (!piattiMap[p.nome]) piattiMap[p.nome] = { quantita: 0, incasso: 0 };
