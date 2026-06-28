@@ -5867,8 +5867,12 @@ async function caricaUtenti(){
 
     // Attesa: titolo + contenitore per gli utenti non approvati
     const attesaDiv = document.createElement("div");
+    attesaDiv.style.display = "none"; // 🔥 NASCOSTO DI DEFAULT
     const hAttesa = document.createElement("h3");
-    hAttesa.innerText = "Utenti in attesa di approvazione";
+    hAttesa.innerText = "⏳ Utenti in attesa di approvazione";
+    hAttesa.style.color = "#E91E63";
+    hAttesa.style.borderBottom = "2px solid #eee";
+    hAttesa.style.paddingBottom = "5px";
     attesaDiv.appendChild(hAttesa);
     const attesaList = document.createElement("div");
     attesaList.id = "attesaList";
@@ -6096,6 +6100,12 @@ async function caricaUtenti(){
                 }
             }
         });
+		// 🔥 CONTROLLO: Se ci sono utenti in attesa, mostra il blocco, altrimenti nascondilo!
+        if (attesaList.children.length > 0) {
+            attesaDiv.style.display = "block";
+        } else {
+            attesaDiv.style.display = "none";
+        }
     });
     hideLoader();
 }
@@ -8537,7 +8547,55 @@ async function aggiornaStatoConTermine(id, chiaveStato, nuovoStato) {
         notify("Errore aggiornamento stato", "error");
     }
 }
+// ================= BADGE NOTIFICHE CHAT GLOBALE =================
+window.chatMessaggiVisti = 0;
+window.numeroMessaggiChat = 0;
+window.chatInizializzata = false;
 
+db.ref("chat").on("value", snap => {
+    const messaggi = snap.val() || {};
+    const conteggio = Object.keys(messaggi).length;
+    window.numeroMessaggiChat = conteggio;
+
+    if (!window.chatInizializzata) {
+        window.chatMessaggiVisti = conteggio; // Al primo caricamento, li consideriamo tutti visti
+        window.chatInizializzata = true;
+        return;
+    }
+
+    const daVedere = conteggio - window.chatMessaggiVisti;
+
+    if (daVedere > 0) {
+        // Controlla se almeno una tab chat è attualmente aperta sullo schermo
+        const tabsChat = ["chatAdminTab", "cassaChatTab", "cucinaChatTab", "bereChatTab", "snackChatTab"];
+        const isChatActive = tabsChat.some(id => {
+            const el = document.getElementById(id);
+            return el && el.style.display === "block";
+        });
+
+        if (!isChatActive) {
+            // Se la chat è chiusa, mostra i badge e aggiorna il numero!
+            document.querySelectorAll('.chat-badge').forEach(b => {
+                b.innerText = daVedere;
+                b.style.display = 'inline-block';
+            });
+            // Suona la notifica se abilitata
+            if (window.settings && window.settings.suonoChat) playSound();
+        } else {
+            // Se la chat è già aperta, li stiamo leggendo in diretta
+            window.chatMessaggiVisti = conteggio;
+        }
+    }
+});
+
+// Funzione chiamata quando clicchiamo il pulsante "Chat" nelle tab
+window.azzeraBadgeChat = function() {
+    window.chatMessaggiVisti = window.numeroMessaggiChat;
+    document.querySelectorAll('.chat-badge').forEach(b => {
+        b.style.display = 'none';
+        b.innerText = '0';
+    });
+};
 // Funzione di calcolo e visualizzazione media
 function calcolaEVisualizzaTempoMedio(comandeSnapshot) {
     const boxCassa = document.getElementById("boxTempoMedioCassa");
