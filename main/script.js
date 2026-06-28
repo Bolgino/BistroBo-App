@@ -6571,6 +6571,10 @@ function analizzaComande(comandeObj, fondoCassaTot) {
     let totalePos = 0;
     let totaleContanti = 0;
     let incassoAsporto = 0;
+    let incassoPreordini = 0;
+    let totaleComandePreordini = 0;
+    let incassoSoloExtra = 0; // Tiene traccia di soldi guadagnati SOLO da aggiunte/contorni
+    
     const piattiMap = {}; 
     const ingrMap = {}; 
     const incassiIngredienti = {}; 
@@ -6580,37 +6584,50 @@ function analizzaComande(comandeObj, fondoCassaTot) {
         const c = comandeObj[id];
         totaleComande++;
         let totaleComanda = 0;
+        let comandaEPreordine = c.preordine === true;
+        
+        if (comandaEPreordine) totaleComandePreordini++;
         
         (c.piatti || []).forEach(p => {
             const q = Number(p.quantita || 0);
             const prezzoTot = calcolaPrezzoConSconto(p);
             totaleComanda += prezzoTot;
             
+            // Calcolo "Solo Extra" (Soldi derivanti unicamente da +Aggiunte o Contorni a pagamento)
+            const extraGenerato = Number(p.extraPrezzo || 0) * q;
+            incassoSoloExtra += extraGenerato;
+            
             if (!piattiMap[p.nome]) piattiMap[p.nome] = { quantita: 0, incasso: 0 };
             piattiMap[p.nome].quantita += q;
             piattiMap[p.nome].incasso += prezzoTot;
             
+            // Calcolo ingredienti base (per la tabella Ingredienti x Utilizzo)
             (p.ingredienti || []).forEach(ing => {
                 const qty = (Number(ing.qtyPerUnit) || 1) * q;
                 ingrMap[ing.nome] = (ingrMap[ing.nome] || 0) + qty;
                 incassiIngredienti[ing.nome] = (incassiIngredienti[ing.nome] || 0) + prezzoTot;
             });
+            
+            // Aggiungiamo al conteggio ingredienti anche le "Aggiunte"
+            (p.varianti || []).filter(v => v.tipo === "aggiunta").forEach(v => {
+               const qty = (Number(v.qty) || 1) * q;
+               ingrMap[v.nome] = (ingrMap[v.nome] || 0) + qty;
+            });
         });
         
-        if (c.metodoPagamento === "pos") {
-            totalePos += totaleComanda;
-        } else {
-            totaleContanti += totaleComanda;
-        }
+        if (c.metodoPagamento === "pos") totalePos += totaleComanda;
+        else totaleContanti += totaleComanda;
         
         totaleIncasso += totaleComanda;
         if (c.commento) incassoAsporto += totaleComanda;
+        if (comandaEPreordine) incassoPreordini += totaleComanda;
 
         listaComande.push({
             id, numero: c.numero, lettera: c.lettera,
             totale: totaleComanda,
             piatti: (c.piatti || []).map(p => p.quantita + "x " + p.nome).join(", "),
-            data: c.timestamp
+            data: c.timestamp,
+            isPreordine: comandaEPreordine
         });
     }
 
@@ -6620,7 +6637,8 @@ function analizzaComande(comandeObj, fondoCassaTot) {
     const ingrIncassiArray = Object.entries(incassiIngredienti).map(([n,i]) => ({ nome: n, incasso: i }));
 
     return {
-        totaleComande, totaleIncasso, totalePos, totaleContanti, incassoAsporto,
+        totaleComande, totaleIncasso, totalePos, totaleContanti, incassoAsporto, 
+        incassoPreordini, totaleComandePreordini, incassoSoloExtra,
         piattiByQuantita, piattiByIncasso, ingrByQuantita, ingrIncassiArray,
         listaComande, fondoCassa: fondoCassaTot
     };
@@ -6637,9 +6655,18 @@ function renderHtmlStatistiche(elementId, stats) {
 
     contenuto.innerHTML = `
         <div style="font-size: 1.05em;">
-            <p style="margin: 4px 0;"><b>Totale comande:</b> ${stats.totaleComande}</p>
-            <p style="margin: 4px 0;"><b>Fondo Cassa Base:</b> €${stats.fondoCassa.toFixed(2)}</p>
-            <p style="margin: 4px 0;"><b>POS:</b> €${stats.totalePos.toFixed(2)} | <b>Contanti:</b> €${stats.totaleContanti.toFixed(2)}</p>
+            <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                <div style="flex:1;">
+                    <p style="margin: 4px 0;"><b>Totale comande:</b> ${stats.totaleComande}</p>
+                    <p style="margin: 4px 0;"><b>Fondo Cassa Base:</b> €${stats.fondoCassa.toFixed(2)}</p>
+                    <p style="margin: 4px 0;"><b>POS:</b> €${stats.totalePos.toFixed(2)} | <b>Contanti:</b> €${stats.totaleContanti.toFixed(2)}</p>
+                </div>
+                <div style="flex:1; border-left: 2px solid #eee; padding-left: 15px; color: #555;">
+                    <p style="margin: 4px 0;"><b>Incasso Asporto:</b> €${stats.incassoAsporto.toFixed(2)}</p>
+                    <p style="margin: 4px 0;"><b>Incasso Preordini:</b> €${stats.incassoPreordini.toFixed(2)} (${stats.totaleComandePreordini} ord.)</p>
+                    <p style="margin: 4px 0;"><b>Valore Extra/Contorni:</b> €${stats.incassoSoloExtra.toFixed(2)}</p>
+                </div>
+            </div>
             
             <div style="background: #f9f9f9; padding: 12px; border-radius: 8px; margin: 15px 0; border: 1px solid #ddd;">
                 <p style="margin: 0 0 5px 0;"><b>CASSA (Fondo + Contanti):</b> <span style="color:green; font-weight:bold; font-size:1.1em;">€${(stats.fondoCassa + stats.totaleContanti).toFixed(2)}</span></p>
@@ -6661,7 +6688,6 @@ function renderHtmlStatistiche(elementId, stats) {
         </table>
     `;
 }
-
 async function caricaStatistiche() {
     if (!checkOnline(true)) return;
     showLoader();
@@ -6770,7 +6796,12 @@ async function generaExcel() {
   const s = window.statistiche;
   if (!s) { notify("Nessuna statistica disponibile","warn"); return; }
 
- const { piattiByIncasso, piattiByQuantita, ingrByQuantita, totaleComande, totaleIncasso, totalePos, totaleContanti, incassoAsporto, fondoCassa } = s;
+ const { 
+    piattiByIncasso, piattiByQuantita, ingrByQuantita, 
+    totaleComande, totaleIncasso, totalePos, totaleContanti, 
+    incassoAsporto, incassoPreordini, totaleComandePreordini, incassoSoloExtra, fondoCassa 
+ } = s;
+ 
   const workbook = new ExcelJS.Workbook();
 
   // ----------------- Scheda 1: Piatti x Incasso -----------------
@@ -6781,20 +6812,17 @@ async function generaExcel() {
     { header: "Incasso", key: "incasso", width: 15 }
   ];
 
-  // Titoli gialli e grassetto
   sheet1.getRow(1).eachCell(cell => {
     cell.fill = { type:'pattern', pattern:'solid', fgColor:{argb:'FFFF00'} };
     cell.font = { bold:true };
   });
 
-  // Aggiungi dati piatti e formatta colonna Incasso come valuta
   piattiByIncasso.forEach(p => {
     const row = sheet1.addRow({ nome: p[0], quantita: p[1].quantita, incasso: Number(p[1].incasso.toFixed(2)) });
     row.getCell('C').numFmt = '€#,##0.00';
   });
 
-  // Totali a fianco (colonne E/F)
-  // Totali a fianco (colonne E/F)
+  // --- Totali in colonna E/F ---
   sheet1.getCell('E2').value = "Numero totale comande";
   sheet1.getCell('F2').value = totaleComande;
   sheet1.getCell('E3').value = "Fondo Cassa Iniziale (€)";
@@ -6803,28 +6831,49 @@ async function generaExcel() {
   sheet1.getCell('F4').value = totalePos;
   sheet1.getCell('E5').value = "Incasso Contanti (€)";
   sheet1.getCell('F5').value = totaleContanti;
-  sheet1.getCell('E6').value = "Di cui Asporto (€)";
-  sheet1.getCell('F6').value = incassoAsporto;
-  sheet1.getCell('E7').value = "SOLDI TOTALI IN CASSA (€)";
-  sheet1.getCell('F7').value = (fondoCassa || 0) + totaleContanti;
-  sheet1.getCell('E8').value = "GUADAGNO REALE (€)";
-  sheet1.getCell('F8').value = totaleIncasso;
+  
+  sheet1.getCell('E7').value = "Incasso Asporto (€)";
+  sheet1.getCell('F7').value = incassoAsporto;
+  sheet1.getCell('E8').value = "Incasso Preordini (€)";
+  sheet1.getCell('F8').value = incassoPreordini;
+  sheet1.getCell('E9').value = "N° Ordini Preordini";
+  sheet1.getCell('F9').value = totaleComandePreordini;
+  sheet1.getCell('E10').value = "Incasso Extra/Varianti (€)";
+  sheet1.getCell('F10').value = incassoSoloExtra;
 
-  // Formatta tutti gli incassi come valuta
-  ['F3','F4','F5','F6','F7','F8'].forEach(addr => {
+  sheet1.getCell('E12').value = "SOLDI TOTALI IN CASSA (€)";
+  sheet1.getCell('F12').value = (fondoCassa || 0) + totaleContanti;
+  sheet1.getCell('E13').value = "GUADAGNO REALE (€)";
+  sheet1.getCell('F13').value = totaleIncasso;
+
+  // Formatta valute
+  ['F3','F4','F5','F7','F8','F10','F12','F13'].forEach(addr => {
       sheet1.getCell(addr).numFmt = '€#,##0.00';
   });
 
-  // Stile blu, testo bianco e grassetto per tutto il riquadro
-  ['E2','F2','E3','F3','E4','F4','E5','F5','E6','F6','E7','F7','E8','F8'].forEach(addr => {
+  // Stile totale base
+  ['E2','F2','E3','F3','E4','F4','E5','F5'].forEach(addr => {
+      const cell = sheet1.getCell(addr);
+      cell.fill = { type:'pattern', pattern:'solid', fgColor:{argb:'E0E0E0'} };
+      cell.font = { bold:true };
+  });
+
+  // Stile totale Asporto/Preordini/Extra
+  ['E7','F7','E8','F8','E9','F9','E10','F10'].forEach(addr => {
+      const cell = sheet1.getCell(addr);
+      cell.fill = { type:'pattern', pattern:'solid', fgColor:{argb:'FFF2CC'} };
+      cell.font = { bold:false };
+  });
+
+  // Stile finali
+  ['E12','F12','E13','F13'].forEach(addr => {
       const cell = sheet1.getCell(addr);
       cell.fill = { type:'pattern', pattern:'solid', fgColor:{argb:'00B0F0'} };
       cell.font = { bold:true, color:{argb:'FFFFFF'} };
   });
 
-  // Adatta larghezza colonne dei totali
-  sheet1.getColumn(5).width = 30; // colonna E allargata per i nuovi testi
-  sheet1.getColumn(6).width = 15; // colonna F
+  sheet1.getColumn(5).width = 30; 
+  sheet1.getColumn(6).width = 15;
 
   // ----------------- Scheda 2: Piatti x Quantità -----------------
   const sheet2 = workbook.addWorksheet("Piatti x Quantità");
@@ -6834,7 +6883,6 @@ async function generaExcel() {
     { header: "Incasso", key: "incasso", width: 15 }
   ];
 
-  // Titoli gialli
   sheet2.getRow(1).eachCell(cell => {
     cell.fill = { type:'pattern', pattern:'solid', fgColor:{argb:'FFFF00'} };
     cell.font = { bold:true };
@@ -6852,7 +6900,6 @@ async function generaExcel() {
     { header:"Quantità", key:"quantita", width:15 }
   ];
 
-  // Titoli gialli
   sheet3.getRow(1).eachCell(cell => {
     cell.fill = { type:'pattern', pattern:'solid', fgColor:{argb:'FFFF00'} };
     cell.font = { bold:true };
@@ -6866,17 +6913,21 @@ async function generaExcel() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'Statistiche_Incassi.xlsx';
+  a.download = `Statistiche_Incassi_${s.titoloReport.replace(/[^a-z0-9]/gi, '_')}.xlsx`;
   a.click();
   URL.revokeObjectURL(url);
 }
-
 function generaPdf() {
     if (!checkOnline(true)) return;
   const s = window.statistiche;
   if (!s) { notify("Nessuna statistica disponibile. Apri la tab Incassi prima.","warn"); return; }
 
-  const { totaleComande, totaleIncasso, totalePos, totaleContanti, incassoAsporto, piattiByQuantita, piattiByIncasso, ingrByQuantita, ingrIncassiArray, listaComande, fondoCassa } = s;
+  const { 
+    totaleComande, totaleIncasso, totalePos, totaleContanti, incassoAsporto, 
+    incassoPreordini, totaleComandePreordini, incassoSoloExtra, fondoCassa,
+    piattiByQuantita, piattiByIncasso, ingrByQuantita, listaComande, titoloReport
+  } = s;
+  
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
   let y = 14;
@@ -6889,24 +6940,33 @@ function generaPdf() {
   // Titolo principale
   doc.setFontSize(16);
   doc.setFont(undefined,'bold');
-  doc.setTextColor(0,0,200); // blu
-  doc.text("Report Incassi", xLeft, y);
+  doc.setTextColor(0,0,200);
+  doc.text(`Report Incassi: ${titoloReport || "Globale"}`, xLeft, y);
   y += 8;
 
   // Totali
   doc.setFontSize(12);
+  doc.setFont(undefined,'normal');
+  doc.setTextColor(0,0,0);
   doc.text(`Numero totale comande: ${totaleComande}`, xLeft, y);
-  y += 6;
-  doc.text(`Fondo Cassa Iniziale: €${(fondoCassa || 0).toFixed(2)}`, xLeft, y);
+  doc.text(`Fondo Cassa Iniziale: €${(fondoCassa || 0).toFixed(2)}`, xCenter, y);
   y += 6;
   doc.text(`Incasso POS: €${totalePos.toFixed(2)}`, xLeft, y);
-  y += 6;
-  doc.text(`Incasso Contanti: €${totaleContanti.toFixed(2)}`, xLeft, y);
-  y += 6;
-  doc.text(`Di cui Asporto: €${incassoAsporto.toFixed(2)}`, xLeft, y);
+  doc.text(`Incasso Contanti: €${totaleContanti.toFixed(2)}`, xCenter, y);
+  y += 8;
+
+  // Sezione Asporto/Preordini/Extra
+  doc.setFontSize(10);
+  doc.setTextColor(80,80,80);
+  doc.text(`• Di cui Asporto: €${incassoAsporto.toFixed(2)}`, xLeft, y);
+  y += 5;
+  doc.text(`• Di cui Preordini: €${incassoPreordini.toFixed(2)} (${totaleComandePreordini} ordini)`, xLeft, y);
+  y += 5;
+  doc.text(`• Valore generato solo da Extra/Varianti: €${incassoSoloExtra.toFixed(2)}`, xLeft, y);
   y += 10;
   
   // Scritte in grassetto per i conti finali
+  doc.setFontSize(12);
   doc.setFont(undefined, 'bold');
   doc.setTextColor(0, 100, 0); // Verde scuro
   doc.text(`SOLDI TOTALI IN CASSA (Fondo + Contanti): €${((fondoCassa || 0) + totaleContanti).toFixed(2)}`, xLeft, y);
@@ -6915,12 +6975,11 @@ function generaPdf() {
   doc.text(`GUADAGNO REALE (tolto fondo cassa): €${totaleIncasso.toFixed(2)}`, xLeft, y);
   y += 12;
   
-  // Resetta colore e font per le tabelle sottostanti
+  // Resetta colore e font per le tabelle
   doc.setTextColor(0, 0, 0);
   doc.setFont(undefined, 'normal');
 	
-	
-	  // Tabella: Piatti per quantità
+  // Tabella: Piatti per quantità
   doc.setFontSize(13);
   doc.setFont(undefined,'bold');
   doc.setTextColor(0,100,0); // verde
@@ -6929,7 +6988,7 @@ function generaPdf() {
 
   doc.setFontSize(11);
   doc.setFont(undefined,'normal');
-  doc.setTextColor(0,0,0); // dati in nero
+  doc.setTextColor(0,0,0);
   doc.text("Piatto", xLeft, y);
   doc.text("Quantità", xCenter, y, { align: "center" });
   doc.text("Incasso", xRight, y, { align: "right" });
@@ -6945,6 +7004,7 @@ function generaPdf() {
 
   // Piccolo spazio, poi Piatti per incasso
   y += 8;
+  if (y > 260) { doc.addPage(); y = 20; }
   doc.setFontSize(13);
   doc.setFont(undefined,'bold');
   doc.setTextColor(0,100,0); // verde
@@ -6968,16 +7028,17 @@ function generaPdf() {
 
   // Ingredienti (ordinati per utilizzo)
   y += 8;
+  if (y > 260) { doc.addPage(); y = 20; }
   doc.setFontSize(13);
   doc.setFont(undefined,'bold');
   doc.setTextColor(0,100,0); // verde
-  doc.text("Ingredienti — per utilizzo", xLeft, y);
+  doc.text("Ingredienti — per utilizzo (Inclusi Extra)", xLeft, y);
   y += 6;
   doc.setFontSize(11);
   doc.setFont(undefined,'normal');
   doc.setTextColor(0,0,0); // dati in nero
   doc.text("Ingrediente", xLeft, y);
-  doc.text("Quantità", xRight, y, { align: "right" });
+  doc.text("Quantità Usata", xRight, y, { align: "right" });
   y += 6;
 
   ingrByQuantita.forEach(([nome, qty]) => {
@@ -6987,8 +7048,9 @@ function generaPdf() {
     y += 6;
   });
 
-  // Lista Comande cronologica — aggiunto data e ora
+  // Lista Comande cronologica
   y += 8;
+  if (y > 260) { doc.addPage(); y = 20; }
   doc.setFontSize(13);
   doc.setFont(undefined,'bold');
   doc.setTextColor(0,100,0); // verde
@@ -7007,27 +7069,28 @@ function generaPdf() {
   listaComande.forEach(c => {
     if(y > 275){ doc.addPage(); y=20; }
 
-    // data e ora
     const ts = c.timestamp || 0;
     const date = ts ? new Date(ts) : null;
-    const dateStr = date ? `${date.getDate().toString().padStart(2,'0')}/${(date.getMonth()+1).toString().padStart(2,'0')}/${date.getFullYear()} ${date.getHours().toString().padStart(2,'0')}:${date.getMinutes().toString().padStart(2,'0')}` : "";
+    const dateStr = date ? `${date.getDate().toString().padStart(2,'0')}/${(date.getMonth()+1).toString().padStart(2,'0')} ${date.getHours().toString().padStart(2,'0')}:${date.getMinutes().toString().padStart(2,'0')}` : "";
 
-    // evidenzia comanda con massimo incasso
     if(c.id === maxComanda.id){
       doc.setFont(undefined,'bold');
-      doc.setTextColor(255,200,0); // giallo
+      doc.setTextColor(255,150,0); // arancio per massimo incasso
     } else {
       doc.setFont(undefined,'normal');
       doc.setTextColor(0,0,0);
     }
+    
+    let testoNum = String(c.numero || "");
+    if(c.isPreordine) testoNum += " (PRE)"; // Aggiunge piccola etichetta ai preordini
 
-    doc.text(dateStr, xLeft, y); // data e ora a sinistra
-    doc.text(String(c.numero || ""), xCenter, y, {align:"center"});
-    doc.text(`€${c.totale}`, xRight, y, {align:"right"});
+    doc.text(dateStr, xLeft, y); 
+    doc.text(testoNum, xCenter, y, {align:"center"});
+    doc.text(`€${c.totale.toFixed(2)}`, xRight, y, {align:"right"});
     y += 6;
   });
 
-  doc.save("Statistiche_Incassi.pdf");
+  doc.save(`Statistiche_Incassi_${titoloReport.replace(/[^a-z0-9]/gi, '_')}.pdf`);
 }
 // -------------------- SCONTI ADMIN --------------------
 function caricaScontiAdmin() {
