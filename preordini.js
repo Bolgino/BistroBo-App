@@ -228,7 +228,7 @@ async function renderPreordiniAdmin(data) {
 
 
     if (ids.length === 0) {
-        lista.innerHTML = "<p class='nessun-ordine'>Nessun ordine presente.</p>";
+        lista.innerHTML = "<p class='nessun-ordine'>Nessun preordine. Qui vivono tutti alla giornata! 🔮🤷‍♂️</p>";
         return;
     }
 
@@ -398,7 +398,7 @@ function renderPreordiniCassa(data) {
         .filter(([id, o]) => o.stato !== "aggiunto");
 
         if (entries.length === 0) {
-        lista.innerHTML = "<p>Nessun ordine presente.</p>";
+        lista.innerHTML = "<p>Nessun preordine. Qui vivono tutti alla giornata! 🔮🤷‍♂️</p>";
         tabBtn.style.display = "none";
         ultimiPreordini = {};
         return;
