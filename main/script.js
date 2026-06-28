@@ -5755,36 +5755,36 @@ async function caricaIngredientiPerRuolo(ruolo) {
              return;
         }
 
-        // Il box bianco elegante in stile Admin
-        const wrapperCard = document.createElement("div");
-        wrapperCard.style.background = "#fff";
-        wrapperCard.style.borderRadius = "12px";
-        wrapperCard.style.padding = "20px";
-        wrapperCard.style.boxShadow = "0 8px 20px rgba(0,0,0,0.15)";
-        wrapperCard.style.maxWidth = "800px";
-        wrapperCard.style.margin = "20px auto";
-        wrapperCard.style.color = "#000";
+        // Il box globale per gli ingredienti (identico a quello invisibile generato per l'admin)
+        const fragment = document.createDocumentFragment();
+        
+        // UNICO contenitore (così eredita gli stili in CSS senza spaccarsi)
+        const wrapperList = document.createElement("div");
 
         Object.entries(categorie).forEach(([cat, items]) => {
+            // NESSUN TITOLO H3
             items.forEach(ing => {
-                // 🔹 LA MAGIA: Copiato e incollato dal VERO stile flex di Admin! 🔹
+                // RICREO L'IDENTICO DOM DELL'ADMIN
                 const row = document.createElement("div");
                 row.style.display = "flex";
                 row.style.alignItems = "center";
                 row.style.gap = "8px";
                 row.style.marginBottom = "6px";
 
+                // Nome
                 const nameSpan = document.createElement("span");
                 nameSpan.innerText = ing.nome;
                 nameSpan.style.flex = "1";
 
+                // Input quantità
                 const qtyInput = document.createElement("input");
                 qtyInput.type = "number";
                 qtyInput.min = 0;
-                if(typeof abilitaIncrementoDinamico === "function") abilitaIncrementoDinamico(qtyInput);
-                qtyInput.value = (ing.rimanente === null || ing.rimanente === undefined) ? "" : ing.rimanente;
+                abilitaIncrementoDinamico(qtyInput);
+                qtyInput.value = (ing.rimanente === null || typeof ing.rimanente === "undefined") ? "" : ing.rimanente;
                 qtyInput.style.width = "70px";
                 qtyInput.step = "any";
+
                 qtyInput.onchange = async (e) => {
                     let newQty = e.target.value === "" ? null : parseFloat(e.target.value);
                     if (newQty !== null && (isNaN(newQty) || newQty < 0)) newQty = 0;
@@ -5794,18 +5794,23 @@ async function caricaIngredientiPerRuolo(ruolo) {
                     });
                 };
 
+                // Unità (es. pz, kg) - In admin c'è un Select, qui per i dipendenti mettiamo solo testo
                 const unitaSpan = document.createElement("span");
                 unitaSpan.innerText = ing.unita || "pz";
                 unitaSpan.style.width = "30px";
                 unitaSpan.style.textAlign = "center";
+                unitaSpan.style.fontSize = "0.9em";
+                unitaSpan.style.color = "#555";
 
+                // Stato
                 const statoSpan = document.createElement("span");
                 statoSpan.style.fontWeight = "bold";
                 const isEsaurito = (ing.rimanente === 0);
                 statoSpan.style.color = isEsaurito ? "red" : "green";
                 statoSpan.innerText = isEsaurito ? "Esaurito" : "Disponibile";
-                statoSpan.style.width = "85px"; // fissa per evitare disallineamenti
+                statoSpan.style.width = "85px"; // fissa per evitare salti grafici
 
+                // Bottone Disponibile
                 const btnDisp = document.createElement("button");
                 btnDisp.innerText = "Disponibile";
                 btnDisp.style.padding = "8px 12px";
@@ -5813,6 +5818,7 @@ async function caricaIngredientiPerRuolo(ruolo) {
                     await db.ref(`ingredienti/${ing.id}`).update({ rimanente: null, disponibile: true });
                 };
 
+                // Bottone Esaurito
                 const btnEs = document.createElement("button");
                 btnEs.innerText = "Esaurito";
                 btnEs.style.padding = "8px 12px";
@@ -5827,18 +5833,17 @@ async function caricaIngredientiPerRuolo(ruolo) {
                 row.appendChild(btnDisp);
                 row.appendChild(btnEs);
 
-                wrapperCard.appendChild(row);
+                wrapperList.appendChild(row);
 
-                // Linea separatrice
                 const hr = document.createElement("hr");
                 hr.style.margin = "4px 0";
-                hr.style.border = "none";
                 hr.style.borderTop = "1px solid #eee";
-                wrapperCard.appendChild(hr);
+                wrapperList.appendChild(hr);
             });
         });
 
-        container.appendChild(wrapperCard);
+        fragment.appendChild(wrapperList);
+        container.appendChild(fragment);
     });
 }
 // -------------------- UTENTI --------------------
