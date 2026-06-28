@@ -5683,6 +5683,21 @@ async function caricaComandePerRuolo(daFareDiv, storicoDiv, ruolo) {
             if (daFareContainer.filterCurrentOrders) daFareContainer.filterCurrentOrders();
             if (storicoContainer.filterCurrentOrders) storicoContainer.filterCurrentOrders();
         });
+		// --- 1. FIX CONTATORE ---
+        // Calcola quanti elementi ci sono attualmente nel container "da fare"
+        const countDaFare = daFareContainer.querySelectorAll('.order').length;
+        const counterSpanId = ruoloEffettivo === "cucina" ? "conteggioCucina" :
+                              ruoloEffettivo === "bere"   ? "conteggioBere" : "conteggioSnack";
+        const counterSpan = document.getElementById(counterSpanId);
+        if (counterSpan) counterSpan.innerText = countDaFare;
+
+        // --- 2. FRASI SIMPATICHE (EMPTY STATES) ---
+        if (daFareContainer.children.length === 0) {
+             daFareContainer.innerHTML = `<div style="text-align:center; padding: 30px; color: #777; font-size: 1.1em; background: #f9f9f9; border-radius: 8px; border: 1px dashed #ccc;">Nessuna comanda in coda. Caffettino? ☕😎</div>`;
+        }
+        if (storicoContainer.children.length === 0) {
+             storicoContainer.innerHTML = `<div style="text-align:center; padding: 30px; color: #777; font-size: 1.1em; background: #f9f9f9; border-radius: 8px; border: 1px dashed #ccc;">Lo storico piange. Daje, accendiamo i motori! 🔥🚀</div>`;
+        }
     });
 }
 async function caricaIngredientiPerRuolo(ruolo) {
