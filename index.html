@@ -318,77 +318,121 @@
 			<button class="tabBtn" data-tab="menuBereTab">Menu</button>
 			<button class="tabBtn" data-tab="ingredientiBereTab">Ingredienti</button>
 			<button class="tabBtn" data-tab="storicoBereTab">Storico</button>
-		    <button class="tabBtn" data-tab="chatBereTab">Chat</button>
-
+			<button class="tabBtn" data-tab="chatBereTab">Chat</button>
 		</div>
 
-		<!-- DA FARE -->
 		<div id="daBereTab" class="tabContent active">
-			<input type="text" id="cercaComandaBere" placeholder="🔍 Cerca numero comanda..." 
-				style="margin:10px 0; width:100%; padding:5px; font-size:16px;">
-			<div id="daBereComandeContainer"></div>
+			<div style="background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-top: 5px solid #3F51B5;">
+				<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
+					<h3 style="margin:0; color: #3F51B5; font-size: 1.3em;">🍺 Comande da Preparare (<span id="conteggioBere">0</span>)</h3>
+				</div>
+				<input type="text" id="cercaComandaBere" placeholder="🔍 Cerca numero comanda..." style="margin:10px 0; width:100%; padding:5px; font-size:16px;">
+				<div id="daBereComandeContainer"></div>
+			</div>
 		</div>
 
-		<!-- STORICO -->
 		<div id="storicoBereTab" class="tabContent">
-			<input type="text" id="cercaComandaBereStorico" placeholder="🔍 Cerca numero comanda..." 
-				style="margin:10px 0; width:100%; padding:5px; font-size:16px;">
-			<div id="storicoBereComandeContainer"></div>
+			<div style="background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-top: 5px solid #2196F3;">
+				<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
+					<h3 style="margin:0; color: #2196F3; font-size: 1.3em;">🕒 Storico Comande</h3>
+				</div>
+				<input type="text" id="cercaComandaBereStorico" placeholder="🔍 Cerca numero comanda..." style="margin:10px 0; width:100%; padding:5px; font-size:16px;">
+				<div id="storicoBereComandeContainer"></div>
+			</div>
 		</div>
 
-		<div id="ingredientiBereTab" class="tabContent"></div>
+		<div id="ingredientiBereTab" class="tabContent">
+			<div style="background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-top: 5px solid #8BC34A;">
+				<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
+					<h3 style="margin:0; color: #8BC34A; font-size: 1.3em;">🍋 Ingredienti</h3>
+				</div>
+				<div id="ingredientiBereContainer"></div>
+			</div>
+		</div>
+
 		<div id="menuBereTab" class="tabContent">
-			<h3>Menu</h3>
-			<div id="menuBereContainer" style="display:flex; flex-wrap:wrap; gap:10px;"></div>
+			<div style="background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-top: 5px solid #4CAF50;">
+				<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
+					<h3 style="margin:0; color: #4CAF50; font-size: 1.3em;">🥤 Menu Bevande</h3>
+				</div>
+				<div id="menuBereContainer" style="display:flex; flex-wrap:wrap; gap:10px;"></div>
+			</div>
 		</div>
 
-		<!-- CHAT INTERNA -->
 		<div id="chatBereTab" class="tabContent">
-			<h3>Chat interna</h3>
-			<div id="chatContainerBere" class="chat-container"></div>
-			<div class="chat-input-bar">
-				<input type="text" id="chatInputBere" placeholder="Scrivi un messaggio...">
-				<button id="chatSendBereBtn" title="Invia messaggio">➤</button>
+			<div style="background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-top: 5px solid #00BCD4;">
+				<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
+					<h3 style="margin:0; color: #00BCD4; font-size: 1.3em;">💬 Chat interna</h3>
+				</div>
+				<div id="chatContainerBere" class="chat-container"></div>
+				<div class="chat-input-bar">
+					<input type="text" id="chatInputBere" placeholder="Scrivi un messaggio...">
+					<button id="chatSendBereBtn" title="Invia messaggio">➤</button>
+				</div>
 			</div>
 		</div>
 	</div>
 	<!-- ================= SNACK ================= -->
 	<div id="snackDiv" class="hidden">
-	<h2>Snack</h2>
-	<div>
-		<button class="tabBtn" data-tab="daSnackTab">Da fare</button>
-		<button class="tabBtn" data-tab="menuSnackTab">Menu</button>
-		<button class="tabBtn" data-tab="ingredientiSnackTab">Ingredienti</button>
-		<button class="tabBtn" data-tab="storicoSnackTab">Storico</button>
-		<button class="tabBtn" data-tab="chatSnackTab">Chat</button>
-	</div>
-
-	<div id="daSnackTab" class="tabContent active">
-		<input type="text" id="cercaComandaSnack" placeholder="🔍 Cerca numero comanda..." 
-		style="margin:10px 0; width:100%; padding:5px; font-size:16px;">
-		<div id="daSnackComandeContainer"></div>
-	</div>
-
-	<div id="storicoSnackTab" class="tabContent">
-		<input type="text" id="cercaComandaSnackStorico" placeholder="🔍 Cerca numero comanda..." 
-		style="margin:10px 0; width:100%; padding:5px; font-size:16px;">
-		<div id="storicoSnackComandeContainer"></div>
-	</div>
-
-	<div id="ingredientiSnackTab" class="tabContent"></div>
-	<div id="menuSnackTab" class="tabContent">
-		<h3>Menu</h3>
-		<div id="menuSnackContainer" style="display:flex; flex-direction:column; gap:10px;"></div>
-	</div>
-
-	<div id="chatSnackTab" class="tabContent">
-		<h3>Chat interna</h3>
-		<div id="chatContainerSnack" class="chat-container"></div>
-		<div class="chat-input-bar">
-		<input type="text" id="chatInputSnack" placeholder="Scrivi un messaggio...">
-		<button id="chatSendSnackBtn" title="Invia messaggio">➤</button>
+		<h2>Snack</h2>
+		<div>
+			<button class="tabBtn" data-tab="daSnackTab">Da fare</button>
+			<button class="tabBtn" data-tab="menuSnackTab">Menu</button>
+			<button class="tabBtn" data-tab="ingredientiSnackTab">Ingredienti</button>
+			<button class="tabBtn" data-tab="storicoSnackTab">Storico</button>
+			<button class="tabBtn" data-tab="chatSnackTab">Chat</button>
 		</div>
-	</div>
+
+		<div id="daSnackTab" class="tabContent active">
+			<div style="background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-top: 5px solid #FF5722;">
+				<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
+					<h3 style="margin:0; color: #FF5722; font-size: 1.3em;">🍟 Comande da Preparare (<span id="conteggioSnack">0</span>)</h3>
+				</div>
+				<input type="text" id="cercaComandaSnack" placeholder="🔍 Cerca numero comanda..." style="margin:10px 0; width:100%; padding:5px; font-size:16px;">
+				<div id="daSnackComandeContainer"></div>
+			</div>
+		</div>
+
+		<div id="storicoSnackTab" class="tabContent">
+			<div style="background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-top: 5px solid #2196F3;">
+				<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
+					<h3 style="margin:0; color: #2196F3; font-size: 1.3em;">🕒 Storico Comande</h3>
+				</div>
+				<input type="text" id="cercaComandaSnackStorico" placeholder="🔍 Cerca numero comanda..." style="margin:10px 0; width:100%; padding:5px; font-size:16px;">
+				<div id="storicoSnackComandeContainer"></div>
+			</div>
+		</div>
+
+		<div id="ingredientiSnackTab" class="tabContent">
+			<div style="background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-top: 5px solid #8BC34A;">
+				<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
+					<h3 style="margin:0; color: #8BC34A; font-size: 1.3em;">🧂 Ingredienti</h3>
+				</div>
+				<div id="ingredientiSnackContainer"></div>
+			</div>
+		</div>
+
+		<div id="menuSnackTab" class="tabContent">
+			<div style="background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-top: 5px solid #4CAF50;">
+				<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
+					<h3 style="margin:0; color: #4CAF50; font-size: 1.3em;">🍿 Menu Snack</h3>
+				</div>
+				<div id="menuSnackContainer" style="display:flex; flex-direction:column; gap:10px;"></div>
+			</div>
+		</div>
+
+		<div id="chatSnackTab" class="tabContent">
+			<div style="background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-top: 5px solid #00BCD4;">
+				<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
+					<h3 style="margin:0; color: #00BCD4; font-size: 1.3em;">💬 Chat interna</h3>
+				</div>
+				<div id="chatContainerSnack" class="chat-container"></div>
+				<div class="chat-input-bar">
+					<input type="text" id="chatInputSnack" placeholder="Scrivi un messaggio...">
+					<button id="chatSendSnackBtn" title="Invia messaggio">➤</button>
+				</div>
+			</div>
+		</div>
 	</div>
 	<!-- ================= ADMIN ================= -->
 	<div id="adminDiv" class="hidden">
