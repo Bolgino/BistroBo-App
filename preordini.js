@@ -1359,6 +1359,8 @@ document.getElementById("preordiniTabBtn")?.addEventListener("click", () => {
     document.getElementById("preordiniTabBtn")?.classList.remove("tab-lampeggia");
 });
 function notifypreordini(msg, type = "info", playSoundFlag = false) {
+    const msgLower = msg.toLowerCase();
+    if (msgLower.includes("nuovo preordine") && window.aggiungiNotificaBadge) window.aggiungiNotificaBadge("preordini");
     const div = document.createElement("div");
     div.className = `toast preordineToast ${type}`;
 
