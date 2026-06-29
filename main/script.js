@@ -5792,6 +5792,13 @@ db.ref("impostazioni/scontiGlobaliAbilitati").on("value", snap => {
         if(typeof window.rimuoviScontoGlobaleCassa === "function") window.rimuoviScontoGlobaleCassa(true);
     }
 });
+// Click sul bottone impostazioni
+if(document.getElementById("toggleScontiGlobaliBtn")) {
+    document.getElementById("toggleScontiGlobaliBtn").onclick = async () => {
+        const snap = await db.ref("impostazioni/scontiGlobaliAbilitati").once("value");
+        await db.ref("impostazioni").update({ scontiGlobaliAbilitati: !(snap.val() || false) });
+    };
+}
 
 // 2. Logica Admin: Crea ed Elimina
 window.aggiungiScontoGlobale = async function() {
