@@ -5763,6 +5763,8 @@ async function caricaComandePerRuolo(daFareDiv, storicoDiv, ruolo) {
 window.scontoGlobaleCorrente = null; // Variabile per ricordare lo sconto applicato in Cassa
 
 // 1. Gestione Impostazione ON/OFF
+window.numeroScontiGlobali = 0; // Variabile per contare gli sconti esistenti
+
 db.ref("impostazioni/scontiGlobaliAbilitati").on("value", snap => {
     const abilitato = snap.val() || false;
     window.scontiGlobaliAbilitati = abilitato;
@@ -5775,26 +5777,21 @@ db.ref("impostazioni/scontiGlobaliAbilitati").on("value", snap => {
         btn.style.color = "white";
     }
 
-    // Mostra/Nascondi Div in Admin e Cassa
+    // Mostra/Nascondi Div in Admin (flex per mantenere il layout a 2 colonne)
     const divAdmin = document.getElementById("gestioneScontiGlobaliDiv");
-    if(divAdmin) divAdmin.style.display = abilitato ? "block" : "none";
+    if(divAdmin) divAdmin.style.display = abilitato ? "flex" : "none";
     
-    const divCassa = document.getElementById("scontiGlobaliCassaContainer");
-    if(divCassa) divCassa.style.display = abilitato ? "block" : "none";
+    // CASSA: Mostra la barra SOLO se l'impostazione è ON *E* c'è almeno 1 sconto
+    const containerCassa = document.getElementById("scontiGlobaliCassaContainer");
+    if(containerCassa) {
+        containerCassa.style.display = (abilitato && window.numeroScontiGlobali > 0) ? "block" : "none";
+    }
     
     // Se disabilitato, rimuovi lo sconto corrente dalla cassa
     if(!abilitato && window.scontoGlobaleCorrente) {
-        rimuoviScontoGlobaleCassa();
+        if(typeof window.rimuoviScontoGlobaleCassa === "function") window.rimuoviScontoGlobaleCassa(true);
     }
 });
-
-// Click sul bottone impostazioni
-if(document.getElementById("toggleScontiGlobaliBtn")) {
-    document.getElementById("toggleScontiGlobaliBtn").onclick = async () => {
-        const snap = await db.ref("impostazioni/scontiGlobaliAbilitati").once("value");
-        await db.ref("impostazioni").update({ scontiGlobaliAbilitati: !(snap.val() || false) });
-    };
-}
 
 // 2. Logica Admin: Crea ed Elimina
 window.aggiungiScontoGlobale = async function() {
@@ -5832,27 +5829,39 @@ window.eliminaScontoGlobale = function(id) {
 db.ref("scontiGlobali").on("value", snap => {
     const divAdmin = document.getElementById("listaScontiGlobaliAdmin");
     const divCassa = document.getElementById("pulsantiScontiGlobali");
+    const containerCassa = document.getElementById("scontiGlobaliCassaContainer");
     
     if(divAdmin) divAdmin.innerHTML = "";
     if(divCassa) divCassa.innerHTML = "";
     
     const data = snap.val() || {};
     
+    // Aggiorniamo il contatore e ricalcoliamo la visibilità della Cassa in tempo reale
+    window.numeroScontiGlobali = Object.keys(data).length;
+    if(containerCassa) {
+        containerCassa.style.display = (window.scontiGlobaliAbilitati && window.numeroScontiGlobali > 0) ? "block" : "none";
+    }
+    
+    // Messaggio per l'Admin se non ci sono sconti
+    if (window.numeroScontiGlobali === 0 && divAdmin) {
+        divAdmin.innerHTML = "<div style='color:#777; font-style:italic;'>Nessuno sconto globale creato.</div>";
+    }
+
     for(let id in data) {
         const s = data[id];
         let desc = s.tipo === "gratis" ? "GRATIS" : (s.tipo === "percentuale" ? `- ${s.valore}%` : `- €${s.valore.toFixed(2)}`);
         
-        // Render Admin
+        // Render riga Admin
         if(divAdmin) {
             divAdmin.innerHTML += `
                 <div style="display:flex; justify-content:space-between; align-items:center; background:#fff; padding:10px; margin-bottom:8px; border-radius:6px; border:1px solid #ddd; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
                     <span style="font-size: 1.1em;"><b>${s.nome}</b> <span style="color:#f57c00; font-weight:bold; margin-left:10px;">(${desc})</span></span>
-                    <button onclick="eliminaScontoGlobale('${id}')" class="action-btn" style="background:#f44336; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer;">Elimina</button>
+                    <button onclick="eliminaScontoGlobale('${id}')" style="background:#f44336; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer;">Elimina</button>
                 </div>
             `;
         }
 
-        // Render Bottoni Cassa
+        // Render Bottoni in Cassa
         if(divCassa) {
             const btn = document.createElement("button");
             btn.innerText = `${s.nome} (${desc})`;
