@@ -3881,7 +3881,7 @@ async function caricaIngredienti() {
         return;
     }
     
-    // 🔹 FIX SFARFALLIO: Mostriamo "Caricamento" SOLO se la lista è totalmente vuota (es. al primo avvio)
+    // 🔹 FIX SFARFALLIO: Mostriamo "Caricamento" SOLO se la lista è totalmente vuota
     if (container.innerHTML.trim() === "") {
         container.innerHTML = "Caricamento ingredienti...";
     }
@@ -3890,17 +3890,17 @@ async function caricaIngredienti() {
         const snap = await db.ref("ingredienti").once("value");
         const data = snap.val() || {};
         
+        // 🔥 FIX PRESTAZIONI: Leggiamo il menu UNA SOLA VOLTA, fuori dal ciclo degli ingredienti!
+        const snapMenu = await db.ref("menu").once("value");
+        const menuData = snapMenu.val() || {};
+
         // 🔹 Controllo automatico: blocca/sblocca piatti in base agli ingredienti
         for (const ingId in data) {
             const ing = data[ingId];
             if (!ing) continue;
 
             // Controlla se l'ingrediente è finito
-            const finito = (ing.disponibile === false || (ing.rimanente !== null && ing.rimanente <= 0));
-
-            // Ottieni tutti i piatti
-            const snapMenu = await db.ref("menu").once("value");
-            const menuData = snapMenu.val() || {};
+            const finito = (ing.disponibile === false || (ing.rimanente !== null && ing.rimanente !== undefined && ing.rimanente <= 0));
 
             for (const [pid, piatto] of Object.entries(menuData)) {
                 if (!piatto.ingredienti) continue;
@@ -3925,7 +3925,6 @@ async function caricaIngredienti() {
         
         ingredientData = data; 
         
-        // Prepariamo la nuova lista "dietro le quinte"
         const fragment = document.createDocumentFragment();
 
         if (Object.keys(data).length === 0) {
@@ -3991,14 +3990,15 @@ async function caricaIngredienti() {
                     btnElimina.innerText = "Elimina";
                     btnElimina.className = "delete";
                     btnElimina.onclick = () => {
-                        question(`Eliminare "${ing.nome}"?`, {
-                            confirmText: "Conferma",
+                        disonotify(`Eliminare definitivamente "${ing.nome}"?`, {
+                            confirmText: "Elimina",
+                            showCancel: true,
                             cancelText: "Annulla",
                             onConfirm: async () => {
                                 await db.ref(`ingredienti/${ing.id}`).remove();
-                                const snapMenu = await db.ref("menu").once("value");
-                                const menuData = snapMenu.val() || {};
-                                for (const [pid, piatto] of Object.entries(menuData)) {
+                                const snapMenu2 = await db.ref("menu").once("value");
+                                const menuData2 = snapMenu2.val() || {};
+                                for (const [pid, piatto] of Object.entries(menuData2)) {
                                     if (piatto.ingredienti) {
                                         const nuoviIng = piatto.ingredienti.filter(x => x.id !== ing.id);
                                         if (nuoviIng.length !== piatto.ingredienti.length) {
@@ -4007,8 +4007,8 @@ async function caricaIngredienti() {
                                     }
                                 }
                                 await caricaIngredienti();
-                            },
-                            onCancel: () => {}
+                                notify("Ingrediente eliminato.", "info");
+                            }
                         });
                     };
 
@@ -4017,20 +4017,16 @@ async function caricaIngredienti() {
                     btnExtra.title = "Imposta Prezzo e Quantità per Aggiunte";
                     btnExtra.style.marginLeft = "5px";
                     btnExtra.onclick = () => {
-                        // 🔹 NOVITÀ: Peschiamo l'ingrediente aggiornato in tempo reale dal database locale
-                        // Questo risolve il bug della spunta che salta se riapri la scheda!
                         const currentIng = window.ingredientData[ing.id] || ing;
 
                         const defP = currentIng.prezzoExtra !== undefined ? currentIng.prezzoExtra : 0.50;
                         const defQ = currentIng.qtyExtra !== undefined ? currentIng.qtyExtra : 1;
                         
-                        // Quali categorie ha già attive?
                         const cats = currentIng.categorieApplicabili || [currentIng.categoria || "cibi"];
                         const isCibi = cats.includes("cibi") ? "checked" : "";
                         const isBevande = cats.includes("bevande") ? "checked" : "";
                         const isSnack = cats.includes("snack") ? "checked" : "";
                         
-                        // Controllo se è usabile come extra (usando currentIng!)
                         const isExtraChecked = currentIng.usabileComeExtra ? "checked" : "";
 
                         const overlay = document.createElement("div");
@@ -4043,7 +4039,7 @@ async function caricaIngredienti() {
                             <h3>Impostazioni: ${ing.nome}</h3>
                             
                             <div style="margin-bottom:15px; text-align:left; background: #e8f5e9; padding: 10px; border-radius: 6px; border: 1px solid #c8e6c9;">
-                                <label style="cursor:pointer;">
+                                <label style="cursor:pointer; display:flex; align-items:center;">
                                     <input type="checkbox" id="chkUsabileExtra" ${isExtraChecked} style="transform: scale(1.2); margin-right: 8px;"> 
                                     <b>Utilizzabile come variante / aggiunta nei piatti</b>
                                 </label>
@@ -4051,12 +4047,12 @@ async function caricaIngredienti() {
 
                             <div style="margin-bottom:15px; text-align:left;">
                                 <label><b>Prezzo Extra (€):</b></label>
-                                <input type="number" step="0.01" id="valPrezzo" value="${defP}" style="width:100%; box-sizing:border-box; padding:8px; margin-top:5px;">
+                                <input type="number" step="0.01" id="valPrezzo" value="${defP}" style="width:100%; box-sizing:border-box; padding:8px; margin-top:5px; border-radius:6px; border: 1px solid #ccc;">
                             </div>
                             
                             <div style="margin-bottom:15px; text-align:left;">
                                 <label><b>Quantità scalata dal magazzino:</b></label>
-                                <input type="number" step="0.1" id="valQty" value="${defQ}" style="width:100%; box-sizing:border-box; padding:8px; margin-top:5px;">
+                                <input type="number" step="0.1" id="valQty" value="${defQ}" style="width:100%; box-sizing:border-box; padding:8px; margin-top:5px; border-radius:6px; border: 1px solid #ccc;">
                             </div>
                             
                             <div style="margin-bottom:20px; text-align:left;">
@@ -4080,7 +4076,7 @@ async function caricaIngredienti() {
                         document.getElementById("saveModal").onclick = () => {
                             const p = parseFloat(document.getElementById("valPrezzo").value);
                             const q = parseFloat(document.getElementById("valQty").value);
-                            const usabile = document.getElementById("chkUsabileExtra").checked; // Cattura la spunta
+                            const usabile = document.getElementById("chkUsabileExtra").checked;
                             
                             const selectedCats = [];
                             document.querySelectorAll(".chk-cat:checked").forEach(cb => selectedCats.push(cb.value));
@@ -4089,7 +4085,7 @@ async function caricaIngredienti() {
                                 prezzoExtra: isNaN(p) ? 0 : p, 
                                 qtyExtra: isNaN(q) ? 1 : q,
                                 categorieApplicabili: selectedCats,
-                                usabileComeExtra: usabile // Salva su database
+                                usabileComeExtra: usabile
                             });
                             overlay.remove();
                             notify("Modifiche salvate!", "success");
@@ -4110,13 +4106,12 @@ async function caricaIngredienti() {
                         await caricaIngredienti();
                     };
                     
-                    // NUOVO SELECT UNITÀ
                     const selectUnita = document.createElement("select");
-                    ["pz", "kg", "l"].forEach(u => {
+                    ["pz", "kg", "g", "l", "ml", "Lattina 33cl"].forEach(u => {
                         const opt = document.createElement("option");
                         opt.value = u;
                         opt.innerText = u;
-                        if(ing.unita === u) opt.selected = true; // seleziona l'unità corrente
+                        if(ing.unita === u) opt.selected = true;
                         selectUnita.appendChild(opt);
                     });
                     
@@ -4316,7 +4311,7 @@ window.apriModalCreaIngrediente = function() {
 
     document.getElementById("closeCreaIng").onclick = () => overlay.remove();
     
-    document.getElementById("saveCreaIng").onclick = () => {
+document.getElementById("saveCreaIng").onclick = () => {
         const nome = document.getElementById("modIngNome").value.trim();
         const categoria = document.getElementById("modIngCat").value;
         const unita = document.getElementById("modIngUnita").value;
@@ -4329,7 +4324,9 @@ window.apriModalCreaIngrediente = function() {
         document.querySelectorAll(".mod-chk-cat:checked").forEach(cb => selectedCats.push(cb.value));
         
         if (!nome) {
-            alert("Devi inserire il nome dell'ingrediente!");
+            // Sostituito il brutto alert con la tua notifica
+            if (typeof notify === "function") notify("Devi inserire il nome dell'ingrediente!", "warning");
+            else alert("Devi inserire il nome dell'ingrediente!");
             return;
         }
 
@@ -4340,7 +4337,7 @@ window.apriModalCreaIngrediente = function() {
             nome: nome,
             categoria: categoria,
             unita: unita,
-            esaurito: false, // Appena creato, di default è disponibile
+            disponibile: true, // 🔹 FIX: Usa 'disponibile: true' come nel resto dell'app!
             usabileComeExtra: usabileComeExtra,
             prezzoExtra: prezzoExtra,
             qtyExtra: qtyExtra,
@@ -4348,9 +4345,14 @@ window.apriModalCreaIngrediente = function() {
         }).then(() => {
             overlay.remove();
             if (typeof notify === "function") notify("Ingrediente creato con successo!", "success");
+            
+            // 🔹 FIX: Ricarica l'interfaccia istantaneamente appena Firebase dà l'ok!
+            if (typeof caricaIngredienti === "function") caricaIngredienti();
+            
         }).catch(err => {
             console.error("Errore salvataggio ingrediente:", err);
-            alert("Errore durante il salvataggio.");
+            if (typeof notify === "function") notify("Errore durante il salvataggio.", "error");
+            else alert("Errore durante il salvataggio.");
         });
     };
 };
