@@ -5768,20 +5768,27 @@ window.aggiungiScontoGlobale = async function() {
     const tipo = document.getElementById("tipoScontoGlobale").value;
     const valore = parseFloat(document.getElementById("valoreScontoGlobale").value) || 0;
 
-    if(!nome) return alert("Inserisci un nome per lo sconto (es. Studenti).");
-    if(tipo !== "gratis" && valore <= 0) return alert("Inserisci un valore maggiore di 0 per lo sconto.");
+    if(!nome) {
+        notify("Inserisci un nome per lo sconto (es. Studenti).", "warning");
+        return;
+    }
+    if(tipo !== "gratis" && valore <= 0) {
+        notify("Inserisci un valore maggiore di 0 per lo sconto.", "warning");
+        return;
+    }
 
     await db.ref("scontiGlobali").push({ nome, tipo, valore });
     document.getElementById("nomeScontoGlobale").value = "";
     document.getElementById("valoreScontoGlobale").value = "";
+    notify("Sconto globale creato con successo!", "success");
 };
 
 window.eliminaScontoGlobale = async function(id) {
     if(confirm("Vuoi eliminare definitivamente questo sconto globale?")) {
         await db.ref(`scontiGlobali/${id}`).remove();
+        notify("Sconto eliminato.", "info");
     }
 };
-
 // 3. Render lista in Admin e Bottoni in Cassa
 db.ref("scontiGlobali").on("value", snap => {
     const divAdmin = document.getElementById("listaScontiGlobaliAdmin");
@@ -5819,22 +5826,25 @@ db.ref("scontiGlobali").on("value", snap => {
 
 // 4. Azione click su un bottone sconto in cassa
 window.applicaScontoGlobaleCassa = function(id, sconto) {
-    // Se clicchi lo sconto già attivo, lo rimuove
     if(window.scontoGlobaleCorrente && window.scontoGlobaleCorrente.id === id) {
         rimuoviScontoGlobaleCassa();
     } else {
         window.scontoGlobaleCorrente = { id, ...sconto };
         document.getElementById("scontoApplicatoMsg").style.display = "block";
-        document.getElementById("scontoApplicatoMsg").innerText = `✅ Applicato Sconto Globale: ${sconto.nome}`;
-        // Richiama la tua funzione di ricalcolo del totale della cassa (se si chiama diversamente aggiorna questo nome)
-        if(typeof aggiornaTotale === "function") aggiornaTotale();
+        document.getElementById("scontoApplicatoMsg").innerHTML = `✅ <b>Sconto attivo:</b> ${sconto.nome}`;
+        
+        if(typeof aggiornaComandaCorrente === "function") aggiornaComandaCorrente();
+        notify(`Sconto '${sconto.nome}' applicato!`, "success");
     }
 };
 
 window.rimuoviScontoGlobaleCassa = function() {
+    if (window.scontoGlobaleCorrente) {
+        notify("Sconto rimosso dal totale.", "info");
+    }
     window.scontoGlobaleCorrente = null;
     document.getElementById("scontoApplicatoMsg").style.display = "none";
-    if(typeof aggiornaTotale === "function") aggiornaTotale();
+    if(typeof aggiornaComandaCorrente === "function") aggiornaComandaCorrente();
 };
 async function caricaIngredientiPerRuolo(ruolo) {
     if (!checkOnline(true)) return;
