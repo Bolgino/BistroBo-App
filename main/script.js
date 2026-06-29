@@ -7724,6 +7724,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const piattiDaStampare = [...comandaCorrente];
             const noteDaStampare = note;
             const numeroComandaDaStampare = numeroComandaFinale;
+			const scontoDaStampare = window.scontoGlobaleCorrente ? JSON.parse(JSON.stringify(window.scontoGlobaleCorrente)) : null;
             
             comandaCorrente = [];
 			window.rimuoviScontoGlobaleCassa();
@@ -7750,7 +7751,7 @@ document.addEventListener("DOMContentLoaded", () => {
 			} else {
 			    notify("✅ Comanda " + numeroComandaFinale + " inviata, avvio stampa...", "info");
 			    if (typeof stampaComanda === 'function') {
-			        stampaComanda(piattiDaStampare, numeroComandaFinale, noteDaStampare);
+			       stampaComanda(piattiDaStampare, numeroComandaFinale, noteDaStampare, { scontoGlobale: scontoDaStampare });
 			    }
 			}
         } catch (err) {
