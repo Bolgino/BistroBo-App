@@ -2904,6 +2904,21 @@ function aggiornaComandaCorrente(){
 
         tot += calcolaPrezzoConSconto(i);
     });
+    // --- INIZIO MATEMATICA SCONTO GLOBALE ---
+    if (window.scontiGlobaliAbilitati && window.scontoGlobaleCorrente) {
+        if (window.scontoGlobaleCorrente.tipo === "gratis") {
+            tot = 0; // Azzera tutto
+        } else if (window.scontoGlobaleCorrente.tipo === "percentuale") {
+            tot = tot - (tot * window.scontoGlobaleCorrente.valore / 100);
+        } else if (window.scontoGlobaleCorrente.tipo === "fisso") {
+            tot = tot - window.scontoGlobaleCorrente.valore;
+        }
+        
+        // Il totale non può essere negativo
+        if (tot < 0) tot = 0;
+    }
+    // --- FINE MATEMATICA SCONTO GLOBALE ---
+
     document.getElementById("totale").innerText=tot.toFixed(2);
 
     // Aggiorna il resto se già pagato
@@ -5707,6 +5722,120 @@ async function caricaComandePerRuolo(daFareDiv, storicoDiv, ruolo) {
 
     });
 }
+// =========================================================================
+// SISTEMA SCONTI GLOBALI (STUDENTI, OPERAI, BUONI PASTO)
+// =========================================================================
+
+window.scontoGlobaleCorrente = null; // Variabile per ricordare lo sconto applicato in Cassa
+
+// 1. Gestione Impostazione ON/OFF
+db.ref("impostazioni/scontiGlobaliAbilitati").on("value", snap => {
+    const abilitato = snap.val() || false;
+    window.scontiGlobaliAbilitati = abilitato;
+
+    // Aggiorna Bottone Impostazioni
+    const btn = document.getElementById("toggleScontiGlobaliBtn");
+    if (btn) {
+        btn.innerText = abilitato ? "ON" : "OFF";
+        btn.style.backgroundColor = abilitato ? "#4CAF50" : "#f44336";
+        btn.style.color = "white";
+    }
+
+    // Mostra/Nascondi Div in Admin e Cassa
+    const divAdmin = document.getElementById("gestioneScontiGlobaliDiv");
+    if(divAdmin) divAdmin.style.display = abilitato ? "block" : "none";
+    
+    const divCassa = document.getElementById("scontiGlobaliCassaContainer");
+    if(divCassa) divCassa.style.display = abilitato ? "block" : "none";
+    
+    // Se disabilitato, rimuovi lo sconto corrente dalla cassa
+    if(!abilitato && window.scontoGlobaleCorrente) {
+        rimuoviScontoGlobaleCassa();
+    }
+});
+
+// Click sul bottone impostazioni
+if(document.getElementById("toggleScontiGlobaliBtn")) {
+    document.getElementById("toggleScontiGlobaliBtn").onclick = async () => {
+        const snap = await db.ref("impostazioni/scontiGlobaliAbilitati").once("value");
+        await db.ref("impostazioni").update({ scontiGlobaliAbilitati: !(snap.val() || false) });
+    };
+}
+
+// 2. Logica Admin: Crea ed Elimina
+window.aggiungiScontoGlobale = async function() {
+    const nome = document.getElementById("nomeScontoGlobale").value.trim();
+    const tipo = document.getElementById("tipoScontoGlobale").value;
+    const valore = parseFloat(document.getElementById("valoreScontoGlobale").value) || 0;
+
+    if(!nome) return alert("Inserisci un nome per lo sconto (es. Studenti).");
+    if(tipo !== "gratis" && valore <= 0) return alert("Inserisci un valore maggiore di 0 per lo sconto.");
+
+    await db.ref("scontiGlobali").push({ nome, tipo, valore });
+    document.getElementById("nomeScontoGlobale").value = "";
+    document.getElementById("valoreScontoGlobale").value = "";
+};
+
+window.eliminaScontoGlobale = async function(id) {
+    if(confirm("Vuoi eliminare definitivamente questo sconto globale?")) {
+        await db.ref(`scontiGlobali/${id}`).remove();
+    }
+};
+
+// 3. Render lista in Admin e Bottoni in Cassa
+db.ref("scontiGlobali").on("value", snap => {
+    const divAdmin = document.getElementById("listaScontiGlobaliAdmin");
+    const divCassa = document.getElementById("pulsantiScontiGlobali");
+    
+    if(divAdmin) divAdmin.innerHTML = "";
+    if(divCassa) divCassa.innerHTML = "";
+    
+    const data = snap.val() || {};
+    
+    for(let id in data) {
+        const s = data[id];
+        let desc = s.tipo === "gratis" ? "GRATIS" : (s.tipo === "percentuale" ? `- ${s.valore}%` : `- €${s.valore.toFixed(2)}`);
+        
+        // Render Admin
+        if(divAdmin) {
+            divAdmin.innerHTML += `
+                <div style="display:flex; justify-content:space-between; align-items:center; background:#fff; padding:10px; margin-bottom:8px; border-radius:6px; border:1px solid #ddd; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                    <span style="font-size: 1.1em;"><b>${s.nome}</b> <span style="color:#f57c00; font-weight:bold; margin-left:10px;">(${desc})</span></span>
+                    <button onclick="eliminaScontoGlobale('${id}')" class="action-btn" style="background:#f44336; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer;">Elimina</button>
+                </div>
+            `;
+        }
+
+        // Render Bottoni Cassa
+        if(divCassa) {
+            const btn = document.createElement("button");
+            btn.innerText = `${s.nome} (${desc})`;
+            btn.style.cssText = "background: #ffb74d; color: #000; padding: 8px 12px; border: 1px solid #f57c00; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.95em;";
+            btn.onclick = () => applicaScontoGlobaleCassa(id, s);
+            divCassa.appendChild(btn);
+        }
+    }
+});
+
+// 4. Azione click su un bottone sconto in cassa
+window.applicaScontoGlobaleCassa = function(id, sconto) {
+    // Se clicchi lo sconto già attivo, lo rimuove
+    if(window.scontoGlobaleCorrente && window.scontoGlobaleCorrente.id === id) {
+        rimuoviScontoGlobaleCassa();
+    } else {
+        window.scontoGlobaleCorrente = { id, ...sconto };
+        document.getElementById("scontoApplicatoMsg").style.display = "block";
+        document.getElementById("scontoApplicatoMsg").innerText = `✅ Applicato Sconto Globale: ${sconto.nome}`;
+        // Richiama la tua funzione di ricalcolo del totale della cassa (se si chiama diversamente aggiorna questo nome)
+        if(typeof aggiornaTotale === "function") aggiornaTotale();
+    }
+};
+
+window.rimuoviScontoGlobaleCassa = function() {
+    window.scontoGlobaleCorrente = null;
+    document.getElementById("scontoApplicatoMsg").style.display = "none";
+    if(typeof aggiornaTotale === "function") aggiornaTotale();
+};
 async function caricaIngredientiPerRuolo(ruolo) {
     if (!checkOnline(true)) return;
     
@@ -6693,7 +6822,16 @@ function analizzaComande(comandeObj, fondoCassaTot) {
                ingrMap[v.nome] = (ingrMap[v.nome] || 0) + qty;
             });
         });
-        
+        if (c.scontoGlobale) {
+            if (c.scontoGlobale.tipo === "gratis") {
+                totaleComanda = 0;
+            } else if (c.scontoGlobale.tipo === "percentuale") {
+                totaleComanda = totaleComanda - (totaleComanda * c.scontoGlobale.valore / 100);
+            } else if (c.scontoGlobale.tipo === "fisso") {
+                totaleComanda = totaleComanda - c.scontoGlobale.valore;
+            }
+            if (totaleComanda < 0) totaleComanda = 0;
+        }
         if (c.metodoPagamento === "pos") totalePos += totaleComanda;
         else totaleContanti += totaleComanda;
         
@@ -7509,7 +7647,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 note: note, 
                 noteDestinazioni: noteDestinazioni,
                 commento: commentoAsporto || null, 
-                metodoPagamento: metodoPagamento
+                metodoPagamento: metodoPagamento,
+				scontoGlobale: window.scontoGlobaleCorrente || null
             };
 
             if (window.settings.snackAbilitato) {
@@ -7525,6 +7664,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const numeroComandaDaStampare = numeroComandaFinale;
             
             comandaCorrente = [];
+			window.rimuoviScontoGlobaleCassa();
             if(typeof aggiornaComandaCorrente === 'function') aggiornaComandaCorrente();
             if(typeof sincronizzaDisplayLive === 'function') sincronizzaDisplayLive();
             
