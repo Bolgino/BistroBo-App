@@ -1071,6 +1071,37 @@ function initImpostazioniToggle() {
 	        
 	    });
 	}
+	// ================= PULSANTE SVUOTA MENU E DISPENSA =================
+    const svuotaMenuDispensaBtn = document.getElementById("svuotaMenuDispensaBtn");
+    if (svuotaMenuDispensaBtn) {
+        svuotaMenuDispensaBtn.onclick = async () => {
+            if (!checkOnline(true)) return;
+
+            disonotify("🚨 ATTENZIONE! Stai per eliminare TUTTI i piatti del menu e TUTTI gli ingredienti dalla dispensa. L'operazione è irreversibile. Sei sicuro?", {
+                confirmText: "Sì, distruggi tutto 💣",
+                showCancel: true,
+                cancelText: "Annulla",
+                onConfirm: async () => {
+                    try {
+                        showLoader();
+                        // Radiamo al suolo Menu e Dispensa
+                        await db.ref("menu").remove();
+                        await db.ref("ingredienti").remove();
+                        
+                        notify("✅ Menu e Dispensa azzerati completamente!", "success");
+                        hideLoader();
+                    } catch (err) {
+                        console.error(err);
+                        hideLoader();
+                        notify("❌ Errore durante l'eliminazione: " + err.message, "error");
+                    }
+                },
+                onCancel: () => {
+                    notify("Operazione annullata", "attenzione");
+                }
+            });
+        };
+    }
 }
 function initTickNoteDestinazioni() {
     // 🔹 Mostra/nasconde i tick destinazioni note in base all'impostazione
@@ -3844,264 +3875,281 @@ function caricaComandeCassa() {
 //INGREDIENTI
 async function caricaIngredienti() {
     if (!checkOnline(true)) return;
-  const container = document.getElementById("ingredientiDiv");
-  if (!container) {
-    console.error("ingredientiDiv non trovato");
-    return;
-  }
-  container.innerHTML = "Caricamento ingredienti...";
+    const container = document.getElementById("ingredientiDiv");
+    if (!container) {
+        console.error("ingredientiDiv non trovato");
+        return;
+    }
+    
+    // 🔹 FIX SFARFALLIO: Mostriamo "Caricamento" SOLO se la lista è totalmente vuota (es. al primo avvio)
+    if (container.innerHTML.trim() === "") {
+        container.innerHTML = "Caricamento ingredienti...";
+    }
 
-  try {
-    const snap = await db.ref("ingredienti").once("value");
-    const data = snap.val() || {};
-    // 🔹 Controllo automatico: blocca/sblocca piatti in base agli ingredienti
-    for (const ingId in data) {
-        const ing = data[ingId];
-        if (!ing) continue;
+    try {
+        const snap = await db.ref("ingredienti").once("value");
+        const data = snap.val() || {};
+        
+        // 🔹 Controllo automatico: blocca/sblocca piatti in base agli ingredienti
+        for (const ingId in data) {
+            const ing = data[ingId];
+            if (!ing) continue;
 
-        // Controlla se l'ingrediente è finito
-        const finito = (ing.disponibile === false || (ing.rimanente !== null && ing.rimanente <= 0));
+            // Controlla se l'ingrediente è finito
+            const finito = (ing.disponibile === false || (ing.rimanente !== null && ing.rimanente <= 0));
 
-        // Ottieni tutti i piatti
-        const snapMenu = await db.ref("menu").once("value");
-        const menuData = snapMenu.val() || {};
+            // Ottieni tutti i piatti
+            const snapMenu = await db.ref("menu").once("value");
+            const menuData = snapMenu.val() || {};
 
-        for (const [pid, piatto] of Object.entries(menuData)) {
-            if (!piatto.ingredienti) continue;
+            for (const [pid, piatto] of Object.entries(menuData)) {
+                if (!piatto.ingredienti) continue;
 
-            // Verifica se il piatto usa questo ingrediente
-            const usa = piatto.ingredienti.some(i => i.id === ingId);
-            if (!usa) continue;
+                // Verifica se il piatto usa questo ingrediente
+                const usa = piatto.ingredienti.some(i => i.id === ingId);
+                if (!usa) continue;
 
-            // Se l’ingrediente è finito → attiva bloccoIngredienti
-            if (finito) {
-                if (piatto.bloccoIngredienti !== true) {
-                    await db.ref(`menu/${pid}/bloccoIngredienti`).set(true);
-                }
-            } else {
-                // Ingrediente disponibile → togli solo il blocco automatico
-                if (piatto.bloccoIngredienti === true) {
-                    await db.ref(`menu/${pid}/bloccoIngredienti`).set(false);
+                // Se l’ingrediente è finito → attiva bloccoIngredienti
+                if (finito) {
+                    if (piatto.bloccoIngredienti !== true) {
+                        await db.ref(`menu/${pid}/bloccoIngredienti`).set(true);
+                    }
+                } else {
+                    // Ingrediente disponibile → togli solo il blocco automatico
+                    if (piatto.bloccoIngredienti === true) {
+                        await db.ref(`menu/${pid}/bloccoIngredienti`).set(false);
+                    }
                 }
             }
         }
-    }
-    ingredientData = data; 
-    container.innerHTML = "";
-    if (Object.keys(data).length === 0) {
-      container.innerHTML = "<i>La dispensa rimbomba... Vai a fare la spesa e aggiungi qualche ingrediente! 🛒🍅</i>";
-      return;
-    }
+        
+        ingredientData = data; 
+        
+        // Prepariamo la nuova lista "dietro le quinte"
+        const fragment = document.createDocumentFragment();
 
-    const fragment = document.createDocumentFragment();
-    const categorie = {};
+        if (Object.keys(data).length === 0) {
+            const divVuoto = document.createElement("div");
+            divVuoto.innerHTML = "<i>La dispensa rimbomba... Vai a fare la spesa e aggiungi qualche ingrediente! 🛒🍅</i>";
+            fragment.appendChild(divVuoto);
+        } else {
+            const categorie = {};
 
-    // Raggruppa per categoria
-    for (const [id, ing] of Object.entries(data)) {
-      const cat = ing.categoria || "Altro";
-      if (!categorie[cat]) categorie[cat] = [];
-      categorie[cat].push({ id, ...ing });
-    }
+            // Raggruppa per categoria
+            for (const [id, ing] of Object.entries(data)) {
+                const cat = ing.categoria || "Altro";
+                if (!categorie[cat]) categorie[cat] = [];
+                categorie[cat].push({ id, ...ing });
+            }
 
-    for (const [cat, items] of Object.entries(categorie)) {
-      const catDiv = document.createElement("div");
-      const h3 = document.createElement("h3");
-      h3.innerText = cat.charAt(0).toUpperCase() + cat.slice(1);
-      catDiv.appendChild(h3);
+            for (const [cat, items] of Object.entries(categorie)) {
+                const catDiv = document.createElement("div");
+                const h3 = document.createElement("h3");
+                h3.innerText = cat.charAt(0).toUpperCase() + cat.slice(1);
+                catDiv.appendChild(h3);
 
-      items.forEach(ing => {
-        const row = document.createElement("div");
-        row.style.display = "flex";
-        row.style.alignItems = "center";
-        row.style.gap = "8px";
-        row.style.marginBottom = "6px";
+                items.forEach(ing => {
+                    const row = document.createElement("div");
+                    row.style.display = "flex";
+                    row.style.alignItems = "center";
+                    row.style.gap = "8px";
+                    row.style.marginBottom = "6px";
 
-        const nameSpan = document.createElement("span");
-        nameSpan.innerText = ing.nome;
-        nameSpan.style.flex = "1";
+                    const nameSpan = document.createElement("span");
+                    nameSpan.innerText = ing.nome;
+                    nameSpan.style.flex = "1";
 
-        const qtyInput = document.createElement("input");
-        qtyInput.type = "number";
-        qtyInput.min = 0;
-        abilitaIncrementoDinamico(qtyInput);
-        qtyInput.value = (ing.rimanente === null || typeof ing.rimanente === "undefined") ? "" : ing.rimanente;
-        qtyInput.style.width = "70px";
-        qtyInput.step = "any";
+                    const qtyInput = document.createElement("input");
+                    qtyInput.type = "number";
+                    qtyInput.min = 0;
+                    abilitaIncrementoDinamico(qtyInput);
+                    qtyInput.value = (ing.rimanente === null || typeof ing.rimanente === "undefined") ? "" : ing.rimanente;
+                    qtyInput.style.width = "70px";
+                    qtyInput.step = "any";
 
-        const statoSpan = document.createElement("span");
-        statoSpan.style.fontWeight = "bold";
-        const isEsaurito = (ing.rimanente === 0);
-        statoSpan.style.color = isEsaurito ? "red" : "green";
-        statoSpan.innerText = isEsaurito ? "Esaurito" : "Disponibile";
+                    const statoSpan = document.createElement("span");
+                    statoSpan.style.fontWeight = "bold";
+                    const isEsaurito = (ing.rimanente === 0);
+                    statoSpan.style.color = isEsaurito ? "red" : "green";
+                    statoSpan.innerText = isEsaurito ? "Esaurito" : "Disponibile";
 
-        const btnDisp = document.createElement("button");
-        btnDisp.innerText = "Disponibile";
-        btnDisp.onclick = async () => {
-          await db.ref(`ingredienti/${ing.id}`).update({ rimanente: null, disponibile: true });
-          await caricaIngredienti();
-        };
+                    const btnDisp = document.createElement("button");
+                    btnDisp.innerText = "Disponibile";
+                    btnDisp.onclick = async () => {
+                        await db.ref(`ingredienti/${ing.id}`).update({ rimanente: null, disponibile: true });
+                        await caricaIngredienti();
+                    };
 
-        const btnEs = document.createElement("button");
-        btnEs.innerText = "Esaurito";
-        btnEs.onclick = async () => {
-          await db.ref(`ingredienti/${ing.id}`).update({ rimanente: 0, disponibile: false });
-            await caricaIngredienti();
-        };
+                    const btnEs = document.createElement("button");
+                    btnEs.innerText = "Esaurito";
+                    btnEs.onclick = async () => {
+                        await db.ref(`ingredienti/${ing.id}`).update({ rimanente: 0, disponibile: false });
+                        await caricaIngredienti();
+                    };
 
-        const btnElimina = document.createElement("button");
-        btnElimina.innerText = "Elimina";
-        btnElimina.className = "delete";
-        btnElimina.onclick = () => {
-            question(`Eliminare "${ing.nome}"?`, {
-                confirmText: "Conferma",
-                cancelText: "Annulla",
-                onConfirm: async () => {
-                    await db.ref(`ingredienti/${ing.id}`).remove();
-                    const snapMenu = await db.ref("menu").once("value");
-                    const menuData = snapMenu.val() || {};
-                    for (const [pid, piatto] of Object.entries(menuData)) {
-                        if (piatto.ingredienti) {
-                            const nuoviIng = piatto.ingredienti.filter(x => x.id !== ing.id);
-                            if (nuoviIng.length !== piatto.ingredienti.length) {
-                                await db.ref(`menu/${pid}/ingredienti`).set(nuoviIng);
-                            }
-                        }
+                    const btnElimina = document.createElement("button");
+                    btnElimina.innerText = "Elimina";
+                    btnElimina.className = "delete";
+                    btnElimina.onclick = () => {
+                        question(`Eliminare "${ing.nome}"?`, {
+                            confirmText: "Conferma",
+                            cancelText: "Annulla",
+                            onConfirm: async () => {
+                                await db.ref(`ingredienti/${ing.id}`).remove();
+                                const snapMenu = await db.ref("menu").once("value");
+                                const menuData = snapMenu.val() || {};
+                                for (const [pid, piatto] of Object.entries(menuData)) {
+                                    if (piatto.ingredienti) {
+                                        const nuoviIng = piatto.ingredienti.filter(x => x.id !== ing.id);
+                                        if (nuoviIng.length !== piatto.ingredienti.length) {
+                                            await db.ref(`menu/${pid}/ingredienti`).set(nuoviIng);
+                                        }
+                                    }
+                                }
+                                await caricaIngredienti();
+                            },
+                            onCancel: () => {}
+                        });
+                    };
+
+                    const btnExtra = document.createElement("button");
+                    btnExtra.innerText = "⚙️ Extra";
+                    btnExtra.title = "Imposta Prezzo e Quantità per Aggiunte";
+                    btnExtra.style.marginLeft = "5px";
+                    btnExtra.onclick = () => {
+                        // 🔹 NOVITÀ: Peschiamo l'ingrediente aggiornato in tempo reale dal database locale
+                        // Questo risolve il bug della spunta che salta se riapri la scheda!
+                        const currentIng = window.ingredientData[ing.id] || ing;
+
+                        const defP = currentIng.prezzoExtra !== undefined ? currentIng.prezzoExtra : 0.50;
+                        const defQ = currentIng.qtyExtra !== undefined ? currentIng.qtyExtra : 1;
+                        
+                        // Quali categorie ha già attive?
+                        const cats = currentIng.categorieApplicabili || [currentIng.categoria || "cibi"];
+                        const isCibi = cats.includes("cibi") ? "checked" : "";
+                        const isBevande = cats.includes("bevande") ? "checked" : "";
+                        const isSnack = cats.includes("snack") ? "checked" : "";
+                        
+                        // Controllo se è usabile come extra (usando currentIng!)
+                        const isExtraChecked = currentIng.usabileComeExtra ? "checked" : "";
+
+                        const overlay = document.createElement("div");
+                        overlay.className = "modal-overlay";
+                        overlay.style.zIndex = "10005";
+
+                        const modal = document.createElement("div");
+                        modal.className = "modal-varianti";
+                        modal.innerHTML = `
+                            <h3>Impostazioni: ${ing.nome}</h3>
+                            
+                            <div style="margin-bottom:15px; text-align:left; background: #e8f5e9; padding: 10px; border-radius: 6px; border: 1px solid #c8e6c9;">
+                                <label style="cursor:pointer;">
+                                    <input type="checkbox" id="chkUsabileExtra" ${isExtraChecked} style="transform: scale(1.2); margin-right: 8px;"> 
+                                    <b>Utilizzabile come variante / aggiunta nei piatti</b>
+                                </label>
+                            </div>
+
+                            <div style="margin-bottom:15px; text-align:left;">
+                                <label><b>Prezzo Extra (€):</b></label>
+                                <input type="number" step="0.01" id="valPrezzo" value="${defP}" style="width:100%; box-sizing:border-box; padding:8px; margin-top:5px;">
+                            </div>
+                            
+                            <div style="margin-bottom:15px; text-align:left;">
+                                <label><b>Quantità scalata dal magazzino:</b></label>
+                                <input type="number" step="0.1" id="valQty" value="${defQ}" style="width:100%; box-sizing:border-box; padding:8px; margin-top:5px;">
+                            </div>
+                            
+                            <div style="margin-bottom:20px; text-align:left;">
+                                <label><b>Mostra come variante per i piatti in:</b></label><br>
+                                <div style="margin-top:8px;">
+                                    <label style="margin-right:15px;"><input type="checkbox" class="chk-cat" value="cibi" ${isCibi}> Cibi</label>
+                                    <label style="margin-right:15px;"><input type="checkbox" class="chk-cat" value="bevande" ${isBevande}> Bevande</label>
+                                    <label><input type="checkbox" class="chk-cat" value="snack" ${isSnack}> Snack</label>
+                                </div>
+                            </div>
+                            
+                            <div class="modal-actions">
+                                <button class="btn-chiudi" id="closeModal">Annulla</button>
+                                <button class="btn-salva" id="saveModal">Salva</button>
+                            </div>
+                        `;
+                        overlay.appendChild(modal);
+                        document.body.appendChild(overlay);
+
+                        document.getElementById("closeModal").onclick = () => overlay.remove();
+                        document.getElementById("saveModal").onclick = () => {
+                            const p = parseFloat(document.getElementById("valPrezzo").value);
+                            const q = parseFloat(document.getElementById("valQty").value);
+                            const usabile = document.getElementById("chkUsabileExtra").checked; // Cattura la spunta
+                            
+                            const selectedCats = [];
+                            document.querySelectorAll(".chk-cat:checked").forEach(cb => selectedCats.push(cb.value));
+
+                            db.ref(`ingredienti/${ing.id}`).update({ 
+                                prezzoExtra: isNaN(p) ? 0 : p, 
+                                qtyExtra: isNaN(q) ? 1 : q,
+                                categorieApplicabili: selectedCats,
+                                usabileComeExtra: usabile // Salva su database
+                            });
+                            overlay.remove();
+                            notify("Modifiche salvate!", "success");
+                        };
+                    };
+                    
+                    if (window.settings.sistemaExtraAbilitato) {
+                        row.appendChild(btnExtra);
                     }
-                    await caricaIngredienti();
-                },
-                onCancel: () => {}
-            });
-        };
-		const btnExtra = document.createElement("button");
-        btnExtra.innerText = "⚙️ Extra";
-        btnExtra.title = "Imposta Prezzo e Quantità per Aggiunte";
-        btnExtra.style.marginLeft = "5px";
-        btnExtra.onclick = () => {
-            // 🔹 NOVITÀ: Peschiamo l'ingrediente aggiornato in tempo reale dal database locale
-            // Questo risolve il bug della spunta che salta se riapri la scheda!
-            const currentIng = window.ingredientData[ing.id] || ing;
 
-            const defP = currentIng.prezzoExtra !== undefined ? currentIng.prezzoExtra : 0.50;
-            const defQ = currentIng.qtyExtra !== undefined ? currentIng.qtyExtra : 1;
-            
-            // Quali categorie ha già attive?
-            const cats = currentIng.categorieApplicabili || [currentIng.categoria || "cibi"];
-            const isCibi = cats.includes("cibi") ? "checked" : "";
-            const isBevande = cats.includes("bevande") ? "checked" : "";
-            const isSnack = cats.includes("snack") ? "checked" : "";
-            
-            // Controllo se è usabile come extra (usando currentIng!)
-            const isExtraChecked = currentIng.usabileComeExtra ? "checked" : "";
-
-            const overlay = document.createElement("div");
-            overlay.className = "modal-overlay";
-            overlay.style.zIndex = "10005";
-
-            const modal = document.createElement("div");
-            modal.className = "modal-varianti";
-            modal.innerHTML = `
-                <h3>Impostazioni: ${ing.nome}</h3>
-                
-                <div style="margin-bottom:15px; text-align:left; background: #e8f5e9; padding: 10px; border-radius: 6px; border: 1px solid #c8e6c9;">
-                    <label style="cursor:pointer;">
-                        <input type="checkbox" id="chkUsabileExtra" ${isExtraChecked} style="transform: scale(1.2); margin-right: 8px;"> 
-                        <b>Utilizzabile come variante / aggiunta nei piatti</b>
-                    </label>
-                </div>
-
-                <div style="margin-bottom:15px; text-align:left;">
-                    <label><b>Prezzo Extra (€):</b></label>
-                    <input type="number" step="0.01" id="valPrezzo" value="${defP}" style="width:100%; box-sizing:border-box; padding:8px; margin-top:5px;">
-                </div>
-                
-                <div style="margin-bottom:15px; text-align:left;">
-                    <label><b>Quantità scalata dal magazzino:</b></label>
-                    <input type="number" step="0.1" id="valQty" value="${defQ}" style="width:100%; box-sizing:border-box; padding:8px; margin-top:5px;">
-                </div>
-                
-                <div style="margin-bottom:20px; text-align:left;">
-                    <label><b>Mostra come variante per i piatti in:</b></label><br>
-                    <div style="margin-top:8px;">
-                        <label style="margin-right:15px;"><input type="checkbox" class="chk-cat" value="cibi" ${isCibi}> Cibi</label>
-                        <label style="margin-right:15px;"><input type="checkbox" class="chk-cat" value="bevande" ${isBevande}> Bevande</label>
-                        <label><input type="checkbox" class="chk-cat" value="snack" ${isSnack}> Snack</label>
-                    </div>
-                </div>
-                
-                <div class="modal-actions">
-                    <button class="btn-chiudi" id="closeModal">Annulla</button>
-                    <button class="btn-salva" id="saveModal">Salva</button>
-                </div>
-            `;
-            overlay.appendChild(modal);
-            document.body.appendChild(overlay);
-
-            document.getElementById("closeModal").onclick = () => overlay.remove();
-            document.getElementById("saveModal").onclick = () => {
-                const p = parseFloat(document.getElementById("valPrezzo").value);
-                const q = parseFloat(document.getElementById("valQty").value);
-                const usabile = document.getElementById("chkUsabileExtra").checked; // Cattura la spunta
-                
-                const selectedCats = [];
-                document.querySelectorAll(".chk-cat:checked").forEach(cb => selectedCats.push(cb.value));
-
-                db.ref(`ingredienti/${ing.id}`).update({ 
-                    prezzoExtra: isNaN(p) ? 0 : p, 
-                    qtyExtra: isNaN(q) ? 1 : q,
-                    categorieApplicabili: selectedCats,
-                    usabileComeExtra: usabile // Salva su database
+                    qtyInput.onchange = async (e) => {
+                        let newQty = e.target.value === "" ? null : parseFloat(e.target.value);
+                        if (newQty !== null && (isNaN(newQty) || newQty < 0)) newQty = 0;
+                        await db.ref(`ingredienti/${ing.id}`).update({
+                            rimanente: newQty,
+                            disponibile: newQty === null ? true : (newQty > 0)
+                        });
+                        await caricaIngredienti();
+                    };
+                    
+                    // NUOVO SELECT UNITÀ
+                    const selectUnita = document.createElement("select");
+                    ["pz", "kg", "l"].forEach(u => {
+                        const opt = document.createElement("option");
+                        opt.value = u;
+                        opt.innerText = u;
+                        if(ing.unita === u) opt.selected = true; // seleziona l'unità corrente
+                        selectUnita.appendChild(opt);
+                    });
+                    
+                    selectUnita.onchange = async () => {
+                        await db.ref(`ingredienti/${ing.id}`).update({ unita: selectUnita.value });
+                    };
+                    
+                    row.appendChild(nameSpan);
+                    row.appendChild(qtyInput);
+                    row.appendChild(selectUnita);
+                    row.appendChild(statoSpan);
+                    row.appendChild(btnDisp);
+                    row.appendChild(btnEs);
+                    row.appendChild(btnElimina);
+                    catDiv.appendChild(row);
+                    
+                    const hr = document.createElement("hr");
+                    hr.style.margin = "4px 0";
+                    catDiv.appendChild(hr);
                 });
-                overlay.remove();
-                notify("Modifiche salvate!", "success");
-            };
-        };
-        // In caricaIngredienti()
-		if (window.settings.sistemaExtraAbilitato) {
-		    row.appendChild(btnExtra);
-		}
 
-        qtyInput.onchange = async (e) => {
-        let newQty = e.target.value === "" ? null : parseFloat(e.target.value);
-          if (newQty !== null && (isNaN(newQty) || newQty < 0)) newQty = 0;
-          await db.ref(`ingredienti/${ing.id}`).update({
-            rimanente: newQty,
-            disponibile: newQty === null ? true : (newQty > 0)
-          });
-        await caricaIngredienti();
-        };
-        // NUOVO SELECT UNITÀ
-        const selectUnita = document.createElement("select");
-        ["pz", "kg", "l"].forEach(u => {
-            const opt = document.createElement("option");
-            opt.value = u;
-            opt.innerText = u;
-            if(ing.unita === u) opt.selected = true; // seleziona l'unità corrente
-            selectUnita.appendChild(opt);
-        });
-        selectUnita.onchange = async () => {
-            await db.ref(`ingredienti/${ing.id}`).update({ unita: selectUnita.value });
-        };
-        row.appendChild(nameSpan);
-        row.appendChild(qtyInput);
-        row.appendChild(selectUnita);
-        row.appendChild(statoSpan);
-        row.appendChild(btnDisp);
-        row.appendChild(btnEs);
-        row.appendChild(btnElimina);
-        catDiv.appendChild(row);
-        const hr = document.createElement("hr");
-        hr.style.margin = "4px 0";
-        catDiv.appendChild(hr);
-      });
+                fragment.appendChild(catDiv);
+            }
+        }
 
-      fragment.appendChild(catDiv);
-    }
+        // 🔹 FIX SFARFALLIO: Sostituiamo il DOM in un colpo solo, alla fine!
+        container.innerHTML = "";
+        container.appendChild(fragment);
 
-    container.appendChild(fragment);
-  } catch (err) {
-    console.error("Errore caricaIngredienti:", err);
-    container.innerHTML = "<i>Errore caricamento ingredienti (vedi console)</i>";
-  } 
+    } catch (err) {
+        console.error("Errore caricaIngredienti:", err);
+        container.innerHTML = "<i>Errore caricamento ingredienti (vedi console)</i>";
+    } 
 }
 function aggiornaStatoIngredient(id) {
     const span = document.getElementById(`stato_${id}`);
