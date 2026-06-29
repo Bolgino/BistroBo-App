@@ -2906,16 +2906,50 @@ function aggiornaComandaCorrente(){
     });
     // --- INIZIO MATEMATICA SCONTO GLOBALE ---
     if (window.scontiGlobaliAbilitati && window.scontoGlobaleCorrente) {
-        if (window.scontoGlobaleCorrente.tipo === "gratis") {
+        const g = window.scontoGlobaleCorrente;
+        let importoSconto = 0;
+
+        if (g.tipo === "gratis") {
+            importoSconto = tot;
             tot = 0; // Azzera tutto
-        } else if (window.scontoGlobaleCorrente.tipo === "percentuale") {
-            tot = tot - (tot * window.scontoGlobaleCorrente.valore / 100);
-        } else if (window.scontoGlobaleCorrente.tipo === "fisso") {
-            tot = tot - window.scontoGlobaleCorrente.valore;
+        } else if (g.tipo === "percentuale") {
+            importoSconto = (tot * g.valore / 100);
+            tot = tot - importoSconto;
+        } else if (g.tipo === "fisso") {
+            importoSconto = g.valore;
+            tot = tot - importoSconto;
         }
         
         // Il totale non può essere negativo
         if (tot < 0) tot = 0;
+
+        // Inietta la riga visiva in fondo al carrello
+        const divSconto = document.createElement("div");
+        divSconto.style.display = "flex";
+        divSconto.style.justifyContent = "space-between";
+        divSconto.style.alignItems = "center";
+        divSconto.style.marginTop = "8px";
+        divSconto.style.paddingTop = "8px";
+        divSconto.style.borderTop = "1px dashed #ccc";
+        
+        const spanSconto = document.createElement("span");
+        spanSconto.style.flex = "1";
+        spanSconto.innerHTML = `<b style="color:#e65100;">🎟️ Sconto: ${g.nome}</b> <span style="color:red; margin-left: 5px;">-€${importoSconto.toFixed(2)}</span>`;
+        
+        const controls = document.createElement("span");
+        const btnDeleteSconto = document.createElement("button");
+        btnDeleteSconto.innerText = "X";
+        btnDeleteSconto.style.marginLeft = "6px";
+        btnDeleteSconto.style.color = "#000000";
+        btnDeleteSconto.style.fontWeight = "900";
+        btnDeleteSconto.style.backgroundColor = "#ffcccc";
+        btnDeleteSconto.onclick = () => window.rimuoviScontoGlobaleCassa();
+        
+        controls.appendChild(btnDeleteSconto);
+        divSconto.appendChild(spanSconto);
+        divSconto.appendChild(controls);
+        
+        div.appendChild(divSconto); // Aggiunge al contenitore del carrello
     }
     // --- FINE MATEMATICA SCONTO GLOBALE ---
 
@@ -5783,11 +5817,16 @@ window.aggiungiScontoGlobale = async function() {
     notify("Sconto globale creato con successo!", "success");
 };
 
-window.eliminaScontoGlobale = async function(id) {
-    if(confirm("Vuoi eliminare definitivamente questo sconto globale?")) {
-        await db.ref(`scontiGlobali/${id}`).remove();
-        notify("Sconto eliminato.", "info");
-    }
+window.eliminaScontoGlobale = function(id) {
+    disonotify("Vuoi eliminare definitivamente questo sconto globale?", {
+        confirmText: "Elimina",
+        showCancel: true,
+        cancelText: "Annulla",
+        onConfirm: async () => {
+            await db.ref(`scontiGlobali/${id}`).remove();
+            notify("Sconto eliminato.", "info");
+        }
+    });
 };
 // 3. Render lista in Admin e Bottoni in Cassa
 db.ref("scontiGlobali").on("value", snap => {
@@ -5826,24 +5865,21 @@ db.ref("scontiGlobali").on("value", snap => {
 
 // 4. Azione click su un bottone sconto in cassa
 window.applicaScontoGlobaleCassa = function(id, sconto) {
+    // Se clicchi lo sconto già attivo, lo rimuove
     if(window.scontoGlobaleCorrente && window.scontoGlobaleCorrente.id === id) {
-        rimuoviScontoGlobaleCassa();
+        window.rimuoviScontoGlobaleCassa();
     } else {
         window.scontoGlobaleCorrente = { id, ...sconto };
-        document.getElementById("scontoApplicatoMsg").style.display = "block";
-        document.getElementById("scontoApplicatoMsg").innerHTML = `✅ <b>Sconto attivo:</b> ${sconto.nome}`;
-        
         if(typeof aggiornaComandaCorrente === "function") aggiornaComandaCorrente();
         notify(`Sconto '${sconto.nome}' applicato!`, "success");
     }
 };
 
-window.rimuoviScontoGlobaleCassa = function() {
-    if (window.scontoGlobaleCorrente) {
+window.rimuoviScontoGlobaleCassa = function(silenzioso = false) {
+    if (window.scontoGlobaleCorrente && !silenzioso) {
         notify("Sconto rimosso dal totale.", "info");
     }
     window.scontoGlobaleCorrente = null;
-    document.getElementById("scontoApplicatoMsg").style.display = "none";
     if(typeof aggiornaComandaCorrente === "function") aggiornaComandaCorrente();
 };
 async function caricaIngredientiPerRuolo(ruolo) {
@@ -8415,6 +8451,39 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
         // TOTALE E NOTE...
         doc.setFontSize(10); doc.setFont("helvetica", "normal"); y += 2;
         doc.text("-".repeat(45), pageWidth / 2, y, { align: "center" }); y += 8;
+
+        // --- INIZIO STAMPA SCONTO GLOBALE ---
+        // Controlla se c'è uno sconto in corso (dalla cassa) oppure se è salvato nel cliente (se stiamo ristampando dallo storico)
+        const scontoDaApplicare = (cliente && cliente.scontoGlobale) ? cliente.scontoGlobale : window.scontoGlobaleCorrente;
+
+        if (scontoDaApplicare) {
+            let testoValoreSconto = "";
+            let importoSconto = 0;
+            
+            if (scontoDaApplicare.tipo === "gratis") {
+                testoValoreSconto = "OMAGGIO";
+                importoSconto = totaleReparto;
+            } else if (scontoDaApplicare.tipo === "percentuale") {
+                testoValoreSconto = `- ${scontoDaApplicare.valore}%`;
+                importoSconto = totaleReparto * (scontoDaApplicare.valore / 100);
+            } else if (scontoDaApplicare.tipo === "fisso") {
+                testoValoreSconto = `- €${scontoDaApplicare.valore.toFixed(2)}`;
+                importoSconto = scontoDaApplicare.valore;
+                // Evitiamo scontrini negativi in caso di scontrini separati
+                if (importoSconto > totaleReparto) importoSconto = totaleReparto; 
+            }
+
+            totaleReparto -= importoSconto;
+            if (totaleReparto < 0) totaleReparto = 0;
+
+            doc.setFontSize(11); doc.setFont("helvetica", "bold");
+            const nomeScontoSplit = doc.splitTextToSize(`SCONTO: ${scontoDaApplicare.nome}`, 55);
+            doc.text(nomeScontoSplit, margin, y);
+            doc.text(testoValoreSconto, rightMargin, y, { align: "right" }); 
+            y += (nomeScontoSplit.length * 5) + 2;
+        }
+        // --- FINE STAMPA SCONTO GLOBALE ---
+
         doc.setFontSize(18); doc.setFont("helvetica", "bold");
         doc.text("TOTALE", margin, y); doc.text(`€ ${totaleReparto.toFixed(2)}`, rightMargin, y, { align: "right" }); y += 8;
 
