@@ -7725,7 +7725,8 @@ document.addEventListener("DOMContentLoaded", () => {
             const noteDaStampare = note;
             const numeroComandaDaStampare = numeroComandaFinale;
 			const scontoDaStampare = window.scontoGlobaleCorrente ? JSON.parse(JSON.stringify(window.scontoGlobaleCorrente)) : null;
-            
+            const asportoCheck = document.getElementById("checkAsporto");
+      		const testoAsporto = (asportoCheck && asportoCheck.checked) ? "DA ASPORTO" : "";
             comandaCorrente = [];
 			window.rimuoviScontoGlobaleCassa();
             if(typeof aggiornaComandaCorrente === 'function') aggiornaComandaCorrente();
@@ -7751,7 +7752,10 @@ document.addEventListener("DOMContentLoaded", () => {
 			} else {
 			    notify("✅ Comanda " + numeroComandaFinale + " inviata, avvio stampa...", "info");
 			    if (typeof stampaComanda === 'function') {
-			       stampaComanda(piattiDaStampare, numeroComandaFinale, noteDaStampare, { scontoGlobale: scontoDaStampare });
+			       stampaComanda(piattiDaStampare, numeroComandaFinale, noteDaStampare, { 
+	                    scontoGlobale: scontoDaStampare,
+	                    commento: testoAsporto 
+               		 });
 			    }
 			}
         } catch (err) {
@@ -8364,6 +8368,10 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
 
         doc.setFontSize(24); doc.setFont("helvetica", "bold");
         doc.text(`COMANDA ${numeroComanda}`, pageWidth / 2, y, { align: "center" }); y += 7;
+		if (cliente && cliente.commento && cliente.commento.toUpperCase().includes("ASPORTO")) {
+            doc.setFontSize(18); 
+            doc.text(`*** DA ASPORTO ***`, pageWidth / 2, y, { align: "center" }); y += 8;
+        }
 
         if (reparto.nome) {
             doc.setFontSize(14); doc.text(`*** ${reparto.nome} ***`, pageWidth / 2, y, { align: "center" }); y += 6;
