@@ -5777,9 +5777,9 @@ db.ref("impostazioni/scontiGlobaliAbilitati").on("value", snap => {
         btn.style.color = "white";
     }
 
-    // Mostra/Nascondi Div in Admin (flex per mantenere il layout a 2 colonne)
+    // Mostra/Nascondi Div in Admin (RIPRISTINATO A "block" INVECE DI "flex")
     const divAdmin = document.getElementById("gestioneScontiGlobaliDiv");
-    if(divAdmin) divAdmin.style.display = abilitato ? "flex" : "none";
+    if(divAdmin) divAdmin.style.display = abilitato ? "block" : "none";
     
     // CASSA: Mostra la barra SOLO se l'impostazione è ON *E* c'è almeno 1 sconto
     const containerCassa = document.getElementById("scontiGlobaliCassaContainer");
