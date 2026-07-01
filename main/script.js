@@ -6865,6 +6865,87 @@ function modificaPiattoMenu(menuId, piatto) {
         }
     };
 }
+// =========================================================================
+// GESTIONE REPARTI EXTRA (1, 2, 3) CON NOMI DINAMICI E SICUREZZA
+// =========================================================================
+
+// Variabile globale per contenere i nomi personalizzati scelti dall'Admin
+window.nomiRepartiExtra = {
+    extra1: "Reparto Extra 1",
+    extra2: "Reparto Extra 2",
+    extra3: "Reparto Extra 3"
+};
+
+// 1. ASCOLTO DEI NOMI DAL DATABASE IN TEMPO REALE
+db.ref("impostazioni/nomiRepartiExtra").on("value", snap => {
+    const dati = snap.val() || {};
+    window.nomiRepartiExtra.extra1 = dati.extra1 || "Reparto Extra 1";
+    window.nomiRepartiExtra.extra2 = dati.extra2 || "Reparto Extra 2";
+    window.nomiRepartiExtra.extra3 = dati.extra3 || "Reparto Extra 3";
+
+    // Aggiorna l'interfaccia Admin
+    const t1 = document.getElementById("titoloExtra1"); if(t1) t1.innerText = window.nomiRepartiExtra.extra1;
+    const t2 = document.getElementById("titoloExtra2"); if(t2) t2.innerText = window.nomiRepartiExtra.extra2;
+    const t3 = document.getElementById("titoloExtra3"); if(t3) t3.innerText = window.nomiRepartiExtra.extra3;
+    
+    const l1 = document.getElementById("labelToggleExtra1"); if(l1) l1.innerText = `Abilita ${window.nomiRepartiExtra.extra1}`;
+    const l2 = document.getElementById("labelToggleExtra2"); if(l2) l2.innerText = `Abilita ${window.nomiRepartiExtra.extra2}`;
+    const l3 = document.getElementById("labelToggleExtra3"); if(l3) l3.innerText = `Abilita ${window.nomiRepartiExtra.extra3}`;
+});
+
+// 2. SALVATAGGIO DEI NUOVI NOMI (Bottoni in Admin)
+['extra1', 'extra2', 'extra3'].forEach(ruolo => {
+    const btnSalva = document.getElementById(`salvaNome${ruolo.charAt(0).toUpperCase() + ruolo.slice(1)}Btn`);
+    if(btnSalva) {
+        btnSalva.onclick = async () => {
+            const inputNome = document.getElementById(`nome${ruolo.charAt(0).toUpperCase() + ruolo.slice(1)}Input`);
+            const nuovoNome = inputNome.value.trim();
+            if(nuovoNome) {
+                await db.ref(`impostazioni/nomiRepartiExtra/${ruolo}`).set(nuovoNome);
+                inputNome.value = "";
+                if(typeof notify === "function") notify("Nome reparto aggiornato con successo!", "success");
+            }
+        };
+    }
+});
+
+// 3. BLOCCO DI SICUREZZA PER DISATTIVAZIONE
+window.controlloSicurezzaDisattivazione = async function(ruolo) {
+    let piattiTrovati = 0;
+    let ingredientiTrovati = 0;
+
+    // Controlla il Menu
+    const snapMenu = await db.ref("menu").once("value");
+    const menuData = snapMenu.val() || {};
+    for (let key in menuData) {
+        if (menuData[key].categoria === ruolo) piattiTrovati++;
+    }
+
+    // Controlla gli Ingredienti
+    const snapIngr = await db.ref("ingredienti").once("value");
+    const ingrData = snapIngr.val() || {};
+    for (let key in ingrData) {
+        if (ingrData[key].categoria === ruolo) ingredientiTrovati++;
+    }
+
+    if (piattiTrovati > 0 || ingredientiTrovati > 0) {
+        const nomeReparto = window.nomiRepartiExtra[ruolo] || ruolo;
+        let messaggio = `<b>ATTENZIONE: Impossibile disattivare!</b><br>Il reparto <b>${nomeReparto}</b> contiene ancora:<br>`;
+        if(piattiTrovati > 0) messaggio += `- ${piattiTrovati} Piatti nel Menu<br>`;
+        if(ingredientiTrovati > 0) messaggio += `- ${ingredientiTrovati} Ingredienti nella Dispensa<br>`;
+        messaggio += `<br><i>Riassegna questi elementi ad altre categorie (es. Cucina o Snack) prima di spegnere il reparto.</i>`;
+        
+        // Usiamo disonotify per un errore bello grande
+        if(typeof disonotify === "function") {
+            disonotify(messaggio, { confirmText: "Ho capito", showCancel: false });
+        } else {
+            alert(`Impossibile disattivare! Ci sono ${piattiTrovati} piatti e ${ingredientiTrovati} ingredienti assegnati.`);
+        }
+        return false; // Bloccato
+    }
+    
+    return true; // Sicuro da disattivare
+};
 // ================= LOGICA STATISTICHE (Affiancate) =================
 document.addEventListener("DOMContentLoaded", () => {
     const filtroSelect = document.getElementById("filtroStatistiche");
