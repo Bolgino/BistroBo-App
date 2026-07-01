@@ -86,14 +86,6 @@
 	<!-- ================= LOGOUT ================= -->
 	<div id="logoutDiv" class="hidden" style="padding-bottom: 10px;">
 		<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-			
-			<div id="simulatoreRuoliDiv" style="display: none; align-items: center; flex-wrap: wrap; background: rgba(255,255,255,0.2); padding: 5px 10px; border-radius: 6px; border: 1px solid rgba(0,0,0,0.1);">
-				<b style="font-size: 0.9em; margin-right: 8px;">Simula:</b>
-				<button onclick="simulaRuolo('cassa')" style="padding: 4px 8px; font-size: 0.85em; margin-right: 4px;">Cassa</button>
-				<button onclick="simulaRuolo('cucina')" style="padding: 4px 8px; font-size: 0.85em; margin-right: 4px;">Cucina</button>
-				<button onclick="simulaRuolo('bere')" style="padding: 4px 8px; font-size: 0.85em; margin-right: 4px;">Bere</button>
-				<button onclick="simulaRuolo('snack')" style="padding: 4px 8px; font-size: 0.85em;">Snack</button>
-			</div>
 
 			<div style="display: flex; gap: 10px; align-items: center; justify-content: flex-end; flex: 1;">
 				<button id="passaACassaBtn" style="display:none;"></button>
@@ -464,7 +456,8 @@
 			<button class="tabBtn" data-tab="incassiTab">Statistiche Vendita</button>
 			<button class="tabBtn" data-tab="utentiTab">Utenti</button>
 		    <button class="tabBtn" data-tab="chatAdminTab">Chat</button>
-			<button class="tabBtn" data-tab="impostazioniTab">Impostazioni</button>
+			<button class="tabBtn" data-tab="gestioneProfiliTab">Gestione Profili</button>
+			<button class="tabBtn" data-tab="impostazioniTab">⚙️Impostazioni</button>
 		</div>
 
 		<!-- Comande Admin -->
@@ -631,7 +624,197 @@
 				</div>
 			</div>
 		</div>
+		<div id="gestioneProfiliTab" class="tabContent">
+			<div style="background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-top: 5px solid #3F51B5;">
+				<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:20px;">
+					<h3 style="margin:0; color: #3F51B5; font-size: 1.3em;">🎭 Gestione Profili e Reparti</h3>
+				</div>
 
+                <div style="margin-bottom: 25px; border: 1px solid #ddd; border-radius: 8px; padding: 15px; background: #fafafa; border-left: 5px solid #FF9800;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px; border-bottom: 1px dashed #ccc; padding-bottom: 10px;">
+                        <h4 style="margin:0; color: #FF9800; font-size: 1.2em;">🍳 Profilo Cucina</h4>
+                        <button onclick="simulaRuolo('cucina')" style="padding: 8px 15px; background: #FF9800; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">👁️ Simula Cucina</button>
+                    </div>
+                    
+                    <div class="settingItem">
+                        <div class="settingLabel">
+                            <span>Nuove comande in alto</span>
+                            <small>Le nuove comande appariranno sempre in cima alla lista Cucina</small>
+                        </div>
+                        <button id="toggleNuoveInAltoCucinaBtn" class="toggleBtn">ON</button>
+                    </div>
+                    <div class="settingItem">
+                        <div class="settingLabel">
+                            <span>Mostra tab Ingredienti</span>
+                            <small>Mostra o nascondi la tab Ingredienti nel profilo Cucina</small>
+                        </div>
+                        <button id="toggleMagazzinoCucinaBtn" class="toggleBtn">ON</button>
+                    </div>
+                    <div class="settingItem">
+                        <div class="settingLabel">
+                            <span>Mostra tab Menu</span>
+                            <small>Mostra o nascondi la tab Menu nel profilo Cucina</small>
+                        </div>
+                        <button id="toggleMenuCucinaBtn" class="toggleBtn">ON</button>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 25px; border: 1px solid #ddd; border-radius: 8px; padding: 15px; background: #fafafa; border-left: 5px solid #3F51B5;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px; border-bottom: 1px dashed #ccc; padding-bottom: 10px;">
+                        <h4 style="margin:0; color: #3F51B5; font-size: 1.2em;">🍺 Profilo Bere</h4>
+                        <button onclick="simulaRuolo('bere')" style="padding: 8px 15px; background: #3F51B5; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">👁️ Simula Bere</button>
+                    </div>
+
+                    <div class="settingItem">
+                        <div class="settingLabel">
+                            <span>Nuove comande in alto</span>
+                            <small>Le nuove comande appariranno sempre in cima alla lista Bere</small>
+                        </div>
+                        <button id="toggleNuoveInAltoBereBtn" class="toggleBtn">ON</button>
+                    </div>
+                    <div class="settingItem">
+                        <div class="settingLabel">
+                            <span>Mostra tab Ingredienti</span>
+                            <small>Mostra o nascondi la tab Ingredienti nel profilo Bere</small>
+                        </div>
+                        <button id="toggleMagazzinoBereBtn" class="toggleBtn">ON</button>
+                    </div>
+                    <div class="settingItem">
+                        <div class="settingLabel">
+                            <span>Mostra tab Menu</span>
+                            <small>Mostra o nascondi la tab Menu nel profilo Bere</small>
+                        </div>
+                        <button id="toggleMenuBereBtn" class="toggleBtn">ON</button>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; padding: 15px; background: #fafafa; border-left: 5px solid #FF5722;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px; border-bottom: 1px dashed #ccc; padding-bottom: 10px;">
+                        <h4 style="margin:0; color: #FF5722; font-size: 1.2em;">🍟 Profilo Snack</h4>
+                        <button onclick="simulaRuolo('snack')" style="padding: 8px 15px; background: #FF5722; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">👁️ Simula Snack</button>
+                    </div>
+
+                    <div class="settingItem">
+                        <div class="settingLabel">
+                            <span>Profilo Snack</span>
+                            <small>Abilita o disabilita l'intero reparto Snack.</small>
+                        </div>
+                        <button id="toggleSnackBtn" class="toggleBtn">OFF</button>
+                    </div>
+                    
+                    <div id="snackDependentSettings" style="display:none;">
+                        <div class="settingItem">
+                            <div class="settingLabel">
+                                <span>Nuove comande in alto</span>
+                                <small>Le nuove comande Snack appariranno in cima alla lista</small>
+                            </div>
+                            <button id="toggleNuoveInAltoSnackBtn" class="toggleBtn">OFF</button>
+                        </div>
+                        <div class="settingItem">
+                            <div class="settingLabel">
+                                <span>Mostra tab Ingredienti</span>
+                                <small>Mostra o nascondi la tab Ingredienti nel profilo Snack</small>
+                            </div>
+                            <button id="toggleMagazzinoSnackBtn" class="toggleBtn">ON</button>
+                        </div>
+                        <div class="settingItem">
+                            <div class="settingLabel">
+                                <span>Mostra tab Menu</span>
+                                <small>Mostra o nascondi la tab Menu nel profilo Snack</small>
+                            </div>
+                            <button id="toggleMenuSnackBtn" class="toggleBtn">ON</button>
+                        </div>
+                    </div>
+                </div>
+
+			</div>
+		</div>
+		```
+
+### Passaggio 3: Pulisci la vecchia scheda Impostazioni
+Visto che abbiamo spostato tutto nella nuova tab, dobbiamo eliminare i "cloni" dalla scheda Impostazioni per evitare conflitti nel codice HTML.
+
+All'interno di `<div id="impostazioniTab" class="tabContent">`, scorri verso il basso e **CANCELLA tutto questo blocco di codice** (da "Cucina & Bere" fino alla fine del blocco Snack):
+
+```html
+				<h4 style="margin-top: 30px; padding-bottom: 5px; color: #00796B; border-top: 1px dashed #ccc; padding-top: 20px;">Cucina & Bere</h4>
+			
+				<div class="settingItem">
+					<div class="settingLabel">
+						<span>Nuove comande in alto Cucina</span>
+						<small>Le nuove comande appariranno sempre in cima alla lista Cucina</small>
+					</div>
+					<button id="toggleNuoveInAltoCucinaBtn" class="toggleBtn">ON</button>
+				</div>
+				<div class="settingItem">
+					<div class="settingLabel">
+						<span>Nuove comande in alto Bere</span>
+						<small>Le nuove comande appariranno sempre in cima alla lista Bere</small>
+					</div>
+					<button id="toggleNuoveInAltoBereBtn" class="toggleBtn">ON</button>
+				</div>
+				<div class="settingItem">
+					<div class="settingLabel">
+						<span>Mostra tab Ingredienti in Cucina</span>
+						<small>Mostra o nascondi la tab Ingredienti nel profilo Cucina</small>
+					</div>
+					<button id="toggleMagazzinoCucinaBtn" class="toggleBtn">ON</button>
+				</div>
+				<div class="settingItem">
+					<div class="settingLabel">
+						<span>Mostra tab Menu in Cucina</span>
+						<small>Mostra o nascondi la tab Menu nel profilo Cucina</small>
+					</div>
+					<button id="toggleMenuCucinaBtn" class="toggleBtn">ON</button>
+				</div>
+				<div class="settingItem">
+					<div class="settingLabel">
+						<span>Mostra tab Ingredienti in Bere</span>
+						<small>Mostra o nascondi la tab Ingredienti nel profilo Bere</small>
+					</div>
+					<button id="toggleMagazzinoBereBtn" class="toggleBtn">ON</button>
+				</div>
+				<div class="settingItem">
+					<div class="settingLabel">
+						<span>Mostra tab Menu in Bere</span>
+						<small>Mostra o nascondi la tab Menu nel profilo Bere</small>
+					</div>
+					<button id="toggleMenuBereBtn" class="toggleBtn">ON</button>
+				</div>
+			
+				<h4 style="margin-top: 30px; padding-bottom: 5px; color: #00796B; border-top: 1px dashed #ccc; padding-top: 20px;">Snack</h4>
+			
+				<div class="settingItem">
+					<div class="settingLabel">
+						<span>Profilo Snack</span>
+						<small>Abilita o disabilita il profilo Snack. <b>Prima di disattivarlo o attivarlo, completare tutte le comande attive!</b></small>
+					</div>
+					<button id="toggleSnackBtn" class="toggleBtn">OFF</button>
+				</div>
+				
+				<div id="snackDependentSettings" style="display:none;">
+					<div class="settingItem">
+						<div class="settingLabel">
+							<span>Nuove comande in alto Snack</span>
+							<small>Le nuove comande Snack appariranno in cima alla lista Snack</small>
+						</div>
+						<button id="toggleNuoveInAltoSnackBtn" class="toggleBtn">OFF</button>
+					</div>
+					<div class="settingItem">
+						<div class="settingLabel">
+							<span>Mostra tab Ingredienti in Snack</span>
+							<small>Mostra o nascondi la tab Ingredienti nel profilo Snack</small>
+						</div>
+						<button id="toggleMagazzinoSnackBtn" class="toggleBtn">ON</button>
+					</div>
+					<div class="settingItem">
+						<div class="settingLabel">
+							<span>Mostra tab Menu in Snack</span>
+							<small>Mostra o nascondi la tab Menu nel profilo Snack</small>
+						</div>
+						<button id="toggleMenuSnackBtn" class="toggleBtn">ON</button>
+					</div>
+				</div>
 		<div id="impostazioniTab" class="tabContent">
 			<div style="background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-top: 5px solid #009688;">
 				<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
@@ -861,84 +1044,7 @@
 					<button id="resetContatoreBtn" class="toggleBtn">Azzera</button>
 				</div>
 			
-				<h4 style="margin-top: 30px; padding-bottom: 5px; color: #00796B; border-top: 1px dashed #ccc; padding-top: 20px;">Cucina & Bere</h4>
 			
-				<div class="settingItem">
-					<div class="settingLabel">
-						<span>Nuove comande in alto Cucina</span>
-						<small>Le nuove comande appariranno sempre in cima alla lista Cucina</small>
-					</div>
-					<button id="toggleNuoveInAltoCucinaBtn" class="toggleBtn">ON</button>
-				</div>
-				<div class="settingItem">
-					<div class="settingLabel">
-						<span>Nuove comande in alto Bere</span>
-						<small>Le nuove comande appariranno sempre in cima alla lista Bere</small>
-					</div>
-					<button id="toggleNuoveInAltoBereBtn" class="toggleBtn">ON</button>
-				</div>
-				<div class="settingItem">
-					<div class="settingLabel">
-						<span>Mostra tab Ingredienti in Cucina</span>
-						<small>Mostra o nascondi la tab Ingredienti nel profilo Cucina</small>
-					</div>
-					<button id="toggleMagazzinoCucinaBtn" class="toggleBtn">ON</button>
-				</div>
-				<div class="settingItem">
-					<div class="settingLabel">
-						<span>Mostra tab Menu in Cucina</span>
-						<small>Mostra o nascondi la tab Menu nel profilo Cucina</small>
-					</div>
-					<button id="toggleMenuCucinaBtn" class="toggleBtn">ON</button>
-				</div>
-				<div class="settingItem">
-					<div class="settingLabel">
-						<span>Mostra tab Ingredienti in Bere</span>
-						<small>Mostra o nascondi la tab Ingredienti nel profilo Bere</small>
-					</div>
-					<button id="toggleMagazzinoBereBtn" class="toggleBtn">ON</button>
-				</div>
-				<div class="settingItem">
-					<div class="settingLabel">
-						<span>Mostra tab Menu in Bere</span>
-						<small>Mostra o nascondi la tab Menu nel profilo Bere</small>
-					</div>
-					<button id="toggleMenuBereBtn" class="toggleBtn">ON</button>
-				</div>
-			
-				<h4 style="margin-top: 30px; padding-bottom: 5px; color: #00796B; border-top: 1px dashed #ccc; padding-top: 20px;">Snack</h4>
-			
-				<div class="settingItem">
-					<div class="settingLabel">
-						<span>Profilo Snack</span>
-						<small>Abilita o disabilita il profilo Snack. <b>Prima di disattivarlo o attivarlo, completare tutte le comande attive!</b></small>
-					</div>
-					<button id="toggleSnackBtn" class="toggleBtn">OFF</button>
-				</div>
-				
-				<div id="snackDependentSettings" style="display:none;">
-					<div class="settingItem">
-						<div class="settingLabel">
-							<span>Nuove comande in alto Snack</span>
-							<small>Le nuove comande Snack appariranno in cima alla lista Snack</small>
-						</div>
-						<button id="toggleNuoveInAltoSnackBtn" class="toggleBtn">OFF</button>
-					</div>
-					<div class="settingItem">
-						<div class="settingLabel">
-							<span>Mostra tab Ingredienti in Snack</span>
-							<small>Mostra o nascondi la tab Ingredienti nel profilo Snack</small>
-						</div>
-						<button id="toggleMagazzinoSnackBtn" class="toggleBtn">ON</button>
-					</div>
-					<div class="settingItem">
-						<div class="settingLabel">
-							<span>Mostra tab Menu in Snack</span>
-							<small>Mostra o nascondi la tab Menu nel profilo Snack</small>
-						</div>
-						<button id="toggleMenuSnackBtn" class="toggleBtn">ON</button>
-					</div>
-				</div>
 			
 				<h4 style="margin-top: 30px; padding-bottom: 5px; color: #00796B; border-top: 1px dashed #ccc; padding-top: 20px;">Preordini</h4>
 			
