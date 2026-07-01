@@ -87,13 +87,7 @@
 	<div id="logoutDiv" class="hidden" style="padding-bottom: 10px;">
 		<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
 			
-			<div id="simulatoreRuoliDiv" style="display: none; align-items: center; flex-wrap: wrap; background: rgba(255,255,255,0.2); padding: 5px 10px; border-radius: 6px; border: 1px solid rgba(0,0,0,0.1);">
-				<b style="font-size: 0.9em; margin-right: 8px;">Simula:</b>
-				<button onclick="simulaRuolo('cassa')" style="padding: 4px 8px; font-size: 0.85em; margin-right: 4px;">Cassa</button>
-				<button onclick="simulaRuolo('cucina')" style="padding: 4px 8px; font-size: 0.85em; margin-right: 4px;">Cucina</button>
-				<button onclick="simulaRuolo('bere')" style="padding: 4px 8px; font-size: 0.85em; margin-right: 4px;">Bere</button>
-				<button onclick="simulaRuolo('snack')" style="padding: 4px 8px; font-size: 0.85em;">Snack</button>
-			</div>
+			<div id="simulatoreRuoliDiv" style="display: none !important;"></div>
 
 			<div style="display: flex; gap: 10px; align-items: center; justify-content: flex-end; flex: 1;">
 				<button id="passaACassaBtn" style="display:none;"></button>
@@ -636,12 +630,13 @@
 			<div style="background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-top: 5px solid #3F51B5;">
 				<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:20px;">
 					<h3 style="margin:0; color: #3F51B5; font-size: 1.3em;">🎭 Gestione Profili e Reparti</h3>
+					<button onclick="simulaRuolo('cassa')" style="padding: 8px 15px; background: #4CAF50; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);"> Simula Cassa</button>
 				</div>
 
                 <div style="margin-bottom: 25px; border: 1px solid #ddd; border-radius: 8px; padding: 15px; background: #fafafa; border-left: 5px solid #FF9800;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px; border-bottom: 1px dashed #ccc; padding-bottom: 10px;">
                         <h4 style="margin:0; color: #FF9800; font-size: 1.2em;">🍳 Profilo Cucina</h4>
-                        <button onclick="simulaRuolo('cucina')" style="padding: 8px 15px; background: #FF9800; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">👁️ Simula Cucina</button>
+                        <button onclick="simulaRuolo('cucina')" style="padding: 8px 15px; background: #FF9800; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);"> Simula Cucina</button>
                     </div>
                     
                     <div class="settingItem">
@@ -670,7 +665,7 @@
                 <div style="margin-bottom: 25px; border: 1px solid #ddd; border-radius: 8px; padding: 15px; background: #fafafa; border-left: 5px solid #3F51B5;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px; border-bottom: 1px dashed #ccc; padding-bottom: 10px;">
                         <h4 style="margin:0; color: #3F51B5; font-size: 1.2em;">🍺 Profilo Bere</h4>
-                        <button onclick="simulaRuolo('bere')" style="padding: 8px 15px; background: #3F51B5; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">👁️ Simula Bere</button>
+                        <button onclick="simulaRuolo('bere')" style="padding: 8px 15px; background: #3F51B5; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);"> Simula Bere</button>
                     </div>
 
                     <div class="settingItem">
@@ -699,7 +694,7 @@
                 <div style="margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; padding: 15px; background: #fafafa; border-left: 5px solid #FF5722;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px; border-bottom: 1px dashed #ccc; padding-bottom: 10px;">
                         <h4 style="margin:0; color: #FF5722; font-size: 1.2em;">🍟 Profilo Snack</h4>
-                        <button onclick="simulaRuolo('snack')" style="padding: 8px 15px; background: #FF5722; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">👁️ Simula Snack</button>
+                        <button onclick="simulaRuolo('snack')" style="padding: 8px 15px; background: #FF5722; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);"> Simula Snack</button>
                     </div>
 
                     <div class="settingItem">
