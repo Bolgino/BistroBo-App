@@ -728,10 +728,129 @@
                             <button id="toggleMenuSnackBtn" class="toggleBtn">ON</button>
                         </div>
                     </div>
+					
+                </div>
+				<div style="margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; padding: 15px; background: #fafafa; border-left: 5px solid #9C27B0;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px; border-bottom: 1px dashed #ccc; padding-bottom: 10px;">
+                        <div style="display:flex; align-items:center; gap:10px; flex-wrap: wrap;">
+                            <h4 style="margin:0; color: #9C27B0; font-size: 1.2em;" id="titoloExtra1">Reparto Extra 1</h4>
+                            <input type="text" id="nomeExtra1Input" placeholder="Nome (es. Griglia)" style="padding:6px; border-radius:4px; border:1px solid #ccc; width:130px;">
+                            <button id="salvaNomeExtra1Btn" style="padding:6px 10px; background:#9C27B0; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">Salva Nome</button>
+                        </div>
+                        <button onclick="simulaRuolo('extra1')" style="padding: 8px 15px; background: #9C27B0; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">👁️ Simula</button>
+                    </div>
+
+                    <div class="settingItem">
+                        <div class="settingLabel">
+                            <span id="labelToggleExtra1">Abilita Reparto Extra 1</span>
+                            <small>Accende o spegne questo reparto. (Richiede di svuotare i suoi piatti prima)</small>
+                        </div>
+                        <button id="toggleExtra1Btn" class="toggleBtn">OFF</button>
+                    </div>
+                    
+                    <div id="extra1DependentSettings" style="display:none;">
+                        <div class="settingItem">
+                            <div class="settingLabel">
+                                <span>Nuove comande in alto</span>
+                            </div>
+                            <button id="toggleNuoveInAltoExtra1Btn" class="toggleBtn">OFF</button>
+                        </div>
+                        <div class="settingItem">
+                            <div class="settingLabel">
+                                <span>Mostra tab Ingredienti</span>
+                            </div>
+                            <button id="toggleMagazzinoExtra1Btn" class="toggleBtn">ON</button>
+                        </div>
+                        <div class="settingItem">
+                            <div class="settingLabel">
+                                <span>Mostra tab Menu</span>
+                            </div>
+                            <button id="toggleMenuExtra1Btn" class="toggleBtn">ON</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; padding: 15px; background: #fafafa; border-left: 5px solid #009688;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px; border-bottom: 1px dashed #ccc; padding-bottom: 10px;">
+                        <div style="display:flex; align-items:center; gap:10px; flex-wrap: wrap;">
+                            <h4 style="margin:0; color: #009688; font-size: 1.2em;" id="titoloExtra2">Reparto Extra 2</h4>
+                            <input type="text" id="nomeExtra2Input" placeholder="Nome (es. Pizzeria)" style="padding:6px; border-radius:4px; border:1px solid #ccc; width:130px;">
+                            <button id="salvaNomeExtra2Btn" style="padding:6px 10px; background:#009688; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">Salva Nome</button>
+                        </div>
+                        <button onclick="simulaRuolo('extra2')" style="padding: 8px 15px; background: #009688; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">👁️ Simula</button>
+                    </div>
+
+                    <div class="settingItem">
+                        <div class="settingLabel">
+                            <span id="labelToggleExtra2">Abilita Reparto Extra 2</span>
+                        </div>
+                        <button id="toggleExtra2Btn" class="toggleBtn">OFF</button>
+                    </div>
+                    
+                    <div id="extra2DependentSettings" style="display:none;">
+                        <div class="settingItem">
+                            <div class="settingLabel">
+                                <span>Nuove comande in alto</span>
+                            </div>
+                            <button id="toggleNuoveInAltoExtra2Btn" class="toggleBtn">OFF</button>
+                        </div>
+                        <div class="settingItem">
+                            <div class="settingLabel">
+                                <span>Mostra tab Ingredienti</span>
+                            </div>
+                            <button id="toggleMagazzinoExtra2Btn" class="toggleBtn">ON</button>
+                        </div>
+                        <div class="settingItem">
+                            <div class="settingLabel">
+                                <span>Mostra tab Menu</span>
+                            </div>
+                            <button id="toggleMenuExtra2Btn" class="toggleBtn">ON</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; padding: 15px; background: #fafafa; border-left: 5px solid #795548;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px; border-bottom: 1px dashed #ccc; padding-bottom: 10px;">
+                        <div style="display:flex; align-items:center; gap:10px; flex-wrap: wrap;">
+                            <h4 style="margin:0; color: #795548; font-size: 1.2em;" id="titoloExtra3">Reparto Extra 3</h4>
+                            <input type="text" id="nomeExtra3Input" placeholder="Nome (es. Dolci)" style="padding:6px; border-radius:4px; border:1px solid #ccc; width:130px;">
+                            <button id="salvaNomeExtra3Btn" style="padding:6px 10px; background:#795548; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">Salva Nome</button>
+                        </div>
+                        <button onclick="simulaRuolo('extra3')" style="padding: 8px 15px; background: #795548; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">👁️ Simula</button>
+                    </div>
+
+                    <div class="settingItem">
+                        <div class="settingLabel">
+                            <span id="labelToggleExtra3">Abilita Reparto Extra 3</span>
+                        </div>
+                        <button id="toggleExtra3Btn" class="toggleBtn">OFF</button>
+                    </div>
+                    
+                    <div id="extra3DependentSettings" style="display:none;">
+                        <div class="settingItem">
+                            <div class="settingLabel">
+                                <span>Nuove comande in alto</span>
+                            </div>
+                            <button id="toggleNuoveInAltoExtra3Btn" class="toggleBtn">OFF</button>
+                        </div>
+                        <div class="settingItem">
+                            <div class="settingLabel">
+                                <span>Mostra tab Ingredienti</span>
+                            </div>
+                            <button id="toggleMagazzinoExtra3Btn" class="toggleBtn">ON</button>
+                        </div>
+                        <div class="settingItem">
+                            <div class="settingLabel">
+                                <span>Mostra tab Menu</span>
+                            </div>
+                            <button id="toggleMenuExtra3Btn" class="toggleBtn">ON</button>
+                        </div>
+                    </div>
                 </div>
 
 			</div>
 		</div>
+		
 
 		<div id="impostazioniTab" class="tabContent">
 			<div style="background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-top: 5px solid #009688;">
