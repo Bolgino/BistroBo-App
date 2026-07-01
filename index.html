@@ -446,6 +446,191 @@
 			</div>
 		</div>
 	</div>
+	<div id="extra1Div" class="hidden">
+		<h2 id="mainTitleExtra1">Extra 1</h2>
+		<div>
+			<button class="tabBtn" data-tab="daExtra1Tab">Da fare</button>
+			<button class="tabBtn" data-tab="menuExtra1Tab">Menu</button>
+			<button class="tabBtn" data-tab="ingredientiExtra1Tab">Ingredienti</button>
+			<button class="tabBtn" data-tab="storicoExtra1Tab">Storico</button>
+			<button class="tabBtn" data-tab="chatExtra1Tab">Chat</button>
+		</div>
+
+		<div id="daExtra1Tab" class="tabContent active">
+			<div style="background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-top: 5px solid #9C27B0;">
+				<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
+					<h3 style="margin:0; color: #9C27B0; font-size: 1.3em;" id="comandeTitleExtra1">📦 Comande da Preparare (<span id="conteggioExtra1">0</span>)</h3>
+				</div>
+				<input type="text" id="cercaComandaExtra1" placeholder="🔍 Cerca numero comanda..." style="margin:10px 0; width:100%; padding:5px; font-size:16px;">
+				<div id="daExtra1ComandeContainer"></div>
+			</div>
+		</div>
+
+		<div id="storicoExtra1Tab" class="tabContent">
+			<div style="background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-top: 5px solid #2196F3;">
+				<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
+					<h3 style="margin:0; color: #2196F3; font-size: 1.3em;">🕒 Storico Comande</h3>
+				</div>
+				<input type="text" id="cercaComandaExtra1Storico" placeholder="🔍 Cerca numero comanda..." style="margin:10px 0; width:100%; padding:5px; font-size:16px;">
+				<div id="storicoExtra1ComandeContainer"></div>
+			</div>
+		</div>
+
+		<div id="ingredientiExtra1Tab" class="tabContent">
+			<div style="background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-top: 5px solid #8BC34A;">
+				<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
+					<h3 style="margin:0; color: #8BC34A; font-size: 1.3em;" id="ingrTitleExtra1">🍅 Ingredienti</h3>
+				</div>
+				<div id="ingredientiExtra1Container"></div>
+			</div>
+		</div>
+
+		<div id="menuExtra1Tab" class="tabContent">
+			<div style="background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-top: 5px solid #4CAF50;">
+				<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
+					<h3 style="margin:0; color: #4CAF50; font-size: 1.3em;" id="menuTitleExtra1">🍔 Menu</h3>
+				</div>
+				<div id="menuExtra1Container" style="display:flex; flex-direction:column; gap:10px;"></div>
+			</div>
+		</div>
+
+		<div id="chatExtra1Tab" class="tabContent">
+			<div style="background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-top: 5px solid #00BCD4;">
+				<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
+					<h3 style="margin:0; color: #00BCD4; font-size: 1.3em;">💬 Chat interna</h3>
+				</div>
+				<div id="chatContainerExtra1" class="chat-container"></div>
+				<div class="chat-input-bar">
+					<input type="text" id="chatInputExtra1" placeholder="Scrivi un messaggio...">
+					<button id="chatSendExtra1Btn" title="Invia messaggio">➤</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div id="extra2Div" class="hidden">
+		<h2 id="mainTitleExtra2">Extra 2</h2>
+		<div>
+			<button class="tabBtn" data-tab="daExtra2Tab">Da fare</button>
+			<button class="tabBtn" data-tab="menuExtra2Tab">Menu</button>
+			<button class="tabBtn" data-tab="ingredientiExtra2Tab">Ingredienti</button>
+			<button class="tabBtn" data-tab="storicoExtra2Tab">Storico</button>
+			<button class="tabBtn" data-tab="chatExtra2Tab">Chat</button>
+		</div>
+
+		<div id="daExtra2Tab" class="tabContent active">
+			<div style="background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-top: 5px solid #009688;">
+				<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
+					<h3 style="margin:0; color: #009688; font-size: 1.3em;" id="comandeTitleExtra2">📦 Comande da Preparare (<span id="conteggioExtra2">0</span>)</h3>
+				</div>
+				<input type="text" id="cercaComandaExtra2" placeholder="🔍 Cerca numero comanda..." style="margin:10px 0; width:100%; padding:5px; font-size:16px;">
+				<div id="daExtra2ComandeContainer"></div>
+			</div>
+		</div>
+
+		<div id="storicoExtra2Tab" class="tabContent">
+			<div style="background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-top: 5px solid #2196F3;">
+				<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
+					<h3 style="margin:0; color: #2196F3; font-size: 1.3em;">🕒 Storico Comande</h3>
+				</div>
+				<input type="text" id="cercaComandaExtra2Storico" placeholder="🔍 Cerca numero comanda..." style="margin:10px 0; width:100%; padding:5px; font-size:16px;">
+				<div id="storicoExtra2ComandeContainer"></div>
+			</div>
+		</div>
+
+		<div id="ingredientiExtra2Tab" class="tabContent">
+			<div style="background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-top: 5px solid #8BC34A;">
+				<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
+					<h3 style="margin:0; color: #8BC34A; font-size: 1.3em;" id="ingrTitleExtra2">🍅 Ingredienti</h3>
+				</div>
+				<div id="ingredientiExtra2Container"></div>
+			</div>
+		</div>
+
+		<div id="menuExtra2Tab" class="tabContent">
+			<div style="background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-top: 5px solid #4CAF50;">
+				<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
+					<h3 style="margin:0; color: #4CAF50; font-size: 1.3em;" id="menuTitleExtra2">🍔 Menu</h3>
+				</div>
+				<div id="menuExtra2Container" style="display:flex; flex-direction:column; gap:10px;"></div>
+			</div>
+		</div>
+
+		<div id="chatExtra2Tab" class="tabContent">
+			<div style="background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-top: 5px solid #00BCD4;">
+				<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
+					<h3 style="margin:0; color: #00BCD4; font-size: 1.3em;">💬 Chat interna</h3>
+				</div>
+				<div id="chatContainerExtra2" class="chat-container"></div>
+				<div class="chat-input-bar">
+					<input type="text" id="chatInputExtra2" placeholder="Scrivi un messaggio...">
+					<button id="chatSendExtra2Btn" title="Invia messaggio">➤</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div id="extra3Div" class="hidden">
+		<h2 id="mainTitleExtra3">Extra 3</h2>
+		<div>
+			<button class="tabBtn" data-tab="daExtra3Tab">Da fare</button>
+			<button class="tabBtn" data-tab="menuExtra3Tab">Menu</button>
+			<button class="tabBtn" data-tab="ingredientiExtra3Tab">Ingredienti</button>
+			<button class="tabBtn" data-tab="storicoExtra3Tab">Storico</button>
+			<button class="tabBtn" data-tab="chatExtra3Tab">Chat</button>
+		</div>
+
+		<div id="daExtra3Tab" class="tabContent active">
+			<div style="background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-top: 5px solid #795548;">
+				<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
+					<h3 style="margin:0; color: #795548; font-size: 1.3em;" id="comandeTitleExtra3">📦 Comande da Preparare (<span id="conteggioExtra3">0</span>)</h3>
+				</div>
+				<input type="text" id="cercaComandaExtra3" placeholder="🔍 Cerca numero comanda..." style="margin:10px 0; width:100%; padding:5px; font-size:16px;">
+				<div id="daExtra3ComandeContainer"></div>
+			</div>
+		</div>
+
+		<div id="storicoExtra3Tab" class="tabContent">
+			<div style="background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-top: 5px solid #2196F3;">
+				<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
+					<h3 style="margin:0; color: #2196F3; font-size: 1.3em;">🕒 Storico Comande</h3>
+				</div>
+				<input type="text" id="cercaComandaExtra3Storico" placeholder="🔍 Cerca numero comanda..." style="margin:10px 0; width:100%; padding:5px; font-size:16px;">
+				<div id="storicoExtra3ComandeContainer"></div>
+			</div>
+		</div>
+
+		<div id="ingredientiExtra3Tab" class="tabContent">
+			<div style="background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-top: 5px solid #8BC34A;">
+				<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
+					<h3 style="margin:0; color: #8BC34A; font-size: 1.3em;" id="ingrTitleExtra3">🍅 Ingredienti</h3>
+				</div>
+				<div id="ingredientiExtra3Container"></div>
+			</div>
+		</div>
+
+		<div id="menuExtra3Tab" class="tabContent">
+			<div style="background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-top: 5px solid #4CAF50;">
+				<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
+					<h3 style="margin:0; color: #4CAF50; font-size: 1.3em;" id="menuTitleExtra3">🍔 Menu</h3>
+				</div>
+				<div id="menuExtra3Container" style="display:flex; flex-direction:column; gap:10px;"></div>
+			</div>
+		</div>
+
+		<div id="chatExtra3Tab" class="tabContent">
+			<div style="background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-top: 5px solid #00BCD4;">
+				<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
+					<h3 style="margin:0; color: #00BCD4; font-size: 1.3em;">💬 Chat interna</h3>
+				</div>
+				<div id="chatContainerExtra3" class="chat-container"></div>
+				<div class="chat-input-bar">
+					<input type="text" id="chatInputExtra3" placeholder="Scrivi un messaggio...">
+					<button id="chatSendExtra3Btn" title="Invia messaggio">➤</button>
+				</div>
+			</div>
+		</div>
+	</div>
 	<!-- ================= ADMIN ================= -->
 	<div id="adminDiv" class="hidden">
 		<h2>Admin</h2>
@@ -735,8 +920,8 @@
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px; border-bottom: 1px dashed #ccc; padding-bottom: 10px;">
                         <h4 style="margin:0; color: #9C27B0; font-size: 1.2em;" id="titoloExtra1">Reparto Extra 1</h4>
                         <div style="display:flex; gap: 8px;">
-                            <button onclick="modificaNomeExtra('extra1')" style="padding: 8px 15px; background: #fff; color: #333; border: 1px solid #ccc; border-radius: 6px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">✏️ Rinomina</button>
-                            <button id="simulaExtra1Btn" onclick="simulaRuolo('extra1')" style="padding: 8px 15px; background: #9C27B0; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);" disabled>👁️ Simula</button>
+                            <button onclick="modificaNomeExtra('extra1')" style="padding: 8px 15px; background: #fff; color: #333; border: 1px solid #ccc; border-radius: 6px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">Rinomina</button>
+                            <button id="simulaExtra1Btn" onclick="simulaRuolo('extra1')" style="padding: 8px 15px; background: #9C27B0; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);" disabled>Simula</button>
                         </div>
                     </div>
 
@@ -761,8 +946,8 @@
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px; border-bottom: 1px dashed #ccc; padding-bottom: 10px;">
                         <h4 style="margin:0; color: #009688; font-size: 1.2em;" id="titoloExtra2">Reparto Extra 2</h4>
                         <div style="display:flex; gap: 8px;">
-                            <button onclick="modificaNomeExtra('extra2')" style="padding: 8px 15px; background: #fff; color: #333; border: 1px solid #ccc; border-radius: 6px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">✏️ Rinomina</button>
-                            <button id="simulaExtra2Btn" onclick="simulaRuolo('extra2')" style="padding: 8px 15px; background: #009688; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);" disabled>👁️ Simula</button>
+                            <button onclick="modificaNomeExtra('extra2')" style="padding: 8px 15px; background: #fff; color: #333; border: 1px solid #ccc; border-radius: 6px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">Rinomina</button>
+                            <button id="simulaExtra2Btn" onclick="simulaRuolo('extra2')" style="padding: 8px 15px; background: #009688; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);" disabled>Simula</button>
                         </div>
                     </div>
 
@@ -787,8 +972,8 @@
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px; border-bottom: 1px dashed #ccc; padding-bottom: 10px;">
                         <h4 style="margin:0; color: #795548; font-size: 1.2em;" id="titoloExtra3">Reparto Extra 3</h4>
                         <div style="display:flex; gap: 8px;">
-                            <button onclick="modificaNomeExtra('extra3')" style="padding: 8px 15px; background: #fff; color: #333; border: 1px solid #ccc; border-radius: 6px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">✏️ Rinomina</button>
-                            <button id="simulaExtra3Btn" onclick="simulaRuolo('extra3')" style="padding: 8px 15px; background: #795548; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);" disabled>👁️ Simula</button>
+                            <button onclick="modificaNomeExtra('extra3')" style="padding: 8px 15px; background: #fff; color: #333; border: 1px solid #ccc; border-radius: 6px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">Rinomina</button>
+                            <button id="simulaExtra3Btn" onclick="simulaRuolo('extra3')" style="padding: 8px 15px; background: #795548; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);" disabled>Simula</button>
                         </div>
                     </div>
 
