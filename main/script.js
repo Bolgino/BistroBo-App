@@ -6866,85 +6866,111 @@ function modificaPiattoMenu(menuId, piatto) {
     };
 }
 // =========================================================================
-// GESTIONE REPARTI EXTRA (1, 2, 3) CON NOMI DINAMICI E SICUREZZA
+// GESTIONE REPARTI EXTRA (1, 2, 3) CON POPUP E BLOCCO SICUREZZA
 // =========================================================================
 
-// Variabile globale per contenere i nomi personalizzati scelti dall'Admin
-window.nomiRepartiExtra = {
-    extra1: "Reparto Extra 1",
-    extra2: "Reparto Extra 2",
-    extra3: "Reparto Extra 3"
-};
+window.nomiRepartiExtra = { extra1: "", extra2: "", extra3: "" };
 
-// 1. ASCOLTO DEI NOMI DAL DATABASE IN TEMPO REALE
+// 1. ASCOLTO NOMI IN TEMPO REALE DAL DATABASE
 db.ref("impostazioni/nomiRepartiExtra").on("value", snap => {
     const dati = snap.val() || {};
-    window.nomiRepartiExtra.extra1 = dati.extra1 || "Reparto Extra 1";
-    window.nomiRepartiExtra.extra2 = dati.extra2 || "Reparto Extra 2";
-    window.nomiRepartiExtra.extra3 = dati.extra3 || "Reparto Extra 3";
+    window.nomiRepartiExtra.extra1 = dati.extra1 || "";
+    window.nomiRepartiExtra.extra2 = dati.extra2 || "";
+    window.nomiRepartiExtra.extra3 = dati.extra3 || "";
 
-    // Aggiorna l'interfaccia Admin
-    const t1 = document.getElementById("titoloExtra1"); if(t1) t1.innerText = window.nomiRepartiExtra.extra1;
-    const t2 = document.getElementById("titoloExtra2"); if(t2) t2.innerText = window.nomiRepartiExtra.extra2;
-    const t3 = document.getElementById("titoloExtra3"); if(t3) t3.innerText = window.nomiRepartiExtra.extra3;
+    aggiornaUIExtra('extra1', window.nomiRepartiExtra.extra1);
+    aggiornaUIExtra('extra2', window.nomiRepartiExtra.extra2);
+    aggiornaUIExtra('extra3', window.nomiRepartiExtra.extra3);
+});
+
+// Funzione interna per sbloccare/bloccare i bottoni in base alla presenza del nome
+function aggiornaUIExtra(ruolo, nomeCorrente) {
+    const isConfigurato = nomeCorrente && nomeCorrente.trim() !== "";
+    const num = ruolo.replace('extra', '');
+    const testoTitolo = isConfigurato ? nomeCorrente : `Extra ${num} (Senza Nome)`;
     
-    const l1 = document.getElementById("labelToggleExtra1"); if(l1) l1.innerText = `Abilita ${window.nomiRepartiExtra.extra1}`;
-    const l2 = document.getElementById("labelToggleExtra2"); if(l2) l2.innerText = `Abilita ${window.nomiRepartiExtra.extra2}`;
-    const l3 = document.getElementById("labelToggleExtra3"); if(l3) l3.innerText = `Abilita ${window.nomiRepartiExtra.extra3}`;
-});
+    // Titoli
+    const t = document.getElementById(`titoloExtra${num}`); if(t) t.innerText = testoTitolo;
+    const l = document.getElementById(`labelToggleExtra${num}`); if(l) l.innerText = `Abilita ${testoTitolo}`;
 
-// 2. SALVATAGGIO DEI NUOVI NOMI (Bottoni in Admin)
-['extra1', 'extra2', 'extra3'].forEach(ruolo => {
-    const btnSalva = document.getElementById(`salvaNome${ruolo.charAt(0).toUpperCase() + ruolo.slice(1)}Btn`);
-    if(btnSalva) {
-        btnSalva.onclick = async () => {
-            const inputNome = document.getElementById(`nome${ruolo.charAt(0).toUpperCase() + ruolo.slice(1)}Input`);
-            const nuovoNome = inputNome.value.trim();
-            if(nuovoNome) {
-                await db.ref(`impostazioni/nomiRepartiExtra/${ruolo}`).set(nuovoNome);
-                inputNome.value = "";
-                if(typeof notify === "function") notify("Nome reparto aggiornato con successo!", "success");
-            }
-        };
+    // Pulsante Simula
+    const btnSimula = document.getElementById(`simulaExtra${num}Btn`);
+    if (btnSimula) {
+        btnSimula.disabled = !isConfigurato;
+        btnSimula.style.opacity = isConfigurato ? "1" : "0.5";
+        btnSimula.style.cursor = isConfigurato ? "pointer" : "not-allowed";
     }
-});
+    
+    // Pulsante Abilita (ON/OFF)
+    const btnAbilita = document.getElementById(`toggleExtra${num}Btn`);
+    if (btnAbilita) {
+        btnAbilita.disabled = !isConfigurato;
+        btnAbilita.style.opacity = isConfigurato ? "1" : "0.5";
+        btnAbilita.style.cursor = isConfigurato ? "pointer" : "not-allowed";
+    }
+}
 
-// 3. BLOCCO DI SICUREZZA PER DISATTIVAZIONE
-window.controlloSicurezzaDisattivazione = async function(ruolo) {
-    let piattiTrovati = 0;
-    let ingredientiTrovati = 0;
-
-    // Controlla il Menu
-    const snapMenu = await db.ref("menu").once("value");
-    const menuData = snapMenu.val() || {};
-    for (let key in menuData) {
-        if (menuData[key].categoria === ruolo) piattiTrovati++;
+// 2. POPUP MODIFICA NOME
+window.modificaNomeExtra = async function(ruolo) {
+    const nomeAttuale = window.nomiRepartiExtra[ruolo] || "";
+    const num = ruolo.replace('extra', '');
+    
+    let nuovoNome = null;
+    
+    // Utilizza SweetAlert se l'app lo ha caricato, altrimenti usa il prompt nativo
+    if (typeof Swal !== "undefined") {
+        const result = await Swal.fire({
+            title: `Nome Reparto Extra ${num}`,
+            input: 'text',
+            inputLabel: 'Inserisci il nome (es. Pizzeria) o lascia vuoto per resettarlo e disattivarlo.',
+            inputValue: nomeAttuale,
+            showCancelButton: true,
+            confirmButtonText: 'Salva',
+            cancelButtonText: 'Annulla'
+        });
+        if (result.isConfirmed) nuovoNome = result.value;
+    } else {
+        nuovoNome = prompt(`Imposta il nome per Extra ${num}\nLascia vuoto per resettarlo e disattivarlo:`, nomeAttuale);
     }
 
-    // Controlla gli Ingredienti
-    const snapIngr = await db.ref("ingredienti").once("value");
-    const ingrData = snapIngr.val() || {};
-    for (let key in ingrData) {
-        if (ingrData[key].categoria === ruolo) ingredientiTrovati++;
-    }
-
-    if (piattiTrovati > 0 || ingredientiTrovati > 0) {
-        const nomeReparto = window.nomiRepartiExtra[ruolo] || ruolo;
-        let messaggio = `<b>ATTENZIONE: Impossibile disattivare!</b><br>Il reparto <b>${nomeReparto}</b> contiene ancora:<br>`;
-        if(piattiTrovati > 0) messaggio += `- ${piattiTrovati} Piatti nel Menu<br>`;
-        if(ingredientiTrovati > 0) messaggio += `- ${ingredientiTrovati} Ingredienti nella Dispensa<br>`;
-        messaggio += `<br><i>Riassegna questi elementi ad altre categorie (es. Cucina o Snack) prima di spegnere il reparto.</i>`;
+    // Se l'utente ha premuto Salva (o OK) e non ha annullato
+    if (nuovoNome !== null) {
+        nuovoNome = nuovoNome.trim();
         
-        // Usiamo disonotify per un errore bello grande
-        if(typeof disonotify === "function") {
-            disonotify(messaggio, { confirmText: "Ho capito", showCancel: false });
-        } else {
-            alert(`Impossibile disattivare! Ci sono ${piattiTrovati} piatti e ${ingredientiTrovati} ingredienti assegnati.`);
+        // Se lascia vuoto, significa che vuole resettare/spegnere il reparto
+        if (nuovoNome === "") {
+            const puoDisattivare = await window.controlloSicurezzaDisattivazione(ruolo);
+            if (!puoDisattivare) return; // Se ci sono piatti, blocca tutto!
+            
+            // Forza lo spegnimento del reparto sul DB
+            await db.ref(`impostazioni/${ruolo}`).set(false); 
         }
-        return false; // Bloccato
+        
+        // Salva il nuovo nome sul DB
+        await db.ref(`impostazioni/nomiRepartiExtra/${ruolo}`).set(nuovoNome);
     }
+};
+
+// 3. BLOCCO DI SICUREZZA PER DISATTIVAZIONE/RESET
+window.controlloSicurezzaDisattivazione = async function(ruolo) {
+    let elementi = 0;
     
-    return true; // Sicuro da disattivare
+    // Controlliamo il Menu
+    const snapMenu = await db.ref("menu").once("value");
+    snapMenu.forEach(child => { if (child.val().categoria === ruolo) elementi++; });
+    
+    if (elementi > 0) {
+        const nomeRep = window.nomiRepartiExtra[ruolo] || ruolo;
+        const msg = `Il reparto "${nomeRep}" contiene ancora ${elementi} piatti nel Menu.\nSpostali in un'altra categoria prima di resettarlo/spegnerlo.`;
+        
+        if (typeof Swal !== "undefined") {
+            Swal.fire('Impossibile procedere!', msg, 'error');
+        } else {
+            alert("ERRORE: " + msg);
+        }
+        return false;
+    }
+    return true;
 };
 // ================= LOGICA STATISTICHE (Affiancate) =================
 document.addEventListener("DOMContentLoaded", () => {
