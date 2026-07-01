@@ -86,6 +86,14 @@
 	<!-- ================= LOGOUT ================= -->
 	<div id="logoutDiv" class="hidden" style="padding-bottom: 10px;">
 		<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+			
+			<div id="simulatoreRuoliDiv" style="display: none; align-items: center; flex-wrap: wrap; background: rgba(255,255,255,0.2); padding: 5px 10px; border-radius: 6px; border: 1px solid rgba(0,0,0,0.1);">
+				<b style="font-size: 0.9em; margin-right: 8px;">Simula:</b>
+				<button onclick="simulaRuolo('cassa')" style="padding: 4px 8px; font-size: 0.85em; margin-right: 4px;">Cassa</button>
+				<button onclick="simulaRuolo('cucina')" style="padding: 4px 8px; font-size: 0.85em; margin-right: 4px;">Cucina</button>
+				<button onclick="simulaRuolo('bere')" style="padding: 4px 8px; font-size: 0.85em; margin-right: 4px;">Bere</button>
+				<button onclick="simulaRuolo('snack')" style="padding: 4px 8px; font-size: 0.85em;">Snack</button>
+			</div>
 
 			<div style="display: flex; gap: 10px; align-items: center; justify-content: flex-end; flex: 1;">
 				<button id="passaACassaBtn" style="display:none;"></button>
@@ -729,6 +737,7 @@
 
 			</div>
 		</div>
+
 		<div id="impostazioniTab" class="tabContent">
 			<div style="background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-top: 5px solid #009688;">
 				<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
@@ -956,7 +965,7 @@
 						<small>Azzera il progressivo automatico. La prossima comanda ripartirà da 1.</small>
 					</div>
 					<button id="resetContatoreBtn" class="toggleBtn">Azzera</button>
-				</div>		
+				</div>			
 			
 				<h4 style="margin-top: 30px; padding-bottom: 5px; color: #00796B; border-top: 1px dashed #ccc; padding-top: 20px;">Preordini</h4>
 			
