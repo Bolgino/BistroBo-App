@@ -6910,45 +6910,53 @@ function aggiornaUIExtra(ruolo, nomeCorrente) {
     }
 }
 
-// 2. POPUP MODIFICA NOME
-window.modificaNomeExtra = async function(ruolo) {
+// 2. POPUP MODIFICA NOME (STILE NATIVO BISTROBÒ)
+window.modificaNomeExtra = function(ruolo) {
     const nomeAttuale = window.nomiRepartiExtra[ruolo] || "";
     const num = ruolo.replace('extra', '');
-    
-    let nuovoNome = null;
-    
-    // Utilizza SweetAlert se l'app lo ha caricato, altrimenti usa il prompt nativo
-    if (typeof Swal !== "undefined") {
-        const result = await Swal.fire({
-            title: `Nome Reparto Extra ${num}`,
-            input: 'text',
-            inputLabel: 'Inserisci il nome (es. Pizzeria) o lascia vuoto per resettarlo e disattivarlo.',
-            inputValue: nomeAttuale,
-            showCancelButton: true,
-            confirmButtonText: 'Salva',
-            cancelButtonText: 'Annulla'
-        });
-        if (result.isConfirmed) nuovoNome = result.value;
-    } else {
-        nuovoNome = prompt(`Imposta il nome per Extra ${num}\nLascia vuoto per resettarlo e disattivarlo:`, nomeAttuale);
-    }
 
-    // Se l'utente ha premuto Salva (o OK) e non ha annullato
-    if (nuovoNome !== null) {
-        nuovoNome = nuovoNome.trim();
+    const overlay = document.createElement("div");
+    overlay.className = "modal-overlay";
+    overlay.style.zIndex = "10005";
+
+    const modal = document.createElement("div");
+    modal.className = "modal-varianti";
+    modal.innerHTML = `
+        <h3>Imposta Nome Reparto</h3>
+        <div style="margin-bottom:15px; text-align:left;">
+            <label><b>Nuovo nome (es. Griglia, Dolci, Pizzeria):</b></label><br>
+            <input type="text" id="inputModNomeExtra" value="${nomeAttuale}" placeholder="Nome del reparto..." style="width:100%; box-sizing:border-box; padding:10px; margin-top:8px; border-radius:6px; border:1px solid #ccc; font-size:1em;">
+            <p style="color:#d32f2f; font-size:0.85em; margin-top:8px;"><i>⚠️ Lascia vuoto per resettarlo e disattivarlo.</i></p>
+        </div>
+        <div class="modal-actions" style="display:flex; justify-content:flex-end; gap:10px;">
+            <button class="btn-chiudi" id="closeModNome">Annulla</button>
+            <button class="btn-salva" id="saveModNome">Salva Nome</button>
+        </div>
+    `;
+
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    document.getElementById("closeModNome").onclick = () => overlay.remove();
+    
+    document.getElementById("saveModNome").onclick = async () => {
+        let nuovoNome = document.getElementById("inputModNomeExtra").value.trim();
         
-        // Se lascia vuoto, significa che vuole resettare/spegnere il reparto
         if (nuovoNome === "") {
             const puoDisattivare = await window.controlloSicurezzaDisattivazione(ruolo);
-            if (!puoDisattivare) return; // Se ci sono piatti, blocca tutto!
-            
+            if (!puoDisattivare) {
+                overlay.remove(); 
+                return;
+            }
             // Forza lo spegnimento del reparto sul DB
             await db.ref(`impostazioni/${ruolo}`).set(false); 
         }
         
         // Salva il nuovo nome sul DB
         await db.ref(`impostazioni/nomiRepartiExtra/${ruolo}`).set(nuovoNome);
-    }
+        overlay.remove();
+        if(typeof notify === "function") notify("Nome reparto aggiornato!", "success");
+    };
 };
 
 // 3. BLOCCO DI SICUREZZA PER DISATTIVAZIONE/RESET
@@ -6959,14 +6967,18 @@ window.controlloSicurezzaDisattivazione = async function(ruolo) {
     const snapMenu = await db.ref("menu").once("value");
     snapMenu.forEach(child => { if (child.val().categoria === ruolo) elementi++; });
     
+    // Controlliamo gli Ingredienti
+    const snapIng = await db.ref("ingredienti").once("value");
+    snapIng.forEach(child => { if (child.val().categoria === ruolo) elementi++; });
+    
     if (elementi > 0) {
         const nomeRep = window.nomiRepartiExtra[ruolo] || ruolo;
-        const msg = `Il reparto "${nomeRep}" contiene ancora ${elementi} piatti nel Menu.\nSpostali in un'altra categoria prima di resettarlo/spegnerlo.`;
+        const msg = `Impossibile procedere! Il reparto "${nomeRep}" contiene ancora ${elementi} piatti o ingredienti assegnati. Spostali in un'altra categoria prima di resettarlo.`;
         
-        if (typeof Swal !== "undefined") {
-            Swal.fire('Impossibile procedere!', msg, 'error');
+        if(typeof disonotify === "function") {
+            disonotify(msg, { confirmText: "Ho capito", showCancel: false });
         } else {
-            alert("ERRORE: " + msg);
+            alert(msg);
         }
         return false;
     }
