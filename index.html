@@ -729,92 +729,6 @@
 
 			</div>
 		</div>
-		```
-
-### Passaggio 3: Pulisci la vecchia scheda Impostazioni
-Visto che abbiamo spostato tutto nella nuova tab, dobbiamo eliminare i "cloni" dalla scheda Impostazioni per evitare conflitti nel codice HTML.
-
-All'interno di `<div id="impostazioniTab" class="tabContent">`, scorri verso il basso e **CANCELLA tutto questo blocco di codice** (da "Cucina & Bere" fino alla fine del blocco Snack):
-
-```html
-				<h4 style="margin-top: 30px; padding-bottom: 5px; color: #00796B; border-top: 1px dashed #ccc; padding-top: 20px;">Cucina & Bere</h4>
-			
-				<div class="settingItem">
-					<div class="settingLabel">
-						<span>Nuove comande in alto Cucina</span>
-						<small>Le nuove comande appariranno sempre in cima alla lista Cucina</small>
-					</div>
-					<button id="toggleNuoveInAltoCucinaBtn" class="toggleBtn">ON</button>
-				</div>
-				<div class="settingItem">
-					<div class="settingLabel">
-						<span>Nuove comande in alto Bere</span>
-						<small>Le nuove comande appariranno sempre in cima alla lista Bere</small>
-					</div>
-					<button id="toggleNuoveInAltoBereBtn" class="toggleBtn">ON</button>
-				</div>
-				<div class="settingItem">
-					<div class="settingLabel">
-						<span>Mostra tab Ingredienti in Cucina</span>
-						<small>Mostra o nascondi la tab Ingredienti nel profilo Cucina</small>
-					</div>
-					<button id="toggleMagazzinoCucinaBtn" class="toggleBtn">ON</button>
-				</div>
-				<div class="settingItem">
-					<div class="settingLabel">
-						<span>Mostra tab Menu in Cucina</span>
-						<small>Mostra o nascondi la tab Menu nel profilo Cucina</small>
-					</div>
-					<button id="toggleMenuCucinaBtn" class="toggleBtn">ON</button>
-				</div>
-				<div class="settingItem">
-					<div class="settingLabel">
-						<span>Mostra tab Ingredienti in Bere</span>
-						<small>Mostra o nascondi la tab Ingredienti nel profilo Bere</small>
-					</div>
-					<button id="toggleMagazzinoBereBtn" class="toggleBtn">ON</button>
-				</div>
-				<div class="settingItem">
-					<div class="settingLabel">
-						<span>Mostra tab Menu in Bere</span>
-						<small>Mostra o nascondi la tab Menu nel profilo Bere</small>
-					</div>
-					<button id="toggleMenuBereBtn" class="toggleBtn">ON</button>
-				</div>
-			
-				<h4 style="margin-top: 30px; padding-bottom: 5px; color: #00796B; border-top: 1px dashed #ccc; padding-top: 20px;">Snack</h4>
-			
-				<div class="settingItem">
-					<div class="settingLabel">
-						<span>Profilo Snack</span>
-						<small>Abilita o disabilita il profilo Snack. <b>Prima di disattivarlo o attivarlo, completare tutte le comande attive!</b></small>
-					</div>
-					<button id="toggleSnackBtn" class="toggleBtn">OFF</button>
-				</div>
-				
-				<div id="snackDependentSettings" style="display:none;">
-					<div class="settingItem">
-						<div class="settingLabel">
-							<span>Nuove comande in alto Snack</span>
-							<small>Le nuove comande Snack appariranno in cima alla lista Snack</small>
-						</div>
-						<button id="toggleNuoveInAltoSnackBtn" class="toggleBtn">OFF</button>
-					</div>
-					<div class="settingItem">
-						<div class="settingLabel">
-							<span>Mostra tab Ingredienti in Snack</span>
-							<small>Mostra o nascondi la tab Ingredienti nel profilo Snack</small>
-						</div>
-						<button id="toggleMagazzinoSnackBtn" class="toggleBtn">ON</button>
-					</div>
-					<div class="settingItem">
-						<div class="settingLabel">
-							<span>Mostra tab Menu in Snack</span>
-							<small>Mostra o nascondi la tab Menu nel profilo Snack</small>
-						</div>
-						<button id="toggleMenuSnackBtn" class="toggleBtn">ON</button>
-					</div>
-				</div>
 		<div id="impostazioniTab" class="tabContent">
 			<div style="background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-top: 5px solid #009688;">
 				<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
@@ -1042,9 +956,7 @@ All'interno di `<div id="impostazioniTab" class="tabContent">`, scorri verso il 
 						<small>Azzera il progressivo automatico. La prossima comanda ripartirà da 1.</small>
 					</div>
 					<button id="resetContatoreBtn" class="toggleBtn">Azzera</button>
-				</div>
-			
-			
+				</div>		
 			
 				<h4 style="margin-top: 30px; padding-bottom: 5px; color: #00796B; border-top: 1px dashed #ccc; padding-top: 20px;">Preordini</h4>
 			
