@@ -1796,24 +1796,50 @@ document.getElementById("loginBtn").addEventListener("click", async () => {
 // Mostra schermata corretta per ruolo
 function initRuoloTab(ruolo) {
     if (!checkOnline(true)) return;
-    const divId = ruolo === "cucina" ? "cucinaDiv" : ruolo === "snack" ? "snackDiv" : "bereDiv";
-    const daFareTabId = ruolo === "cucina" ? "daFareTab" : ruolo === "snack" ? "daSnackTab" : "daBereTab";
-    const storicoTabId = ruolo === "cucina" ? "storicoTab" : ruolo === "snack" ? "storicoSnackTab" : "storicoBereTab";
+    
+    const divId = ruolo === "cucina" ? "cucinaDiv" : 
+                  ruolo === "snack" ? "snackDiv" : 
+                  ruolo === "extra1" ? "extra1Div" : 
+                  ruolo === "extra2" ? "extra2Div" : 
+                  ruolo === "extra3" ? "extra3Div" : "bereDiv";
+
+    const daFareTabId = ruolo === "cucina" ? "daFareTab" : 
+                        ruolo === "snack" ? "daSnackTab" : 
+                        ruolo === "extra1" ? "daExtra1Tab" : 
+                        ruolo === "extra2" ? "daExtra2Tab" : 
+                        ruolo === "extra3" ? "daExtra3Tab" : "daBereTab";
+
+    const storicoTabId = ruolo === "cucina" ? "storicoTab" : 
+                         ruolo === "snack" ? "storicoSnackTab" : 
+                         ruolo === "extra1" ? "storicoExtra1Tab" : 
+                         ruolo === "extra2" ? "storicoExtra2Tab" : 
+                         ruolo === "extra3" ? "storicoExtra3Tab" : "storicoBereTab";
+
     if (ruolo === "cucina") {
         initRicercaComande("daFareComandeContainer", "cercaComandaCucina");
         initRicercaComande("storicoComandeContainer", "cercaComandaCucinaStorico");
-    }
-    if (ruolo === "bere") {
+    } else if (ruolo === "bere") {
         initRicercaComande("daBereComandeContainer", "cercaComandaBere");
         initRicercaComande("storicoBereComandeContainer", "cercaComandaBereStorico");
-    }
-    else if (ruolo === "snack") {
+    } else if (ruolo === "snack") {
         initRicercaComande("daSnackComandeContainer", "cercaComandaSnack");
         initRicercaComande("storicoSnackComandeContainer", "cercaComandaSnackStorico");
+    } else if (ruolo === "extra1") {
+        initRicercaComande("daExtra1ComandeContainer", "cercaComandaExtra1");
+        initRicercaComande("storicoExtra1ComandeContainer", "cercaComandaExtra1Storico");
+    } else if (ruolo === "extra2") {
+        initRicercaComande("daExtra2ComandeContainer", "cercaComandaExtra2");
+        initRicercaComande("storicoExtra2ComandeContainer", "cercaComandaExtra2Storico");
+    } else if (ruolo === "extra3") {
+        initRicercaComande("daExtra3ComandeContainer", "cercaComandaExtra3");
+        initRicercaComande("storicoExtra3ComandeContainer", "cercaComandaExtra3Storico");
     }
 
-
-    const menuTabId = ruolo === "cucina" ? "menuCucinaTab" : "menuBereTab"; // nuovo tab
+    const menuTabId = ruolo === "cucina" ? "menuCucinaTab" : 
+                      ruolo === "snack" ? "menuSnackTab" : 
+                      ruolo === "extra1" ? "menuExtra1Tab" : 
+                      ruolo === "extra2" ? "menuExtra2Tab" : 
+                      ruolo === "extra3" ? "menuExtra3Tab" : "menuBereTab";
 
     const div = document.getElementById(divId);
     div.classList.remove("hidden");
@@ -1828,6 +1854,15 @@ function initRuoloTab(ruolo) {
     } else if (ruolo === "snack") {
         daFareCont = document.getElementById("daSnackComandeContainer");
         storicoCont = document.getElementById("storicoSnackComandeContainer");
+    } else if (ruolo === "extra1") {
+        daFareCont = document.getElementById("daExtra1ComandeContainer");
+        storicoCont = document.getElementById("storicoExtra1ComandeContainer");
+    } else if (ruolo === "extra2") {
+        daFareCont = document.getElementById("daExtra2ComandeContainer");
+        storicoCont = document.getElementById("storicoExtra2ComandeContainer");
+    } else if (ruolo === "extra3") {
+        daFareCont = document.getElementById("daExtra3ComandeContainer");
+        storicoCont = document.getElementById("storicoExtra3ComandeContainer");
     }
     caricaComandePerRuolo(daFareCont, storicoCont, ruolo);
 
@@ -1838,12 +1873,12 @@ function initRuoloTab(ruolo) {
     caricaIngredientiPerRuolo(ruolo);
 
     // ------------------- Popola il tab Menu informativo -------------------
-    const menuContainer = ruolo === "cucina" ? 
-            document.getElementById("menuCucinaContainer") : 
-            ruolo === "bere" ? 
-                document.getElementById("menuBereContainer") :
-                document.getElementById("menuSnackContainer");  // nuovo ID per snack
-
+   const menuContainer = ruolo === "cucina" ? document.getElementById("menuCucinaContainer") : 
+                          ruolo === "bere" ? document.getElementById("menuBereContainer") :
+                          ruolo === "snack" ? document.getElementById("menuSnackContainer") :
+                          ruolo === "extra1" ? document.getElementById("menuExtra1Container") :
+                          ruolo === "extra2" ? document.getElementById("menuExtra2Container") :
+                          document.getElementById("menuExtra3Container");
 
     db.ref("menu").on("value", snap => {
         const data = snap.val() || {};
@@ -1894,16 +1929,17 @@ function initRuoloTab(ruolo) {
                 menuContainer.appendChild(divPiatto);
                 aggiungiIngredienti(item, menuContainer);
             });
-        } else if (ruolo === "snack") {
-            const snackAttivo = window.settings?.snackAbilitato || false;
-            if (snackAttivo) {
-                const snack = Object.values(data).filter(i => i.categoria?.toLowerCase() === "snack");
-                if (snack.length > 0) {
-                    const snackTitle = document.createElement("h4");
-                    snackTitle.innerText = "Snack";
-                    menuContainer.appendChild(snackTitle);
+        } else if (["snack", "extra1", "extra2", "extra3"].includes(ruolo)) {
+            const abilita = ruolo === "snack" ? (window.settings?.snackAbilitato || false) : true;
+            if (abilita) {
+                const items = Object.values(data).filter(i => i.categoria?.toLowerCase() === ruolo);
+                if (items.length > 0) {
+                    const title = document.createElement("h4");
+                    // Mette l'iniziale maiuscola
+                    title.innerText = ruolo.charAt(0).toUpperCase() + ruolo.slice(1);
+                    menuContainer.appendChild(title);
 
-                    snack.forEach(item => {
+                    items.forEach(item => {
                         const divPiatto = creaPiattoDiv(item);
                         menuContainer.appendChild(divPiatto);
                         aggiungiIngredienti(item, menuContainer);
@@ -2020,16 +2056,24 @@ function initRuoloTab(ruolo) {
                     menuContainer.appendChild(divP);
                     aggiungiIngredienti(item, menuContainer);
                 });
-            } else if (ruolo === "snack") {
-                const snack = Object.values(data).filter(i => i.categoria?.toLowerCase() === "snack");
-                const t = document.createElement("h4"); t.innerText = "Snack";
-                menuContainer.appendChild(t);
-                snack.forEach(item => {
-                    const divP = creaPiattoDiv(item);
-                    menuContainer.appendChild(divP);
-                    aggiungiIngredienti(item, menuContainer);
-                });
+            } else if (["snack", "extra1", "extra2", "extra3"].includes(ruolo)) {
+            const abilita = ruolo === "snack" ? (window.settings?.snackAbilitato || false) : true;
+            if (abilita) {
+                const items = Object.values(data).filter(i => i.categoria?.toLowerCase() === ruolo);
+                if (items.length > 0) {
+                    const title = document.createElement("h4");
+                    // Mette l'iniziale maiuscola
+                    title.innerText = ruolo.charAt(0).toUpperCase() + ruolo.slice(1);
+                    menuContainer.appendChild(title);
+
+                    items.forEach(item => {
+                        const divPiatto = creaPiattoDiv(item);
+                        menuContainer.appendChild(divPiatto);
+                        aggiungiIngredienti(item, menuContainer);
+                    });
+                }
             }
+        }
 
         });
     }
@@ -2064,6 +2108,9 @@ function mostraSchermata() {
     document.getElementById("cucinaDiv").classList.add("hidden");
     document.getElementById("bereDiv").classList.add("hidden");
     document.getElementById("snackDiv").classList.add("hidden");
+	document.getElementById("extra1Div").classList.add("hidden");
+    document.getElementById("extra2Div").classList.add("hidden");
+    document.getElementById("extra3Div").classList.add("hidden");
 
     document.getElementById("loginWrapper").style.display = "none";
     document.getElementById("logoutDiv").classList.remove("hidden");
@@ -2127,7 +2174,7 @@ function mostraSchermata() {
             });
         });
         hideLoader();
-    } else if (ruolo === "cucina" || ruolo === "bere" || ruolo === "snack") {
+   } else if (["cucina", "bere", "snack", "extra1", "extra2", "extra3"].includes(ruolo)) {
         if (!checkOnline(true)) return;
 
         // 🔹 Mostra solo dopo che le impostazioni sono caricate e se lo snack è abilitato
@@ -2350,6 +2397,9 @@ window.simulaRuolo = function(ruoloScelto) {
     document.getElementById("cucinaDiv").classList.add("hidden");
     document.getElementById("bereDiv").classList.add("hidden");
     document.getElementById("snackDiv").classList.add("hidden");
+	document.getElementById("extra1Div").classList.add("hidden");
+    document.getElementById("extra2Div").classList.add("hidden");
+    document.getElementById("extra3Div").classList.add("hidden");
 	document.getElementById("simulatoreRuoliDiv").style.display = "none";
     
     // Imposta il bottone di ritorno
@@ -2411,6 +2461,9 @@ function mostraAdminDaSimulazione() {
     document.getElementById("cucinaDiv").classList.add("hidden");
     document.getElementById("bereDiv").classList.add("hidden");
     document.getElementById("snackDiv").classList.add("hidden");
+	document.getElementById("extra1Div").classList.add("hidden");
+    document.getElementById("extra2Div").classList.add("hidden");
+    document.getElementById("extra3Div").classList.add("hidden");
 
     // Mostra Admin e nascondi il bottone di ritorno
     document.getElementById("adminDiv").classList.remove("hidden");
