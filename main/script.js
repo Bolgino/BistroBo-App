@@ -8,7 +8,6 @@ const firebaseConfig = {
     messagingSenderId: "676960522709",
     appId: "1:676960522709:web:cc2284c87e73044f566d5c"
 };
-
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const auth = firebase.auth();
@@ -9324,4 +9323,3 @@ document.querySelectorAll("#cassaDiv .tabBtn").forEach(b=>{
 });
 // attiva di default "Aggiungi Comanda"
 document.getElementById("aggiungiComandaTab").classList.add("active");
-
