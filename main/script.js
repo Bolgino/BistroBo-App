@@ -709,7 +709,7 @@ function initImpostazioniToggle() {
     initToggle(toggleSnackBtn, snackRef, {on: "ON", off: "OFF"}, false, val => {
         window.settings.snackAbilitato = val;
     });
-    aggiornaSelectRuoliSnack();
+    aggiornaSelectRuoliDinamici();
     snackRef.on("value", snap => {
         window.settings.snackAbilitato = !!snap.val();
         caricaUtenti(); // 🔁 ricarica la lista con o senza Snack
@@ -1102,9 +1102,32 @@ function initImpostazioniToggle() {
             });
         };
     }
+	// ================= PROFILI EXTRA =================
+    ["extra1", "extra2", "extra3"].forEach(prof => {
+        const toggleBtn = document.getElementById("toggle" + prof.charAt(0).toUpperCase() + prof.slice(1) + "Btn");
+        const ref = db.ref("impostazioni/" + prof + "Abilitato");
+        if (toggleBtn) {
+            initToggle(toggleBtn, ref, {on: "ON", off: "OFF"}, false, val => {
+                window.settings[prof + "Abilitato"] = val;
+            });
+            ref.on("value", snap => {
+                window.settings[prof + "Abilitato"] = !!snap.val();
+                aggiornaSelectRuoliDinamici(); 
+                if (typeof aggiornaTickSnackPreordini === "function") aggiornaTickSnackPreordini();
+            });
+        }
+        
+        // Nuove in alto extra
+        const toggleNuoveBtn = document.getElementById("toggleNuoveInAlto" + prof.charAt(0).toUpperCase() + prof.slice(1) + "Btn");
+        const nuoveRef = db.ref("impostazioni/nuoveInAlto" + prof.charAt(0).toUpperCase() + prof.slice(1));
+        if (toggleNuoveBtn) {
+            initToggle(toggleNuoveBtn, nuoveRef, {on:"ON", off:"OFF"}, false, val => { 
+                window.settings["nuoveInAlto" + prof.charAt(0).toUpperCase() + prof.slice(1)] = val; 
+            });
+        }
+    });
 }
 function initTickNoteDestinazioni() {
-    // 🔹 Mostra/nasconde i tick destinazioni note in base all'impostazione
     db.ref("impostazioni/noteDestinazioniAbilitate").on("value", snap => {
         const attivo = !!snap.val();
         window.settings.noteDestinazioniAbilitate = attivo;
@@ -1112,11 +1135,13 @@ function initTickNoteDestinazioni() {
         if (div) div.style.display = attivo ? "block" : "none";
     });
 
-    // 🔹 Mostra anche il tick Snack solo se attivo
-    db.ref("impostazioni/snackAbilitato").on("value", snap => {
-        const snackOn = !!snap.val();
-        const labelSnack = document.getElementById("tickSnackLabel");
-        if (labelSnack) labelSnack.style.display = snackOn ? "inline" : "none";
+    // Mostra tick in base ai profili attivi
+    ["snack", "extra1", "extra2", "extra3"].forEach(prof => {
+        db.ref("impostazioni/" + prof + "Abilitato").on("value", snap => {
+            const attivo = !!snap.val();
+            const label = document.getElementById("tick" + prof.charAt(0).toUpperCase() + prof.slice(1) + "Label");
+            if (label) label.style.display = attivo ? "inline" : "none";
+        });
     });
 }
 function aggiornaTickSnackPreordini() {
@@ -1137,7 +1162,11 @@ function aggiornaTickSnackPreordini() {
             const container = orderDiv.querySelector(".order-body > div:last-child");
             if (!container) return;
 
-            const destinazioni = ["cucina","bere", ...(window.settings.snackAbilitato ? ["snack"] : [])];
+            const destinazioni = ["cucina","bere"];
+            if (window.settings.snackAbilitato) destinazioni.push("snack");
+            if (window.settings.extra1Abilitato) destinazioni.push("extra1");
+            if (window.settings.extra2Abilitato) destinazioni.push("extra2");
+            if (window.settings.extra3Abilitato) destinazioni.push("extra3");
 
             container.innerHTML = destinazioni.map(d => `
                 <label style="margin-right:10px;">
@@ -1259,36 +1288,31 @@ if (archiviaComandeBtn) {
 // =====================================================
 // 🔹 Aggiunge "Snack" nei menu a tendina ruoli se attivo
 // =====================================================
-function aggiornaSelectRuoliSnack() {
-    const snackAttivo = !!window.settings.snackAbilitato;
+function aggiornaSelectRuoliDinamici() {
+    const profili = [
+        { id: "snack", attivo: !!window.settings.snackAbilitato, label: "Snack" },
+        { id: "extra1", attivo: !!window.settings.extra1Abilitato, label: "Extra 1" },
+        { id: "extra2", attivo: !!window.settings.extra2Abilitato, label: "Extra 2" },
+        { id: "extra3", attivo: !!window.settings.extra3Abilitato, label: "Extra 3" }
+    ];
 
-    // REGISTRAZIONE
-    const regSelect = document.getElementById("regRole");
-    if (regSelect) {
-        const esisteSnack = [...regSelect.options].some(opt => opt.value === "snack");
-        if (snackAttivo && !esisteSnack) {
-            const opt = document.createElement("option");
-            opt.value = "snack";
-            opt.textContent = "Snack";
-            regSelect.appendChild(opt);
-        } else if (!snackAttivo && esisteSnack) {
-            regSelect.querySelector("option[value='snack']").remove();
-        }
-    }
-
-    // ADMIN - gestione utenti
-    const adminSelect = document.getElementById("newRole");
-    if (adminSelect) {
-        const esisteSnack = [...adminSelect.options].some(opt => opt.value === "snack");
-        if (snackAttivo && !esisteSnack) {
-            const opt = document.createElement("option");
-            opt.value = "snack";
-            opt.textContent = "Snack";
-            adminSelect.appendChild(opt);
-        } else if (!snackAttivo && esisteSnack) {
-            adminSelect.querySelector("option[value='snack']").remove();
-        }
-    }
+    ["regRole", "newRole"].forEach(selectId => {
+        const selectEl = document.getElementById(selectId);
+        if (!selectEl) return;
+        
+        profili.forEach(prof => {
+            const esiste = [...selectEl.options].some(opt => opt.value === prof.id);
+            if (prof.attivo && !esiste) {
+                const opt = document.createElement("option");
+                opt.value = prof.id;
+                opt.textContent = prof.label;
+                selectEl.appendChild(opt);
+            } else if (!prof.attivo && esiste) {
+                const optToRemove = selectEl.querySelector(`option[value='${prof.id}']`);
+                if(optToRemove) optToRemove.remove();
+            }
+        });
+    });
 }
 // 🔹 Popola un select ruoli aggiungendo "Snack" solo se abilitato
 async function popolaSelectRuoliConSnack(selectEl) {
@@ -2565,13 +2589,14 @@ document.getElementById("letteraComanda").addEventListener("input", function() {
     this.value = this.value.replace(/[^a-zA-Z]/g, '').toUpperCase();
 });
 function separaComanda(items) {
-    if (!Array.isArray(items)) return { cibo: [], bere: [], snack: [] };
+    if (!Array.isArray(items)) return { cibo: [], bere: [], snack: [], extra1: [], extra2: [], extra3: [] };
 
-    let cibo = [];
-    let bere = [];
-    let snack = [];
+    let cibo = [], bere = [], snack = [], extra1 = [], extra2 = [], extra3 = [];
 
     const snackAbilitato = window.settings?.snackAbilitato === true;
+    const extra1Abilitato = window.settings?.extra1Abilitato === true;
+    const extra2Abilitato = window.settings?.extra2Abilitato === true;
+    const extra3Abilitato = window.settings?.extra3Abilitato === true;
 
     function getDest(categoria, tipo, nome) {
         const cat = (categoria || "").toLowerCase();
@@ -2579,6 +2604,9 @@ function separaComanda(items) {
         const nom = (nome || "").toLowerCase();
 
         if (cat === "bevande" || tip === "bere") return "bere";
+        if (cat === "extra1" || tip === "extra1") return extra1Abilitato ? "extra1" : "cibo";
+        if (cat === "extra2" || tip === "extra2") return extra2Abilitato ? "extra2" : "cibo";
+        if (cat === "extra3" || tip === "extra3") return extra3Abilitato ? "extra3" : "cibo";
         if (cat === "snack" || cat.includes("fritti") || tip === "snack" || nom.includes("patatine") || nom.includes("fritto")) {
             return snackAbilitato ? "snack" : "cibo";
         }
@@ -2588,23 +2616,16 @@ function separaComanda(items) {
     items.forEach(i => {
         const destMain = getDest(i.categoria, i.tipo, i.nome);
 
-        let cloneCibo = null;
-        let cloneBere = null;
-        let cloneSnack = null;
+        let cloneCibo = null, cloneBere = null, cloneSnack = null;
+        let cloneExtra1 = null, cloneExtra2 = null, cloneExtra3 = null;
 
         const getClone = (dest) => {
-            if (dest === "cibo") {
-                if (!cloneCibo) cloneCibo = JSON.parse(JSON.stringify({ ...i, isMainHere: false, contorniScelti: [] }));
-                return cloneCibo;
-            }
-            if (dest === "bere") {
-                if (!cloneBere) cloneBere = JSON.parse(JSON.stringify({ ...i, isMainHere: false, contorniScelti: [] }));
-                return cloneBere;
-            }
-            if (dest === "snack") {
-                if (!cloneSnack) cloneSnack = JSON.parse(JSON.stringify({ ...i, isMainHere: false, contorniScelti: [] }));
-                return cloneSnack;
-            }
+            if (dest === "cibo") { if (!cloneCibo) cloneCibo = JSON.parse(JSON.stringify({ ...i, isMainHere: false, contorniScelti: [] })); return cloneCibo; }
+            if (dest === "bere") { if (!cloneBere) cloneBere = JSON.parse(JSON.stringify({ ...i, isMainHere: false, contorniScelti: [] })); return cloneBere; }
+            if (dest === "snack") { if (!cloneSnack) cloneSnack = JSON.parse(JSON.stringify({ ...i, isMainHere: false, contorniScelti: [] })); return cloneSnack; }
+            if (dest === "extra1") { if (!cloneExtra1) cloneExtra1 = JSON.parse(JSON.stringify({ ...i, isMainHere: false, contorniScelti: [] })); return cloneExtra1; }
+            if (dest === "extra2") { if (!cloneExtra2) cloneExtra2 = JSON.parse(JSON.stringify({ ...i, isMainHere: false, contorniScelti: [] })); return cloneExtra2; }
+            if (dest === "extra3") { if (!cloneExtra3) cloneExtra3 = JSON.parse(JSON.stringify({ ...i, isMainHere: false, contorniScelti: [] })); return cloneExtra3; }
         };
 
         // 1. Assegna il Piatto Principale
@@ -2615,10 +2636,7 @@ function separaComanda(items) {
             i.contorniScelti.forEach(c => {
                 const destC = getDest(c.categoria, "", c.nome);
                 
-                // SE il contorno va in una stazione DIVERSA da quella del genitore...
                 if (destC !== destMain) {
-                    
-                    // 🔥 NESSUN varTxt QUI! Lasciamo l'array varianti intatto per i colori e usiamo JSON per clonarlo
                     const splitItem = {
                         id: (i.id || "contorno") + "_split_" + Math.floor(Math.random() * 10000),
                         id_univoco: "split_" + Math.random().toString(36).substr(2, 9),
@@ -2629,16 +2647,18 @@ function separaComanda(items) {
                         tipo: destC,
                         isCombo: false,      
                         isMainHere: true,    
-                        varianti: c.varianti ? JSON.parse(JSON.stringify(c.varianti)) : [], // Salva l'array puro!
+                        varianti: c.varianti ? JSON.parse(JSON.stringify(c.varianti)) : [],
                         contorniScelti: [],
                         ingredienti: [],
                         note: i.note || ""
                     };
 
-                    if (destC === "snack") snack.push(splitItem);
                     if (destC === "cibo") cibo.push(splitItem);
                     if (destC === "bere") bere.push(splitItem);
-
+                    if (destC === "snack") snack.push(splitItem);
+                    if (destC === "extra1") extra1.push(splitItem);
+                    if (destC === "extra2") extra2.push(splitItem);
+                    if (destC === "extra3") extra3.push(splitItem);
                 } else {
                     getClone(destC).contorniScelti.push(c);
                 }
@@ -2649,9 +2669,12 @@ function separaComanda(items) {
         if (cloneCibo && cloneCibo.isMainHere) cibo.push(cloneCibo);
         if (cloneBere && cloneBere.isMainHere) bere.push(cloneBere);
         if (cloneSnack && cloneSnack.isMainHere) snack.push(cloneSnack);
+        if (cloneExtra1 && cloneExtra1.isMainHere) extra1.push(cloneExtra1);
+        if (cloneExtra2 && cloneExtra2.isMainHere) extra2.push(cloneExtra2);
+        if (cloneExtra3 && cloneExtra3.isMainHere) extra3.push(cloneExtra3);
     });
 
-    return { cibo, bere, snack };
+    return { cibo, bere, snack, extra1, extra2, extra3 };
 }
 async function caricaMenuCassa() {
     if (!checkOnline(true)) return;
@@ -4079,6 +4102,9 @@ async function caricaIngredienti() {
                         const isCibi = cats.includes("cibi") ? "checked" : "";
                         const isBevande = cats.includes("bevande") ? "checked" : "";
                         const isSnack = cats.includes("snack") ? "checked" : "";
+						const isExtra1 = cats.includes("extra1") ? "checked" : "";
+					    const isExtra2 = cats.includes("extra2") ? "checked" : "";
+					    const isExtra3 = cats.includes("extra3") ? "checked" : "";
                         
                         const isExtraChecked = currentIng.usabileComeExtra ? "checked" : "";
 
@@ -4111,10 +4137,13 @@ async function caricaIngredienti() {
                             <div style="margin-bottom:20px; text-align:left;">
                                 <label><b>Mostra come variante per i piatti in:</b></label><br>
                                 <div style="margin-top:8px;">
-                                    <label style="margin-right:15px;"><input type="checkbox" class="chk-cat" value="cibi" ${isCibi}> Cibi</label>
-                                    <label style="margin-right:15px;"><input type="checkbox" class="chk-cat" value="bevande" ${isBevande}> Bevande</label>
-                                    <label><input type="checkbox" class="chk-cat" value="snack" ${isSnack}> Snack</label>
-                                </div>
+						            <label style="margin-right:15px;"><input type="checkbox" class="chk-cat" value="cibi" ${isCibi}> Cibi</label>
+						            <label style="margin-right:15px;"><input type="checkbox" class="chk-cat" value="bevande" ${isBevande}> Bevande</label>
+						            <label style="margin-right:15px;"><input type="checkbox" class="chk-cat" value="snack" ${isSnack}> Snack</label>
+						            ${window.settings.extra1Abilitato ? `<label style="margin-right:15px;"><input type="checkbox" class="chk-cat" value="extra1" ${isExtra1}> Extra 1</label>` : ''}
+						            ${window.settings.extra2Abilitato ? `<label style="margin-right:15px;"><input type="checkbox" class="chk-cat" value="extra2" ${isExtra2}> Extra 2</label>` : ''}
+						            ${window.settings.extra3Abilitato ? `<label><input type="checkbox" class="chk-cat" value="extra3" ${isExtra3}> Extra 3</label>` : ''}
+						        </div>
                             </div>
                             
                             <div class="modal-actions">
@@ -4305,10 +4334,13 @@ window.apriModalCreaIngrediente = function() {
             <div style="flex:1;">
                 <label><b>Categoria:</b></label>
                 <select id="modIngCat" style="width:100%; padding:8px; margin-top:5px; border-radius:6px; border:1px solid #ccc;">
-                    <option value="cibi">Cibi</option>
-                    <option value="bevande">Bevande</option>
-                    <option value="snack">Snack</option>
-                </select>
+		            <option value="cibi">Cibi</option>
+		            <option value="bevande">Bevande</option>
+		            <option value="snack">Snack</option>
+		            ${window.settings.extra1Abilitato ? '<option value="extra1">Extra 1</option>' : ''}
+		            ${window.settings.extra2Abilitato ? '<option value="extra2">Extra 2</option>' : ''}
+		            ${window.settings.extra3Abilitato ? '<option value="extra3">Extra 3</option>' : ''}
+		        </select>
             </div>
             <div style="flex:1;">
                 <label><b>Unità di misura:</b></label>
@@ -4347,10 +4379,13 @@ window.apriModalCreaIngrediente = function() {
         <div style="margin-bottom:20px; text-align:left;">
             <label><b>Mostra come variante per i piatti in:</b></label><br>
             <div style="margin-top:8px;">
-                <label style="margin-right:15px;"><input type="checkbox" class="mod-chk-cat" value="cibi" checked> Cibi</label>
-                <label style="margin-right:15px;"><input type="checkbox" class="mod-chk-cat" value="bevande"> Bevande</label>
-                <label><input type="checkbox" class="mod-chk-cat" value="snack"> Snack</label>
-            </div>
+	            <label style="margin-right:15px;"><input type="checkbox" class="mod-chk-cat" value="cibi" checked> Cibi</label>
+	            <label style="margin-right:15px;"><input type="checkbox" class="mod-chk-cat" value="bevande"> Bevande</label>
+	            <label style="margin-right:15px;"><input type="checkbox" class="mod-chk-cat" value="snack"> Snack</label>
+	            ${window.settings.extra1Abilitato ? '<label style="margin-right:15px;"><input type="checkbox" class="mod-chk-cat" value="extra1"> Extra 1</label>' : ''}
+	            ${window.settings.extra2Abilitato ? '<label style="margin-right:15px;"><input type="checkbox" class="mod-chk-cat" value="extra2"> Extra 2</label>' : ''}
+	            ${window.settings.extra3Abilitato ? '<label><input type="checkbox" class="mod-chk-cat" value="extra3"> Extra 3</label>' : ''}
+	        </div>
         </div>
         
         <div class="modal-actions" style="display:flex; justify-content:flex-end; gap:10px;">
@@ -4441,15 +4476,13 @@ async function caricaGestioneComandeAdmin() {
             const c = s.val(); 
             const id = s.key;
 
-            const { cibo, bere, snack } = separaComanda(c.piatti || []);
+            const { cibo, bere, snack, extra1, extra2, extra3 } = separaComanda(c.piatti || []);
+            
             // 🔹 Evita loop: aggiorna solo localmente, non scrivere subito su Firebase
-            if ((!snack || snack.length === 0) && c.statoSnack !== "completato") {
-                c.statoSnack = "completato"; // solo lato front-end
-                // aggiornamento remoto differito, senza trigger immediato del listener
-                setTimeout(() => {
-                    db.ref("comande/" + id).update({ statoSnack: "completato" }).catch(err => console.warn(err));
-                }, 0);
-            }
+            if ((!snack || snack.length === 0) && c.statoSnack !== "completato") { c.statoSnack = "completato"; setTimeout(() => { db.ref("comande/" + id).update({ statoSnack: "completato" }).catch(err => null); }, 0); }
+            if ((!extra1 || extra1.length === 0) && c.statoExtra1 !== "completato") { c.statoExtra1 = "completato"; setTimeout(() => { db.ref("comande/" + id).update({ statoExtra1: "completato" }).catch(err => null); }, 0); }
+            if ((!extra2 || extra2.length === 0) && c.statoExtra2 !== "completato") { c.statoExtra2 = "completato"; setTimeout(() => { db.ref("comande/" + id).update({ statoExtra2: "completato" }).catch(err => null); }, 0); }
+            if ((!extra3 || extra3.length === 0) && c.statoExtra3 !== "completato") { c.statoExtra3 = "completato"; setTimeout(() => { db.ref("comande/" + id).update({ statoExtra3: "completato" }).catch(err => null); }, 0); }
            
             function formattaPiattoAdmin(i) {
                 // --- MAGIA PER PIATTO PRINCIPALE ---
@@ -4554,44 +4587,34 @@ async function caricaGestioneComandeAdmin() {
             const piattiCibo = cibo.map(formattaPiattoAdmin).join(" <br> ") || "—";
             const piattiBere = bere.map(formattaPiattoAdmin).join(" <br> ") || "—";
             const piattiSnack = snack && snack.length ? snack.map(formattaPiattoAdmin).join(" <br> ") : null;
+            const piattiExtra1 = extra1 && extra1.length ? extra1.map(formattaPiattoAdmin).join(" <br> ") : null;
+            const piattiExtra2 = extra2 && extra2.length ? extra2.map(formattaPiattoAdmin).join(" <br> ") : null;
+            const piattiExtra3 = extra3 && extra3.length ? extra3.map(formattaPiattoAdmin).join(" <br> ") : null;
 
             const riga = document.createElement("div");
             riga.className = "order";
             riga.id = "admin_comanda_" + id;
-            // aggiungi dataset per la ricerca
             riga.dataset.numero = (c.numero + (c.lettera || "")).toUpperCase();
 
-            // Header numero + piatti
             const mainDiv = document.createElement("div");
-            mainDiv.style.display = "flex";
-            mainDiv.style.justifyContent = "space-between";
-            mainDiv.style.alignItems = "flex-start";
-            mainDiv.style.gap = "20px";
-
-            const numDiv = document.createElement("div");
-            numDiv.innerHTML = `<b>#${c.numero}</b>`;
-            mainDiv.appendChild(numDiv);
+            mainDiv.style.display = "flex"; mainDiv.style.justifyContent = "space-between"; mainDiv.style.alignItems = "flex-start"; mainDiv.style.gap = "20px";
+            const numDiv = document.createElement("div"); numDiv.innerHTML = `<b>#${c.numero}</b>`; mainDiv.appendChild(numDiv);
             riga.appendChild(mainDiv);
 
-            // 🔸 Mostra commento ASPORTO se presente (fuori dal flex, va a capo)
-            if (c.commento) {
-                const asportoDiv = document.createElement("div");
-                asportoDiv.className = "asportoLabel";
-                asportoDiv.innerText = c.commento;
-                asportoDiv.style.margin = "4px 0 6px 0.8cm";
-                riga.appendChild(asportoDiv);
+            if (c.commento) { 
+                const asportoDiv = document.createElement("div"); asportoDiv.className = "asportoLabel"; asportoDiv.innerText = c.commento; asportoDiv.style.margin = "4px 0 6px 0.8cm"; riga.appendChild(asportoDiv); 
             }
 
             const piattiDiv = document.createElement("div");
             piattiDiv.className = "orderContent";
-
-            // 🔹 Mostra sempre lo snack, anche se vuoto (ma solo se abilitato)
             piattiDiv.innerHTML = `
                 <div>Piatti: ${piattiCibo}</div>
                 <div>Bevande: ${piattiBere}</div>
                 ${snackAbilitato ? `<div>Snack: ${piattiSnack || "—"}</div>` : ""}
+                ${window.settings?.extra1Abilitato ? `<div>Extra 1: ${piattiExtra1 || "—"}</div>` : ""}
+                ${window.settings?.extra2Abilitato ? `<div>Extra 2: ${piattiExtra2 || "—"}</div>` : ""}
+                ${window.settings?.extra3Abilitato ? `<div>Extra 3: ${piattiExtra3 || "—"}</div>` : ""}
             `;
-
 
             mainDiv.appendChild(piattiDiv);
             // se ci sono note, aggiungile
@@ -4708,9 +4731,10 @@ async function caricaGestioneComandeAdmin() {
             buttonsDiv.appendChild(creaBtnConStato(c.statoBere, "bere", id));
 
             // 🔹 Mostra sempre il tasto Snack se impostazione attiva (anche se la comanda non ha snack)
-            if (snackAbilitato) {
-                buttonsDiv.appendChild(creaBtnConStato(c.statoSnack || "completato", "snack", id));
-            }
+            if (snackAbilitato) buttonsDiv.appendChild(creaBtnConStato(c.statoSnack || "completato", "snack", id));
+	        if (window.settings?.extra1Abilitato) buttonsDiv.appendChild(creaBtnConStato(c.statoExtra1 || "completato", "extra1", id));
+            if (window.settings?.extra2Abilitato) buttonsDiv.appendChild(creaBtnConStato(c.statoExtra2 || "completato", "extra2", id));
+            if (window.settings?.extra3Abilitato) buttonsDiv.appendChild(creaBtnConStato(c.statoExtra3 || "completato", "extra3", id));
 
 
 
@@ -5125,13 +5149,27 @@ function modificaComanda(id, comanda) {
                 const ciboNuovo = comandaTemp.piatti.some(p => p.categoria !== "bevande" && !p.categoria.toLowerCase().includes("snack"));
                 const bereNuovo = comandaTemp.piatti.some(p => p.categoria === "bevande");
                 const snackNuovo = comandaTemp.piatti.some(p => (p.categoria && (p.categoria.toLowerCase().includes("snack") || p.categoria.toLowerCase().includes("fritti"))) || (p.tipo && p.tipo.toLowerCase() === "snack"));
+                const extra1Nuovo = comandaTemp.piatti.some(p => p.categoria === "extra1" || p.tipo === "extra1");
+                const extra2Nuovo = comandaTemp.piatti.some(p => p.categoria === "extra2" || p.tipo === "extra2");
+                const extra3Nuovo = comandaTemp.piatti.some(p => p.categoria === "extra3" || p.tipo === "extra3");
 
-                const updateData = { piatti: comandaTemp.piatti, statoCucina: ciboNuovo ? "da fare" : "completato", statoBere: bereNuovo ? "da fare" : "completato" };
-                if (snackNuovo) updateData.statoSnack = "da fare";
-                else updateData.statoSnack = null;
+                const updateData = {
+                    piatti: comandaTemp.piatti,
+                    statoCucina: ciboNuovo ? "da fare" : "completato",
+                    statoBere: bereNuovo ? "da fare" : "completato"
+                };
+                
+                if (snackNuovo) updateData.statoSnack = "da fare"; else updateData.statoSnack = null;
+                if (extra1Nuovo) updateData.statoExtra1 = "da fare"; else updateData.statoExtra1 = null;
+                if (extra2Nuovo) updateData.statoExtra2 = "da fare"; else updateData.statoExtra2 = null;
+                if (extra3Nuovo) updateData.statoExtra3 = "da fare"; else updateData.statoExtra3 = null;
 
                 await db.ref("comande/" + id).update(updateData);
+                
                 if (!snackNuovo) await db.ref("comande/" + id + "/statoSnack").remove();
+                if (!extra1Nuovo) await db.ref("comande/" + id + "/statoExtra1").remove();
+                if (!extra2Nuovo) await db.ref("comande/" + id + "/statoExtra2").remove();
+                if (!extra3Nuovo) await db.ref("comande/" + id + "/statoExtra3").remove();
             }
             overlayEdit.remove();
             notify("Comanda aggiornata!", "success");
