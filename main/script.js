@@ -429,7 +429,113 @@ document.getElementById("regBtn").onclick = async () => {
     }
     
 };
+// =========================================================================
+// GESTIONE REPARTI EXTRA (POPUP CUSTOM E SICUREZZA)
+// =========================================================================
 
+window.nomiRepartiExtra = { extra1: "", extra2: "", extra3: "" };
+
+// 1. Ascolto Nomi in tempo reale
+db.ref("impostazioni/nomiRepartiExtra").on("value", snap => {
+    const dati = snap.val() || {};
+    ['extra1', 'extra2', 'extra3'].forEach(ruolo => {
+        window.nomiRepartiExtra[ruolo] = dati[ruolo] || "";
+        aggiornaUIExtra(ruolo, window.nomiRepartiExtra[ruolo]);
+    });
+});
+
+// 2. Aggiornamento Visivo Bottoni Admin
+function aggiornaUIExtra(ruolo, nomeCorrente) {
+    const isConfigurato = nomeCorrente && nomeCorrente.trim() !== "";
+    const num = ruolo.replace('extra', '');
+    const testoTitolo = isConfigurato ? nomeCorrente : `Extra ${num} (Senza Nome)`;
+    
+    const t = document.getElementById(`titoloExtra${num}`); if(t) t.innerText = testoTitolo;
+    const l = document.getElementById(`labelToggleExtra${num}`); if(l) l.innerText = `Abilita ${testoTitolo}`;
+
+    const btnSimula = document.getElementById(`simulaExtra${num}Btn`);
+    if (btnSimula) {
+        btnSimula.disabled = !isConfigurato;
+        btnSimula.style.opacity = isConfigurato ? "1" : "0.5";
+        btnSimula.style.cursor = isConfigurato ? "pointer" : "not-allowed";
+    }
+    
+    const btnAbilita = document.getElementById(`toggleExtra${num}Btn`);
+    if (btnAbilita) {
+        btnAbilita.disabled = !isConfigurato;
+        btnAbilita.style.opacity = isConfigurato ? "1" : "0.5";
+        btnAbilita.style.cursor = isConfigurato ? "pointer" : "not-allowed";
+    }
+}
+
+// 3. Modale Custom per Rinomina
+window.modificaNomeExtra = function(ruolo) {
+    const nomeAttuale = window.nomiRepartiExtra[ruolo] || "";
+    const num = ruolo.replace('extra', '');
+
+    // Rimuove eventuali vecchie modali
+    const oldModal = document.getElementById("modalRinominaExtra");
+    if(oldModal) oldModal.remove();
+
+    // Creazione Struttura Modale
+    const overlay = document.createElement("div");
+    overlay.id = "modalRinominaExtra";
+    overlay.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:99999; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(3px);";
+
+    const modalBox = document.createElement("div");
+    modalBox.style.cssText = "background:#fff; width:90%; max-width:400px; padding:25px; border-radius:12px; box-shadow:0 10px 25px rgba(0,0,0,0.2); text-align:left; font-family:sans-serif;";
+    
+    modalBox.innerHTML = `
+        <h3 style="margin-top:0; color:#333; font-size:1.3em;">✏️ Imposta Nome Reparto</h3>
+        <p style="color:#666; font-size:0.9em; margin-bottom:15px;">Inserisci il nome (es. Griglia, Dolci).<br><b style="color:#d32f2f;">Lascia vuoto per disattivare il reparto.</b></p>
+        <input type="text" id="inputNuovoNomeExtra" value="${nomeAttuale}" placeholder="Nome del reparto..." style="width:100%; box-sizing:border-box; padding:12px; border-radius:8px; border:2px solid #ddd; font-size:1em; margin-bottom:20px; outline:none;">
+        <div style="display:flex; justify-content:flex-end; gap:10px;">
+            <button id="btnAnnullaNomeExtra" style="padding:10px 15px; border:none; background:#eee; color:#333; border-radius:8px; cursor:pointer; font-weight:bold;">Annulla</button>
+            <button id="btnSalvaNomeExtra" style="padding:10px 15px; border:none; background:#4CAF50; color:#fff; border-radius:8px; cursor:pointer; font-weight:bold;">Salva Nome</button>
+        </div>
+    `;
+
+    overlay.appendChild(modalBox);
+    document.body.appendChild(overlay);
+    
+    // Focus sull'input
+    document.getElementById("inputNuovoNomeExtra").focus();
+
+    // Eventi
+    document.getElementById("btnAnnullaNomeExtra").onclick = () => overlay.remove();
+    document.getElementById("btnSalvaNomeExtra").onclick = async () => {
+        let nuovoNome = document.getElementById("inputNuovoNomeExtra").value.trim();
+        
+        if (nuovoNome === "") {
+            const puoDisattivare = await window.controlloSicurezzaDisattivazione(ruolo);
+            if (!puoDisattivare) { overlay.remove(); return; }
+            await db.ref(`impostazioni/${ruolo}`).set(false); // Spegne fisicamente il reparto
+        }
+        
+        await db.ref(`impostazioni/nomiRepartiExtra/${ruolo}`).set(nuovoNome);
+        overlay.remove();
+        if(typeof disonotify === "function") disonotify("Nome aggiornato con successo!", {showCancel:false});
+    };
+};
+
+// 4. Blocco Sicurezza
+window.controlloSicurezzaDisattivazione = async function(ruolo) {
+    let elementi = 0;
+    const snapMenu = await db.ref("menu").once("value");
+    snapMenu.forEach(child => { if (child.val().categoria === ruolo) elementi++; });
+    
+    const snapIng = await db.ref("ingredienti").once("value");
+    snapIng.forEach(child => { if (child.val().categoria === ruolo) elementi++; });
+    
+    if (elementi > 0) {
+        const nomeRep = window.nomiRepartiExtra[ruolo] || ruolo;
+        const msg = `<b>ATTENZIONE</b><br>Impossibile disattivare il reparto <b>${nomeRep}</b> perché contiene ancora <b>${elementi}</b> elementi (piatti o ingredienti).<br><br>Spostali in un'altra categoria prima di resettarlo.`;
+        if(typeof disonotify === "function") disonotify(msg, {showCancel:false});
+        else alert("ERRORE: Rimuovi prima i piatti da questa categoria!");
+        return false;
+    }
+    return true;
+};
 // -------------------- IMPOSTAZIONI TOGGLE SICURE --------------------
 function initImpostazioniToggle() {
     // MANUTENZIONE
@@ -2351,7 +2457,14 @@ window.simulaRuolo = function(ruoloScelto) {
     document.getElementById("bereDiv").classList.add("hidden");
     document.getElementById("snackDiv").classList.add("hidden");
 	document.getElementById("simulatoreRuoliDiv").style.display = "none";
-    
+    // NUOVI PANNELLI DA NASCONDERE
+    document.getElementById('extra1Div').classList.add('hidden');
+    document.getElementById('extra2Div').classList.add('hidden');
+    document.getElementById('extra3Div').classList.add('hidden');
+
+    // Mostra il pannello del ruolo selezionato
+    const targetDiv = document.getElementById(ruolo + 'Div');
+    if(targetDiv) targetDiv.classList.remove('hidden');
     // Imposta il bottone di ritorno
     passaBtn.style.display = "inline-block";
     passaBtn.style.background = "#d32f2f"; 
