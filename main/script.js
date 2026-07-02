@@ -9177,3 +9177,122 @@ document.querySelectorAll("#cassaDiv .tabBtn").forEach(b=>{
 });
 // attiva di default "Aggiungi Comanda"
 document.getElementById("aggiungiComandaTab").classList.add("active");
+
+// =========================================================================
+// ATTIVAZIONE MOTORE REPARTI EXTRA (Toggles, Cassa, Dropdown, Navigazione)
+// =========================================================================
+
+// 1. ATTIVAZIONE DEI BOTTONI ON/OFF IN ADMIN
+// Questo collega i bottoni dell'interfaccia grafica al database Firebase
+['extra1', 'extra2', 'extra3'].forEach(ruolo => {
+    if (typeof setupToggleButton === "function") {
+        // Bottone principale Abilita/Disabilita
+        setupToggleButton(`toggle${ruolo.charAt(0).toUpperCase() + ruolo.slice(1)}Btn`, `impostazioni/${ruolo}`);
+        // Bottone Nuove comande in alto
+        setupToggleButton(`toggleNuoveInAlto${ruolo.charAt(0).toUpperCase() + ruolo.slice(1)}Btn`, `impostazioni/nuoveInAlto${ruolo}`);
+    }
+});
+
+// 2. RIPARAZIONE DELLA FUNZIONE "SIMULA" E NAVIGAZIONE
+// Sovrascriviamo la vecchia funzione per farle riconoscere i nuovi 3 reparti
+window.simulaRuolo = function(ruolo) {
+    // 1. Nascondi tutti i div dell'applicazione
+    const tuttiRuoli = ['admin', 'cassa', 'cucina', 'bere', 'snack', 'extra1', 'extra2', 'extra3'];
+    tuttiRuoli.forEach(r => {
+        const div = document.getElementById(r + 'Div');
+        if (div) div.classList.add('hidden');
+    });
+    
+    // 2. Mostra SOLO il div del ruolo selezionato
+    const selectedDiv = document.getElementById(ruolo + 'Div');
+    if (selectedDiv) {
+        selectedDiv.classList.remove('hidden');
+    }
+    
+    // 3. Gestisci l'intestazione superiore (nascondila se non sei in Admin)
+    const header = document.querySelector('header');
+    if (header) {
+        header.style.display = (ruolo === 'admin') ? 'flex' : 'none';
+    }
+    
+    // 4. Aggiorna la variabile di stato del sistema
+    window.ruoloAttuale = ruolo;
+    
+    // 5. Ricarica le comande per popolare la schermata appena aperta
+    if(ruolo !== 'admin' && ruolo !== 'cassa' && typeof renderComandeAttive === "function") {
+        db.ref("comande").once("value", snap => {
+            if(snap.exists()) {
+                renderComandeAttive(snap.val());
+                if(typeof renderStorico === "function") renderStorico(snap.val());
+            }
+        });
+    }
+};
+
+// 3. INIEZIONE DINAMICA DEI NOMI NEI MENU A TENDINA (Admin e Cassa)
+// Questa funzione legge i nomi personalizzati e li aggiunge automaticamente alle selezioni
+function aggiornaDropdownCategorie() {
+    const selects = [
+        document.getElementById('categoriaPiatto'), // Menu Admin
+        document.getElementById('categoriaIngrediente'), // Magazzino Admin
+        document.getElementById('destinazioneNota') // Cassa e Preordini
+    ];
+    
+    selects.forEach(select => {
+        if (!select) return;
+        
+        // Prima rimuove le vecchie opzioni "extra" per non creare doppioni
+        Array.from(select.options).forEach(opt => {
+            if(opt.value.startsWith('extra')) select.removeChild(opt);
+        });
+        
+        // Poi aggiunge le nuove opzioni se i reparti hanno un nome assegnato
+        ['extra1', 'extra2', 'extra3'].forEach(ruolo => {
+            const nome = window.nomiRepartiExtra[ruolo];
+            if (nome && nome.trim() !== "") {
+                const option = document.createElement('option');
+                option.value = ruolo;
+                option.text = nome;
+                select.appendChild(option);
+            }
+        });
+    });
+}
+
+// Assicuriamoci che i dropdown si aggiornino ogni volta che modifichi un nome nel DB
+db.ref("impostazioni/nomiRepartiExtra").on("value", snap => {
+    setTimeout(aggiornaDropdownCategorie, 500); 
+});
+
+// 4. TRADUZIONE DEI NOMI NELLA CASSA (Per far apparire le Tab col nome giusto)
+// Intercettiamo la funzione di formattazione del testo
+const originalTraduci = window.traduciCategoria || null;
+window.traduciCategoria = function(catID) {
+    // Se la categoria è uno dei nostri extra ed ha un nome, restituisci quello!
+    if (window.nomiRepartiExtra && window.nomiRepartiExtra[catID] && window.nomiRepartiExtra[catID].trim() !== "") {
+        return window.nomiRepartiExtra[catID];
+    }
+    
+    // Altrimenti usa il comportamento standard
+    if (originalTraduci) return originalTraduci(catID);
+    return catID.charAt(0).toUpperCase() + catID.slice(1);
+};
+
+// 5. ABILITAZIONE DELLA NAVIGAZIONE INTERNA AI NUOVI REPARTI (Da Fare, Menu, Ingredienti)
+document.querySelectorAll('#extra1Div .tabBtn, #extra2Div .tabBtn, #extra3Div .tabBtn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        const parentDiv = e.target.closest('div[id$="Div"]'); // Trova se è extra1, extra2 o extra3
+        
+        // Rimuove 'active' da tutti i bottoni di QUESTO specifico reparto
+        parentDiv.querySelectorAll('.tabBtn').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+        
+        // Nasconde tutti i contenuti di QUESTO specifico reparto
+        parentDiv.querySelectorAll('.tabContent').forEach(c => c.classList.remove('active'));
+        
+        // Mostra la tab selezionata
+        const targetId = e.target.getAttribute('data-tab');
+        const targetElement = document.getElementById(targetId);
+        if(targetElement) targetElement.classList.add('active');
+    });
+});
