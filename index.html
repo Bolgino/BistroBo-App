@@ -507,8 +507,8 @@
 				<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
 					<h3 style="margin:0; color: #00BCD4; font-size: 1.3em;">💬 Chat interna</h3>
 				</div>
-				<div id="chatContainerExtra1" class="chat-container" style="box-shadow: inset 0 2px 5px rgba(0,0,0,0.05); background:#f9f9f9;"></div>
-				<div class="chat-input-bar" style="box-shadow: none; border: 1px solid #eee; background:#fff; margin-top: 10px;">
+				<div id="chatContainerExtra1" class="chat-container"></div>
+				<div class="chat-input-bar">
 					<input type="text" id="chatInputExtra1" placeholder="Scrivi un messaggio...">
 					<button id="chatSendExtra1Btn" title="Invia messaggio">➤</button>
 				</div>
@@ -568,10 +568,10 @@
 				<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
 					<h3 style="margin:0; color: #00BCD4; font-size: 1.3em;">💬 Chat interna</h3>
 				</div>
-				<div id="chatContainerExtra2" class="chat-container" style="box-shadow: inset 0 2px 5px rgba(0,0,0,0.05); background:#f9f9f9;"></div>
-				<div class="chat-input-bar" style="box-shadow: none; border: 1px solid #eee; background:#fff; margin-top: 10px;">
-					<input type="text" id="chatInputExtra2" placeholder="Scrivi un messaggio...">
-					<button id="chatSendExtra2Btn" title="Invia messaggio">➤</button>
+				<div id="chatContainerExtra2" class="chat-container"></div>
+				<div class="chat-input-bar">
+					<input type="text" id="chatInputExtra1" placeholder="Scrivi un messaggio...">
+					<button id="chatSendExtra1Btn" title="Invia messaggio">➤</button>
 				</div>
 			</div>
 		</div>
@@ -629,11 +629,10 @@
 				<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
 					<h3 style="margin:0; color: #00BCD4; font-size: 1.3em;">💬 Chat interna</h3>
 				</div>
-				<div id="chatContainerExtra3" class="chat-container" style="box-shadow: inset 0 2px 5px rgba(0,0,0,0.05); background:#f9f9f9;"></div>
-				<div class="chat-input-bar" style="box-shadow: none; border: 1px solid #eee; background:#fff; margin-top: 10px;">
-
-					<input type="text" id="chatInputExtra3" placeholder="Scrivi un messaggio...">
-					<button id="chatSendExtra3Btn" title="Invia messaggio">➤</button>
+				<div id="chatContainerExtra3" class="chat-container"></div>
+				<div class="chat-input-bar">
+					<input type="text" id="chatInputExtra1" placeholder="Scrivi un messaggio...">
+					<button id="chatSendExtra1Btn" title="Invia messaggio">➤</button>
 				</div>
 			</div>
 		</div>
@@ -941,11 +940,28 @@
                     </div>
                     
                     <div id="extra1DependentSettings" style="display:none;">
-                        <div class="settingItem">
-                            <div class="settingLabel"><span>Nuove comande in alto</span></div>
-                            <button id="toggleNuoveInAltoExtra1Btn" class="toggleBtn">OFF</button>
-                        </div>
-                    </div>
+						<div class="settingItem">
+							<div class="settingLabel">
+								<span>Nuove comande in alto</span>
+								<small>Le nuove comande Extra 1 appariranno in cima alla lista</small>
+							</div>
+							<button id="toggleNuoveInAltoExtra1Btn" class="toggleBtn">OFF</button>
+						</div>
+						<div class="settingItem">
+							<div class="settingLabel">
+								<span>Mostra tab Ingredienti</span>
+								<small>Mostra o nascondi la tab Ingredienti nel profilo Extra 1</small>
+							</div>
+							<button id="toggleMagazzinoExtra1Btn" class="toggleBtn">ON</button>
+						</div>
+						<div class="settingItem">
+							<div class="settingLabel">
+								<span>Mostra tab Menu</span>
+								<small>Mostra o nascondi la tab Menu nel profilo Extra 1</small>
+							</div>
+							<button id="toggleMenuExtra1Btn" class="toggleBtn">ON</button>
+						</div>
+					</div>
                 </div>
 
                 <!-- BOX EXTRA 2 (Verde Acqua) -->
@@ -967,11 +983,28 @@
                     </div>
                     
                     <div id="extra2DependentSettings" style="display:none;">
-                        <div class="settingItem">
-                            <div class="settingLabel"><span>Nuove comande in alto</span></div>
-                            <button id="toggleNuoveInAltoExtra2Btn" class="toggleBtn">OFF</button>
-                        </div>
-                    </div>
+						<div class="settingItem">
+							<div class="settingLabel">
+								<span>Nuove comande in alto</span>
+								<small>Le nuove comande Extra 2 appariranno in cima alla lista</small>
+							</div>
+							<button id="toggleNuoveInAltoExtra2Btn" class="toggleBtn">OFF</button>
+						</div>
+						<div class="settingItem">
+							<div class="settingLabel">
+								<span>Mostra tab Ingredienti</span>
+								<small>Mostra o nascondi la tab Ingredienti nel profilo Extra 2</small>
+							</div>
+							<button id="toggleMagazzinoExtra2Btn" class="toggleBtn">ON</button>
+						</div>
+						<div class="settingItem">
+							<div class="settingLabel">
+								<span>Mostra tab Menu</span>
+								<small>Mostra o nascondi la tab Menu nel profilo Extra 2</small>
+							</div>
+							<button id="toggleMenuExtra2Btn" class="toggleBtn">ON</button>
+						</div>
+					</div>
                 </div>
 
                 <!-- BOX EXTRA 3 (Marrone) -->
@@ -993,11 +1026,28 @@
                     </div>
                     
                     <div id="extra3DependentSettings" style="display:none;">
-                        <div class="settingItem">
-                            <div class="settingLabel"><span>Nuove comande in alto</span></div>
-                            <button id="toggleNuoveInAltoExtra3Btn" class="toggleBtn">OFF</button>
-                        </div>
-                    </div>
+						<div class="settingItem">
+							<div class="settingLabel">
+								<span>Nuove comande in alto</span>
+								<small>Le nuove comande Extra 3 appariranno in cima alla lista</small>
+							</div>
+							<button id="toggleNuoveInAltoExtra3Btn" class="toggleBtn">OFF</button>
+						</div>
+						<div class="settingItem">
+							<div class="settingLabel">
+								<span>Mostra tab Ingredienti</span>
+								<small>Mostra o nascondi la tab Ingredienti nel profilo Extra 3</small>
+							</div>
+							<button id="toggleMagazzinoExtra3Btn" class="toggleBtn">ON</button>
+						</div>
+						<div class="settingItem">
+							<div class="settingLabel">
+								<span>Mostra tab Menu</span>
+								<small>Mostra o nascondi la tab Menu nel profilo Extra 3</small>
+							</div>
+							<button id="toggleMenuExtra3Btn" class="toggleBtn">ON</button>
+						</div>
+					</div>
                 </div>
 
 			</div>
