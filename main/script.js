@@ -1104,11 +1104,12 @@ function initImpostazioniToggle() {
     }
 	// ================= PROFILI EXTRA =================
     ["extra1", "extra2", "extra3"].forEach(prof => {
-        const toggleBtn = document.getElementById("toggle" + prof.charAt(0).toUpperCase() + prof.slice(1) + "Btn");
+        const ProfTitle = prof.charAt(0).toUpperCase() + prof.slice(1); // Es: "Extra1"
+        const toggleBtn = document.getElementById("toggle" + ProfTitle + "Btn");
         const ref = db.ref("impostazioni/" + prof + "Abilitato");
         const dependentDiv = document.getElementById(prof + "DependentSettings");
 
-        // Funzione per mostrare/nascondere le impostazioni specifiche del reparto
+        // Mostrare/nascondere le impostazioni specifiche del reparto
         function updateDependentVisibility(val) {
             if (dependentDiv) dependentDiv.style.display = val ? "block" : "none";
         }
@@ -1127,12 +1128,33 @@ function initImpostazioniToggle() {
             });
         }
         
-        // Nuove in alto extra
-        const toggleNuoveBtn = document.getElementById("toggleNuoveInAlto" + prof.charAt(0).toUpperCase() + prof.slice(1) + "Btn");
-        const nuoveRef = db.ref("impostazioni/nuoveInAlto" + prof.charAt(0).toUpperCase() + prof.slice(1));
+        // Toggle: Nuove in alto
+        const toggleNuoveBtn = document.getElementById("toggleNuoveInAlto" + ProfTitle + "Btn");
+        const nuoveRef = db.ref("impostazioni/nuoveInAlto" + ProfTitle);
         if (toggleNuoveBtn) {
             initToggle(toggleNuoveBtn, nuoveRef, {on:"ON", off:"OFF"}, false, val => { 
-                window.settings["nuoveInAlto" + prof.charAt(0).toUpperCase() + prof.slice(1)] = val; 
+                window.settings["nuoveInAlto" + ProfTitle] = val; 
+            });
+        }
+
+        // Toggle: Mostra Ingredienti (Magazzino)
+        const toggleMagazzinoBtn = document.getElementById("toggleMagazzino" + ProfTitle + "Btn");
+        const magazzinoRef = db.ref("impostazioni/magazzino" + ProfTitle + "Abilitato");
+        if (toggleMagazzinoBtn) {
+            initToggle(toggleMagazzinoBtn, magazzinoRef, {on:"ON", off:"OFF"}, true, val => { 
+                window.settings["magazzino" + ProfTitle + "Abilitato"] = val; 
+                // Se la tua funzione si chiama così, aggiorna le tab in tempo reale
+                if (typeof aggiornaVisibilitaTabRuoli === "function") aggiornaVisibilitaTabRuoli();
+            });
+        }
+
+        // Toggle: Mostra Menu
+        const toggleMenuBtn = document.getElementById("toggleMenu" + ProfTitle + "Btn");
+        const menuRef = db.ref("impostazioni/menu" + ProfTitle + "Abilitato");
+        if (toggleMenuBtn) {
+            initToggle(toggleMenuBtn, menuRef, {on:"ON", off:"OFF"}, true, val => { 
+                window.settings["menu" + ProfTitle + "Abilitato"] = val; 
+                if (typeof aggiornaVisibilitaTabRuoli === "function") aggiornaVisibilitaTabRuoli();
             });
         }
     });
