@@ -1106,12 +1106,22 @@ function initImpostazioniToggle() {
     ["extra1", "extra2", "extra3"].forEach(prof => {
         const toggleBtn = document.getElementById("toggle" + prof.charAt(0).toUpperCase() + prof.slice(1) + "Btn");
         const ref = db.ref("impostazioni/" + prof + "Abilitato");
+        const dependentDiv = document.getElementById(prof + "DependentSettings");
+
+        // Funzione per mostrare/nascondere le impostazioni specifiche del reparto
+        function updateDependentVisibility(val) {
+            if (dependentDiv) dependentDiv.style.display = val ? "block" : "none";
+        }
+
         if (toggleBtn) {
             initToggle(toggleBtn, ref, {on: "ON", off: "OFF"}, false, val => {
                 window.settings[prof + "Abilitato"] = val;
+                updateDependentVisibility(val);
             });
             ref.on("value", snap => {
-                window.settings[prof + "Abilitato"] = !!snap.val();
+                const val = !!snap.val();
+                window.settings[prof + "Abilitato"] = val;
+                updateDependentVisibility(val);
                 aggiornaSelectRuoliDinamici(); 
                 if (typeof aggiornaTickSnackPreordini === "function") aggiornaTickSnackPreordini();
             });
@@ -1135,12 +1145,20 @@ function initTickNoteDestinazioni() {
         if (div) div.style.display = attivo ? "block" : "none";
     });
 
-    // Mostra tick in base ai profili attivi
+    // Mostra tick in base ai profili attivi E usa il nome personalizzato
     ["snack", "extra1", "extra2", "extra3"].forEach(prof => {
         db.ref("impostazioni/" + prof + "Abilitato").on("value", snap => {
             const attivo = !!snap.val();
-            const label = document.getElementById("tick" + prof.charAt(0).toUpperCase() + prof.slice(1) + "Label");
-            if (label) label.style.display = attivo ? "inline" : "none";
+            const labelId = "tick" + prof.charAt(0).toUpperCase() + prof.slice(1) + "Label";
+            const label = document.getElementById(labelId);
+            
+            if (label) {
+                label.style.display = attivo ? "inline" : "none";
+                if (prof !== "snack") {
+                    const nomeReparto = window.nomiRepartiExtra?.[prof] || `Extra ${prof.replace('extra','')}`;
+                    label.innerHTML = `<input type="checkbox" id="tick${prof.charAt(0).toUpperCase() + prof.slice(1)}"> ${nomeReparto}`;
+                }
+            }
         });
     });
 }
@@ -1291,9 +1309,9 @@ if (archiviaComandeBtn) {
 function aggiornaSelectRuoliDinamici() {
     const profili = [
         { id: "snack", attivo: !!window.settings.snackAbilitato, label: "Snack" },
-        { id: "extra1", attivo: !!window.settings.extra1Abilitato, label: "Extra 1" },
-        { id: "extra2", attivo: !!window.settings.extra2Abilitato, label: "Extra 2" },
-        { id: "extra3", attivo: !!window.settings.extra3Abilitato, label: "Extra 3" }
+        { id: "extra1", attivo: !!window.settings.extra1Abilitato, label: window.nomiRepartiExtra?.extra1 || "Extra 1" },
+        { id: "extra2", attivo: !!window.settings.extra2Abilitato, label: window.nomiRepartiExtra?.extra2 || "Extra 2" },
+        { id: "extra3", attivo: !!window.settings.extra3Abilitato, label: window.nomiRepartiExtra?.extra3 || "Extra 3" }
     ];
 
     ["regRole", "newRole"].forEach(selectId => {
@@ -1301,15 +1319,18 @@ function aggiornaSelectRuoliDinamici() {
         if (!selectEl) return;
         
         profili.forEach(prof => {
-            const esiste = [...selectEl.options].some(opt => opt.value === prof.id);
-            if (prof.attivo && !esiste) {
-                const opt = document.createElement("option");
-                opt.value = prof.id;
-                opt.textContent = prof.label;
-                selectEl.appendChild(opt);
-            } else if (!prof.attivo && esiste) {
-                const optToRemove = selectEl.querySelector(`option[value='${prof.id}']`);
-                if(optToRemove) optToRemove.remove();
+            const optEsistente = selectEl.querySelector(`option[value='${prof.id}']`);
+            if (prof.attivo) {
+                if (!optEsistente) {
+                    const opt = document.createElement("option");
+                    opt.value = prof.id;
+                    opt.textContent = prof.label;
+                    selectEl.appendChild(opt);
+                } else {
+                    optEsistente.textContent = prof.label; // Aggiorna il nome se viene rinominato!
+                }
+            } else if (!prof.attivo && optEsistente) {
+                optEsistente.remove();
             }
         });
     });
@@ -4322,6 +4343,18 @@ window.apriModalCreaIngrediente = function() {
 
     const modal = document.createElement("div");
     modal.className = "modal-varianti";
+	// Genera stringhe HTML dinamiche per le categorie EXTRA
+    const nE1 = window.nomiRepartiExtra?.extra1 || "Extra 1";
+    const nE2 = window.nomiRepartiExtra?.extra2 || "Extra 2";
+    const nE3 = window.nomiRepartiExtra?.extra3 || "Extra 3";
+
+    const optExtra1 = window.settings.extra1Abilitato ? `<option value="extra1">${nE1}</option>` : '';
+    const optExtra2 = window.settings.extra2Abilitato ? `<option value="extra2">${nE2}</option>` : '';
+    const optExtra3 = window.settings.extra3Abilitato ? `<option value="extra3">${nE3}</option>` : '';
+
+    const chkExtra1 = window.settings.extra1Abilitato ? `<label style="margin-right:15px;"><input type="checkbox" class="mod-chk-cat" value="extra1"> ${nE1}</label>` : '';
+    const chkExtra2 = window.settings.extra2Abilitato ? `<label style="margin-right:15px;"><input type="checkbox" class="mod-chk-cat" value="extra2"> ${nE2}</label>` : '';
+    const chkExtra3 = window.settings.extra3Abilitato ? `<label><input type="checkbox" class="mod-chk-cat" value="extra3"> ${nE3}</label>` : '';
     modal.innerHTML = `
         <h3>Crea Nuovo Ingrediente</h3>
         
@@ -4334,13 +4367,11 @@ window.apriModalCreaIngrediente = function() {
             <div style="flex:1;">
                 <label><b>Categoria:</b></label>
                 <select id="modIngCat" style="width:100%; padding:8px; margin-top:5px; border-radius:6px; border:1px solid #ccc;">
-		            <option value="cibi">Cibi</option>
-		            <option value="bevande">Bevande</option>
-		            <option value="snack">Snack</option>
-		            ${window.settings.extra1Abilitato ? '<option value="extra1">Extra 1</option>' : ''}
-		            ${window.settings.extra2Abilitato ? '<option value="extra2">Extra 2</option>' : ''}
-		            ${window.settings.extra3Abilitato ? '<option value="extra3">Extra 3</option>' : ''}
-		        </select>
+                    <option value="cibi">Cibi</option>
+                    <option value="bevande">Bevande</option>
+                    <option value="snack">Snack</option>
+                    ${optExtra1} ${optExtra2} ${optExtra3}
+                </select>
             </div>
             <div style="flex:1;">
                 <label><b>Unità di misura:</b></label>
@@ -4379,13 +4410,11 @@ window.apriModalCreaIngrediente = function() {
         <div style="margin-bottom:20px; text-align:left;">
             <label><b>Mostra come variante per i piatti in:</b></label><br>
             <div style="margin-top:8px;">
-	            <label style="margin-right:15px;"><input type="checkbox" class="mod-chk-cat" value="cibi" checked> Cibi</label>
-	            <label style="margin-right:15px;"><input type="checkbox" class="mod-chk-cat" value="bevande"> Bevande</label>
-	            <label style="margin-right:15px;"><input type="checkbox" class="mod-chk-cat" value="snack"> Snack</label>
-	            ${window.settings.extra1Abilitato ? '<label style="margin-right:15px;"><input type="checkbox" class="mod-chk-cat" value="extra1"> Extra 1</label>' : ''}
-	            ${window.settings.extra2Abilitato ? '<label style="margin-right:15px;"><input type="checkbox" class="mod-chk-cat" value="extra2"> Extra 2</label>' : ''}
-	            ${window.settings.extra3Abilitato ? '<label><input type="checkbox" class="mod-chk-cat" value="extra3"> Extra 3</label>' : ''}
-	        </div>
+                <label style="margin-right:15px;"><input type="checkbox" class="mod-chk-cat" value="cibi" checked> Cibi</label>
+                <label style="margin-right:15px;"><input type="checkbox" class="mod-chk-cat" value="bevande"> Bevande</label>
+                <label style="margin-right:15px;"><input type="checkbox" class="mod-chk-cat" value="snack"> Snack</label>
+                ${chkExtra1} ${chkExtra2} ${chkExtra3}
+            </div>
         </div>
         
         <div class="modal-actions" style="display:flex; justify-content:flex-end; gap:10px;">
@@ -6502,6 +6531,18 @@ document.addEventListener("DOMContentLoaded", () => {
 	    modal.style.maxHeight = "90vh";
 	    modal.style.overflowY = "auto";
 	    modal.style.textAlign = "left";
+		// Genera stringhe HTML dinamiche per le categorie EXTRA
+    const nE1 = window.nomiRepartiExtra?.extra1 || "Extra 1";
+    const nE2 = window.nomiRepartiExtra?.extra2 || "Extra 2";
+    const nE3 = window.nomiRepartiExtra?.extra3 || "Extra 3";
+
+    const optExtra1 = window.settings.extra1Abilitato ? `<option value="extra1">${nE1}</option>` : '';
+    const optExtra2 = window.settings.extra2Abilitato ? `<option value="extra2">${nE2}</option>` : '';
+    const optExtra3 = window.settings.extra3Abilitato ? `<option value="extra3">${nE3}</option>` : '';
+
+    const chkExtra1 = window.settings.extra1Abilitato ? `<label style="margin-right:15px;"><input type="checkbox" class="mod-chk-cat" value="extra1"> ${nE1}</label>` : '';
+    const chkExtra2 = window.settings.extra2Abilitato ? `<label style="margin-right:15px;"><input type="checkbox" class="mod-chk-cat" value="extra2"> ${nE2}</label>` : '';
+    const chkExtra3 = window.settings.extra3Abilitato ? `<label><input type="checkbox" class="mod-chk-cat" value="extra3"> ${nE3}</label>` : '';
 	
 	    modal.innerHTML = `
 	        <h3 style="text-align: center; margin-bottom: 20px;">➕ Aggiungi Nuovo Piatto</h3>
@@ -6516,11 +6557,12 @@ document.addEventListener("DOMContentLoaded", () => {
 	            </div>
 	            <div style="flex: 1;">
 	                <label><b>Categoria:</b></label>
-	                <select id="modalPiattoCat" style="width: 100%; padding: 8px; box-sizing: border-box; margin-top: 4px; height: 37px; border: 1px solid #ccc; border-radius: 4px;">
-	                    <option value="cibi">Cibi</option>
-	                    <option value="bevande">Bevande</option>
-	                    <option value="snack">Snack</option>
-	                </select>
+	                <select id="modIngCat" style="width:100%; padding:8px; margin-top:5px; border-radius:6px; border:1px solid #ccc;">
+                    <option value="cibi">Cibi</option>
+                    <option value="bevande">Bevande</option>
+                    <option value="snack">Snack</option>
+                    ${optExtra1} ${optExtra2} ${optExtra3}
+                </select>
 	            </div>
 	        </div>
 	        <div style="margin-bottom: 15px;">
@@ -6789,6 +6831,18 @@ function modificaPiattoMenu(menuId, piatto) {
     modal.style.maxHeight = "90vh";
     modal.style.overflowY = "auto";
     modal.style.textAlign = "left";
+	// Genera stringhe HTML dinamiche per le categorie EXTRA
+    const nE1 = window.nomiRepartiExtra?.extra1 || "Extra 1";
+    const nE2 = window.nomiRepartiExtra?.extra2 || "Extra 2";
+    const nE3 = window.nomiRepartiExtra?.extra3 || "Extra 3";
+
+    const optExtra1 = window.settings.extra1Abilitato ? `<option value="extra1">${nE1}</option>` : '';
+    const optExtra2 = window.settings.extra2Abilitato ? `<option value="extra2">${nE2}</option>` : '';
+    const optExtra3 = window.settings.extra3Abilitato ? `<option value="extra3">${nE3}</option>` : '';
+
+    const chkExtra1 = window.settings.extra1Abilitato ? `<label style="margin-right:15px;"><input type="checkbox" class="mod-chk-cat" value="extra1"> ${nE1}</label>` : '';
+    const chkExtra2 = window.settings.extra2Abilitato ? `<label style="margin-right:15px;"><input type="checkbox" class="mod-chk-cat" value="extra2"> ${nE2}</label>` : '';
+    const chkExtra3 = window.settings.extra3Abilitato ? `<label><input type="checkbox" class="mod-chk-cat" value="extra3"> ${nE3}</label>` : '';
 
     modal.innerHTML = `
         <h3 style="text-align: center; margin-bottom: 20px;">📝 Modifica Piatto: ${piatto.nome}</h3>
@@ -6803,10 +6857,11 @@ function modificaPiattoMenu(menuId, piatto) {
             </div>
             <div style="flex: 1;">
                 <label><b>Categoria:</b></label>
-                <select id="editPiattoCat" style="width: 100%; padding: 8px; box-sizing: border-box; margin-top: 4px; height: 37px; border: 1px solid #ccc; border-radius: 4px;">
+                <select id="modIngCat" style="width:100%; padding:8px; margin-top:5px; border-radius:6px; border:1px solid #ccc;">
                     <option value="cibi">Cibi</option>
                     <option value="bevande">Bevande</option>
                     <option value="snack">Snack</option>
+                    ${optExtra1} ${optExtra2} ${optExtra3}
                 </select>
             </div>
         </div>
