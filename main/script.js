@@ -2856,28 +2856,27 @@ async function caricaMenuCassa() {
                  else if (item.categoria === "extra3") coloreBase = "#795548";
 
                  // Stile ultra-pulito: bianco con solo la barra sinistra colorata
-                 btn.style.border = "1px solid #ddd";
-                 btn.style.borderLeft = `5px solid ${coloreBase}`;
-                 btn.style.color = "#333";
-                 btn.style.backgroundColor = "#fff";
-                 btn.style.padding = "8px 6px";
-                 btn.style.margin = "0";
-                 btn.style.borderRadius = "6px";
-                 btn.style.boxShadow = "0 1px 3px rgba(0,0,0,0.05)";
-                 
-                 // DIMENSIONI: si affiancano ma non esplodono
-                 btn.style.flex = "1 1 110px"; 
-                 btn.style.maxWidth = "160px"; 
-                 btn.style.minHeight = "60px";
-                 
-                 btn.style.display = "flex";
-                 btn.style.flexDirection = "column";
-                 btn.style.justifyContent = "center";
-                 btn.style.alignItems = "center";
+                 btn.style.cssText = `
+                     border: 1px solid #ddd;
+                     border-left: 5px solid ${coloreBase};
+                     color: #333;
+                     background-color: #fff;
+                     padding: 8px 6px;
+                     margin: 0;
+                     border-radius: 6px;
+                     box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+                     flex: 1 1 110px;
+                     max-width: 160px;
+                     min-height: 60px;
+                     display: flex;
+                     flex-direction: column;
+                     justify-content: center;
+                     align-items: center;
+                 `;
                  
                  const prezzoScontato = item.sconto ? calcolaPrezzoConSconto(item).toFixed(2) : item.prezzo.toFixed(2);
                  
-                 // Testo sempre centrato e visibile su più righe
+                 // Testo sempre centrato e visibile su più righe (white-space: normal)
                  btn.innerHTML = `
                     <span style="font-weight:bold; font-size:0.9em; white-space:normal; line-height:1.2; margin-bottom:4px; text-align:center;">${item.nome}</span>
                     <small style="color:#555; font-size:0.85em; font-weight:bold;">€${prezzoScontato}</small>
@@ -2898,14 +2897,7 @@ async function caricaMenuCassa() {
                       if (div) {
                           if (!div.querySelector("h5")) {
                               div.style.display = "block";
-                              div.style.flex = "1 1 30%"; 
-                              div.style.minWidth = "220px";
-                              div.style.boxSizing = "border-box";
-                              div.style.background = "#fcfcfc";
-                              div.style.border = "1px solid #e0e0e0";
-                              div.style.borderRadius = "8px";
-                              div.style.padding = "8px";
-                              div.style.margin = "0";
+                              div.style.cssText = "flex: 1 1 30%; min-width: 220px; box-sizing: border-box; background: #fcfcfc; border: 1px solid #e0e0e0; border-radius: 8px; padding: 8px; margin: 0;";
 
                               div.innerHTML = `
                                   <h5 style="margin:0 0 8px 0; color:#333; font-size:0.95em; border-bottom:1px solid #ddd; padding-bottom:4px; display:flex; align-items:center;">
@@ -2923,10 +2915,9 @@ async function caricaMenuCassa() {
                  // LAYOUT STANDARD ESTESO (Ottimizzata OFF)
                  btn.className = "piatto-btn"; 
                  
-                 // Ripuliamo gli stili inline della versione compatta
-                 btn.style.border = ""; btn.style.borderLeft = ""; btn.style.color = ""; btn.style.backgroundColor = ""; 
-                 btn.style.padding = ""; btn.style.margin = ""; btn.style.maxWidth = ""; btn.style.minWidth = "";
-                 btn.style.display = ""; btn.style.flexDirection = ""; 
+                 // Bomba nucleare JS: Rimuove QUALSIASI forzatura inline applicata da Javascript
+                 // Lascia decidere l'estetica esclusivamente alle tue classi del file style.css
+                 btn.style.cssText = ""; 
                  
                  const categoria = (item.categoria || "cibi").toLowerCase();
                  const gridIdMap = {
@@ -6421,40 +6412,29 @@ async function caricaUtenti(){
     div.innerHTML = "";
 
     const categorie = ["admin", "cassa", "bere", "cucina"];
-    let snackAttivo = false;
+    
+    // Usiamo le impostazioni in cache per leggere lo stato in modo istantaneo
+    const snackAttivo = window.settings?.snackAbilitato === true;
+    const extra1Attivo = window.settings?.extra1Abilitato === true;
+    const extra2Attivo = window.settings?.extra2Abilitato === true;
+    const extra3Attivo = window.settings?.extra3Abilitato === true;
 
-    // 🔹 Controlla se snack è abilitato in impostazioni
-    try {
-        const snapSnack = await db.ref("impostazioni/snackAbilitato").once("value");
-        snackAttivo = snapSnack.exists() && snapSnack.val() === true;
-    } catch (err) {
-        console.warn("Errore lettura impostazione snackAbilitato:", err);
-    }
+    if (snackAttivo) categorie.push("snack");
+    if (extra1Attivo) categorie.push("extra1");
+    if (extra2Attivo) categorie.push("extra2");
+    if (extra3Attivo) categorie.push("extra3");
 
-    if (snackAttivo) {
-        categorie.push("snack");
-    } else {
-        // 🔹 Aggiorna utenti snack in cucina se disattivato
-        db.ref("utenti").once("value").then(snapshot => {
-            snapshot.forEach(snap => {
-                const u = snap.val();
-                if (u && u.ruolo === "snack") {
-                    db.ref("utenti/" + snap.key).update({ ruolo: "cucina" });
-                }
-            });
+    // Migra in automatico verso "Cucina" gli utenti dei reparti disabilitati
+    db.ref("utenti").once("value").then(snapshot => {
+        snapshot.forEach(snap => {
+            const u = snap.val();
+            if (!u) return;
+            if (u.ruolo === "snack" && !snackAttivo) db.ref("utenti/" + snap.key).update({ ruolo: "cucina" });
+            if (u.ruolo === "extra1" && !extra1Attivo) db.ref("utenti/" + snap.key).update({ ruolo: "cucina" });
+            if (u.ruolo === "extra2" && !extra2Attivo) db.ref("utenti/" + snap.key).update({ ruolo: "cucina" });
+            if (u.ruolo === "extra3" && !extra3Attivo) db.ref("utenti/" + snap.key).update({ ruolo: "cucina" });
         });
-
-        // 🔹 Se disattivato, migra eventuali utenti snack in cucina
-        db.ref("utenti").once("value").then(snapshot => {
-            snapshot.forEach(snap => {
-                const u = snap.val();
-                if (u && u.ruolo === "snack") {
-                    db.ref("utenti/" + snap.key).update({ ruolo: "cucina" });
-                }
-            });
-        });
-    }
-
+    });
 
     const categorieDiv = {};
 
@@ -6478,7 +6458,11 @@ async function caricaUtenti(){
         catDiv.id = "cat_" + cat;
 
         const h = document.createElement("h3");
-        h.innerText = cat.charAt(0).toUpperCase() + cat.slice(1);
+        let nomeCat = cat.charAt(0).toUpperCase() + cat.slice(1);
+        if (cat === "extra1") nomeCat = window.nomiRepartiExtra?.extra1 || "Extra 1";
+        if (cat === "extra2") nomeCat = window.nomiRepartiExtra?.extra2 || "Extra 2";
+        if (cat === "extra3") nomeCat = window.nomiRepartiExtra?.extra3 || "Extra 3";
+        h.innerText = nomeCat;
         catDiv.appendChild(h);
 
         const listDiv = document.createElement("div");
@@ -6558,12 +6542,21 @@ async function caricaUtenti(){
             // Select ruolo
             const selectRole = document.createElement("select");
             const ruoliBase = ["cassa", "bere", "cucina", "admin"];
-            if (snackAttivo) ruoliBase.splice(4, 0, "snack");
+            if (snackAttivo) ruoliBase.push("snack");
+            if (extra1Attivo) ruoliBase.push("extra1");
+            if (extra2Attivo) ruoliBase.push("extra2");
+            if (extra3Attivo) ruoliBase.push("extra3");
 
             ruoliBase.forEach(r => {
                 const opt = document.createElement("option");
                 opt.value = r;
-                opt.innerText = r === "--" ? "--" : r.charAt(0).toUpperCase() + r.slice(1);
+                
+                let labelRuolo = r === "--" ? "--" : r.charAt(0).toUpperCase() + r.slice(1);
+                if (r === "extra1") labelRuolo = window.nomiRepartiExtra?.extra1 || "Extra 1";
+                if (r === "extra2") labelRuolo = window.nomiRepartiExtra?.extra2 || "Extra 2";
+                if (r === "extra3") labelRuolo = window.nomiRepartiExtra?.extra3 || "Extra 3";
+                
+                opt.innerText = labelRuolo;
                 selectRole.appendChild(opt);
             });
 
