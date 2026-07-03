@@ -2722,10 +2722,14 @@ async function caricaMenuCassa() {
         if (!window.menuData || !window.ingredientData) return;
 
         const isOpt = window.settings.cassaOttimizzata;
+        const divParent = menuSnackDiv ? menuSnackDiv.parentElement : null;
         
         // Cassa Estesa / Standard Layout (Non ottimizzata)
         if (!isOpt) {
-            menuCibiDiv.innerHTML = "<h3 style='margin: 0 0 10px 0; text-align:center;'>Cibi</h3><div class='menu-grid' id='grid-cibi'></div>";
+             if (divParent) {
+                 divParent.style.display = "block"; // Ripristina layout verticale per la cassa standard
+             }
+             menuCibiDiv.innerHTML = "<h3 style='margin: 0 0 10px 0; text-align:center;'>Cibi</h3><div class='menu-grid' id='grid-cibi'></div>";
             menuBevandeDiv.innerHTML = "<h3 style='margin: 15px 0 10px 0; text-align:center;'>Bevande</h3><div class='menu-grid' id='grid-bevande'></div>";
             menuSnackDiv.innerHTML = window.settings.snackAbilitato ? "<h3 style='margin: 15px 0 10px 0; text-align:center;'>Snack</h3><div class='menu-grid' id='grid-snack'></div>" : "";
 
@@ -2751,18 +2755,29 @@ async function caricaMenuCassa() {
             manageExtraDiv("Extra2", window.nomiRepartiExtra?.extra2 || "Extra 2", window.settings.extra2Abilitato);
             manageExtraDiv("Extra3", window.nomiRepartiExtra?.extra3 || "Extra 3", window.settings.extra3Abilitato);
             
-        } else {
+       } else {
              // Layout Cassa Ottimizzata
-             const divParent = menuSnackDiv.parentElement;
-             
-             // Inizializza i div (vuoti) per la cassa ottimizzata
+             // GRIGLIA DINAMICA COMPATTA A PIÙ COLONNE
+             if (divParent) {
+                 divParent.style.display = "flex";
+                 divParent.style.flexWrap = "wrap";
+                 divParent.style.gap = "8px";
+                 divParent.style.alignItems = "flex-start";
+                 
+                 // Assicura che la barra sconti (se c'è) vada a capo occupando il 100%
+                 const scontiCont = document.getElementById("scontiGlobaliCassaContainer");
+                 if (scontiCont) scontiCont.style.flex = "1 1 100%";
+             }
+
+             // Inizializza i div (vuoti)
              menuCibiDiv.innerHTML = ""; menuBevandeDiv.innerHTML = ""; menuSnackDiv.innerHTML = "";
+             menuCibiDiv.style.display = "none"; menuBevandeDiv.style.display = "none"; menuSnackDiv.style.display = "none";
              
              ["Extra1", "Extra2", "Extra3"].forEach(id => {
                   let div = document.getElementById(`menu${id}`);
                   if (!div) {
                         div = document.createElement("div"); div.id = `menu${id}`;
-                        divParent.insertBefore(div, document.getElementById("scontiGlobaliCassaContainer"));
+                        if (divParent) divParent.insertBefore(div, document.getElementById("scontiGlobaliCassaContainer"));
                   }
                   div.innerHTML = ""; div.style.display = "none";
              });
@@ -2832,17 +2847,19 @@ async function caricaMenuCassa() {
             if (window.settings.cassaOttimizzata) {
                  btn.className = "btn-cassa-ottimizzata";
                  
-                 let colore = "#000";
-                 if (item.categoria === "cibi") colore = "#4CAF50";
-                 else if (item.categoria === "bevande") colore = "#2196F3";
-                 else if (item.categoria === "snack") colore = "#FF5722";
-                 else if (item.categoria === "extra1") colore = "#9C27B0";
-                 else if (item.categoria === "extra2") colore = "#009688";
-                 else if (item.categoria === "extra3") colore = "#795548";
-                 
-                 btn.style.borderColor = colore;
-                 btn.style.color = colore;
-                 btn.innerHTML = `<b>${item.nome}</b><br><small>€${parseFloat(item.prezzo).toFixed(2)}</small>`;
+                 // STILE PULITO E NEUTRO PER I BOTTONI
+                 btn.style.border = "1px solid #ddd";
+                 btn.style.color = "#333";
+                 btn.style.backgroundColor = "#fff";
+                 btn.style.padding = "6px 8px"; // Compresso
+                 btn.style.margin = "0";
+                 btn.style.borderRadius = "6px";
+                 btn.style.boxShadow = "0 1px 2px rgba(0,0,0,0.05)";
+                 btn.style.textAlign = "center";
+                 btn.style.flex = "1 1 auto"; // Fa allargare i bottoni per coprire i buchi
+
+                 // Layout interno bottone (nome troncato se lunghissimo)
+                 btn.innerHTML = `<span style="font-weight:bold; font-size:0.9em; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:140px; margin:0 auto;">${item.nome}</span><small style="color:#666; font-size:0.85em;">€${parseFloat(item.prezzo).toFixed(2)}</small>`;
                  
                  const containerIdMap = {
                      cibi: { id: "menuCibi", nome: "Cibi", enabled: true, color: "#4CAF50" },
@@ -2859,7 +2876,24 @@ async function caricaMenuCassa() {
                       if (div) {
                           if (!div.querySelector("h5")) {
                               div.style.display = "block";
-                              div.innerHTML = `<h5 style="margin:5px 0; color:${conf.color}; font-size:0.95em; border-bottom:1px solid #eee; padding-bottom:2px;">${conf.nome}</h5><div class="cassa-ottimizzata-container" style="display:flex; flex-wrap:wrap; gap:4px;"></div>`;
+                              // STILE DEL BOX CATEGORIA: A COLONNE E COMPATTO
+                              div.style.flex = "1 1 30%"; // Prende un terzo dello spazio (crea colonne affiancate)
+                              div.style.minWidth = "180px"; // Ma se non c'è spazio stringe fino a qua e poi va a capo
+                              div.style.boxSizing = "border-box";
+                              div.style.background = "#fdfdfd";
+                              div.style.border = "1px solid #eee";
+                              div.style.borderRadius = "8px";
+                              div.style.padding = "8px";
+                              div.style.margin = "0";
+
+                              // Aggiungiamo un pallino colorato vicino al titolo per riconoscere la categoria
+                              div.innerHTML = `
+                                  <h5 style="margin:0 0 8px 0; color:#333; font-size:0.95em; border-bottom:1px solid #ddd; padding-bottom:4px; display:flex; align-items:center;">
+                                      <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background-color:${conf.color}; margin-right:6px;"></span>
+                                      ${conf.nome}
+                                  </h5>
+                                  <div class="cassa-ottimizzata-container" style="display:flex; flex-wrap:wrap; gap:5px;"></div>
+                              `;
                           }
                           div.querySelector(".cassa-ottimizzata-container").appendChild(btn);
                       }
