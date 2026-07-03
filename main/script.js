@@ -2854,29 +2854,28 @@ async function caricaMenuCassa() {
                  else if (item.categoria === "extra2") coloreBase = "#009688";
                  else if (item.categoria === "extra3") coloreBase = "#795548";
 
-                 // ARMA FINALE CONTRO L'ARANCIONE: Forziamo il bianco/grigino distruggendo il CSS
-                 btn.style.cssText = "";
-                 btn.style.setProperty("background-color", "#f8f9fa", "important");
-                 btn.style.setProperty("color", "#333", "important");
-                 btn.style.setProperty("border", "1px solid #ccc", "important");
-                 btn.style.setProperty("border-left", `5px solid ${coloreBase}`, "important");
-                 
-                 Object.assign(btn.style, {
-                     padding: "8px 6px",
-                     margin: "0",
-                     borderRadius: "6px",
-                     boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-                     flex: "1 1 110px",
-                     maxWidth: "160px",
-                     minHeight: "60px",
-                     display: "flex",
-                     flexDirection: "column",
-                     justifyContent: "center",
-                     alignItems: "center"
-                 });
+                 // Stile ultra-pulito: forza il grigino/bianco, ignora il tema
+                 btn.style.cssText = `
+                     background-color: #f8f9fa !important;
+                     color: #333 !important;
+                     border: 1px solid #ccc !important;
+                     border-left: 5px solid ${coloreBase} !important;
+                     padding: 8px 6px;
+                     margin: 0;
+                     border-radius: 6px;
+                     box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+                     flex: 1 1 110px;
+                     max-width: 160px;
+                     min-height: 60px;
+                     display: flex;
+                     flex-direction: column;
+                     justify-content: center;
+                     align-items: center;
+                 `;
                  
                  const prezzoScontato = item.sconto ? calcolaPrezzoConSconto(item).toFixed(2) : item.prezzo.toFixed(2);
                  
+                 // Testo sempre centrato e visibile su più righe
                  btn.innerHTML = `
                     <span style="font-weight:bold; font-size:0.9em; white-space:normal; line-height:1.2; margin-bottom:4px; text-align:center;">${item.nome}</span>
                     <small style="color:#555; font-size:0.85em; font-weight:bold;">€${prezzoScontato}</small>
@@ -2922,11 +2921,13 @@ async function caricaMenuCassa() {
                  // LAYOUT STANDARD ESTESO (Ottimizzata OFF)
                  btn.className = "piatto-btn"; 
                  
-                 // Assicuriamoci che anche qui il bianco/grigino vinca sempre
+                 // Ripristiniamo ESATTAMENTE il metodo originale per forzare il grigino
                  btn.style.cssText = "";
-                 btn.style.setProperty("background-color", "#f5f5f5", "important");
-                 btn.style.setProperty("color", "#333", "important");
-                 btn.style.setProperty("border", "1px solid #aaa", "important");
+                 Object.assign(btn.style, {
+                     background: "#f5f5f5",
+                     color: "#333",
+                     border: "1px solid #aaa"
+                 });
                  
                  const categoria = (item.categoria || "cibi").toLowerCase();
                  const gridIdMap = {
