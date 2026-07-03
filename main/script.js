@@ -6858,7 +6858,7 @@ function modificaPiattoMenu(menuId, piatto) {
             </div>
             <div style="flex: 1;">
                 <label><b>Categoria:</b></label>
-                <select id="modIngCat" style="width:100%; padding:8px; margin-top:5px; border-radius:6px; border:1px solid #ccc;">
+                <select id="editPiattoCat" style="width: 100%; padding: 8px; box-sizing: border-box; margin-top: 4px; height: 37px; border: 1px solid #ccc; border-radius: 4px;">
                     <option value="cibi">Cibi</option>
                     <option value="bevande">Bevande</option>
                     <option value="snack">Snack</option>
