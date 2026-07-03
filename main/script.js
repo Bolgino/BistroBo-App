@@ -2846,29 +2846,41 @@ async function caricaMenuCassa() {
             if (window.settings.cassaOttimizzata) {
                  // LAYOUT OTTIMIZZATO COMPATTO
                  btn.className = "btn-cassa-ottimizzata";
-                 btn.innerHTML = ""; // Rimuove il wrapper standard per applicare il design a griglia
+                 btn.innerHTML = ""; // Rimuove il wrapper standard
 
-                 // Estetica pulita: sfondo bianco, niente colori accecanti, bordi leggeri
-                 btn.style.border = "1px solid #ccc";
-                 btn.style.color = "#222";
+                 let coloreBase = "#4CAF50"; 
+                 if (item.categoria === "bevande") coloreBase = "#2196F3";
+                 else if (item.categoria === "snack") coloreBase = "#FF5722";
+                 else if (item.categoria === "extra1") coloreBase = "#9C27B0";
+                 else if (item.categoria === "extra2") coloreBase = "#009688";
+                 else if (item.categoria === "extra3") coloreBase = "#795548";
+
+                 // Stile ultra-pulito: bianco con solo la barra sinistra colorata
+                 btn.style.border = "1px solid #ddd";
+                 btn.style.borderLeft = `5px solid ${coloreBase}`;
+                 btn.style.color = "#333";
                  btn.style.backgroundColor = "#fff";
-                 btn.style.padding = "8px";
+                 btn.style.padding = "8px 6px";
                  btn.style.margin = "0";
-                 btn.style.borderRadius = "8px";
-                 btn.style.boxShadow = "0 1px 3px rgba(0,0,0,0.1)";
-                 btn.style.textAlign = "center";
+                 btn.style.borderRadius = "6px";
+                 btn.style.boxShadow = "0 1px 3px rgba(0,0,0,0.05)";
                  
-                 // DIMENSIONI RAGIONEVOLI: Flessibile ma con limiti massimi (non diventerà mai osceno)
-                 btn.style.flex = "1 1 auto"; 
-                 btn.style.minWidth = "100px";
-                 btn.style.maxWidth = "160px"; // Blocca l'espansione eccessiva
+                 // DIMENSIONI: si affiancano ma non esplodono
+                 btn.style.flex = "1 1 110px"; 
+                 btn.style.maxWidth = "160px"; 
+                 btn.style.minHeight = "60px";
+                 
+                 btn.style.display = "flex";
+                 btn.style.flexDirection = "column";
+                 btn.style.justifyContent = "center";
+                 btn.style.alignItems = "center";
                  
                  const prezzoScontato = item.sconto ? calcolaPrezzoConSconto(item).toFixed(2) : item.prezzo.toFixed(2);
                  
-                 // Testo a capo automatico (white-space: normal) per mostrare sempre tutto il nome del piatto
+                 // Testo sempre centrato e visibile su più righe
                  btn.innerHTML = `
-                    <span style="font-weight:bold; font-size:0.9em; display:block; white-space:normal; line-height:1.2; margin-bottom:4px;">${item.nome}</span>
-                    <small style="color:#555; font-size:0.9em; font-weight:bold;">€${prezzoScontato}</small>
+                    <span style="font-weight:bold; font-size:0.9em; white-space:normal; line-height:1.2; margin-bottom:4px; text-align:center;">${item.nome}</span>
+                    <small style="color:#555; font-size:0.85em; font-weight:bold;">€${prezzoScontato}</small>
                  `;
                  
                  const containerIdMap = {
@@ -2886,7 +2898,6 @@ async function caricaMenuCassa() {
                       if (div) {
                           if (!div.querySelector("h5")) {
                               div.style.display = "block";
-                              // Stile dei box che contengono i bottoni (si affiancano creando colonne)
                               div.style.flex = "1 1 30%"; 
                               div.style.minWidth = "220px";
                               div.style.boxSizing = "border-box";
@@ -2896,7 +2907,6 @@ async function caricaMenuCassa() {
                               div.style.padding = "8px";
                               div.style.margin = "0";
 
-                              // Aggiungiamo un pallino colorato vicino al titolo per riconoscere la categoria con eleganza
                               div.innerHTML = `
                                   <h5 style="margin:0 0 8px 0; color:#333; font-size:0.95em; border-bottom:1px solid #ddd; padding-bottom:4px; display:flex; align-items:center;">
                                       <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background-color:${conf.color}; margin-right:6px;"></span>
@@ -2913,9 +2923,10 @@ async function caricaMenuCassa() {
                  // LAYOUT STANDARD ESTESO (Ottimizzata OFF)
                  btn.className = "piatto-btn"; 
                  
-                 // Ripuliamo eventuali inline styles se è stato fatto un cambio rapido nelle opzioni
-                 btn.style.border = ""; btn.style.color = ""; btn.style.backgroundColor = ""; 
+                 // Ripuliamo gli stili inline della versione compatta
+                 btn.style.border = ""; btn.style.borderLeft = ""; btn.style.color = ""; btn.style.backgroundColor = ""; 
                  btn.style.padding = ""; btn.style.margin = ""; btn.style.maxWidth = ""; btn.style.minWidth = "";
+                 btn.style.display = ""; btn.style.flexDirection = ""; 
                  
                  const categoria = (item.categoria || "cibi").toLowerCase();
                  const gridIdMap = {
@@ -2987,7 +2998,8 @@ function aggiornaBottoniBloccati() {
     const ingData = window.ingredientData || {};
     const menuData = window.menuData || {};
 
-    ["menuCibi", "menuBevande", "menuSnack"].forEach(sezioneId => {
+    // 🔹 AGGIUNTO: Includiamo anche le griglie degli Extra!
+    ["menuCibi", "menuBevande", "menuSnack", "menuExtra1", "menuExtra2", "menuExtra3"].forEach(sezioneId => {
         const container = document.getElementById(sezioneId);
         if (!container) return;
 
@@ -3000,13 +3012,13 @@ function aggiornaBottoniBloccati() {
 
             let disponibile = true;
 
-            // Ingredienti non disponibili
+            // Controllo ingredienti
             if (item.ingredienti && item.ingredienti.length) {
                 for (const req of item.ingredienti) {
                     const ing = ingData[req.id];
                     if (ing && (
                         ing.disponibile === false ||
-                        (ing.rimanente !== null && ing.rimanente < (req.qtyPerUnit || 1))
+                        (ing.rimanente !== null && ing.rimanente !== undefined && ing.rimanente < (req.qtyPerUnit || 1))
                     )) {
                         disponibile = false;
                         break;
@@ -3017,35 +3029,61 @@ function aggiornaBottoniBloccati() {
             // Blocco manuale
             if (item.bloccato === true) disponibile = false;
 
-            // --- Stile finale ---
+            const isOpt = window.settings.cassaOttimizzata;
+            
+            // Colore di categoria per l'accento laterale
+            let coloreBase = "#4CAF50"; 
+            if (item.categoria === "bevande") coloreBase = "#2196F3";
+            else if (item.categoria === "snack") coloreBase = "#FF5722";
+            else if (item.categoria === "extra1") coloreBase = "#9C27B0";
+            else if (item.categoria === "extra2") coloreBase = "#009688";
+            else if (item.categoria === "extra3") coloreBase = "#795548";
+
             if (!disponibile) {
                 btn.disabled = true;
 
                 if (item.bloccato === true) {
-                    // Bloccato manuale
+                    // Blocco manuale (Rosso)
                     Object.assign(btn.style, {
                         opacity: 0.6,
-                        border: "2px solid #d9534f",
-                        background: "#f8d7da"
+                        border: "1px solid #d9534f",
+                        borderLeft: `5px solid #d9534f`,
+                        backgroundColor: "#f8d7da",
+                        color: "#d9534f"
                     });
                 } else {
-                    // Ingredienti insufficienti
+                    // Ingredienti insufficienti (Arancione/Giallo) -> ECCO PERCHÈ DIVENTAVA ARANCIONE!
                     Object.assign(btn.style, {
-                        opacity: 0.5,
-                        border: "2px dashed orange",
-                        background: "#fff3cd"
+                        opacity: 0.6,
+                        border: "1px dashed orange",
+                        borderLeft: `5px solid orange`,
+                        backgroundColor: "#fff3cd",
+                        color: "orange"
                     });
                 }
             } else {
-                // Disponibile
+                // Piatto disponibile
                 btn.disabled = false;
-                Object.assign(btn.style, {
-                    opacity: 1,
-                    border: "1px solid #aaa",
-                    background: "#f5f5f5"
-                });
+                if (isOpt) {
+                    // Cassa Ottimizzata: Stile pulito, bordino grigio e barra laterale colorata
+                    Object.assign(btn.style, {
+                        opacity: 1,
+                        border: "1px solid #ddd",
+                        borderLeft: `5px solid ${coloreBase}`,
+                        backgroundColor: "#fff",
+                        color: "#333"
+                    });
+                } else {
+                    // Cassa Standard: Torna il grigio classico
+                    Object.assign(btn.style, {
+                        opacity: 1,
+                        border: "1px solid #aaa",
+                        borderLeft: "1px solid #aaa",
+                        backgroundColor: "#f5f5f5",
+                        color: "#333"
+                    });
+                }
             }
-
         });
     });
 
