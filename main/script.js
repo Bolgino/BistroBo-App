@@ -2921,12 +2921,13 @@ async function caricaMenuCassa() {
                  // LAYOUT STANDARD ESTESO (Ottimizzata OFF)
                  btn.className = "piatto-btn"; 
                  
-                 // FORZATURA BIANCO/GRIGINO: Ignoriamo il colore del tema
-                 btn.style.cssText = `
-                     background-color: #f8f9fa !important;
-                     color: #333 !important;
-                     border: 1px solid #ccc !important;
-                 `; 
+                 // Ripristiniamo ESATTAMENTE il metodo originale per forzare il grigino
+                 btn.style.cssText = "";
+                 Object.assign(btn.style, {
+                     background: "#f5f5f5",
+                     color: "#333",
+                     border: "1px solid #aaa"
+                 });
                  
                  const categoria = (item.categoria || "cibi").toLowerCase();
                  const gridIdMap = {
@@ -3004,84 +3005,38 @@ function aggiornaBottoniBloccati() {
 
         const bottoni = Array.from(container.querySelectorAll("button"));
 
-        bottoni.forEach(btn => {
-            const id = btn.dataset.menuId;
-            const item = menuData[id];
-            if (!item) return;
-
-            let disponibile = true;
-
-            // Controllo ingredienti
-            if (item.ingredienti && item.ingredienti.length) {
-                for (const req of item.ingredienti) {
-                    const ing = ingData[req.id];
-                    if (ing && (
-                        ing.disponibile === false ||
-                        (ing.rimanente !== null && ing.rimanente !== undefined && ing.rimanente !== "" && parseFloat(ing.rimanente) < (parseFloat(req.qtyPerUnit) || 1))
-                    )) {
-                        disponibile = false;
-                        break;
-                    }
-                }
-            }
-
-            // Blocco manuale
-            if (item.bloccato === true) disponibile = false;
-
-            const isOpt = window.settings.cassaOttimizzata;
-            
-            let coloreBase = "#4CAF50"; 
-            if (item.categoria === "bevande") coloreBase = "#2196F3";
-            else if (item.categoria === "snack") coloreBase = "#FF5722";
-            else if (item.categoria === "extra1") coloreBase = "#9C27B0";
-            else if (item.categoria === "extra2") coloreBase = "#009688";
-            else if (item.categoria === "extra3") coloreBase = "#795548";
-
-            if (!disponibile) {
+        if (!disponibile) {
                 btn.disabled = true;
                 
                 if (item.bloccato === true) {
-                    // Bloccato manuale: Sfondo rosa, testo e bordo rosso
-                    btn.style.cssText = `
-                        background-color: #f8d7da !important;
-                        color: #d9534f !important;
-                        border: 2px dashed #d9534f !important;
-                        opacity: 0.6 !important;
-                        ${isOpt ? `padding: 8px 6px; margin: 0; border-radius: 6px; flex: 1 1 110px; max-width: 160px; min-height: 60px; display: flex; flex-direction: column; justify-content: center; align-items: center; border-left: 5px solid #d9534f !important;` : ''}
-                    `;
+                    if (isOpt) {
+                        btn.style.cssText = `background: #f8d7da !important; color: #d9534f !important; border: 2px dashed #d9534f !important; opacity: 0.6 !important; padding: 8px 6px; margin: 0; border-radius: 6px; flex: 1 1 110px; max-width: 160px; min-height: 60px; display: flex; flex-direction: column; justify-content: center; align-items: center; border-left: 5px solid #d9534f !important;`;
+                    } else {
+                        // VECCHIO BLOCCO MANUALE
+                        btn.style.cssText = "";
+                        Object.assign(btn.style, { opacity: 0.6, border: "2px solid #d9534f", background: "#f8d7da", color: "#d9534f" });
+                    }
                 } else {
-                    // Ingredienti esauriti: Il tuo vecchio "Arancione Chiaro" (giallino con bordo tratteggiato arancio)
-                    btn.style.cssText = `
-                        background-color: #fff3cd !important;
-                        color: #ff9800 !important;
-                        border: 2px dashed orange !important;
-                        opacity: 0.7 !important;
-                        ${isOpt ? `padding: 8px 6px; margin: 0; border-radius: 6px; flex: 1 1 110px; max-width: 160px; min-height: 60px; display: flex; flex-direction: column; justify-content: center; align-items: center; border-left: 5px solid orange !important;` : ''}
-                    `;
+                    if (isOpt) {
+                        btn.style.cssText = `background: #fff3cd !important; color: #ff9800 !important; border: 2px dashed orange !important; opacity: 0.7 !important; padding: 8px 6px; margin: 0; border-radius: 6px; flex: 1 1 110px; max-width: 160px; min-height: 60px; display: flex; flex-direction: column; justify-content: center; align-items: center; border-left: 5px solid orange !important;`;
+                    } else {
+                        // VECCHIO BLOCCO INGREDIENTI (Arancione chiaro)
+                        btn.style.cssText = "";
+                        Object.assign(btn.style, { opacity: 0.5, border: "2px dashed orange", background: "#fff3cd", color: "#333" });
+                    }
                 }
             } else {
                 btn.disabled = false;
                 
                 if (isOpt) {
-                    // Ottimizzata Standard (Bianco/Grigino con bordo colorato)
-                    btn.style.cssText = `
-                        background-color: #f8f9fa !important;
-                        color: #333 !important;
-                        border: 1px solid #ccc !important;
-                        border-left: 5px solid ${coloreBase} !important;
-                        padding: 8px 6px; margin: 0; border-radius: 6px; flex: 1 1 110px; max-width: 160px; min-height: 60px; display: flex; flex-direction: column; justify-content: center; align-items: center;
-                    `;
+                    // Ottimizzata Standard: Grigino pulito con lato colorato
+                    btn.style.cssText = `background: #f8f9fa !important; color: #333 !important; border: 1px solid #ccc !important; border-left: 5px solid ${coloreBase} !important; padding: 8px 6px; margin: 0; border-radius: 6px; flex: 1 1 110px; max-width: 160px; min-height: 60px; display: flex; flex-direction: column; justify-content: center; align-items: center;`;
                 } else {
-                    // Standard Cassa Estesa (Grigio Chiaro con bordo grigio) -> NON SEGUE PIÙ IL TEMA
-                    btn.style.cssText = `
-                        background-color: #f5f5f5 !important;
-                        color: #333 !important;
-                        border: 1px solid #aaa !important;
-                        border-left: 1px solid #aaa !important;
-                    `; 
+                    // Cassa Estesa Standard: Ritorna il tuo Grigio Classico
+                    btn.style.cssText = ""; 
+                    Object.assign(btn.style, { opacity: 1, border: "1px solid #aaa", background: "#f5f5f5", color: "#333" });
                 }
             }
-        });
     });
 
     console.log("🔵 [aggiornaBottoniBloccati] FINE");
