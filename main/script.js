@@ -2939,6 +2939,7 @@ async function caricaMenuCassa() {
                  if (targetGrid) targetGrid.appendChild(btn);
             }
         });
+		
         hideLoader();
     }
 
