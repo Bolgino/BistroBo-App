@@ -12,6 +12,7 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const auth = firebase.auth();
 
+
 window.selectedMap = window.selectedMap || {};
 window.tickState = window.tickState || {}; 
 
