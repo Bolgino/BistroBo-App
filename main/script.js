@@ -2821,6 +2821,7 @@ async function caricaMenuCassa() {
                 aggiornaComandaCorrente();
             };
 
+            // CREAZIONE CONTENUTO STANDARD (Usato se Cassa Ottimizzata è OFF)
             const wrapper = document.createElement("div");
             wrapper.style.width = "100%";
             
@@ -2843,23 +2844,34 @@ async function caricaMenuCassa() {
 
             btn.appendChild(wrapper);
 
-           // CASSA OTTIMIZZATA
+            // --- INIZIO GESTIONE LAYOUT (STANDARD O OTTIMIZZATO) ---
             if (window.settings.cassaOttimizzata) {
+                 // LAYOUT OTTIMIZZATO COMPATTO
                  btn.className = "btn-cassa-ottimizzata";
-                 
-                 // STILE PULITO E NEUTRO PER I BOTTONI
-                 btn.style.border = "1px solid #ddd";
-                 btn.style.color = "#333";
-                 btn.style.backgroundColor = "#fff";
-                 btn.style.padding = "6px 8px"; // Compresso
-                 btn.style.margin = "0";
-                 btn.style.borderRadius = "6px";
-                 btn.style.boxShadow = "0 1px 2px rgba(0,0,0,0.05)";
-                 btn.style.textAlign = "center";
-                 btn.style.flex = "1 1 auto"; // Fa allargare i bottoni per coprire i buchi
+                 btn.innerHTML = ""; // Rimuove il wrapper standard per applicare il design a griglia
 
-                 // Layout interno bottone (nome troncato se lunghissimo)
-                 btn.innerHTML = `<span style="font-weight:bold; font-size:0.9em; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:140px; margin:0 auto;">${item.nome}</span><small style="color:#666; font-size:0.85em;">€${parseFloat(item.prezzo).toFixed(2)}</small>`;
+                 // Estetica pulita: sfondo bianco, niente colori accecanti, bordi leggeri
+                 btn.style.border = "1px solid #ccc";
+                 btn.style.color = "#222";
+                 btn.style.backgroundColor = "#fff";
+                 btn.style.padding = "8px";
+                 btn.style.margin = "0";
+                 btn.style.borderRadius = "8px";
+                 btn.style.boxShadow = "0 1px 3px rgba(0,0,0,0.1)";
+                 btn.style.textAlign = "center";
+                 
+                 // DIMENSIONI RAGIONEVOLI: Flessibile ma con limiti massimi (non diventerà mai osceno)
+                 btn.style.flex = "1 1 auto"; 
+                 btn.style.minWidth = "100px";
+                 btn.style.maxWidth = "160px"; // Blocca l'espansione eccessiva
+                 
+                 const prezzoScontato = item.sconto ? calcolaPrezzoConSconto(item).toFixed(2) : item.prezzo.toFixed(2);
+                 
+                 // Testo a capo automatico (white-space: normal) per mostrare sempre tutto il nome del piatto
+                 btn.innerHTML = `
+                    <span style="font-weight:bold; font-size:0.9em; display:block; white-space:normal; line-height:1.2; margin-bottom:4px;">${item.nome}</span>
+                    <small style="color:#555; font-size:0.9em; font-weight:bold;">€${prezzoScontato}</small>
+                 `;
                  
                  const containerIdMap = {
                      cibi: { id: "menuCibi", nome: "Cibi", enabled: true, color: "#4CAF50" },
@@ -2876,23 +2888,23 @@ async function caricaMenuCassa() {
                       if (div) {
                           if (!div.querySelector("h5")) {
                               div.style.display = "block";
-                              // STILE DEL BOX CATEGORIA: A COLONNE E COMPATTO
-                              div.style.flex = "1 1 30%"; // Prende un terzo dello spazio (crea colonne affiancate)
-                              div.style.minWidth = "180px"; // Ma se non c'è spazio stringe fino a qua e poi va a capo
+                              // Stile dei box che contengono i bottoni (si affiancano creando colonne)
+                              div.style.flex = "1 1 30%"; 
+                              div.style.minWidth = "220px";
                               div.style.boxSizing = "border-box";
-                              div.style.background = "#fdfdfd";
-                              div.style.border = "1px solid #eee";
+                              div.style.background = "#fcfcfc";
+                              div.style.border = "1px solid #e0e0e0";
                               div.style.borderRadius = "8px";
                               div.style.padding = "8px";
                               div.style.margin = "0";
 
-                              // Aggiungiamo un pallino colorato vicino al titolo per riconoscere la categoria
+                              // Aggiungiamo un pallino colorato vicino al titolo per riconoscere la categoria con eleganza
                               div.innerHTML = `
                                   <h5 style="margin:0 0 8px 0; color:#333; font-size:0.95em; border-bottom:1px solid #ddd; padding-bottom:4px; display:flex; align-items:center;">
                                       <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background-color:${conf.color}; margin-right:6px;"></span>
                                       ${conf.nome}
                                   </h5>
-                                  <div class="cassa-ottimizzata-container" style="display:flex; flex-wrap:wrap; gap:5px;"></div>
+                                  <div class="cassa-ottimizzata-container" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
                               `;
                           }
                           div.querySelector(".cassa-ottimizzata-container").appendChild(btn);
@@ -2900,15 +2912,21 @@ async function caricaMenuCassa() {
                  }
                  
             } else {
-                 // CASSA STANDARD ESTESA
-                const categoria = (item.categoria || "cibi").toLowerCase();
-                const gridIdMap = {
-                    cibi: "grid-cibi", bevande: "grid-bevande", snack: "grid-snack",
-                    extra1: "grid-extra1", extra2: "grid-extra2", extra3: "grid-extra3"
-                };
-                const targetGridId = gridIdMap[categoria] || "grid-cibi";
-                const targetGrid = document.getElementById(targetGridId);
-                if (targetGrid) targetGrid.appendChild(btn);
+                 // LAYOUT STANDARD ESTESO (Ottimizzata OFF)
+                 btn.className = "piatto-btn"; 
+                 
+                 // Ripuliamo eventuali inline styles se è stato fatto un cambio rapido nelle opzioni
+                 btn.style.border = ""; btn.style.color = ""; btn.style.backgroundColor = ""; 
+                 btn.style.padding = ""; btn.style.margin = ""; btn.style.maxWidth = ""; btn.style.minWidth = "";
+                 
+                 const categoria = (item.categoria || "cibi").toLowerCase();
+                 const gridIdMap = {
+                     cibi: "grid-cibi", bevande: "grid-bevande", snack: "grid-snack",
+                     extra1: "grid-extra1", extra2: "grid-extra2", extra3: "grid-extra3"
+                 };
+                 const targetGridId = gridIdMap[categoria] || "grid-cibi";
+                 const targetGrid = document.getElementById(targetGridId);
+                 if (targetGrid) targetGrid.appendChild(btn);
             }
         });
 
