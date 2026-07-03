@@ -2999,7 +2999,6 @@ function aggiornaBottoniBloccati() {
     const ingData = window.ingredientData || {};
     const menuData = window.menuData || {};
 
-    // 🔹 AGGIUNTO: Includiamo anche le griglie degli Extra!
     ["menuCibi", "menuBevande", "menuSnack", "menuExtra1", "menuExtra2", "menuExtra3"].forEach(sezioneId => {
         const container = document.getElementById(sezioneId);
         if (!container) return;
@@ -3019,7 +3018,7 @@ function aggiornaBottoniBloccati() {
                     const ing = ingData[req.id];
                     if (ing && (
                         ing.disponibile === false ||
-                        (ing.rimanente !== null && ing.rimanente !== undefined && ing.rimanente < (req.qtyPerUnit || 1))
+                        (ing.rimanente !== null && ing.rimanente !== undefined && ing.rimanente !== "" && parseFloat(ing.rimanente) < (parseFloat(req.qtyPerUnit) || 1))
                     )) {
                         disponibile = false;
                         break;
@@ -3032,7 +3031,6 @@ function aggiornaBottoniBloccati() {
 
             const isOpt = window.settings.cassaOttimizzata;
             
-            // Colore di categoria per l'accento laterale
             let coloreBase = "#4CAF50"; 
             if (item.categoria === "bevande") coloreBase = "#2196F3";
             else if (item.categoria === "snack") coloreBase = "#FF5722";
@@ -3042,47 +3040,46 @@ function aggiornaBottoniBloccati() {
 
             if (!disponibile) {
                 btn.disabled = true;
-
+                
                 if (item.bloccato === true) {
-                    // Blocco manuale (Rosso)
-                    Object.assign(btn.style, {
-                        opacity: 0.6,
-                        border: "1px solid #d9534f",
-                        borderLeft: `5px solid #d9534f`,
-                        backgroundColor: "#f8d7da",
-                        color: "#d9534f"
-                    });
+                    // Bloccato manuale: Sfondo rosa, testo e bordo rosso
+                    btn.style.cssText = `
+                        background-color: #f8d7da !important;
+                        color: #d9534f !important;
+                        border: 2px dashed #d9534f !important;
+                        opacity: 0.6 !important;
+                        ${isOpt ? `padding: 8px 6px; margin: 0; border-radius: 6px; flex: 1 1 110px; max-width: 160px; min-height: 60px; display: flex; flex-direction: column; justify-content: center; align-items: center; border-left: 5px solid #d9534f !important;` : ''}
+                    `;
                 } else {
-                    // Ingredienti insufficienti (Arancione/Giallo) -> ECCO PERCHÈ DIVENTAVA ARANCIONE!
-                    Object.assign(btn.style, {
-                        opacity: 0.6,
-                        border: "1px dashed orange",
-                        borderLeft: `5px solid orange`,
-                        backgroundColor: "#fff3cd",
-                        color: "orange"
-                    });
+                    // Ingredienti esauriti: Il tuo vecchio "Arancione Chiaro" (giallino con bordo tratteggiato arancio)
+                    btn.style.cssText = `
+                        background-color: #fff3cd !important;
+                        color: #ff9800 !important;
+                        border: 2px dashed orange !important;
+                        opacity: 0.7 !important;
+                        ${isOpt ? `padding: 8px 6px; margin: 0; border-radius: 6px; flex: 1 1 110px; max-width: 160px; min-height: 60px; display: flex; flex-direction: column; justify-content: center; align-items: center; border-left: 5px solid orange !important;` : ''}
+                    `;
                 }
             } else {
-                // Piatto disponibile
                 btn.disabled = false;
+                
                 if (isOpt) {
-                    // Cassa Ottimizzata: Stile pulito, bordino grigio e barra laterale colorata
-                    Object.assign(btn.style, {
-                        opacity: 1,
-                        border: "1px solid #ddd",
-                        borderLeft: `5px solid ${coloreBase}`,
-                        backgroundColor: "#fff",
-                        color: "#333"
-                    });
+                    // Ottimizzata Standard (Bianco/Grigino con bordo colorato)
+                    btn.style.cssText = `
+                        background-color: #f8f9fa !important;
+                        color: #333 !important;
+                        border: 1px solid #ccc !important;
+                        border-left: 5px solid ${coloreBase} !important;
+                        padding: 8px 6px; margin: 0; border-radius: 6px; flex: 1 1 110px; max-width: 160px; min-height: 60px; display: flex; flex-direction: column; justify-content: center; align-items: center;
+                    `;
                 } else {
-                    // Cassa Standard: Torna il grigio classico
-                    Object.assign(btn.style, {
-                        opacity: 1,
-                        border: "1px solid #aaa",
-                        borderLeft: "1px solid #aaa",
-                        backgroundColor: "#f5f5f5",
-                        color: "#333"
-                    });
+                    // Standard Cassa Estesa (Grigio Chiaro con bordo grigio) -> NON SEGUE PIÙ IL TEMA
+                    btn.style.cssText = `
+                        background-color: #f5f5f5 !important;
+                        color: #333 !important;
+                        border: 1px solid #aaa !important;
+                        border-left: 1px solid #aaa !important;
+                    `; 
                 }
             }
         });
@@ -4917,26 +4914,43 @@ async function caricaGestioneComandeAdmin() {
             };
             buttonsDiv.insertBefore(statoDiv, buttonsDiv.firstChild);
             // Funzione helper per stato sopra bottone
+            // Funzione helper per stato sopra bottone
             function creaBtnConStato(statoAttuale, tipo, idComanda) {
                 const container = document.createElement("div");
-                container.className = "btnStatoContainer";  // nuovo stile CSS
+                container.className = "btnStatoContainer"; 
+
+                // TRADUCI IL NOME EXTRA SE ESISTE
+                let labelTipo = tipo.charAt(0).toUpperCase() + tipo.slice(1);
+                if (tipo.startsWith("extra")) {
+                    labelTipo = window.nomiRepartiExtra?.[tipo] || labelTipo;
+                }
 
                 const statoSpan = document.createElement("div");
-                statoSpan.innerHTML = `<b>Stato ${tipo.charAt(0).toUpperCase()+tipo.slice(1)}:</b> ${statoAttuale}`;
+                statoSpan.innerHTML = `<b style="white-space: nowrap;">Stato ${labelTipo}:</b> ${statoAttuale}`;
                 statoSpan.style.fontWeight = "bold";
                 statoSpan.style.fontSize = "0.9em";
                 statoSpan.style.color = (statoAttuale === "completato") ? "green" :
                                         (statoAttuale === "in elaborazione") ? "orange" : "red";
 
                 const btn = document.createElement("button");
-                aggiornaBtn(btn, tipo, statoAttuale);
+                // Crea logica per la label dinamica
+                let testoBtn = "", coloreBtn = "";
+                if (statoAttuale === "da fare") { testoBtn = "Segna in elaborazione"; coloreBtn = "orange"; }
+                else if (statoAttuale === "in elaborazione") { testoBtn = "Segna completato"; coloreBtn = "green"; }
+                else { testoBtn = "Segna da fare"; coloreBtn = "red"; }
+                
+                btn.innerText = testoBtn;
+                btn.style.background = coloreBtn;
+                btn.style.color = "white";
+
                 btn.onclick = async () => {
                     let nuovo;
                     if (statoAttuale === "da fare") nuovo = "in elaborazione";
                     else if (statoAttuale === "in elaborazione") nuovo = "completato";
                     else nuovo = "da fare";
+                    
                     const chiave = "stato" + tipo.charAt(0).toUpperCase() + tipo.slice(1);
-                    await aggiornaStatoConTermine(idComanda, chiave, nuovo);
+                    await db.ref("comande/" + idComanda).update({ [chiave]: nuovo });
                 };
 
                 container.appendChild(statoSpan);
@@ -4948,12 +4962,11 @@ async function caricaGestioneComandeAdmin() {
             buttonsDiv.appendChild(creaBtnConStato(c.statoCucina, "cucina", id));
             buttonsDiv.appendChild(creaBtnConStato(c.statoBere, "bere", id));
 
-            // 🔹 Mostra sempre il tasto Snack se impostazione attiva (anche se la comanda non ha snack)
+            // 🔹 Mostra sempre il tasto se l'impostazione è attiva (anche se la comanda non ha piatti lì)
             if (snackAbilitato) buttonsDiv.appendChild(creaBtnConStato(c.statoSnack || "completato", "snack", id));
-	        if (window.settings?.extra1Abilitato) buttonsDiv.appendChild(creaBtnConStato(c.statoExtra1 || "completato", "extra1", id));
+            if (window.settings?.extra1Abilitato) buttonsDiv.appendChild(creaBtnConStato(c.statoExtra1 || "completato", "extra1", id));
             if (window.settings?.extra2Abilitato) buttonsDiv.appendChild(creaBtnConStato(c.statoExtra2 || "completato", "extra2", id));
             if (window.settings?.extra3Abilitato) buttonsDiv.appendChild(creaBtnConStato(c.statoExtra3 || "completato", "extra3", id));
-
 
 
             buttonsDiv.appendChild(btnModifica);
