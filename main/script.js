@@ -2108,8 +2108,9 @@ function initRuoloTab(ruolo) {
                 const items = Object.values(data).filter(i => i.categoria?.toLowerCase() === ruolo);
                 if (items.length > 0) {
                     const title = document.createElement("h4");
-                    // Mette l'iniziale maiuscola
-                    title.innerText = ruolo.charAt(0).toUpperCase() + ruolo.slice(1);
+                    let realName = ruolo.charAt(0).toUpperCase() + ruolo.slice(1);
+                    if (ruolo.startsWith("extra")) realName = window.nomiRepartiExtra?.[ruolo] || realName;
+                    title.innerText = realName;
                     menuContainer.appendChild(title);
 
                     items.forEach(item => {
@@ -2117,6 +2118,8 @@ function initRuoloTab(ruolo) {
                         menuContainer.appendChild(divPiatto);
                         aggiungiIngredienti(item, menuContainer);
                     });
+                } else {
+                    menuContainer.innerHTML = `<div style="text-align:center; padding: 30px; color: #777; font-style: italic; font-size: 1.1em; background: #f9f9f9; border-radius: 10px; margin-top: 20px;">Nessun piatto configurato per questo reparto. Qui si batte la fiacca! 😴🍳</div>`;
                 }
             }
         }
@@ -2718,10 +2721,52 @@ async function caricaMenuCassa() {
     function renderMenuCassa() {
         if (!window.menuData || !window.ingredientData) return;
 
-        // Disegna le griglie
-        menuCibiDiv.innerHTML = "<h3 style='margin: 0 0 10px 0; text-align:center;'>Cibi</h3><div class='menu-grid' id='grid-cibi'></div>";
-        menuBevandeDiv.innerHTML = "<h3 style='margin: 15px 0 10px 0; text-align:center;'>Bevande</h3><div class='menu-grid' id='grid-bevande'></div>";
-        menuSnackDiv.innerHTML = "<h3 style='margin: 15px 0 10px 0; text-align:center;'>Snack</h3><div class='menu-grid' id='grid-snack'></div>";
+        const isOpt = window.settings.cassaOttimizzata;
+        
+        // Cassa Estesa / Standard Layout (Non ottimizzata)
+        if (!isOpt) {
+            menuCibiDiv.innerHTML = "<h3 style='margin: 0 0 10px 0; text-align:center;'>Cibi</h3><div class='menu-grid' id='grid-cibi'></div>";
+            menuBevandeDiv.innerHTML = "<h3 style='margin: 15px 0 10px 0; text-align:center;'>Bevande</h3><div class='menu-grid' id='grid-bevande'></div>";
+            menuSnackDiv.innerHTML = window.settings.snackAbilitato ? "<h3 style='margin: 15px 0 10px 0; text-align:center;'>Snack</h3><div class='menu-grid' id='grid-snack'></div>" : "";
+
+            const divParent = menuSnackDiv.parentElement;
+            
+            // Funzione di utilità per creare/aggiornare Div extra
+            const manageExtraDiv = (id, nome, enabled) => {
+                let div = document.getElementById(`menu${id}`);
+                if (enabled) {
+                    if (!div) {
+                        div = document.createElement("div");
+                        div.id = `menu${id}`;
+                        divParent.insertBefore(div, document.getElementById("scontiGlobaliCassaContainer"));
+                    }
+                    div.style.display = "block";
+                    div.innerHTML = `<h3 style='margin: 15px 0 10px 0; text-align:center;'>${nome}</h3><div class='menu-grid' id='grid-${id.toLowerCase()}'></div>`;
+                } else if (div) {
+                    div.style.display = "none";
+                }
+            };
+
+            manageExtraDiv("Extra1", window.nomiRepartiExtra?.extra1 || "Extra 1", window.settings.extra1Abilitato);
+            manageExtraDiv("Extra2", window.nomiRepartiExtra?.extra2 || "Extra 2", window.settings.extra2Abilitato);
+            manageExtraDiv("Extra3", window.nomiRepartiExtra?.extra3 || "Extra 3", window.settings.extra3Abilitato);
+            
+        } else {
+             // Layout Cassa Ottimizzata
+             const divParent = menuSnackDiv.parentElement;
+             
+             // Inizializza i div (vuoti) per la cassa ottimizzata
+             menuCibiDiv.innerHTML = ""; menuBevandeDiv.innerHTML = ""; menuSnackDiv.innerHTML = "";
+             
+             ["Extra1", "Extra2", "Extra3"].forEach(id => {
+                  let div = document.getElementById(`menu${id}`);
+                  if (!div) {
+                        div = document.createElement("div"); div.id = `menu${id}`;
+                        divParent.insertBefore(div, document.getElementById("scontiGlobaliCassaContainer"));
+                  }
+                  div.innerHTML = ""; div.style.display = "none";
+             });
+        }
 
         Object.entries(window.menuData || {}).forEach(([id, item]) => {
             // Creo il bottone sempre nuovo (evita il bug della sparizione!)
@@ -2783,10 +2828,54 @@ async function caricaMenuCassa() {
 
             btn.appendChild(wrapper);
 
-            const categoria = (item.categoria || "").toLowerCase();
-            if (categoria === "cibi") document.getElementById("grid-cibi").appendChild(btn);
-            else if (categoria === "bevande") document.getElementById("grid-bevande").appendChild(btn);
-            else if (categoria === "snack") document.getElementById("grid-snack").appendChild(btn);
+           // CASSA OTTIMIZZATA
+            if (window.settings.cassaOttimizzata) {
+                 btn.className = "btn-cassa-ottimizzata";
+                 
+                 let colore = "#000";
+                 if (item.categoria === "cibi") colore = "#4CAF50";
+                 else if (item.categoria === "bevande") colore = "#2196F3";
+                 else if (item.categoria === "snack") colore = "#FF5722";
+                 else if (item.categoria === "extra1") colore = "#9C27B0";
+                 else if (item.categoria === "extra2") colore = "#009688";
+                 else if (item.categoria === "extra3") colore = "#795548";
+                 
+                 btn.style.borderColor = colore;
+                 btn.style.color = colore;
+                 btn.innerHTML = `<b>${item.nome}</b><br><small>€${parseFloat(item.prezzo).toFixed(2)}</small>`;
+                 
+                 const containerIdMap = {
+                     cibi: { id: "menuCibi", nome: "Cibi", enabled: true, color: "#4CAF50" },
+                     bevande: { id: "menuBevande", nome: "Bevande", enabled: true, color: "#2196F3" },
+                     snack: { id: "menuSnack", nome: "Snack", enabled: window.settings.snackAbilitato, color: "#FF5722" },
+                     extra1: { id: "menuExtra1", nome: window.nomiRepartiExtra?.extra1 || "Extra 1", enabled: window.settings.extra1Abilitato, color: "#9C27B0" },
+                     extra2: { id: "menuExtra2", nome: window.nomiRepartiExtra?.extra2 || "Extra 2", enabled: window.settings.extra2Abilitato, color: "#009688" },
+                     extra3: { id: "menuExtra3", nome: window.nomiRepartiExtra?.extra3 || "Extra 3", enabled: window.settings.extra3Abilitato, color: "#795548" }
+                 };
+                 
+                 const conf = containerIdMap[item.categoria || "cibi"];
+                 if (conf && conf.enabled) {
+                      const div = document.getElementById(conf.id);
+                      if (div) {
+                          if (!div.querySelector("h5")) {
+                              div.style.display = "block";
+                              div.innerHTML = `<h5 style="margin:5px 0; color:${conf.color}; font-size:0.95em; border-bottom:1px solid #eee; padding-bottom:2px;">${conf.nome}</h5><div class="cassa-ottimizzata-container" style="display:flex; flex-wrap:wrap; gap:4px;"></div>`;
+                          }
+                          div.querySelector(".cassa-ottimizzata-container").appendChild(btn);
+                      }
+                 }
+                 
+            } else {
+                 // CASSA STANDARD ESTESA
+                const categoria = (item.categoria || "cibi").toLowerCase();
+                const gridIdMap = {
+                    cibi: "grid-cibi", bevande: "grid-bevande", snack: "grid-snack",
+                    extra1: "grid-extra1", extra2: "grid-extra2", extra3: "grid-extra3"
+                };
+                const targetGridId = gridIdMap[categoria] || "grid-cibi";
+                const targetGrid = document.getElementById(targetGridId);
+                if (targetGrid) targetGrid.appendChild(btn);
+            }
         });
 
         hideLoader();
@@ -4040,9 +4129,19 @@ async function caricaIngredienti() {
             }
 
             for (const [cat, items] of Object.entries(categorie)) {
+                // Nascondi gli ingredienti se il reparto extra è disabilitato
+                if (cat.startsWith("extra") && !window.settings[cat + "Abilitato"]) continue;
+
                 const catDiv = document.createElement("div");
                 const h3 = document.createElement("h3");
-                h3.innerText = cat.charAt(0).toUpperCase() + cat.slice(1);
+                
+                // Mettiamo il nome personalizzato
+                let catTitle = cat.charAt(0).toUpperCase() + cat.slice(1);
+                if (cat === "extra1") catTitle = window.nomiRepartiExtra?.extra1 || "Extra 1";
+                if (cat === "extra2") catTitle = window.nomiRepartiExtra?.extra2 || "Extra 2";
+                if (cat === "extra3") catTitle = window.nomiRepartiExtra?.extra3 || "Extra 3";
+
+                h3.innerText = catTitle;
                 catDiv.appendChild(h3);
 
                 items.forEach(ing => {
@@ -6089,17 +6188,20 @@ async function caricaIngredientiPerRuolo(ruolo) {
         if (typeof aggiornaMenuRuolo === "function") aggiornaMenuRuolo();
 
         let categorieRuolo;
-        if (ruolo === "cucina") {
-            const snapSnack = await db.ref("impostazioni/snackAbilitato").once("value");
-            const snackAttivo = snapSnack.exists() && snapSnack.val() === true;
-            categorieRuolo = snackAttivo ? ["cibi"] : ["cibi", "snack"];
-        } else if (ruolo === "snack") {
-            const snapSnack = await db.ref("impostazioni/snackAbilitato").once("value");
-            const snackAttivo = snapSnack.exists() && snapSnack.val() === true;
-            categorieRuolo = snackAttivo ? ["snack"] : [];
-        } else {
-            categorieRuolo = ["bevande"];
-        }
+	    if (ruolo === "cucina") {
+	        const snapSnack = await db.ref("impostazioni/snackAbilitato").once("value");
+	        const snackAttivo = snapSnack.exists() && snapSnack.val() === true;
+	        categorieRuolo = snackAttivo ? ["cibi"] : ["cibi", "snack"];
+	    } else if (ruolo === "snack") {
+	        const snapSnack = await db.ref("impostazioni/snackAbilitato").once("value");
+	        const snackAttivo = snapSnack.exists() && snapSnack.val() === true;
+	        categorieRuolo = snackAttivo ? ["snack"] : [];
+	    } else if (["extra1", "extra2", "extra3"].includes(ruolo)) {
+	        // Assegna la categoria in base al ruolo extra in modo dinamico
+	        categorieRuolo = window.settings[ruolo + "Abilitato"] ? [ruolo] : [];
+	    } else {
+	        categorieRuolo = ["bevande"];
+	    }
 
         const categorie = {};
         Object.entries(data).forEach(([id, ing]) => {
@@ -6113,6 +6215,7 @@ async function caricaIngredientiPerRuolo(ruolo) {
              if (ruolo === "cucina") msgIngr = "Niente ingredienti per te. Oggi si ordina la pizza! 🍕";
              if (ruolo === "bere") msgIngr = "Cantina vuota. Fai scorrere l'acqua del rubinetto! 🚰";
              if (ruolo === "snack") msgIngr = "Niente patatine o fritti... Mettiti a dieta! 🥕";
+             if (ruolo.startsWith("extra")) msgIngr = "Nessun ingrediente in questo reparto extra. 👻";
              
              container.innerHTML = `<div style='text-align:center; padding: 30px; color: #777; font-style: italic; font-size: 1.1em;'>${msgIngr}</div>`;
              return;
@@ -6696,13 +6799,12 @@ function caricaMenuAdmin(){
     db.ref("menu").on("value", snap => {
         div.innerHTML = "";
 		const data = snap.val() || {};
-        const categorie = { cibi: [], bevande: [], snack: [] };
+        const categorie = { cibi: [], bevande: [], snack: [], extra1: [], extra2: [], extra3: [] };
 // --- EMPTY STATE MENU ADMIN ---
             if (Object.keys(data).length === 0) {
                 div.innerHTML = "<div style='text-align:center; padding: 30px; color: #777; font-style: italic; font-size: 1.1em;'>Il menu è tristemente vuoto. Aggiungi qualche prelibatezza! 🍔</div>";
                 return;
             }
-        
 
         for(let id in data){
             const piatto = data[id];
@@ -6711,9 +6813,16 @@ function caricaMenuAdmin(){
             categorie[piatto.categoria].push({id, ...piatto});
         }
 
-        for(const cat of ["cibi","bevande","snack"]){
+        for(const cat of ["cibi","bevande","snack", "extra1", "extra2", "extra3"]){
+             // Salta se l'extra non è abilitato
+            if (cat.startsWith("extra") && !window.settings[cat + "Abilitato"]) continue;
+
             const h = document.createElement("h4");
-            h.innerText = cat.charAt(0).toUpperCase() + cat.slice(1);
+            let catTitle = cat.charAt(0).toUpperCase() + cat.slice(1);
+            if (cat === "extra1") catTitle = window.nomiRepartiExtra?.extra1 || "Extra 1";
+            if (cat === "extra2") catTitle = window.nomiRepartiExtra?.extra2 || "Extra 2";
+            if (cat === "extra3") catTitle = window.nomiRepartiExtra?.extra3 || "Extra 3";
+            h.innerText = catTitle;
             div.appendChild(h);
 
             if(categorie[cat].length === 0){
