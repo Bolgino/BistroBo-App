@@ -2842,7 +2842,7 @@ async function caricaMenuCassa() {
 
             btn.appendChild(wrapper);
 
-            // --- INIZIO GESTIONE LAYOUT (STANDARD O OTTIMIZZATO) ---
+           // --- INIZIO GESTIONE LAYOUT (STANDARD O OTTIMIZZATO) ---
             if (window.settings.cassaOttimizzata) {
                  // LAYOUT OTTIMIZZATO COMPATTO
                  btn.className = "btn-cassa-ottimizzata";
@@ -2855,12 +2855,12 @@ async function caricaMenuCassa() {
                  else if (item.categoria === "extra2") coloreBase = "#009688";
                  else if (item.categoria === "extra3") coloreBase = "#795548";
 
-                 // Stile ultra-pulito: bianco con solo la barra sinistra colorata
+                 // Stile ultra-pulito: forza il grigino/bianco, ignora il tema
                  btn.style.cssText = `
-                     border: 1px solid #ddd;
-                     border-left: 5px solid ${coloreBase};
-                     color: #333;
-                     background-color: #fff;
+                     background-color: #f8f9fa !important;
+                     color: #333 !important;
+                     border: 1px solid #ccc !important;
+                     border-left: 5px solid ${coloreBase} !important;
                      padding: 8px 6px;
                      margin: 0;
                      border-radius: 6px;
@@ -2876,7 +2876,7 @@ async function caricaMenuCassa() {
                  
                  const prezzoScontato = item.sconto ? calcolaPrezzoConSconto(item).toFixed(2) : item.prezzo.toFixed(2);
                  
-                 // Testo sempre centrato e visibile su più righe (white-space: normal)
+                 // Testo sempre centrato e visibile su più righe
                  btn.innerHTML = `
                     <span style="font-weight:bold; font-size:0.9em; white-space:normal; line-height:1.2; margin-bottom:4px; text-align:center;">${item.nome}</span>
                     <small style="color:#555; font-size:0.85em; font-weight:bold;">€${prezzoScontato}</small>
@@ -2897,7 +2897,14 @@ async function caricaMenuCassa() {
                       if (div) {
                           if (!div.querySelector("h5")) {
                               div.style.display = "block";
-                              div.style.cssText = "flex: 1 1 30%; min-width: 220px; box-sizing: border-box; background: #fcfcfc; border: 1px solid #e0e0e0; border-radius: 8px; padding: 8px; margin: 0;";
+                              div.style.flex = "1 1 30%"; 
+                              div.style.minWidth = "220px";
+                              div.style.boxSizing = "border-box";
+                              div.style.background = "#fcfcfc";
+                              div.style.border = "1px solid #e0e0e0";
+                              div.style.borderRadius = "8px";
+                              div.style.padding = "8px";
+                              div.style.margin = "0";
 
                               div.innerHTML = `
                                   <h5 style="margin:0 0 8px 0; color:#333; font-size:0.95em; border-bottom:1px solid #ddd; padding-bottom:4px; display:flex; align-items:center;">
@@ -2915,9 +2922,12 @@ async function caricaMenuCassa() {
                  // LAYOUT STANDARD ESTESO (Ottimizzata OFF)
                  btn.className = "piatto-btn"; 
                  
-                 // Bomba nucleare JS: Rimuove QUALSIASI forzatura inline applicata da Javascript
-                 // Lascia decidere l'estetica esclusivamente alle tue classi del file style.css
-                 btn.style.cssText = ""; 
+                 // FORZATURA BIANCO/GRIGINO: Ignoriamo il colore del tema
+                 btn.style.cssText = `
+                     background-color: #f8f9fa !important;
+                     color: #333 !important;
+                     border: 1px solid #ccc !important;
+                 `; 
                  
                  const categoria = (item.categoria || "cibi").toLowerCase();
                  const gridIdMap = {
@@ -2929,7 +2939,6 @@ async function caricaMenuCassa() {
                  if (targetGrid) targetGrid.appendChild(btn);
             }
         });
-
         hideLoader();
     }
 
