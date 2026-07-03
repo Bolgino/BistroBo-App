@@ -4913,7 +4913,6 @@ async function caricaGestioneComandeAdmin() {
             };
             buttonsDiv.insertBefore(statoDiv, buttonsDiv.firstChild);
             // Funzione helper per stato sopra bottone
-            // Funzione helper per stato sopra bottone
             function creaBtnConStato(statoAttuale, tipo, idComanda) {
                 const container = document.createElement("div");
                 container.className = "btnStatoContainer"; 
