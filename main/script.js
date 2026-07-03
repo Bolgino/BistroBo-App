@@ -2730,10 +2730,8 @@ async function caricaMenuCassa() {
                  divParent.style.display = "block"; // Ripristina layout verticale per la cassa standard
              }
              menuCibiDiv.innerHTML = "<h3 style='margin: 0 0 10px 0; text-align:center;'>Cibi</h3><div class='menu-grid' id='grid-cibi'></div>";
-            menuBevandeDiv.innerHTML = "<h3 style='margin: 15px 0 10px 0; text-align:center;'>Bevande</h3><div class='menu-grid' id='grid-bevande'></div>";
-            menuSnackDiv.innerHTML = window.settings.snackAbilitato ? "<h3 style='margin: 15px 0 10px 0; text-align:center;'>Snack</h3><div class='menu-grid' id='grid-snack'></div>" : "";
-
-            const divParent = menuSnackDiv.parentElement;
+             menuBevandeDiv.innerHTML = "<h3 style='margin: 15px 0 10px 0; text-align:center;'>Bevande</h3><div class='menu-grid' id='grid-bevande'></div>";
+             menuSnackDiv.innerHTML = window.settings.snackAbilitato ? "<h3 style='margin: 15px 0 10px 0; text-align:center;'>Snack</h3><div class='menu-grid' id='grid-snack'></div>" : "";
             
             // Funzione di utilità per creare/aggiornare Div extra
             const manageExtraDiv = (id, nome, enabled) => {
