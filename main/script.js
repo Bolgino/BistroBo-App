@@ -2842,7 +2842,7 @@ async function caricaMenuCassa() {
 
             btn.appendChild(wrapper);
 
-           // --- INIZIO GESTIONE LAYOUT (STANDARD O OTTIMIZZATO) ---
+          // --- INIZIO GESTIONE LAYOUT (STANDARD O OTTIMIZZATO) ---
             if (window.settings.cassaOttimizzata) {
                  // LAYOUT OTTIMIZZATO COMPATTO
                  btn.className = "btn-cassa-ottimizzata";
