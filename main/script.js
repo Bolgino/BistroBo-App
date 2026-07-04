@@ -2624,14 +2624,22 @@ function separaComanda(items) {
     const extra3Abilitato = window.settings?.extra3Abilitato === true;
 
     function getDest(categoria, tipo, nome) {
-        const cat = (categoria || "").toLowerCase();
-        const tip = (tipo || "").toLowerCase();
-        const nom = (nome || "").toLowerCase();
+        const cat = (categoria || "").trim().toLowerCase();
+        const tip = (tipo || "").trim().toLowerCase();
+        const nom = (nome || "").trim().toLowerCase();
+
+        // Estraiamo i nomi personalizzati (es: "risto") per intercettarli
+        const lE1 = (window.nomiRepartiExtra?.extra1 || "").trim().toLowerCase();
+        const lE2 = (window.nomiRepartiExtra?.extra2 || "").trim().toLowerCase();
+        const lE3 = (window.nomiRepartiExtra?.extra3 || "").trim().toLowerCase();
 
         if (cat === "bevande" || tip === "bere") return "bere";
-        if (cat === "extra1" || tip === "extra1") return extra1Abilitato ? "extra1" : "cibo";
-        if (cat === "extra2" || tip === "extra2") return extra2Abilitato ? "extra2" : "cibo";
-        if (cat === "extra3" || tip === "extra3") return extra3Abilitato ? "extra3" : "cibo";
+        
+        // 🔹 FIX: intercetta sia la chiave ("extra1") sia il nome personalizzato ("risto")
+        if (cat === "extra1" || tip === "extra1" || (lE1 && (cat === lE1 || tip === lE1)) || cat === "risto") return extra1Abilitato ? "extra1" : "cibo";
+        if (cat === "extra2" || tip === "extra2" || (lE2 && (cat === lE2 || tip === lE2))) return extra2Abilitato ? "extra2" : "cibo";
+        if (cat === "extra3" || tip === "extra3" || (lE3 && (cat === lE3 || tip === lE3))) return extra3Abilitato ? "extra3" : "cibo";
+        
         if (cat === "snack" || cat.includes("fritti") || tip === "snack" || nom.includes("patatine") || nom.includes("fritto")) {
             return snackAbilitato ? "snack" : "cibo";
         }
@@ -2848,12 +2856,22 @@ async function caricaMenuCassa() {
                  btn.className = "btn-cassa-ottimizzata";
                  btn.innerHTML = ""; // Rimuove il wrapper standard
 
+                 // 🔹 FIX: Normalizziamo la categoria se il piatto è salvato con il nome personalizzato (es: Risto)
+                 let ctg = (item.categoria || "cibi").toLowerCase().trim();
+                 const lE1 = (window.nomiRepartiExtra?.extra1 || "").toLowerCase().trim();
+                 const lE2 = (window.nomiRepartiExtra?.extra2 || "").toLowerCase().trim();
+                 const lE3 = (window.nomiRepartiExtra?.extra3 || "").toLowerCase().trim();
+                 
+                 if (ctg === "extra1" || ctg === "risto" || (lE1 && ctg === lE1)) ctg = "extra1";
+                 else if (ctg === "extra2" || (lE2 && ctg === lE2)) ctg = "extra2";
+                 else if (ctg === "extra3" || (lE3 && ctg === lE3)) ctg = "extra3";
+
                  let coloreBase = "#4CAF50"; 
-                 if (item.categoria === "bevande") coloreBase = "#2196F3";
-                 else if (item.categoria === "snack") coloreBase = "#FF5722";
-                 else if (item.categoria === "extra1") coloreBase = "#9C27B0";
-                 else if (item.categoria === "extra2") coloreBase = "#009688";
-                 else if (item.categoria === "extra3") coloreBase = "#795548";
+                 if (ctg === "bevande") coloreBase = "#2196F3";
+                 else if (ctg === "snack") coloreBase = "#FF5722";
+                 else if (ctg === "extra1") coloreBase = "#9C27B0";
+                 else if (ctg === "extra2") coloreBase = "#009688";
+                 else if (ctg === "extra3") coloreBase = "#795548";
 
                  // Stile ultra-pulito: forza il grigino/bianco, ignora il tema
                  btn.style.cssText = `
@@ -2891,7 +2909,7 @@ async function caricaMenuCassa() {
                      extra3: { id: "menuExtra3", nome: window.nomiRepartiExtra?.extra3 || "Extra 3", enabled: window.settings.extra3Abilitato, color: "#795548" }
                  };
                  
-                 const conf = containerIdMap[item.categoria || "cibi"];
+                 const conf = containerIdMap[ctg] || containerIdMap["cibi"];
                  if (conf && conf.enabled) {
                       const div = document.getElementById(conf.id);
                       if (div) {
@@ -2930,12 +2948,21 @@ async function caricaMenuCassa() {
                      border: "1px solid #aaa"
                  });
                  
-                 const categoria = (item.categoria || "cibi").toLowerCase();
+                 // 🔹 FIX: Ripetiamo la logica di correzione anche per la visualizzazione a griglia standard
+                 let ctgStandard = (item.categoria || "cibi").toLowerCase().trim();
+                 const lE1_s = (window.nomiRepartiExtra?.extra1 || "").toLowerCase().trim();
+                 const lE2_s = (window.nomiRepartiExtra?.extra2 || "").toLowerCase().trim();
+                 const lE3_s = (window.nomiRepartiExtra?.extra3 || "").toLowerCase().trim();
+                 
+                 if (ctgStandard === "extra1" || ctgStandard === "risto" || (lE1_s && ctgStandard === lE1_s)) ctgStandard = "extra1";
+                 else if (ctgStandard === "extra2" || (lE2_s && ctgStandard === lE2_s)) ctgStandard = "extra2";
+                 else if (ctgStandard === "extra3" || (lE3_s && ctgStandard === lE3_s)) ctgStandard = "extra3";
+
                  const gridIdMap = {
                      cibi: "grid-cibi", bevande: "grid-bevande", snack: "grid-snack",
                      extra1: "grid-extra1", extra2: "grid-extra2", extra3: "grid-extra3"
                  };
-                 const targetGridId = gridIdMap[categoria] || "grid-cibi";
+                 const targetGridId = gridIdMap[ctgStandard] || "grid-cibi";
                  const targetGrid = document.getElementById(targetGridId);
                  if (targetGrid) targetGrid.appendChild(btn);
             }
