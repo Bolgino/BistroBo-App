@@ -5623,12 +5623,18 @@ async function caricaComandePerRuolo(daFareDiv, storicoDiv, ruolo) {
         const tutteComande = snap.val() || {};
 
         // 🔹 Determina container usando ruoloEffettivo
-        const daFareContainer = ruoloEffettivo === "cucina" ? document.getElementById("daFareComandeContainer") :
-                                ruoloEffettivo === "bere"   ? document.getElementById("daBereComandeContainer") :
-                                document.getElementById("daSnackComandeContainer");
-        const storicoContainer = ruoloEffettivo === "cucina" ? document.getElementById("storicoComandeContainer") :
-                                ruoloEffettivo === "bere"   ? document.getElementById("storicoBereComandeContainer") :
-                                document.getElementById("storicoSnackComandeContainer");
+       // Aggiungi una mappa dinamica o una serie di condizioni inclusivi di extra
+        const containerMap = {
+            cucina: { fare: "daFareComandeContainer", sto: "storicoComandeContainer" },
+            bere: { fare: "daBereComandeContainer", sto: "storicoBereComandeContainer" },
+            snack: { fare: "daSnackComandeContainer", sto: "storicoSnackComandeContainer" },
+            extra1: { fare: "daFareExtra1Container", sto: "storicoExtra1Container" },
+            extra2: { fare: "daFareExtra2Container", sto: "storicoExtra2Container" },
+            extra3: { fare: "daFareExtra3Container", sto: "storicoExtra3Container" },
+        };
+
+        const daFareContainer = document.getElementById(containerMap[ruoloEffettivo]?.fare);
+        const storicoContainer = document.getElementById(containerMap[ruoloEffettivo]?.sto);
 
 
         if (!daFareContainer || !storicoContainer) return;
@@ -5645,9 +5651,9 @@ async function caricaComandePerRuolo(daFareDiv, storicoDiv, ruolo) {
 
         Object.entries(tutteComande).forEach(([id, c]) => {
             // 🔹 Determina stato
-            let statoKey = ruolo === "cucina" ? "statoCucina" :
-                           ruolo === "bere" ? "statoBere" :
-                           "statoSnack";
+            const statoKey = ruolo.startsWith("extra") ? "stato" + ruolo.charAt(0).toUpperCase() + ruolo.slice(1) : 
+                            (ruolo === "cucina" ? "statoCucina" : 
+                            (ruolo === "bere" ? "statoBere" : "statoSnack"));
             // 🔹 Se la comanda non contiene piatti per questo ruolo, salta
             const { cibo, bere, snack } = separaComanda(c.piatti || []);
             if (ruoloEffettivo === "cucina" && cibo.length === 0) return;
@@ -5668,6 +5674,10 @@ async function caricaComandePerRuolo(daFareDiv, storicoDiv, ruolo) {
                     items.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0)); // nuove in fondo
                 }
             }
+				else if (ruoloEffettivo === "snack" && snackAbilitato) items = snack;
+				else if (ruoloEffettivo === "extra1") items = extra1; // Aggiungi questo
+				else if (ruoloEffettivo === "extra2") items = extra2; // Aggiungi questo
+				else if (ruoloEffettivo === "extra3") items = extra3;
              else {
                 // Snack disattivo → non mostrare nulla in questo ruolo
                 return;
@@ -6227,9 +6237,15 @@ window.rimuoviScontoGlobaleCassa = function(silenzioso = false) {
 async function caricaIngredientiPerRuolo(ruolo) {
     if (!checkOnline(true)) return;
     
-    const containerId = ruolo === "cucina" ? "ingredientiCucinaContainer" :
-                        ruolo === "bere" ? "ingredientiBereContainer" :
-                        "ingredientiSnackContainer";
+    const containerMap = {
+	    cucina: "ingredientiCucinaContainer",
+	    bere: "ingredientiBereContainer",
+	    snack: "ingredientiSnackContainer",
+	    extra1: "ingredientiExtra1Container",
+	    extra2: "ingredientiExtra2Container",
+	    extra3: "ingredientiExtra3Container"
+	};
+	const containerId = containerMap[ruolo] || "ingredientiSnackContainer";
 
     const container = document.getElementById(containerId);
     if (!container) return;
