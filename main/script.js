@@ -4786,7 +4786,6 @@ async function caricaGestioneComandeAdmin() {
 			    ${window.settings?.extra2Abilitato ? `<div>${window.nomiRepartiExtra?.extra2 || "Extra 2"}: ${piattiExtra2 || "—"}</div>` : ""}
 			    ${window.settings?.extra3Abilitato ? `<div>${window.nomiRepartiExtra?.extra3 || "Extra 3"}: ${piattiExtra3 || "—"}</div>` : ""}
 			`;
-            `;
 
             mainDiv.appendChild(piattiDiv);
             // se ci sono note, aggiungile
