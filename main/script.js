@@ -8181,8 +8181,16 @@ document.addEventListener("DOMContentLoaded", () => {
 			const orario = new Date().toLocaleTimeString("it-IT", { hour12: false });
 			const ref = db.ref("comande").push();
 			
-			// Utilizziamo separaComanda per capire chi deve davvero cucinare cosa
-			const { cibo, bere, snack, extra1, extra2, extra3 } = separaComanda(piattiValidi);
+			// 🔹 FIX ANTI-CRASH: Assegniamo " = []" in fase di destrutturazione. 
+			// Se una categoria manca o è vuota, JS le assegnerà forzatamente un array vuoto, evitando l'errore .length.
+			const { 
+			    cibo = [], 
+			    bere = [], 
+			    snack = [], 
+			    extra1 = [], 
+			    extra2 = [], 
+			    extra3 = [] 
+			} = separaComanda(piattiValidi || []);
 			
 			// Check asporto
 			const checkAsporto = document.getElementById("checkAsporto");
@@ -8206,19 +8214,19 @@ document.addEventListener("DOMContentLoaded", () => {
 			
 			const nuovaComanda = {
 			    numero: numeroComandaFinale,
-			    piatti: piattiValidi,
+			    piatti: piattiValidi || [],
 			    statoCucina: cibo.length > 0 ? "da fare" : "completato",
 			    statoBere: bere.length > 0 ? "da fare" : "completato",
 			    timestamp: Date.now(),
 			    orario: orario,
-			    note: note,
+			    note: note || "",
 			    noteDestinazioni: noteDestinazioni,
 			    commento: commentoAsporto || null,
 			    metodoPagamento: metodoPagamento,
 			    scontoGlobale: window.scontoGlobaleCorrente || null
 			};
 			
-			// Accendiamo gli stati Extra solo se hanno piatti da fare
+			// Accendiamo gli stati Snack/Extra solo se abilitati nelle impostazioni E se hanno piatti
 			if (window.settings.snackAbilitato) nuovaComanda.statoSnack = snack.length > 0 ? "da fare" : "completato";
 			if (window.settings.extra1Abilitato) nuovaComanda.statoExtra1 = extra1.length > 0 ? "da fare" : "completato";
 			if (window.settings.extra2Abilitato) nuovaComanda.statoExtra2 = extra2.length > 0 ? "da fare" : "completato";
