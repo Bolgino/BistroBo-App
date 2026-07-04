@@ -1979,3 +1979,10 @@ body.tema-estate button {
     font-weight: bold;
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
+/* FORZA L'ASPETTO BIANCO/GRIGINO SUI BOTTONI CASSA (STANDARD E OTTIMIZZATA), ANNULLANDO I TEMI */
+.piatto-btn,
+.btn-cassa-ottimizzata {
+    background-image: none !important;
+    background-color: #fefefe !important;
+    color: #000 !important;
+}
