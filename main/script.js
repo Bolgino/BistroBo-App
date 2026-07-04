@@ -4775,15 +4775,17 @@ async function caricaGestioneComandeAdmin() {
                 const asportoDiv = document.createElement("div"); asportoDiv.className = "asportoLabel"; asportoDiv.innerText = c.commento; asportoDiv.style.margin = "4px 0 6px 0.8cm"; riga.appendChild(asportoDiv); 
             }
 
+           
             const piattiDiv = document.createElement("div");
-            piattiDiv.className = "orderContent";
-            piattiDiv.innerHTML = `
-                <div>Piatti: ${piattiCibo}</div>
-                <div>Bevande: ${piattiBere}</div>
-                ${snackAbilitato ? `<div>Snack: ${piattiSnack || "—"}</div>` : ""}
-                ${window.settings?.extra1Abilitato ? `<div>Extra 1: ${piattiExtra1 || "—"}</div>` : ""}
-                ${window.settings?.extra2Abilitato ? `<div>Extra 2: ${piattiExtra2 || "—"}</div>` : ""}
-                ${window.settings?.extra3Abilitato ? `<div>Extra 3: ${piattiExtra3 || "—"}</div>` : ""}
+			piattiDiv.className = "orderContent";
+			piattiDiv.innerHTML = `
+			    <div>Piatti: ${piattiCibo}</div>
+			    <div>Bevande: ${piattiBere}</div>
+			    ${snackAbilitato ? `<div>Snack: ${piattiSnack || "—"}</div>` : ""}
+			    ${window.settings?.extra1Abilitato ? `<div>${window.nomiRepartiExtra?.extra1 || "Extra 1"}: ${piattiExtra1 || "—"}</div>` : ""}
+			    ${window.settings?.extra2Abilitato ? `<div>${window.nomiRepartiExtra?.extra2 || "Extra 2"}: ${piattiExtra2 || "—"}</div>` : ""}
+			    ${window.settings?.extra3Abilitato ? `<div>${window.nomiRepartiExtra?.extra3 || "Extra 3"}: ${piattiExtra3 || "—"}</div>` : ""}
+			`;
             `;
 
             mainDiv.appendChild(piattiDiv);
@@ -5655,10 +5657,14 @@ async function caricaComandePerRuolo(daFareDiv, storicoDiv, ruolo) {
                             (ruolo === "cucina" ? "statoCucina" : 
                             (ruolo === "bere" ? "statoBere" : "statoSnack"));
             // 🔹 Se la comanda non contiene piatti per questo ruolo, salta
-            const { cibo, bere, snack } = separaComanda(c.piatti || []);
-            if (ruoloEffettivo === "cucina" && cibo.length === 0) return;
-            if (ruoloEffettivo === "bere" && bere.length === 0) return;
-            if (ruoloEffettivo === "snack" && snackAbilitato && snack.length === 0) return;
+            const { cibo, bere, snack, extra1, extra2, extra3 } = separaComanda(c.piatti || []);
+			
+			if (ruoloEffettivo === "cucina" && cibo.length === 0) return;
+			if (ruoloEffettivo === "bere" && bere.length === 0) return;
+			if (ruoloEffettivo === "snack" && snackAbilitato && snack.length === 0) return;
+			if (ruoloEffettivo === "extra1" && window.settings.extra1Abilitato && extra1.length === 0) return;
+			if (ruoloEffettivo === "extra2" && window.settings.extra2Abilitato && extra2.length === 0) return;
+			if (ruoloEffettivo === "extra3" && window.settings.extra3Abilitato && extra3.length === 0) return;
 
             // 🔹 Separa cibo/bere/snack
             let items;
@@ -6283,15 +6289,15 @@ async function caricaIngredientiPerRuolo(ruolo) {
         });
 
         if (Object.keys(categorie).length === 0) {
-             let msgIngr = "La dispensa è vuota... aria fritta stasera? 🌬️";
-             if (ruolo === "cucina") msgIngr = "Niente ingredienti per te. Oggi si ordina la pizza! 🍕";
-             if (ruolo === "bere") msgIngr = "Cantina vuota. Fai scorrere l'acqua del rubinetto! 🚰";
-             if (ruolo === "snack") msgIngr = "Niente patatine o fritti... Mettiti a dieta! 🥕";
-             if (ruolo.startsWith("extra")) msgIngr = "Nessun ingrediente in questo reparto extra. 👻";
-             
-             container.innerHTML = `<div style='text-align:center; padding: 30px; color: #777; font-style: italic; font-size: 1.1em;'>${msgIngr}</div>`;
-             return;
-        }
+		     let msgIngr = "La dispensa è vuota... aria fritta stasera? 🌬️";
+		     if (ruolo === "cucina") msgIngr = "Niente ingredienti per te. Oggi si ordina la pizza! 🍕";
+		     if (ruolo === "bere") msgIngr = "Cantina vuota. Fai scorrere l'acqua del rubinetto! 🚰";
+		     if (ruolo === "snack") msgIngr = "Niente patatine o fritti... Mettiti a dieta! 🥕";
+		     if (ruolo.startsWith("extra")) msgIngr = `Nessun ingrediente in ${window.nomiRepartiExtra?.[ruolo] || ruolo}. Qui si fa la fame! 👻`;
+		     
+		     container.innerHTML = `<div style='text-align:center; padding: 30px; color: #777; font-style: italic; font-size: 1.1em; background: #f9f9f9; border-radius: 10px; margin-top: 20px;'>${msgIngr}</div>`;
+		     return;
+		}
 
         const fragment = document.createDocumentFragment();
 
@@ -8172,52 +8178,55 @@ document.addEventListener("DOMContentLoaded", () => {
                 throw new Error(resIng.message || "errore ingredienti"); 
             }
 
-            // --- 6. COSTRUZIONE OGGETTO COMANDA (MANTENUTO) ---
-            const orario = new Date().toLocaleTimeString("it-IT", { hour12: false });
-            const ref = db.ref("comande").push();
-            
-            // Check asporto
-            const checkAsporto = document.getElementById("checkAsporto");
-            let commentoAsporto = "";
-            if (window.settings.asportoAbilitato && checkAsporto && checkAsporto.checked) {
-                commentoAsporto = "ASPORTO";
-            }
-            
-            const metodoPagamentoEl = document.getElementById("metodoPagamento");
-            const metodoPagamento = metodoPagamentoEl ? metodoPagamentoEl.value : "contanti";
-
-            let noteDestinazioni = [];
-
-            if (window.settings.noteDestinazioniAbilitate) {
-                if (document.getElementById("tickCucina") && document.getElementById("tickCucina").checked) noteDestinazioni.push("cucina");
-                if (document.getElementById("tickBere") && document.getElementById("tickBere").checked) noteDestinazioni.push("bere");
-                if (document.getElementById("tickSnack") && document.getElementById("tickSnack").checked) noteDestinazioni.push("snack");
-            } else {
-                // default legacy
-                noteDestinazioni = ["cucina"];
-                if (window.settings.snackAbilitato) noteDestinazioni.push("snack");
-            }
-
-            const nuovaComanda = {
-                numero: numeroComandaFinale,
-                piatti: piattiValidi,
-                statoCucina: piattiValidi.some(i => i.categoria !== "bevande") ? "da fare" : "completato",
-                statoBere: piattiValidi.some(i => i.categoria === "bevande") ? "da fare" : "completato",
-                timestamp: Date.now(),
-                orario: orario,
-                note: note, 
-                noteDestinazioni: noteDestinazioni,
-                commento: commentoAsporto || null, 
-                metodoPagamento: metodoPagamento,
-				scontoGlobale: window.scontoGlobaleCorrente || null
-            };
-
-            if (window.settings.snackAbilitato) {
-                nuovaComanda.statoSnack = "da fare";
-            }
-
-            // Salvataggio nel DB
-            await ref.set(nuovaComanda);
+            // --- 6. COSTRUZIONE OGGETTO COMANDA (MANTENUTO E MIGLIORATO) ---
+			const orario = new Date().toLocaleTimeString("it-IT", { hour12: false });
+			const ref = db.ref("comande").push();
+			
+			// Utilizziamo separaComanda per capire chi deve davvero cucinare cosa
+			const { cibo, bere, snack, extra1, extra2, extra3 } = separaComanda(piattiValidi);
+			
+			// Check asporto
+			const checkAsporto = document.getElementById("checkAsporto");
+			let commentoAsporto = "";
+			if (window.settings.asportoAbilitato && checkAsporto && checkAsporto.checked) {
+			    commentoAsporto = "ASPORTO";
+			}
+			
+			const metodoPagamentoEl = document.getElementById("metodoPagamento");
+			const metodoPagamento = metodoPagamentoEl ? metodoPagamentoEl.value : "contanti";
+			
+			let noteDestinazioni = [];
+			if (window.settings.noteDestinazioniAbilitate) {
+			    if (document.getElementById("tickCucina") && document.getElementById("tickCucina").checked) noteDestinazioni.push("cucina");
+			    if (document.getElementById("tickBere") && document.getElementById("tickBere").checked) noteDestinazioni.push("bere");
+			    if (document.getElementById("tickSnack") && document.getElementById("tickSnack").checked) noteDestinazioni.push("snack");
+			} else {
+			    noteDestinazioni = ["cucina"];
+			    if (window.settings.snackAbilitato) noteDestinazioni.push("snack");
+			}
+			
+			const nuovaComanda = {
+			    numero: numeroComandaFinale,
+			    piatti: piattiValidi,
+			    statoCucina: cibo.length > 0 ? "da fare" : "completato",
+			    statoBere: bere.length > 0 ? "da fare" : "completato",
+			    timestamp: Date.now(),
+			    orario: orario,
+			    note: note,
+			    noteDestinazioni: noteDestinazioni,
+			    commento: commentoAsporto || null,
+			    metodoPagamento: metodoPagamento,
+			    scontoGlobale: window.scontoGlobaleCorrente || null
+			};
+			
+			// Accendiamo gli stati Extra solo se hanno piatti da fare
+			if (window.settings.snackAbilitato) nuovaComanda.statoSnack = snack.length > 0 ? "da fare" : "completato";
+			if (window.settings.extra1Abilitato) nuovaComanda.statoExtra1 = extra1.length > 0 ? "da fare" : "completato";
+			if (window.settings.extra2Abilitato) nuovaComanda.statoExtra2 = extra2.length > 0 ? "da fare" : "completato";
+			if (window.settings.extra3Abilitato) nuovaComanda.statoExtra3 = extra3.length > 0 ? "da fare" : "completato";
+			
+			// Salvataggio nel DB
+			await ref.set(nuovaComanda);
 
             // --- 7. STAMPA E RESET FRONTEND (MANTENUTO) ---
             const piattiDaStampare = [...comandaCorrente];
