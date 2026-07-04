@@ -768,7 +768,10 @@ body.tema-primavera .scontoTxt { color: #2e7d32; }   /* verde medio */
 #chatInputCucina,
 #chatInputBere,
 #chatInputAdmin,
-#chatInputSnack {
+#chatInputSnack,
+#chatInputExtra1,
+#chatInputExtra2,
+#chatInputExtra3 {
   flex: 1;
   padding: 12px 18px;
   border-radius: 25px;
@@ -783,7 +786,10 @@ body.tema-primavera .scontoTxt { color: #2e7d32; }   /* verde medio */
 #chatInputCucina:focus,
 #chatInputBere:focus,
 #chatInputAdmin:focus,
-#chatInputSnack:focus {
+#chatInputSnack:focus,
+#chatInputExtra1:focus,
+#chatInputExtra2:focus,
+#chatInputExtra3:focus {
   background: #fff;
   border-color: #4caf50;
   box-shadow: 0 0 4px #4caf50;
@@ -794,7 +800,10 @@ body.tema-primavera .scontoTxt { color: #2e7d32; }   /* verde medio */
 #chatSendCucinaBtn,
 #chatSendBereBtn,
 #chatSendAdminBtn,
-#chatSendSnackBtn {
+#chatSendSnackBtn,
+#chatSendExtra1Btn,
+#chatSendExtra2Btn,
+#chatSendExtra3Btn {
   width: 46px;
   height: 46px;
   border: none;
@@ -810,7 +819,10 @@ body.tema-primavera .scontoTxt { color: #2e7d32; }   /* verde medio */
 #chatSendCucinaBtn:hover,
 #chatSendBereBtn:hover,
 #chatSendAdminBtn:hover,
-#chatSendSnackBtn:hover {
+#chatSendSnackBtn:hover,
+#chatSendExtra1Btn:hover,
+#chatSendExtra2Btn:hover,
+#chatSendExtra3Btn:hover {
   transform: scale(1.08);
   background: linear-gradient(135deg, #66bb6a, #388e3c);
 }
