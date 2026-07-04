@@ -2617,24 +2617,26 @@ function separaComanda(items) {
 
     let cibo = [], bere = [], snack = [], extra1 = [], extra2 = [], extra3 = [];
 
-    const snackAbilitato = window.settings?.snackAbilitato === true;
-    const extra1Abilitato = window.settings?.extra1Abilitato === true;
-    const extra2Abilitato = window.settings?.extra2Abilitato === true;
-    const extra3Abilitato = window.settings?.extra3Abilitato === true;
+    // 🔹 FIX: Supporto robusto per le impostazioni
+    const s = window.settings || {};
+    const snackAbilitato = s.snackAbilitato === true || s.snackAbilitato === "true";
+    const extra1Abilitato = s.extra1Abilitato === true || s.extra1Abilitato === "true";
+    const extra2Abilitato = s.extra2Abilitato === true || s.extra2Abilitato === "true";
+    const extra3Abilitato = s.extra3Abilitato === true || s.extra3Abilitato === "true";
 
     function getDest(categoria, tipo, nome) {
         const cat = (categoria || "").trim().toLowerCase();
         const tip = (tipo || "").trim().toLowerCase();
         const nom = (nome || "").trim().toLowerCase();
 
-        // Estraiamo i nomi personalizzati (es: "risto") per intercettarli
+        // 🔹 FIX: Estraiamo correttamente i nomi (es: "risto")
         const lE1 = (window.nomiRepartiExtra?.extra1 || "").trim().toLowerCase();
         const lE2 = (window.nomiRepartiExtra?.extra2 || "").trim().toLowerCase();
         const lE3 = (window.nomiRepartiExtra?.extra3 || "").trim().toLowerCase();
 
         if (cat === "bevande" || tip === "bere") return "bere";
         
-        // 🔹 FIX: intercetta sia la chiave ("extra1") sia il nome personalizzato ("risto")
+        // Incanaliamo le comande nel posto giusto
         if (cat === "extra1" || tip === "extra1" || (lE1 && (cat === lE1 || tip === lE1)) || cat === "risto") return extra1Abilitato ? "extra1" : "cibo";
         if (cat === "extra2" || tip === "extra2" || (lE2 && (cat === lE2 || tip === lE2))) return extra2Abilitato ? "extra2" : "cibo";
         if (cat === "extra3" || tip === "extra3" || (lE3 && (cat === lE3 || tip === lE3))) return extra3Abilitato ? "extra3" : "cibo";
@@ -2663,7 +2665,7 @@ function separaComanda(items) {
         // 1. Assegna il Piatto Principale
         getClone(destMain).isMainHere = true;
 
-        // 2. Smista i Contorni nelle rispettive stazioni
+        // 2. Smista i Contorni
         if (i.contorniScelti && i.contorniScelti.length > 0) {
             i.contorniScelti.forEach(c => {
                 const destC = getDest(c.categoria, "", c.nome);
@@ -2697,7 +2699,7 @@ function separaComanda(items) {
             });
         }
 
-        // 3. Inserisci i cloni finali del genitore
+        // 3. Inserisci i cloni finali
         if (cloneCibo && cloneCibo.isMainHere) cibo.push(cloneCibo);
         if (cloneBere && cloneBere.isMainHere) bere.push(cloneBere);
         if (cloneSnack && cloneSnack.isMainHere) snack.push(cloneSnack);
@@ -8243,6 +8245,11 @@ document.addEventListener("DOMContentLoaded", () => {
 			    piatti: piattiValidi || [],
 			    statoCucina: cibo.length > 0 ? "da fare" : "completato",
 			    statoBere: bere.length > 0 ? "da fare" : "completato",
+			    // 🔹 FIX: Dichiariamo SEMPRE gli stati. Se non ci sono piatti (o disattivati), vanno a completato automaticamente.
+			    statoSnack: snack.length > 0 ? "da fare" : "completato",
+			    statoExtra1: extra1.length > 0 ? "da fare" : "completato",
+			    statoExtra2: extra2.length > 0 ? "da fare" : "completato",
+			    statoExtra3: extra3.length > 0 ? "da fare" : "completato",
 			    timestamp: Date.now(),
 			    orario: orario,
 			    note: note || "",
@@ -8252,12 +8259,10 @@ document.addEventListener("DOMContentLoaded", () => {
 			    scontoGlobale: window.scontoGlobaleCorrente || null
 			};
 			
-			// Accendiamo gli stati Snack/Extra solo se abilitati nelle impostazioni E se hanno piatti
-			if (window.settings.snackAbilitato) nuovaComanda.statoSnack = snack.length > 0 ? "da fare" : "completato";
-			if (window.settings.extra1Abilitato) nuovaComanda.statoExtra1 = extra1.length > 0 ? "da fare" : "completato";
-			if (window.settings.extra2Abilitato) nuovaComanda.statoExtra2 = extra2.length > 0 ? "da fare" : "completato";
-			if (window.settings.extra3Abilitato) nuovaComanda.statoExtra3 = extra3.length > 0 ? "da fare" : "completato";
+			// 🔹 FIX: Elimina o commenta i 4 if() successivi che accendevano gli Extra. 
+			// La nuovaComanda gestisce già tutto al suo interno in modo infallibile!
 			
+				
 			// Salvataggio nel DB
 			await ref.set(nuovaComanda);
 
@@ -9336,59 +9341,33 @@ document.addEventListener("DOMContentLoaded", () => {
 // ================= TEMPO MEDIO ATTESA =================
 
 // Funzione intelligente per aggiornare lo stato e salvare il timestamp di fine preparazione cibo
-async function aggiornaStatoConTermine(id, chiaveStato, nuovoStato) {
-    if (!checkOnline(true)) return;
+// --- FUNZIONE DI AGGIORNAMENTO STATO E CONTROLLO TERMINE GLOBALE ---
+async function aggiornaStatoConTermine(comandaId, chiaveStato, nuovoStato) {
+    const comandaRef = db.ref("comande/" + comandaId);
+    await comandaRef.update({ [chiaveStato]: nuovoStato });
+    
+    // Controlla se la comanda è terminata in tutti i reparti ATTIVI E CHE HANNO PIATTI
+    const snapshot = await comandaRef.once("value");
+    const c = snapshot.val();
+    if (!c) return;
 
-    try {
-        const snap = await db.ref("comande/" + id).once("value");
-        const c = snap.val();
-        if (!c) return;
+    const { cibo, bere, snack, extra1, extra2, extra3 } = separaComanda(c.piatti || []);
+    const s = window.settings || {};
+    
+    let completata = true;
+    if (cibo.length > 0 && c.statoCucina !== "completato") completata = false;
+    if (bere.length > 0 && c.statoBere !== "completato") completata = false;
+    
+    // 🔹 FIX: Ora la chiusura ordine controlla finalmente anche lo stato degli Extra
+    if ((s.snackAbilitato === true || s.snackAbilitato === "true") && snack.length > 0 && c.statoSnack !== "completato") completata = false;
+    if ((s.extra1Abilitato === true || s.extra1Abilitato === "true") && extra1.length > 0 && c.statoExtra1 !== "completato") completata = false;
+    if ((s.extra2Abilitato === true || s.extra2Abilitato === "true") && extra2.length > 0 && c.statoExtra2 !== "completato") completata = false;
+    if ((s.extra3Abilitato === true || s.extra3Abilitato === "true") && extra3.length > 0 && c.statoExtra3 !== "completato") completata = false;
 
-        const updateData = { [chiaveStato]: nuovoStato };
-        
-        // Verifica Snack abilitato
-        let snackAbilitato = false;
-        try {
-            const s = await db.ref("impostazioni/snackAbilitato").once("value");
-            snackAbilitato = s.val() === true;
-        } catch(e) {}
-
-        // Logica per determinare se la comanda è "Finita" lato Cibo (Cucina + Snack)
-        // Se stiamo aggiornando Cucina o Snack, dobbiamo controllare l'altro reparto.
-        // Ignoriamo "Bere" per il calcolo del tempo medio cibo.
-
-        let cucinaOk = false;
-        let snackOk = false;
-
-        // Determina stato futuro Cucina
-        if (chiaveStato === "statoCucina") cucinaOk = (nuovoStato === "completato");
-        else cucinaOk = (c.statoCucina === "completato");
-
-        // Determina stato futuro Snack
-        if (snackAbilitato) {
-            // Se il campo statoSnack non esiste (vecchie comande o senza snack), consideralo completato ai fini del calcolo
-            // Ma se esiste, deve essere "completato"
-            if (chiaveStato === "statoSnack") snackOk = (nuovoStato === "completato");
-            else snackOk = (c.statoSnack === "completato" || !c.statoSnack); 
-        } else {
-            snackOk = true; // Se snack disabilitato, è sempre ok
-        }
-
-        // SE tutto il cibo è pronto, salviamo timestampTermine
-        // MA SOLO se la comanda aveva effettivamente cibo (statoCucina diverso da completato all'inizio o simili)
-        // Per semplicità: Se Cucina e Snack sono ok -> TERMINE.
-        if (cucinaOk && snackOk) {
-            updateData.timestampTermine = Date.now();
-        } else {
-            // Se riapriamo una comanda (da completato a da fare), rimuoviamo il termine
-            updateData.timestampTermine = null;
-        }
-
-        await db.ref("comande/" + id).update(updateData);
-
-    } catch (err) {
-        console.error("Errore aggiornamento stato con termine:", err);
-        notify("Errore aggiornamento stato", "error");
+    if (completata) {
+        await comandaRef.update({ completataGlobale: true, terminataIl: Date.now() });
+    } else {
+        await comandaRef.update({ completataGlobale: null, terminataIl: null });
     }
 }
 // ================= GESTIONE BADGE NOTIFICHE TAB (WHATSAPP STYLE) =================
