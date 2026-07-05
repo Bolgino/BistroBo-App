@@ -4346,13 +4346,13 @@ async function caricaIngredienti() {
                             <div style="margin-bottom:20px; text-align:left;">
                                 <label><b>Mostra come variante per i piatti in:</b></label><br>
                                 <div style="margin-top:8px;">
-						            <label style="margin-right:15px;"><input type="checkbox" class="chk-cat" value="cibi" ${isCibi}> Cibi</label>
-						            <label style="margin-right:15px;"><input type="checkbox" class="chk-cat" value="bevande" ${isBevande}> Bevande</label>
-						            <label style="margin-right:15px;"><input type="checkbox" class="chk-cat" value="snack" ${isSnack}> Snack</label>
-									${window.settings.extra1Abilitato ? `<label style="margin-right:15px;"><input type="checkbox" class="chk-cat" value="extra1" ${isExtra1}> ${nE1}</label>` : ''}
-									${window.settings.extra2Abilitato ? `<label style="margin-right:15px;"><input type="checkbox" class="chk-cat" value="extra2" ${isExtra2}> ${nE2}</label>` : ''}
-									${window.settings.extra3Abilitato ? `<label><input type="checkbox" class="chk-cat" value="extra3" ${isExtra3}> ${nE3}</label>` : ''}
-						        </div>
+								    <label style="margin-right:15px;"><input type="checkbox" class="chk-cat" value="cibi" ${isCibi}> Cibi</label>
+								    <label style="margin-right:15px;"><input type="checkbox" class="chk-cat" value="bevande" ${isBevande}> Bevande</label>
+								    <label style="margin-right:15px;"><input type="checkbox" class="chk-cat" value="snack" ${isSnack}> Snack</label>
+								    ${window.settings.extra1Abilitato ? `<label style="margin-right:15px;"><input type="checkbox" class="chk-cat" value="extra1" ${isExtra1}> ${nE1}</label>` : ''}
+								    ${window.settings.extra2Abilitato ? `<label style="margin-right:15px;"><input type="checkbox" class="chk-cat" value="extra2" ${isExtra2}> ${nE2}</label>` : ''}
+								    ${window.settings.extra3Abilitato ? `<label><input type="checkbox" class="chk-cat" value="extra3" ${isExtra3}> ${nE3}</label>` : ''}
+								</div>
                             </div>
                             
                             <div class="modal-actions">
@@ -5712,34 +5712,44 @@ async function caricaComandePerRuolo(daFareDiv, storicoDiv, ruolo) {
 			if (ruoloEffettivo === "extra2" && window.settings.extra2Abilitato && extra2.length === 0) return;
 			if (ruoloEffettivo === "extra3" && window.settings.extra3Abilitato && extra3.length === 0) return;
 
-            // 🔹 Separa cibo/bere/snack
-            let items;
-            if (ruoloEffettivo === "cucina") items = cibo;
-            else if (ruoloEffettivo === "bere") items = bere;
-            else if (ruoloEffettivo === "snack" && snackAbilitato) {
-                items = snack; // 🔹 FIX: Usa l'array "snack" già elaborato da separaComanda, che include i contorni estratti!
-                
-                // 🔹 ORDINA ITEMS secondo toggle nuoveInAltoSnack
-                if (window.settings.nuoveInAltoSnack) {
-                    items.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0)); // nuove in cima
-                } else {
-                    items.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0)); // nuove in fondo
-                }
-            }
-				else if (ruoloEffettivo === "snack" && snackAbilitato) items = snack;
-				else if (ruoloEffettivo === "extra1") items = extra1; // Aggiungi questo
-				else if (ruoloEffettivo === "extra2") items = extra2; // Aggiungi questo
-				else if (ruoloEffettivo === "extra3") items = extra3;
-             else {
-                // Snack disattivo → non mostrare nulla in questo ruolo
-                return;
-            }
-            // 🔹 Se cucina e nessun cibo → segna come completata e salta
-            if (ruoloEffettivo === "cucina" && items.length === 0 && c[statoKey] !== "completato") {
-                db.ref("comande/" + id).update({ [statoKey]: "completato" });
-                if (window.tickState && window.tickState[id]) delete window.tickState[id];
-                return; // non creare il div in da fare
-            }
+            // 🔹 Separa per ruolo ed ordina temporalmente
+			let items;
+			if (ruoloEffettivo === "cucina") {
+			    items = cibo;
+			} else if (ruoloEffettivo === "bere") {
+			    items = bere;
+			} else if (ruoloEffettivo === "snack" && snackAbilitato) {
+			    items = snack;
+			    if (window.settings.nuoveInAltoSnack) {
+			        items.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0)); // ON: nuove in alto
+			    } else {
+			        items.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0)); // OFF: vecchie in alto
+			    }
+			} else if (ruoloEffettivo === "extra1" && window.settings.extra1Abilitato) {
+			    items = extra1;
+			    if (window.settings.nuoveInAltoExtra1) {
+			        items.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0)); // ON: nuove in alto
+			    } else {
+			        items.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0)); // OFF: vecchie in alto
+			    }
+			} else if (ruoloEffettivo === "extra2" && window.settings.extra2Abilitato) {
+			    items = extra2;
+			    if (window.settings.nuoveInAltoExtra2) {
+			        items.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0)); // ON: nuove in alto
+			    } else {
+			        items.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0)); // OFF: vecchie in alto
+			    }
+			} else if (ruoloEffettivo === "extra3" && window.settings.extra3Abilitato) {
+			    items = extra3;
+			    if (window.settings.nuoveInAltoExtra3) {
+			        items.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0)); // ON: nuove in alto
+			    } else {
+			        items.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0)); // OFF: vecchie in alto
+			    }
+			} else {
+			    // Reparto disattivo → non mostrare nulla in questo ruolo
+			    return;
+			}
 
 
             // 🔹 Crea div comanda
