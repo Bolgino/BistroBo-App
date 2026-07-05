@@ -5761,7 +5761,7 @@ async function caricaComandePerRuolo(daFareDiv, storicoDiv, ruolo) {
                     const pContainer = document.createElement("div");
                     pContainer.style.marginBottom = "8px"; // Distanzia un po' le portate
                     
-                    const isActiveState = ((ruolo === "cucina" || ruolo === "bere" || (ruolo === "snack" && snackAbilitato)) && (c[statoKey] === "da fare" || c[statoKey] === "in elaborazione"));
+                    const isActiveState = ((ruolo === "cucina" || ruolo === "bere" || (ruolo === "snack" && snackAbilitato) || (ruolo === "extra1" && window.settings.extra1Abilitato) || (ruolo === "extra2" && window.settings.extra2Abilitato) || (ruolo === "extra3" && window.settings.extra3Abilitato)) && (c[statoKey] === "da fare" || c[statoKey] === "in elaborazione"));
                     const isDisabled = (c[statoKey] === "da fare");
                     const comandaId = id;
 
@@ -5999,7 +5999,7 @@ async function caricaComandePerRuolo(daFareDiv, storicoDiv, ruolo) {
                 bComp = document.createElement("button");
                 bComp.innerText = "Segna completato";
 
-                if (ruolo === "cucina" || ruolo === "bere" || (ruolo === "snack" && snackAbilitato)) {
+                if (ruolo === "cucina" || ruolo === "bere" || (ruolo === "snack" && snackAbilitato) || (ruolo === "extra1" && window.settings.extra1Abilitato) || (ruolo === "extra2" && window.settings.extra2Abilitato) || (ruolo === "extra3" && window.settings.extra3Abilitato)) {
                     const aggiornaStatoPulsante = () => {
                         const checkboxes = d.querySelectorAll(".tickItem");
                         const tuttiSpuntati = [...checkboxes].length > 0 && [...checkboxes].every(cb => cb.checked);
@@ -6013,8 +6013,7 @@ async function caricaComandePerRuolo(daFareDiv, storicoDiv, ruolo) {
 
 
                 bComp.onclick = async () => {
-                    if ((ruolo === "cucina" || ruolo === "bere" || (ruolo === "snack" && snackAbilitato)) &&
-                    [...d.querySelectorAll(".tickItem")].some(cb => !cb.checked)) return;
+                    if ((ruolo === "cucina" || ruolo === "bere" || (ruolo === "snack" && snackAbilitato) || (ruolo === "extra1" && window.settings.extra1Abilitato) || (ruolo === "extra2" && window.settings.extra2Abilitato) || (ruolo === "extra3" && window.settings.extra3Abilitato)) && [...d.querySelectorAll(".tickItem")].some(cb => !cb.checked)) return;
 
                     await aggiornaStatoConTermine(id, statoKey, "completato");
                     if (window.tickState && window.tickState[id]) delete window.tickState[id];
@@ -8127,19 +8126,25 @@ document.addEventListener("DOMContentLoaded", () => {
         const note = noteInput ? noteInput.value.trim() : "";
         
         if (note && window.settings.noteDestinazioniAbilitate) {
-            const tickCucina = document.getElementById("tickCucina");
-            const tickBere = document.getElementById("tickBere");
-            const tickSnack = document.getElementById("tickSnack");
-
-            const cucinaSel = tickCucina && tickCucina.checked;
-            const bereSel = tickBere && tickBere.checked;
-            const snackSel = tickSnack && tickSnack.checked;
-
-            if (!cucinaSel && !bereSel && !snackSel) {
-                notify("⚠️ Hai scritto delle note, ma non hai selezionato nessuna destinazione! Seleziona almeno un profilo per inviarle.", "error");
-                return; // blocca invio comanda
-            }
-        }
+		    const tickCucina = document.getElementById("tickCucina");
+		    const tickBere = document.getElementById("tickBere");
+		    const tickSnack = document.getElementById("tickSnack");
+		    const tickExtra1 = document.getElementById("tickExtra1");
+		    const tickExtra2 = document.getElementById("tickExtra2");
+		    const tickExtra3 = document.getElementById("tickExtra3");
+		    
+		    const cucinaSel = tickCucina && tickCucina.checked;
+		    const bereSel = tickBere && tickBere.checked;
+		    const snackSel = tickSnack && tickSnack.checked;
+		    const extra1Sel = tickExtra1 && tickExtra1.checked;
+		    const extra2Sel = tickExtra2 && tickExtra2.checked;
+		    const extra3Sel = tickExtra3 && tickExtra3.checked;
+		
+		    if (!cucinaSel && !bereSel && !snackSel && !extra1Sel && !extra2Sel && !extra3Sel) {
+		        notify("⚠️ Hai scritto delle note, ma non hai selezionato nessuna destinazione! Seleziona almeno un profilo per inviarle.", "error");
+		        return; // blocca invio comanda
+		    }
+		}
 
         try {
             inviaBtn.disabled = true;
@@ -8232,12 +8237,15 @@ document.addEventListener("DOMContentLoaded", () => {
 			
 			let noteDestinazioni = [];
 			if (window.settings.noteDestinazioniAbilitate) {
-			    if (document.getElementById("tickCucina") && document.getElementById("tickCucina").checked) noteDestinazioni.push("cucina");
-			    if (document.getElementById("tickBere") && document.getElementById("tickBere").checked) noteDestinazioni.push("bere");
-			    if (document.getElementById("tickSnack") && document.getElementById("tickSnack").checked) noteDestinazioni.push("snack");
+				if (document.getElementById("tickCucina") && document.getElementById("tickCucina").checked) noteDestinazioni.push("cucina");
+				if (document.getElementById("tickBere") && document.getElementById("tickBere").checked) noteDestinazioni.push("bere");
+				if (document.getElementById("tickSnack") && document.getElementById("tickSnack").checked) noteDestinazioni.push("snack");
+				if (document.getElementById("tickExtra1") && document.getElementById("tickExtra1").checked) noteDestinazioni.push("extra1");
+				if (document.getElementById("tickExtra2") && document.getElementById("tickExtra2").checked) noteDestinazioni.push("extra2");
+				if (document.getElementById("tickExtra3") && document.getElementById("tickExtra3").checked) noteDestinazioni.push("extra3");
 			} else {
-			    noteDestinazioni = ["cucina"];
-			    if (window.settings.snackAbilitato) noteDestinazioni.push("snack");
+				noteDestinazioni = ["cucina"];
+				if (window.settings.snackAbilitato) noteDestinazioni.push("snack");
 			}
 			
 			const nuovaComanda = {
