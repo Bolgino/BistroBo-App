@@ -1206,7 +1206,7 @@ function aggiornaTickSnackPreordini() {
                 <label style="margin-right:10px;">
                     <input type="checkbox" class="note-destinazione" data-id="${id}" data-destinazione="${d}" 
                         ${p.noteDestinazioni?.includes(d) ? "checked" : ""}>
-                    ${d.charAt(0).toUpperCase() + d.slice(1)}
+                    ${d.startsWith('extra') ? (window.nomiRepartiExtra?.[d] || d.charAt(0).toUpperCase() + d.slice(1)) : d.charAt(0).toUpperCase() + d.slice(1)}
                 </label>
             `).join("");
         });
@@ -6150,17 +6150,26 @@ async function caricaComandePerRuolo(daFareDiv, storicoDiv, ruolo) {
             }
 
             // 🔹 Inserisci nei container
-            if (c[statoKey] === "da fare" || c[statoKey] === "in elaborazione") {
-                if (ruolo === "snack" && snackAbilitato) {
-                    if (window.settings.nuoveInAltoSnack) daFareContainer.prepend(d);
-                    else daFareContainer.appendChild(d);
-                } else {
-                    if (nuoveInAlto) daFareContainer.prepend(d);
-                    else daFareContainer.appendChild(d);
-                }
+        if (c[statoKey] === "da fare" || c[statoKey] === "in elaborazione") {
+            if (ruolo === "snack" && snackAbilitato) {
+                if (window.settings.nuoveInAltoSnack) daFareContainer.prepend(d);
+                else daFareContainer.appendChild(d);
+            } else if (ruolo === "extra1" && window.settings.extra1Abilitato) {
+                if (window.settings.nuoveInAltoExtra1) daFareContainer.prepend(d);
+                else daFareContainer.appendChild(d);
+            } else if (ruolo === "extra2" && window.settings.extra2Abilitato) {
+                if (window.settings.nuoveInAltoExtra2) daFareContainer.prepend(d);
+                else daFareContainer.appendChild(d);
+            } else if (ruolo === "extra3" && window.settings.extra3Abilitato) {
+                if (window.settings.nuoveInAltoExtra3) daFareContainer.prepend(d);
+                else daFareContainer.appendChild(d);
             } else {
-                storicoContainer.prepend(d);
+                if (nuoveInAlto) daFareContainer.prepend(d);
+                else daFareContainer.appendChild(d);
             }
+        } else {
+            storicoContainer.prepend(d);
+        }
 
             if (daFareContainer.filterCurrentOrders) daFareContainer.filterCurrentOrders();
             if (storicoContainer.filterCurrentOrders) storicoContainer.filterCurrentOrders();
