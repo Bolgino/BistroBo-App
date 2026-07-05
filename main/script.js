@@ -4301,6 +4301,9 @@ async function caricaIngredienti() {
                         const overlay = document.createElement("div");
                         overlay.className = "modal-overlay";
                         overlay.style.zIndex = "10005";
+						const nE1 = window.nomiRepartiExtra?.extra1 || "Extra 1";
+						const nE2 = window.nomiRepartiExtra?.extra2 || "Extra 2";
+						const nE3 = window.nomiRepartiExtra?.extra3 || "Extra 3";
 
                         const modal = document.createElement("div");
                         modal.className = "modal-varianti";
@@ -4330,9 +4333,9 @@ async function caricaIngredienti() {
 						            <label style="margin-right:15px;"><input type="checkbox" class="chk-cat" value="cibi" ${isCibi}> Cibi</label>
 						            <label style="margin-right:15px;"><input type="checkbox" class="chk-cat" value="bevande" ${isBevande}> Bevande</label>
 						            <label style="margin-right:15px;"><input type="checkbox" class="chk-cat" value="snack" ${isSnack}> Snack</label>
-						            ${window.settings.extra1Abilitato ? `<label style="margin-right:15px;"><input type="checkbox" class="chk-cat" value="extra1" ${isExtra1}> Extra 1</label>` : ''}
-						            ${window.settings.extra2Abilitato ? `<label style="margin-right:15px;"><input type="checkbox" class="chk-cat" value="extra2" ${isExtra2}> Extra 2</label>` : ''}
-						            ${window.settings.extra3Abilitato ? `<label><input type="checkbox" class="chk-cat" value="extra3" ${isExtra3}> Extra 3</label>` : ''}
+									${window.settings.extra1Abilitato ? `<label style="margin-right:15px;"><input type="checkbox" class="chk-cat" value="extra1" ${isExtra1}> ${nE1}</label>` : ''}
+									${window.settings.extra2Abilitato ? `<label style="margin-right:15px;"><input type="checkbox" class="chk-cat" value="extra2" ${isExtra2}> ${nE2}</label>` : ''}
+									${window.settings.extra3Abilitato ? `<label><input type="checkbox" class="chk-cat" value="extra3" ${isExtra3}> ${nE3}</label>` : ''}
 						        </div>
                             </div>
                             
