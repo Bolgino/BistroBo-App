@@ -305,10 +305,15 @@ async function renderPreordiniAdmin(data) {
                 ${window.settings.noteDestinazioniAbilitate ? `
                     <div style="margin-top:4px; font-size:0.85em;">
                         <b>Invia note a:</b>
-                        ${["cucina","bere", ...(window.settings.snackAbilitato ? ["snack"] : [])].map(d => `
+                        ${["cucina", "bere", 
+                            ...(window.settings.snackAbilitato ? ["snack"] : []),
+                            ...(window.settings.extra1Abilitato ? ["extra1"] : []),
+                            ...(window.settings.extra2Abilitato ? ["extra2"] : []),
+                            ...(window.settings.extra3Abilitato ? ["extra3"] : [])
+                        ].map(d => `
                             <label style="margin-right:10px;">
                                 <input type="checkbox" class="note-destinazione" data-id="${id}" data-destinazione="${d}" ${p.noteDestinazioni?.includes(d) ? "checked" : ""}>
-                                ${d.charAt(0).toUpperCase() + d.slice(1)}
+                                ${d.startsWith('extra') ? (window.nomiRepartiExtra?.[d] || d.charAt(0).toUpperCase() + d.slice(1)) : d.charAt(0).toUpperCase() + d.slice(1)}
                             </label>
                         `).join("")}
                     </div>
@@ -489,10 +494,15 @@ function renderPreordiniCassa(data) {
                 ${window.settings.noteDestinazioniAbilitate ? `
                     <div style="margin-top:4px; font-size:0.85em;">
                         <b>Invia note a:</b>
-                        ${["cucina","bere", ...(window.settings.snackAbilitato ? ["snack"] : [])].map(d => `
+                        ${["cucina", "bere", 
+                            ...(window.settings.snackAbilitato ? ["snack"] : []),
+                            ...(window.settings.extra1Abilitato ? ["extra1"] : []),
+                            ...(window.settings.extra2Abilitato ? ["extra2"] : []),
+                            ...(window.settings.extra3Abilitato ? ["extra3"] : [])
+                        ].map(d => `
                             <label style="margin-right:10px;">
                                 <input type="checkbox" class="note-destinazione" data-id="${id}" data-destinazione="${d}" ${p.noteDestinazioni?.includes(d) ? "checked" : ""}>
-                                ${d.charAt(0).toUpperCase() + d.slice(1)}
+                                ${d.startsWith('extra') ? (window.nomiRepartiExtra?.[d] || d.charAt(0).toUpperCase() + d.slice(1)) : d.charAt(0).toUpperCase() + d.slice(1)}
                             </label>
                         `).join("")}
                     </div>
@@ -587,11 +597,17 @@ async function aggiungiPreordineAlleComande(id) {
     // 5️⃣ noteDestinazioni
     let noteDestinazioni = ["cucina"];
     if (window.settings.noteDestinazioniAbilitate) {
-        if (bere.length > 0) noteDestinazioni.push("bere");
-        if (window.settings.snackAbilitato && snack.length > 0) noteDestinazioni.push("snack");
-        if (window.settings.extra1Abilitato && extra1.length > 0) noteDestinazioni.push("extra1");
-        if (window.settings.extra2Abilitato && extra2.length > 0) noteDestinazioni.push("extra2");
-        if (window.settings.extra3Abilitato && extra3.length > 0) noteDestinazioni.push("extra3");
+        if (p.noteDestinazioni && p.noteDestinazioni.length > 0) {
+            // Usa fedelmente le destinazioni spuntate a mano nella UI
+            noteDestinazioni = p.noteDestinazioni;
+        } else {
+            // Fallback: se nessuna nota è spuntata, invia automaticamente
+            if (bere.length > 0) noteDestinazioni.push("bere");
+            if (window.settings.snackAbilitato && snack.length > 0) noteDestinazioni.push("snack");
+            if (window.settings.extra1Abilitato && extra1.length > 0) noteDestinazioni.push("extra1");
+            if (window.settings.extra2Abilitato && extra2.length > 0) noteDestinazioni.push("extra2");
+            if (window.settings.extra3Abilitato && extra3.length > 0) noteDestinazioni.push("extra3");
+        }
     }
 
     // 6️⃣ Commento asporto
