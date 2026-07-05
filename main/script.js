@@ -5657,9 +5657,9 @@ async function caricaComandePerRuolo(daFareDiv, storicoDiv, ruolo) {
             cucina: { fare: "daFareComandeContainer", sto: "storicoComandeContainer" },
             bere: { fare: "daBereComandeContainer", sto: "storicoBereComandeContainer" },
             snack: { fare: "daSnackComandeContainer", sto: "storicoSnackComandeContainer" },
-            extra1: { fare: "daFareExtra1Container", sto: "storicoExtra1Container" },
-            extra2: { fare: "daFareExtra2Container", sto: "storicoExtra2Container" },
-            extra3: { fare: "daFareExtra3Container", sto: "storicoExtra3Container" },
+            extra1: { fare: "daExtra1ComandeContainer", sto: "storicoExtra1ComandeContainer" }, // CORRETTO
+            extra2: { fare: "daExtra2ComandeContainer", sto: "storicoExtra2ComandeContainer" }, // CORRETTO
+            extra3: { fare: "daExtra3ComandeContainer", sto: "storicoExtra3ComandeContainer" }, // CORRETTO
         };
 
         const daFareContainer = document.getElementById(containerMap[ruoloEffettivo]?.fare);
