@@ -1007,7 +1007,14 @@ function initImpostazioniToggle() {
         { btnId: "toggleMagazzinoBereBtn", ref: "impostazioni/magazzinoBere", setting: "magazzinoBere", tabSelector: "button[data-tab='ingredientiBereTab']" },
         { btnId: "toggleMenuBereBtn", ref: "impostazioni/menuBere", setting: "menuBere", tabSelector: "button[data-tab='menuBereTab']" },
         { btnId: "toggleMagazzinoSnackBtn", ref: "impostazioni/magazzinoSnack", setting: "magazzinoSnack", tabSelector: "button[data-tab='ingredientiSnackTab']" },
-        { btnId: "toggleMenuSnackBtn", ref: "impostazioni/menuSnack", setting: "menuSnack", tabSelector: "button[data-tab='menuSnackTab']" }
+        { btnId: "toggleMenuSnackBtn", ref: "impostazioni/menuSnack", setting: "menuSnack", tabSelector: "button[data-tab='menuSnackTab']" },
+		{ btnId: "toggleMagazzinoExtra1Btn", ref: "impostazioni/magazzinoExtra1", setting: "magazzinoExtra1", tabSelector: "button[data-tab='ingredientiExtra1Tab']" },
+	    { btnId: "toggleMenuExtra1Btn", ref: "impostazioni/menuExtra1", setting: "menuExtra1", tabSelector: "button[data-tab='menuExtra1Tab']" },
+	    { btnId: "toggleMagazzinoExtra2Btn", ref: "impostazioni/magazzinoExtra2", setting: "magazzinoExtra2", tabSelector: "button[data-tab='ingredientiExtra2Tab']" },
+	    { btnId: "toggleMenuExtra2Btn", ref: "impostazioni/menuExtra2", setting: "menuExtra2", tabSelector: "button[data-tab='menuExtra2Tab']" },
+	    { btnId: "toggleMagazzinoExtra3Btn", ref: "impostazioni/magazzinoExtra3", setting: "magazzinoExtra3", tabSelector: "button[data-tab='ingredientiExtra3Tab']" },
+	    { btnId: "toggleMenuExtra3Btn", ref: "impostazioni/menuExtra3", setting: "menuExtra3", tabSelector: "button[data-tab='menuExtra3Tab']" }
+		
     ];
 
     configTabs.forEach(cfg => {
@@ -1131,10 +1138,19 @@ function initImpostazioniToggle() {
         const toggleNuoveBtn = document.getElementById("toggleNuoveInAlto" + prof.charAt(0).toUpperCase() + prof.slice(1) + "Btn");
         const nuoveRef = db.ref("impostazioni/nuoveInAlto" + prof.charAt(0).toUpperCase() + prof.slice(1));
         if (toggleNuoveBtn) {
-            initToggle(toggleNuoveBtn, nuoveRef, {on:"ON", off:"OFF"}, false, val => { 
-                window.settings["nuoveInAlto" + prof.charAt(0).toUpperCase() + prof.slice(1)] = val; 
-            });
-        }
+		    initToggle(toggleNuoveBtn, nuoveRef, {on:"ON", off:"OFF"}, false, val => { 
+		        window.settings["nuoveInAlto" + prof.charAt(0).toUpperCase() + prof.slice(1)] = val; 
+		        
+		        // Applica l'ordine in tempo reale se stiamo simulando/utilizzando quel reparto
+		        if (ruolo === prof) {
+		            caricaComandePerRuolo(
+		                document.getElementById("da" + prof.charAt(0).toUpperCase() + prof.slice(1) + "ComandeContainer"),
+		                document.getElementById("storico" + prof.charAt(0).toUpperCase() + prof.slice(1) + "ComandeContainer"),
+		                prof
+		            );
+		        }
+		    });
+		}
     });
 }
 function initTickNoteDestinazioni() {
