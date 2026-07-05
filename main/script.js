@@ -1352,27 +1352,63 @@ function aggiornaSelectRuoliDinamici() {
     });
 }
 // 🔹 Popola un select ruoli aggiungendo "Snack" solo se abilitato
+// 🔹 Popola un select ruoli aggiungendo "Snack" e "Extra" solo se abilitati, recuperandone anche i nomi
 async function popolaSelectRuoliConSnack(selectEl) {
     if (!selectEl) return;
 
     try {
-        const snapSnack = await db.ref("impostazioni/snackAbilitato").once("value");
-        const snackAttivo = snapSnack.exists() && snapSnack.val() === true;
+        // Leggiamo tutto il nodo impostazioni in un colpo solo per avere sia le abilitazioni che i nomi custom
+        const snap = await db.ref("impostazioni").once("value");
+        const imp = snap.val() || {};
 
-        // Ruoli base
-        const ruoli = ["", "cassa", "cucina", "bere"];
-        if (snackAttivo) ruoli.push("snack");
+        const snackAttivo = !!imp.snackAbilitato;
+        const extra1Attivo = !!imp.extra1Abilitato;
+        const extra2Attivo = !!imp.extra2Abilitato;
+        const extra3Attivo = !!imp.extra3Abilitato;
+        
+        const nomiExtra = imp.nomiRepartiExtra || {};
 
         // Ripulisci select e ripopola
         selectEl.innerHTML = '<option value="" selected>-- Seleziona ruolo --</option>';
-        ruoli.forEach(r => {
+        
+        // Inseriamo i ruoli fissi
+        const ruoliFissi = ["cassa", "cucina", "bere"];
+        ruoliFissi.forEach(r => {
             const opt = document.createElement("option");
             opt.value = r;
             opt.textContent = r.charAt(0).toUpperCase() + r.slice(1);
             selectEl.appendChild(opt);
         });
+
+        // Aggiungiamo quelli dinamici
+        if (snackAttivo) {
+            const opt = document.createElement("option");
+            opt.value = "snack";
+            opt.textContent = "Snack";
+            selectEl.appendChild(opt);
+        }
+
+        if (extra1Attivo) {
+            const opt = document.createElement("option");
+            opt.value = "extra1";
+            opt.textContent = nomiExtra.extra1 || "Extra 1";
+            selectEl.appendChild(opt);
+        }
+        if (extra2Attivo) {
+            const opt = document.createElement("option");
+            opt.value = "extra2";
+            opt.textContent = nomiExtra.extra2 || "Extra 2";
+            selectEl.appendChild(opt);
+        }
+        if (extra3Attivo) {
+            const opt = document.createElement("option");
+            opt.value = "extra3";
+            opt.textContent = nomiExtra.extra3 || "Extra 3";
+            selectEl.appendChild(opt);
+        }
+
     } catch (err) {
-        console.warn("Errore lettura snackAbilitato:", err);
+        console.warn("Errore lettura impostazioni ruoli:", err);
     }
 }
 //------------INGREDIENTI CRITICI----------------
@@ -8920,17 +8956,22 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
     const dataOdierna = ora.toLocaleDateString();
 
     // --- 1. DIVISIONE IN REPARTI ---
-    let reparti = [];
-    if (window.settings.scontriniSeparati) {
-        // Usiamo il nuovo smistatore intelligente
-        const separati = separaComanda(items);
-        if (separati.cibo.length > 0) reparti.push({ nome: "CUCINA", items: separati.cibo });
-        if (separati.bere.length > 0) reparti.push({ nome: "BERE", items: separati.bere });
-        if (separati.snack.length > 0) reparti.push({ nome: "SNACK", items: separati.snack });
-    } else {
-        // Scontrino Unico
-        reparti.push({ nome: null, items: items });
-    }
+	let reparti = [];
+	if (window.settings.scontriniSeparati) {
+	    // Usiamo il nuovo smistatore intelligente
+	    const separati = separaComanda(items);
+	    if (separati.cibo.length > 0) reparti.push({ nome: "CUCINA", items: separati.cibo });
+	    if (separati.bere.length > 0) reparti.push({ nome: "BERE", items: separati.bere });
+	    if (separati.snack.length > 0) reparti.push({ nome: "SNACK", items: separati.snack });
+	    
+	    // Aggiungi i profili extra con il loro nome personalizzato in MAIUSCOLO
+	    if (separati.extra1.length > 0) reparti.push({ nome: (window.nomiRepartiExtra?.extra1 || "EXTRA 1").toUpperCase(), items: separati.extra1 });
+	    if (separati.extra2.length > 0) reparti.push({ nome: (window.nomiRepartiExtra?.extra2 || "EXTRA 2").toUpperCase(), items: separati.extra2 });
+	    if (separati.extra3.length > 0) reparti.push({ nome: (window.nomiRepartiExtra?.extra3 || "EXTRA 3").toUpperCase(), items: separati.extra3 });
+	} else {
+	    // Scontrino Unico
+	    reparti.push({ nome: null, items: items });
+	}
 
     // --- 2. DISEGNO DEL PDF PER OGNI REPARTO ---
     reparti.forEach((reparto, index) => {
