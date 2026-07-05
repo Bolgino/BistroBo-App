@@ -6216,6 +6216,81 @@ async function caricaComandePerRuolo(daFareDiv, storicoDiv, ruolo) {
     });
 }
 // =========================================================================
+// GESTIONE VISIBILITÀ PIATTI NELLA PAGINA PUBBLICA DEI PREORDINI
+// =========================================================================
+
+// Event Listeners per Apertura e Chiusura Popup
+document.getElementById("btnGestioneVisibilitaPreordini").addEventListener("click", apriPopupVisibilitaPreordini);
+document.getElementById("btnChiudiVisibilitaPreordini").addEventListener("click", () => {
+    document.getElementById("popupVisibilitaPreordini").classList.add("hidden");
+});
+
+function apriPopupVisibilitaPreordini() {
+    const container = document.getElementById("listaPiattiVisibilitaContainer");
+    container.innerHTML = "<p style='text-align:center; font-style:italic; color:#777;'>Caricamento menù...</p>";
+    
+    // Mostriamo la modale
+    document.getElementById("popupVisibilitaPreordini").classList.remove("hidden");
+
+    // Leggiamo l'intero menù da Firebase
+    firebase.database().ref("menu").once("value", (snapshot) => {
+        container.innerHTML = "";
+        const menuData = snapshot.val();
+        
+        if (!menuData) {
+            container.innerHTML = "<p style='text-align:center; color:red;'>Nessun piatto presente nel menù.</p>";
+            return;
+        }
+
+        // Cicliamo i piatti nel menù
+        for (let idPiatto in menuData) {
+            const piatto = menuData[idPiatto];
+            
+            // Se la proprietà 'visibilePreordini' non esiste o non è esplicitamente false, di base è TRUE
+            const isVisible = (piatto.visibilePreordini !== false);
+            const checkedAttr = isVisible ? "checked" : "";
+
+            // Creiamo la riga riutilizzando la classe 'variante-row' del tuo CSS
+            const riga = document.createElement("div");
+            riga.className = "variante-row";
+            riga.style.padding = "10px 0";
+            riga.innerHTML = `
+                <div style="display: flex; flex-direction: column;">
+                    <span style="font-weight: 600; color: #333;">${piatto.nome}</span>
+                    <small style="color: #777; text-transform: uppercase; font-size: 0.75em;">Cat: ${piatto.categoria || 'cibi'}</small>
+                </div>
+                <label class="switch" style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <span style="font-size: 0.8em; font-weight: bold; color: ${isVisible ? 'green' : '#999'};">${isVisible ? 'ONLINE' : 'NASCONDO'}</span>
+                    <input type="checkbox" data-id="${idPiatto}" ${checkedAttr} style="transform: scale(1.4); cursor: pointer;">
+                </label>
+            `;
+
+            // Agganciamo il listener del cambio stato alla checkbox di questa riga
+            const checkbox = riga.querySelector("input[type='checkbox']");
+            checkbox.addEventListener("change", (e) => {
+                const idSelected = e.target.getAttribute("data-id");
+                const nuovoStatoVisibilita = e.target.checked;
+                
+                // Aggiorna la label testuale all'istante accanto allo switch
+                const labelStato = e.target.previousElementSibling;
+                labelStato.innerText = nuovoStatoVisibilita ? 'ONLINE' : 'NASCONDO';
+                labelStato.style.color = nuovoStatoVisibilita ? 'green' : '#999';
+
+                // Salvataggio diretto sul record del piatto in Firebase
+                firebase.database().ref(`menu/${idSelected}`).update({
+                    visibilePreordini: nuovoStatoVisibilita
+                }).then(() => {
+                    if(typeof notify === "function") {
+                        notify(`Stato visibilità di "${piatto.nome}" aggiornato!`, "info");
+                    }
+                });
+            });
+
+            container.appendChild(riga);
+        }
+    });
+}
+// =========================================================================
 // SISTEMA SCONTI GLOBALI (STUDENTI, OPERAI, BUONI PASTO)
 // =========================================================================
 
