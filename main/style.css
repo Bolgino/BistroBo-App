@@ -1998,3 +1998,22 @@ body.tema-estate button {
     background-color: #fefefe !important;
     color: #000 !important;
 }
+/* FORZA CHECKBOX E TESTO INSIEME PER LE NOTE IN CASSA */
+#noteDestinazioniDiv {
+    display: flex !important;
+    flex-wrap: wrap;
+    gap: 15px;
+    align-items: center;
+}
+#noteDestinazioniDiv[style*="display: none"] {
+    display: none !important;
+}
+#noteDestinazioniDiv label {
+    display: inline-flex !important;
+    align-items: center;
+    white-space: nowrap; /* Impedisce che il nome vada a capo da solo */
+    margin: 0 !important;
+}
+#noteDestinazioniDiv input[type="checkbox"] {
+    margin-right: 6px !important;
+}
