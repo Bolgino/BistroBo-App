@@ -671,6 +671,7 @@
 			<div style="background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-top: 5px solid #E91E63;">
 				<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
 					<h3 style="margin:0; color: #E91E63; font-size: 1.3em;">📩 Gestione Preordini</h3>
+					<button id="btnGestioneVisibilitaPreordini" class="primaryButton" style="padding: 8px 16px; background: linear-gradient(135deg, #E91E63, #c2185b); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">👁️ Visibilità Menù Pubblico</button>
 				</div>
 				<div id="listaPreordiniAdmin"></div>
 			</div>
@@ -1341,6 +1342,21 @@
 	        </div>
 	    </div>
 	</div>
+	<div id="popupVisibilitaPreordini" class="modal-overlay hidden">
+		<div class="modal-varianti" style="max-width: 450px;">
+			<h3 style="margin-top: 0; color: #E91E63; text-align: center;">👁️ Visibilità Lista Pubblica</h3>
+			<p style="font-size: 0.85em; color: #555; text-align: center; margin-bottom: 15px;">
+				Disattiva i piatti che NON devono comparire nella pagina dei preordini dedicata ai clienti. Rimmarranno comunque visibili in Cassa.
+			</p>
+			
+			<div id="listaPiattiVisibilitaContainer" style="display: flex; flex-direction: column; gap: 8px; max-height: 50vh; overflow-y: auto; padding-right: 5px;">
+				</div>
+
+			<div class="modal-actions" style="margin-top: 25px;">
+				<button id="btnChiudiVisibilitaPreordini" class="btn-chiudi" style="width: 100%; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer;">Chiudi</button>
+			</div>
+		</div>
+	</div>
 	<!-- ================= SCRIPT ================= -->
 	<script src="main/script.js"></script>
 	<script src="preordini.js"></script>
@@ -1421,5 +1437,6 @@
 		navigator.serviceWorker.register('sw.js');
 	}
 	</script>
+	
 </body>
 </html>
