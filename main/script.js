@@ -6182,19 +6182,36 @@ async function caricaComandePerRuolo(daFareDiv, storicoDiv, ruolo) {
         const counterSpan = document.getElementById(counterSpanId);
         if (counterSpan) counterSpan.innerText = countDaFare;
 
-        // --- EMPTY STATES CUCINA / BERE / SNACK ---
-        if (daFareContainer.children.length === 0) {
-            let msg = ruoloEffettivo === "cucina" ? "Nessuna comanda in coda. Pentole a riposo! 🍳" :
-                      ruoloEffettivo === "bere"   ? "Nessuna bevanda da preparare. Shaker a riposo! 🍹" :
-                                                    "Nessuno snack in coda. Friggitrice in pausa! 🍟";
-            daFareContainer.innerHTML = `<div style='text-align:center; padding: 20px; color: #777; font-style: italic; font-size: 1.1em;'>${msg}</div>`;
-        }
-        if (storicoContainer.children.length === 0) {
-            let msg = ruoloEffettivo === "cucina" ? "Ancora nessun piatto completato. Accendi i fuochi! 🔥" :
-                      ruoloEffettivo === "bere"   ? "Nessun drink servito. Stappa qualcosa! 🍾" :
-                                                    "Ancora nessuno snack servito. Scalda l'olio! 🍿";
-            storicoContainer.innerHTML = `<div style='text-align:center; padding: 20px; color: #777; font-style: italic; font-size: 1.1em;'>${msg}</div>`;
-        }
+        // --- EMPTY STATES CUCINA / BERE / SNACK / EXTRA ---
+		if (daFareContainer.children.length === 0) {
+		    let msg = "";
+		    if (ruoloEffettivo === "cucina") {
+		        msg = "Nessuna comanda in coda. Pentole a riposo! 🍳";
+		    } else if (ruoloEffettivo === "bere") {
+		        msg = "Nessuna bevanda da preparare. Shaker a riposo! 🍹";
+		    } else if (ruoloEffettivo === "snack") {
+		        msg = "Nessuno snack in coda. Friggitrice in pausa! 🍟";
+		    } else {
+		        // Frase generica ma simpatica per Extra1, Extra2, Extra3 (indipendente se fanno pizze, crepes o altro)
+		        msg = "Tutto calmo in questo reparto. Prendi fiato finché puoi! 🧘‍♂️✨"; 
+		    }
+		    daFareContainer.innerHTML = `<div style='text-align:center; padding: 20px; color: #777; font-style: italic; font-size: 1.1em;'>${msg}</div>`;
+		}
+		
+		if (storicoContainer.children.length === 0) {
+		    let msg = "";
+		    if (ruoloEffettivo === "cucina") {
+		        msg = "Ancora nessun piatto completato. Accendi i fuochi! 🔥";
+		    } else if (ruoloEffettivo === "bere") {
+		        msg = "Nessun drink servito. Stappa qualcosa! 🍾";
+		    } else if (ruoloEffettivo === "snack") {
+		        msg = "Ancora nessuno snack servito. Scalda l'olio! 🥔";
+		    } else {
+		        // Frase generica per la tab storico degli Extra
+		        msg = "Storico vuoto. Inizia a servire ordini per riempirlo! 💪🚀"; 
+		    }
+		    storicoContainer.innerHTML = `<div style='text-align:center; padding: 20px; color: #777; font-style: italic; font-size: 1.1em;'>${msg}</div>`;
+		}
 
     });
 }
