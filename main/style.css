@@ -1219,14 +1219,14 @@ body.tema-estate button {
     font-size: 1em;
 }
 
-/* Ingredienti sotto al nome, ALLINEATI A SINISTRA */
+/* Ingredienti sotto al nome, ALLINEATI AL CENTRO */
 .menu-item .piatto-ingredienti {
     font-size: 0.78em;
     color: #444;
     line-height: 1.3;
     margin-top: 4px;
-    padding-left: 72px; /* si allinea sotto al nome */
-    text-align: left;   /* forza sinistra */
+    padding-left: 0;    /* Rimosso il rientro */
+    text-align: center; /* Forza l'allineamento al centro */
 }
 
 
