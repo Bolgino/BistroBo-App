@@ -719,32 +719,55 @@ async function initPreordiniClienti() {
   // Carica menù
     Promise.all([
         db.ref("menu").once("value"),
-        db.ref("ingredienti").once("value")
-    ]).then(([snapMenu, snapIngredienti]) => {
+        db.ref("ingredienti").once("value"),
+        db.ref("impostazioni").once("value") // AGGIUNTO: Leggiamo le impostazioni complete
+    ]).then(([snapMenu, snapIngredienti, snapImp]) => {
+        const imp = snapImp.val() || {};
+        window.settings.snackAbilitato = imp.snackAbilitato === true;
+        window.settings.extra1Abilitato = imp.extra1Abilitato === true;
+        window.settings.extra2Abilitato = imp.extra2Abilitato === true;
+        window.settings.extra3Abilitato = imp.extra3Abilitato === true;
+        window.nomiRepartiExtra = imp.nomiRepartiExtra || {};
+
         const menuData = snapMenu.val() || {};
         const ingredientiDB = snapIngredienti.val() || {};
         ingredientiGlobali = snapIngredienti.val() || {};
         menuDiv.innerHTML = "";
 
-        // Ordina le chiavi dei menuItems in base alla categoria
-        const categorieOrdine = ["cibi","snack","bevande"];
+        // Ordina le chiavi dei menuItems includendo dinamicamente gli Extra abilitati
+        const categorieOrdine = ["cibi", "snack", "bevande"];
+        if (window.settings.extra1Abilitato) categorieOrdine.push("extra1");
+        if (window.settings.extra2Abilitato) categorieOrdine.push("extra2");
+        if (window.settings.extra3Abilitato) categorieOrdine.push("extra3");
+
         menuItems = Object.fromEntries(
             Object.entries(menuData).sort(([, a], [, b]) => {
-                const catA = a.categoria || "cibo";
-                const catB = b.categoria || "cibo";
+                const catA = (a.categoria || "cibi").toLowerCase();
+                const catB = (b.categoria || "cibi").toLowerCase();
                 return categorieOrdine.indexOf(catA) - categorieOrdine.indexOf(catB);
             })
         );
 
-
     categorieOrdine.forEach(cat => {
-        const items = Object.entries(menuItems).filter(([id, i]) => (i.categoria || "cibi") === cat);
+        const items = Object.entries(menuItems).filter(([id, i]) => {
+            let itemCat = (i.categoria || "cibi").toLowerCase();
+            if (itemCat === "cibo") itemCat = "cibi"; // Normalizza il nome
+            return itemCat === cat;
+        });
+        
         if (items.length === 0) return;
 
         // Titolo categoria
         const titoloDiv = document.createElement("div");
         titoloDiv.className = "categoria-titolo";
-        titoloDiv.innerHTML = `<h3>${cat === "cibo" ? "Cibo" : cat.charAt(0).toUpperCase() + cat.slice(1)}</h3>`;
+        
+        // Imposta il nome giusto o personalizzato
+        let nomeCat = cat === "cibi" ? "Cibo" : cat.charAt(0).toUpperCase() + cat.slice(1);
+        if (cat === "extra1" && window.nomiRepartiExtra?.extra1) nomeCat = window.nomiRepartiExtra.extra1;
+        if (cat === "extra2" && window.nomiRepartiExtra?.extra2) nomeCat = window.nomiRepartiExtra.extra2;
+        if (cat === "extra3" && window.nomiRepartiExtra?.extra3) nomeCat = window.nomiRepartiExtra.extra3;
+        
+        titoloDiv.innerHTML = `<h3>${nomeCat}</h3>`;
         menuDiv.appendChild(titoloDiv);
 
 
