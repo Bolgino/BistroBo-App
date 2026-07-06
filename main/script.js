@@ -7655,7 +7655,7 @@ function analizzaComande(comandeObj, fondoCassaTot) {
             lettera: c.lettera,
             totale: totaleComandaScontata,
             piatti: (c.piatti || []).map(p => p.quantita + "x " + p.nome).join(", "),
-            data: c.timestamp,
+            data: c.data || c.ora || c.timestamp || "", // <-- FIX: recupera la data corretta
             isPreordine: comandaEPreordine
         });
     }
