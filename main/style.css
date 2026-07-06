@@ -2017,3 +2017,68 @@ body.tema-estate button {
 #noteDestinazioniDiv input[type="checkbox"] {
     margin-right: 6px !important;
 }
+/* ================= DASHBOARD ADMIN (CENTRO DI CONTROLLO) ================= */
+.dash-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+}
+.dash-dept-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+}
+.dash-card {
+    background: linear-gradient(135deg, #ffffff, #f9fbfd);
+    border-radius: 12px;
+    padding: 15px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    border: 1px solid #eef2f5;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.dash-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+}
+/* Barra colorata laterale per le card */
+.dash-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 5px; height: 100%;
+    background: #673AB7;
+}
+.dash-card.dept-cucina::before { background: #FF9800; }
+.dash-card.dept-bere::before { background: #2196F3; }
+.dash-card.dept-snack::before { background: #FF5722; }
+.dash-card.dept-extra1::before { background: #9C27B0; }
+.dash-card.dept-extra2::before { background: #009688; }
+.dash-card.dept-extra3::before { background: #795548; }
+
+.dash-title {
+    font-size: 0.9em;
+    color: #777;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+.dash-value {
+    font-size: 1.8em;
+    font-weight: 800;
+    color: #333;
+}
+.dash-oldest {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed #ddd;
+    font-size: 0.85em;
+    color: #d32f2f;
+}
+.dash-record {
+    color: #2e7d32;
+    font-weight: bold;
+    font-size: 1.2em;
+}
