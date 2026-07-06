@@ -4744,7 +4744,6 @@ async function caricaGestioneComandeAdmin() {
     const listaDiv = document.getElementById("listaComandeAdmin");
     db.ref("comande").off(); // pulizia totale
     db.ref("comande").on("value", async snap => {
-        calcolaEVisualizzaTempoMedio(snap);
 		const data = snap.val() || {};
         if (typeof aggiornaDashboardAdmin === "function") aggiornaDashboardAdmin(data);
         listaDiv.innerHTML = "";
@@ -5022,14 +5021,24 @@ async function caricaGestioneComandeAdmin() {
                 btn.style.color = "white";
 
                 btn.onclick = async () => {
-                    let nuovo;
-                    if (statoAttuale === "da fare") nuovo = "in elaborazione";
-                    else if (statoAttuale === "in elaborazione") nuovo = "completato";
-                    else nuovo = "da fare";
-                    
-                    const chiave = "stato" + tipo.charAt(0).toUpperCase() + tipo.slice(1);
-                    await db.ref("comande/" + idComanda).update({ [chiave]: nuovo });
-                };
+				    let nuovo;
+				    let aggiornamenti = {}; // Oggetto per mandare più dati a Firebase insieme
+				
+				    if (statoAttuale === "da fare") nuovo = "in elaborazione";
+				    else if (statoAttuale === "in elaborazione") {
+				        nuovo = "completato";
+				        // 🔹 SALVIAMO L'ORA DI COMPLETAMENTO PER QUESTO REPARTO!
+				        aggiornamenti["timestampFine_" + tipo] = Date.now();
+				    }
+				    else nuovo = "da fare";
+				    
+				    // Assegna il nuovo stato
+				    const chiave = "stato" + tipo.charAt(0).toUpperCase() + tipo.slice(1);
+				    aggiornamenti[chiave] = nuovo;
+				
+				    // Invia tutto a Firebase
+				    await db.ref("comande/" + idComanda).update(aggiornamenti);
+				};
 
                 container.appendChild(statoSpan);
                 container.appendChild(btn);
@@ -5108,34 +5117,27 @@ async function caricaGestioneComandeAdmin() {
     initRicercaComande("listaComandeAdmin", "cercaComandaAdmin");
     hideLoader();
 }
-// ================= MOTORE DASHBOARD ULTRA (NEXUS) =================
+// ================= DASHBOARD ADMIN (STILE BISTROBO) =================
 function aggiornaDashboardAdmin(comandeData) {
     if (!document.getElementById("dashboardAdminTab")) return;
 
     const repartiConfig = [
-        { id: "cucina", nome: "Cucina", statoKey: "statoCucina", abil: true, colore: "#FF9800" }, // Arancione
-        { id: "bere", nome: "Bar / Bere", statoKey: "statoBere", abil: true, colore: "#00E5FF" }, // Ciano neon
-        { id: "snack", nome: "Snack", statoKey: "statoSnack", abil: window.settings?.snackAbilitato, colore: "#FFEA00" }, // Giallo
-        { id: "extra1", nome: window.nomiRepartiExtra?.extra1 || "Extra 1", statoKey: "statoExtra1", abil: window.settings?.extra1Abilitato, colore: "#D500F9" }, // Viola
-        { id: "extra2", nome: window.nomiRepartiExtra?.extra2 || "Extra 2", statoKey: "statoExtra2", abil: window.settings?.extra2Abilitato, colore: "#00E676" }, // Verde neon
-        { id: "extra3", nome: window.nomiRepartiExtra?.extra3 || "Extra 3", statoKey: "statoExtra3", abil: window.settings?.extra3Abilitato, colore: "#FF1744" }  // Rosso neon
+        { id: "cucina", nome: "Cucina", statoKey: "statoCucina", abil: true, colore: "#FF9800" }, 
+        { id: "bere", nome: "Bar / Bere", statoKey: "statoBere", abil: true, colore: "#2196F3" }, 
+        { id: "snack", nome: "Snack", statoKey: "statoSnack", abil: window.settings?.snackAbilitato, colore: "#FFC107" },
+        { id: "extra1", nome: window.nomiRepartiExtra?.extra1 || "Extra 1", statoKey: "statoExtra1", abil: window.settings?.extra1Abilitato, colore: "#9C27B0" },
+        { id: "extra2", nome: window.nomiRepartiExtra?.extra2 || "Extra 2", statoKey: "statoExtra2", abil: window.settings?.extra2Abilitato, colore: "#4CAF50" },
+        { id: "extra3", nome: window.nomiRepartiExtra?.extra3 || "Extra 3", statoKey: "statoExtra3", abil: window.settings?.extra3Abilitato, colore: "#F44336" }
     ].filter(r => r.abil);
 
     const statsReparti = {};
     repartiConfig.forEach(r => {
-        statsReparti[r.id] = {
-            inCoda: 0, 
-            tempiEvasione: [], 
-            fastest: Infinity, 
-            oldestTimestamp: null,
-            oldestId: null
-        };
+        statsReparti[r.id] = { inCoda: 0, tempiEvasione: [], fastest: Infinity, oldestTimestamp: null, oldestId: null };
     });
 
     const now = Date.now();
-    let maxGlobalStress = 0; // Per l'allarme globale
+    let maxGlobalStress = 0;
 
-    // ANALISI COMANDE
     Object.entries(comandeData).forEach(([id, c]) => {
         const { cibo, bere, snack, extra1, extra2, extra3 } = separaComanda(c.piatti || []);
         
@@ -5150,15 +5152,18 @@ function aggiornaDashboardAdmin(comandeData) {
 
             if (hasItems) {
                 const stato = c[r.statoKey] || "da fare";
+                
                 if (stato === "da fare" || stato === "in elaborazione") {
                     statsReparti[r.id].inCoda++;
                     if (!statsReparti[r.id].oldestTimestamp || c.timestamp < statsReparti[r.id].oldestTimestamp) {
                         statsReparti[r.id].oldestTimestamp = c.timestamp;
                         statsReparti[r.id].oldestId = (c.numero + (c.lettera || "")).toUpperCase();
                     }
-                } else if (stato === "completato" && c.timestamp && c.timestampTermine) {
-                    let durata = c.timestampTermine - c.timestamp;
-                    if (durata > 0 && durata < 86400000) { 
+                } 
+                // 🔹 ORA USIAMO IL TIMESTAMP SPECIFICO DEL REPARTO CHE HAI SALVATO PRIMA!
+                else if (stato === "completato" && c.timestamp && c["timestampFine_" + r.id]) {
+                    let durata = c["timestampFine_" + r.id] - c.timestamp;
+                    if (durata > 0 && durata < 86400000) { // scarta errori o vecchie di giorni
                         statsReparti[r.id].tempiEvasione.push(durata);
                         if (durata < statsReparti[r.id].fastest) statsReparti[r.id].fastest = durata;
                     }
@@ -5167,79 +5172,101 @@ function aggiornaDashboardAdmin(comandeData) {
         });
     });
 
-    // RENDER DELLA GRIGLIA
     let gridHtml = "";
     repartiConfig.forEach(r => {
         const sr = statsReparti[r.id];
+        let stressPercent = Math.min((sr.inCoda / 10) * 100, 100); // 10 comande = 100% carico
+        let stressColor = "#4CAF50"; 
+        if (sr.inCoda > 4) stressColor = "#FF9800"; 
+        if (sr.inCoda >= 8) stressColor = "#F44336"; 
         
-        // Calcolo Stress Level (0 - 15 comande come scala massima indicativa)
-        let stressPercent = Math.min((sr.inCoda / 15) * 100, 100);
-        let stressColor = "#00e676"; // Verde
-        if (sr.inCoda > 5) stressColor = "#ffea00"; // Giallo
-        if (sr.inCoda >= 10) stressColor = "#ff1744"; // Rosso
-        
-        if (sr.inCoda >= 10 && maxGlobalStress < 2) maxGlobalStress = 2;
-        else if (sr.inCoda > 5 && maxGlobalStress < 1) maxGlobalStress = 1;
+        if (sr.inCoda >= 8 && maxGlobalStress < 2) maxGlobalStress = 2;
+        else if (sr.inCoda > 4 && maxGlobalStress < 1) maxGlobalStress = 1;
 
-        // Calcolo Medie
         let mediaMin = "--";
         if (sr.tempiEvasione.length > 0) {
             let sum = sr.tempiEvasione.reduce((a, b) => a + b, 0);
-            mediaMin = (sum / sr.tempiEvasione.length / 60000).toFixed(1) + " m";
+            mediaMin = (sum / sr.tempiEvasione.length / 60000).toFixed(1) + " min";
         }
-        let fastestText = sr.fastest !== Infinity ? (sr.fastest / 60000).toFixed(1) + " m" : "--";
+        let fastestText = sr.fastest !== Infinity ? (sr.fastest / 60000).toFixed(1) + " min" : "--";
 
-        // Attesa Comanda più vecchia
         let oldestText = "Nessuna in coda";
         if (sr.oldestTimestamp) {
             let minPassati = Math.floor((now - sr.oldestTimestamp) / 60000);
             oldestText = minPassati > 15 
-                ? `<span class="hud-critical-text blink">ATTENZIONE: #${sr.oldestId} aspetta da ${minPassati}m!</span>`
+                ? `<span class="bb-crit-text">#${sr.oldestId} (${minPassati}m fa!)</span>`
                 : `#${sr.oldestId} (${minPassati}m fa)`;
         }
 
         gridHtml += `
-            <div class="hud-card" style="--dept-color: ${r.colore};">
-                <div class="hud-card-header">
+            <div class="bb-dash-card" style="--dept-color: ${r.colore};">
+                <div class="bb-card-title">
                     <span>${r.nome}</span>
-                    <span style="color: ${stressColor}">${sr.inCoda} ATTIVE</span>
+                    <span style="color: ${stressColor}">${sr.inCoda} Attive</span>
                 </div>
-                
-                <div style="font-size: 0.75em; color: #888; margin-bottom: 3px;">CARICO DI LAVORO</div>
-                <div class="hud-gauge-bg">
-                    <div class="hud-gauge-fill" style="width: ${stressPercent}%; background-color: ${stressColor};"></div>
+                <div class="bb-gauge-bg">
+                    <div class="bb-gauge-fill" style="width: ${stressPercent}%; background-color: ${stressColor};"></div>
                 </div>
-
-                <div class="hud-stats-row">
-                    <span>Comanda più vecchia:</span>
-                    <span class="hud-stats-val">${oldestText}</span>
-                </div>
-                <div class="hud-stats-row">
-                    <span>Tempo Medio Evasione:</span>
-                    <span class="hud-stats-val">${mediaMin}</span>
-                </div>
-                <div class="hud-stats-row">
-                    <span>Record Velocità:</span>
-                    <span class="hud-stats-val" style="color:#00e5ff">${fastestText}</span>
-                </div>
+                <div class="bb-stat-row"><span>In attesa da più tempo:</span> <span class="bb-stat-val">${oldestText}</span></div>
+                <div class="bb-stat-row"><span>Tempo Medio Evasione:</span> <span class="bb-stat-val">${mediaMin}</span></div>
+                <div class="bb-stat-row"><span>Record di Velocità:</span> <span class="bb-stat-val">${fastestText}</span></div>
             </div>
         `;
     });
 
-    document.getElementById("hud-departments").innerHTML = gridHtml;
+    document.getElementById("bb-departments").innerHTML = gridHtml;
 
-    // Aggiornamento Status Globale
-    const globalStatusDiv = document.getElementById("hud-global-status");
+    const globalStatusDiv = document.getElementById("bb-global-status");
     if (maxGlobalStress === 2) {
-        globalStatusDiv.className = "hud-status-crit";
-        globalStatusDiv.innerText = "⚠ SOVRACCARICO CRITICO RILEVATO IN ALCUNI REPARTI ⚠";
+        globalStatusDiv.className = "bb-status-badge crit"; globalStatusDiv.innerText = "⚠ Sovraccarico Rilevato";
     } else if (maxGlobalStress === 1) {
-        globalStatusDiv.className = "hud-status-warn";
-        globalStatusDiv.innerText = "⚡ CARICO ELEVATO - MANTENERE IL RITMO";
+        globalStatusDiv.className = "bb-status-badge warn"; globalStatusDiv.innerText = "⚡ Carico Elevato";
     } else {
-        globalStatusDiv.className = "hud-status-ok";
-        globalStatusDiv.innerText = "Sistemi Operativi - Flusso Regolare";
+        globalStatusDiv.className = "bb-status-badge ok"; globalStatusDiv.innerText = "✔️ Flusso Regolare";
     }
+}
+
+// ================= POPUP ESCLUSIONE TEMPO CASSA =================
+function apriConfigurazioneTempoCassa() {
+    // Leggiamo cosa è già escluso (salvato in localStorage per ricordarcelo)
+    let esclusioni = JSON.parse(localStorage.getItem("esclusioniTempoCassa") || '{"bere":true, "snack":false, "extra1":false, "extra2":false, "extra3":false}');
+
+    const div = document.createElement("div");
+    div.className = "modal-cassa-overlay";
+    div.innerHTML = `
+        <div class="modal-cassa-box">
+            <h3 style="margin-top:0; color:#673AB7;">⚙️ Impostazioni Tempo Medio</h3>
+            <p style="font-size:0.9em; color:#555;">Seleziona i reparti da <b>escludere</b> dal calcolo del tempo d'attesa mostrato in Cassa:</p>
+            
+            <label style="display:block; margin: 8px 0;"><input type="checkbox" id="escl-bere" ${esclusioni.bere ? "checked" : ""} disabled> Bere (Sempre escluso)</label>
+            <label style="display:block; margin: 8px 0;"><input type="checkbox" id="escl-snack" ${esclusioni.snack ? "checked" : ""}> Snack</label>
+            <label style="display:block; margin: 8px 0;"><input type="checkbox" id="escl-extra1" ${esclusioni.extra1 ? "checked" : ""}> ${window.nomiRepartiExtra?.extra1 || "Extra 1"}</label>
+            <label style="display:block; margin: 8px 0;"><input type="checkbox" id="escl-extra2" ${esclusioni.extra2 ? "checked" : ""}> ${window.nomiRepartiExtra?.extra2 || "Extra 2"}</label>
+            <label style="display:block; margin: 8px 0;"><input type="checkbox" id="escl-extra3" ${esclusioni.extra3 ? "checked" : ""}> ${window.nomiRepartiExtra?.extra3 || "Extra 3"}</label>
+            
+            <div style="margin-top: 20px; text-align:right;">
+                <button onclick="salvaConfigurazioneTempoCassa()" style="background:#673AB7; color:#fff; border:none; padding:8px 15px; border-radius:5px; cursor:pointer;">Salva</button>
+                <button onclick="document.querySelector('.modal-cassa-overlay').remove()" style="background:#ccc; color:#333; border:none; padding:8px 15px; border-radius:5px; cursor:pointer; margin-left:10px;">Chiudi</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(div);
+}
+
+function salvaConfigurazioneTempoCassa() {
+    const config = {
+        bere: true, // Forzato
+        snack: document.getElementById("escl-snack").checked,
+        extra1: document.getElementById("escl-extra1").checked,
+        extra2: document.getElementById("escl-extra2").checked,
+        extra3: document.getElementById("escl-extra3").checked
+    };
+    localStorage.setItem("esclusioniTempoCassa", JSON.stringify(config));
+    document.querySelector('.modal-cassa-overlay').remove();
+    
+    // Mostra notifica o ricalcola se serve
+    if(typeof notify === "function") notify("Impostazioni tempo Cassa salvate!", "success");
+    // Se hai una funzione che calcola il tempo della cassa, richiamala qui per aggiornare il numero subito!
 }
 // ================= MODIFICA COMANDA ADMIN (A MODALE) =================
 function modificaComanda(id, comanda) {
