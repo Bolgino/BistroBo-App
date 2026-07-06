@@ -5118,6 +5118,7 @@ async function caricaGestioneComandeAdmin() {
     hideLoader();
 }
 // ================= DASHBOARD ADMIN (STILE BISTROBO) =================
+// ================= DASHBOARD ADMIN (STILE BISTROBO AVANZATO) =================
 function aggiornaDashboardAdmin(comandeData) {
     if (!document.getElementById("dashboardAdminTab")) return;
 
@@ -5138,6 +5139,7 @@ function aggiornaDashboardAdmin(comandeData) {
     const now = Date.now();
     let maxGlobalStress = 0;
 
+    // 1. Raccolta Dati
     Object.entries(comandeData).forEach(([id, c]) => {
         const { cibo, bere, snack, extra1, extra2, extra3 } = separaComanda(c.piatti || []);
         
@@ -5160,10 +5162,9 @@ function aggiornaDashboardAdmin(comandeData) {
                         statsReparti[r.id].oldestId = (c.numero + (c.lettera || "")).toUpperCase();
                     }
                 } 
-                // 🔹 ORA USIAMO IL TIMESTAMP SPECIFICO DEL REPARTO CHE HAI SALVATO PRIMA!
                 else if (stato === "completato" && c.timestamp && c["timestampFine_" + r.id]) {
                     let durata = c["timestampFine_" + r.id] - c.timestamp;
-                    if (durata > 0 && durata < 86400000) { // scarta errori o vecchie di giorni
+                    if (durata > 0 && durata < 86400000) { 
                         statsReparti[r.id].tempiEvasione.push(durata);
                         if (durata < statsReparti[r.id].fastest) statsReparti[r.id].fastest = durata;
                     }
@@ -5172,17 +5173,36 @@ function aggiornaDashboardAdmin(comandeData) {
         });
     });
 
+    // 2. Trova il reparto più veloce (Medaglia)
+    let bestAvg = Infinity;
+    let fastestDeptId = null;
+    repartiConfig.forEach(r => {
+        const sr = statsReparti[r.id];
+        if (sr.tempiEvasione.length > 0) {
+            let sum = sr.tempiEvasione.reduce((a, b) => a + b, 0);
+            let avg = sum / sr.tempiEvasione.length;
+            if (avg < bestAvg) {
+                bestAvg = avg;
+                fastestDeptId = r.id;
+            }
+        }
+    });
+
+    // 3. Render della Griglia
     let gridHtml = "";
     repartiConfig.forEach(r => {
         const sr = statsReparti[r.id];
-        let stressPercent = Math.min((sr.inCoda / 10) * 100, 100); // 10 comande = 100% carico
-        let stressColor = "#4CAF50"; 
-        if (sr.inCoda > 4) stressColor = "#FF9800"; 
-        if (sr.inCoda >= 8) stressColor = "#F44336"; 
         
-        if (sr.inCoda >= 8 && maxGlobalStress < 2) maxGlobalStress = 2;
-        else if (sr.inCoda > 4 && maxGlobalStress < 1) maxGlobalStress = 1;
+        // Sovraccarico dalle 15 comande in poi
+        let stressPercent = Math.min((sr.inCoda / 15) * 100, 100); 
+        let stressColor = "#4CAF50"; // Verde
+        if (sr.inCoda >= 10) stressColor = "#FF9800"; // Giallo
+        if (sr.inCoda >= 15) stressColor = "#F44336"; // Rosso
+        
+        if (sr.inCoda >= 15 && maxGlobalStress < 2) maxGlobalStress = 2;
+        else if (sr.inCoda >= 10 && maxGlobalStress < 1) maxGlobalStress = 1;
 
+        // Calcolo Medie
         let mediaMin = "--";
         if (sr.tempiEvasione.length > 0) {
             let sum = sr.tempiEvasione.reduce((a, b) => a + b, 0);
@@ -5190,18 +5210,24 @@ function aggiornaDashboardAdmin(comandeData) {
         }
         let fastestText = sr.fastest !== Infinity ? (sr.fastest / 60000).toFixed(1) + " min" : "--";
 
-        let oldestText = "Nessuna in coda";
-        if (sr.oldestTimestamp) {
-            let minPassati = Math.floor((now - sr.oldestTimestamp) / 60000);
-            oldestText = minPassati > 15 
-                ? `<span class="bb-crit-text">#${sr.oldestId} (${minPassati}m fa!)</span>`
-                : `#${sr.oldestId} (${minPassati}m fa)`;
+        // Gestione Ritardi (> 30 min) e Titoli
+        let minPassati = sr.oldestTimestamp ? Math.floor((now - sr.oldestTimestamp) / 60000) : 0;
+        let oldestText = sr.oldestTimestamp 
+            ? `#${sr.oldestId} (${minPassati}m fa)`
+            : "Nessuna in coda";
+
+        let deptNameHtml = r.nome;
+        if (r.id === fastestDeptId) {
+            deptNameHtml += ` <span title="Reparto con la media più veloce" style="font-size:1.2em;">🏆</span>`;
+        }
+        if (sr.oldestTimestamp && minPassati >= 30) {
+            deptNameHtml += ` <span class="bb-crit-text" style="font-size:0.7em; margin-left: 8px; animation: pulse 1.5s infinite;">⚠️ RITARDI RILEVATI</span>`;
         }
 
         gridHtml += `
             <div class="bb-dash-card" style="--dept-color: ${r.colore};">
                 <div class="bb-card-title">
-                    <span>${r.nome}</span>
+                    <span>${deptNameHtml}</span>
                     <span style="color: ${stressColor}">${sr.inCoda} Attive</span>
                 </div>
                 <div class="bb-gauge-bg">
@@ -5216,6 +5242,7 @@ function aggiornaDashboardAdmin(comandeData) {
 
     document.getElementById("bb-departments").innerHTML = gridHtml;
 
+    // 4. Aggiornamento Status Globale
     const globalStatusDiv = document.getElementById("bb-global-status");
     if (maxGlobalStress === 2) {
         globalStatusDiv.className = "bb-status-badge crit"; globalStatusDiv.innerText = "⚠ Sovraccarico Rilevato";
@@ -5226,47 +5253,74 @@ function aggiornaDashboardAdmin(comandeData) {
     }
 }
 
-// ================= POPUP ESCLUSIONE TEMPO CASSA =================
+// ================= POPUP ESCLUSIONE TEMPO CASSA (DA ADMIN) =================
 function apriConfigurazioneTempoCassa() {
-    // Leggiamo cosa è già escluso (salvato in localStorage per ricordarcelo)
-    let esclusioni = JSON.parse(localStorage.getItem("esclusioniTempoCassa") || '{"bere":true, "snack":false, "extra1":false, "extra2":false, "extra3":false}');
+    db.ref("impostazioni/esclusioniTempoCassa").once("value").then(snap => {
+        let esclusioni = snap.val() || { bere: true, snack: false, extra1: false, extra2: false, extra3: false };
 
-    const div = document.createElement("div");
-    div.className = "modal-cassa-overlay";
-    div.innerHTML = `
-        <div class="modal-cassa-box">
-            <h3 style="margin-top:0; color:#673AB7;">⚙️ Impostazioni Tempo Medio</h3>
-            <p style="font-size:0.9em; color:#555;">Seleziona i reparti da <b>escludere</b> dal calcolo del tempo d'attesa mostrato in Cassa:</p>
-            
-            <label style="display:block; margin: 8px 0;"><input type="checkbox" id="escl-bere" ${esclusioni.bere ? "checked" : ""} disabled> Bere (Sempre escluso)</label>
-            <label style="display:block; margin: 8px 0;"><input type="checkbox" id="escl-snack" ${esclusioni.snack ? "checked" : ""}> Snack</label>
-            <label style="display:block; margin: 8px 0;"><input type="checkbox" id="escl-extra1" ${esclusioni.extra1 ? "checked" : ""}> ${window.nomiRepartiExtra?.extra1 || "Extra 1"}</label>
-            <label style="display:block; margin: 8px 0;"><input type="checkbox" id="escl-extra2" ${esclusioni.extra2 ? "checked" : ""}> ${window.nomiRepartiExtra?.extra2 || "Extra 2"}</label>
-            <label style="display:block; margin: 8px 0;"><input type="checkbox" id="escl-extra3" ${esclusioni.extra3 ? "checked" : ""}> ${window.nomiRepartiExtra?.extra3 || "Extra 3"}</label>
-            
-            <div style="margin-top: 20px; text-align:right;">
-                <button onclick="salvaConfigurazioneTempoCassa()" style="background:#673AB7; color:#fff; border:none; padding:8px 15px; border-radius:5px; cursor:pointer;">Salva</button>
-                <button onclick="document.querySelector('.modal-cassa-overlay').remove()" style="background:#ccc; color:#333; border:none; padding:8px 15px; border-radius:5px; cursor:pointer; margin-left:10px;">Chiudi</button>
+        const div = document.createElement("div");
+        div.className = "modal-cassa-overlay";
+        div.innerHTML = `
+            <div class="modal-cassa-box">
+                <h3 style="margin-top:0; color:#2196F3;">⚙️ Filtro Tempo Medio</h3>
+                <p style="font-size:0.9em; color:#555; margin-bottom: 20px;">
+                    Seleziona i reparti da <b>escludere</b> dal calcolo del tempo d'attesa in Cassa:
+                </p>
+                
+                <label style="display:block; margin: 10px 0; font-size: 1.1em; color: #777;">
+                    <input type="checkbox" id="escl-bere" ${esclusioni.bere ? "checked" : ""} disabled> 
+                    Bere <i>(Sempre escluso)</i>
+                </label>
+                <label style="display:block; margin: 10px 0; font-size: 1.1em;">
+                    <input type="checkbox" id="escl-snack" ${esclusioni.snack ? "checked" : ""}> 
+                    Snack
+                </label>
+                <label style="display:block; margin: 10px 0; font-size: 1.1em;">
+                    <input type="checkbox" id="escl-extra1" ${esclusioni.extra1 ? "checked" : ""}> 
+                    ${window.nomiRepartiExtra?.extra1 || "Extra 1"}
+                </label>
+                <label style="display:block; margin: 10px 0; font-size: 1.1em;">
+                    <input type="checkbox" id="escl-extra2" ${esclusioni.extra2 ? "checked" : ""}> 
+                    ${window.nomiRepartiExtra?.extra2 || "Extra 2"}
+                </label>
+                <label style="display:block; margin: 10px 0; font-size: 1.1em;">
+                    <input type="checkbox" id="escl-extra3" ${esclusioni.extra3 ? "checked" : ""}> 
+                    ${window.nomiRepartiExtra?.extra3 || "Extra 3"}
+                </label>
+                
+                <div style="margin-top: 25px; text-align:right;">
+                    <button onclick="document.querySelector('.modal-cassa-overlay').remove()" style="background:#eee; color:#333; border:none; padding:10px 15px; border-radius:5px; cursor:pointer; margin-right:10px; font-weight:bold;">
+                        Annulla
+                    </button>
+                    <button onclick="salvaConfigurazioneTempoCassa()" style="background:#2196F3; color:#fff; border:none; padding:10px 20px; border-radius:5px; cursor:pointer; font-weight:bold;">
+                        Salva in Firebase
+                    </button>
+                </div>
             </div>
-        </div>
-    `;
-    document.body.appendChild(div);
+        `;
+        document.body.appendChild(div);
+    });
 }
 
-function salvaConfigurazioneTempoCassa() {
+async function salvaConfigurazioneTempoCassa() {
     const config = {
-        bere: true, // Forzato
+        bere: true,
         snack: document.getElementById("escl-snack").checked,
         extra1: document.getElementById("escl-extra1").checked,
         extra2: document.getElementById("escl-extra2").checked,
         extra3: document.getElementById("escl-extra3").checked
     };
-    localStorage.setItem("esclusioniTempoCassa", JSON.stringify(config));
-    document.querySelector('.modal-cassa-overlay').remove();
     
-    // Mostra notifica o ricalcola se serve
-    if(typeof notify === "function") notify("Impostazioni tempo Cassa salvate!", "success");
-    // Se hai una funzione che calcola il tempo della cassa, richiamala qui per aggiornare il numero subito!
+    try {
+        await db.ref("impostazioni/esclusioniTempoCassa").set(config);
+        document.querySelector('.modal-cassa-overlay').remove();
+        if (typeof notify === "function") {
+            notify("Impostazioni Tempo Cassa aggiornate!", "success");
+        }
+    } catch(err) {
+        console.error("Errore salvataggio esclusioni tempo cassa", err);
+        if (typeof notify === "function") notify("Errore nel salvataggio", "error");
+    }
 }
 // ================= MODIFICA COMANDA ADMIN (A MODALE) =================
 function modificaComanda(id, comanda) {
