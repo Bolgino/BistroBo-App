@@ -7558,6 +7558,7 @@ window.statisticheGlobale = {};
 window.statisticheTurno = {};
 
 // Funzione Helper per calcolare i totali senza dover duplicare il codice
+// Funzione Helper per calcolare i totali senza dover duplicare il codice
 function analizzaComande(comandeObj, fondoCassaTot) {
     let totaleComande = 0;
     let totaleIncasso = 0;
@@ -7566,75 +7567,93 @@ function analizzaComande(comandeObj, fondoCassaTot) {
     let incassoAsporto = 0;
     let incassoPreordini = 0;
     let totaleComandePreordini = 0;
-    let incassoSoloExtra = 0; // Tiene traccia di soldi guadagnati SOLO da aggiunte/contorni
-    
-    const piattiMap = {}; 
-    const ingrMap = {}; 
-    const incassiIngredienti = {}; 
+    let incassoSoloExtra = 0;
+
+    // Tiene traccia di soldi guadagnati SOLO da aggiunte/contorni
+    const piattiMap = {};
+    const ingrMap = {};
+    const incassiIngredienti = {};
     const listaComande = [];
 
     for (const id in comandeObj) {
         const c = comandeObj[id];
         totaleComande++;
-        let totaleComanda = 0;
         let comandaEPreordine = c.preordine === true;
-        
         if (comandaEPreordine) totaleComandePreordini++;
-        
+
+        // 1. Calcolo il totale BASE della comanda prima degli sconti globali
+        let totaleComandaBase = 0;
+        let piattiTemp = [];
+
         (c.piatti || []).forEach(p => {
             const q = Number(p.quantita || 0);
-            const prezzoTot = calcolaPrezzoConSconto(p);
-            totaleComanda += prezzoTot;
-            
+            const prezzoTot = calcolaPrezzoConSconto(p); // sconto singolo (del piatto) già applicato
+            totaleComandaBase += prezzoTot;
+            piattiTemp.push({ p, q, prezzoTot });
+        });
+
+        // 2. Calcolo il totale SCONTATO se c'è uno sconto globale
+        let totaleComandaScontata = totaleComandaBase;
+
+        if (c.scontoGlobale) {
+            if (c.scontoGlobale.tipo === "gratis") {
+                totaleComandaScontata = 0;
+            } else if (c.scontoGlobale.tipo === "percentuale") {
+                totaleComandaScontata = totaleComandaBase - (totaleComandaBase * c.scontoGlobale.valore / 100);
+            } else if (c.scontoGlobale.tipo === "fisso") {
+                totaleComandaScontata = totaleComandaBase - c.scontoGlobale.valore;
+            }
+            if (totaleComandaScontata < 0) totaleComandaScontata = 0;
+        }
+
+        // 3. Trovo il fattore di proporzione per ripartire lo sconto globale sui singoli piatti
+        const fattoreSconto = totaleComandaBase > 0 ? (totaleComandaScontata / totaleComandaBase) : 0;
+
+        // 4. Salvo le statistiche distribuendo proporzionalmente il peso dello sconto globale
+        piattiTemp.forEach(({ p, q, prezzoTot }) => {
+            const prezzoEffettivo = prezzoTot * fattoreSconto;
+
             // 🔥 FIX CALCOLO EXTRA:
-            // Sottraiamo il costo base pagato per i contorni dal totale extraPrezzo. 
-            // Così otterremo SOLO i soldi guadagnati dalle "+Aggiunte" vere e proprie (sia sul piatto che sul contorno)
             let veroExtraIngredienti = Number(p.extraPrezzo || 0);
             (p.contorniScelti || []).forEach(contorno => {
-                veroExtraIngredienti -= Number(contorno.prezzoPagato || 0); 
+                veroExtraIngredienti -= Number(contorno.prezzoPagato || 0);
             });
-            
-            // Usiamo Math.max per sicurezza, evitiamo mai numeri negativi per errori matematici JS
-            const extraGenerato = Math.max(0, veroExtraIngredienti) * q;
+            // Anche l'incasso extra viene proporzionalmente ridotto dallo sconto globale!
+            const extraGenerato = Math.max(0, veroExtraIngredienti) * q * fattoreSconto;
             incassoSoloExtra += extraGenerato;
-            
+
             if (!piattiMap[p.nome]) piattiMap[p.nome] = { quantita: 0, incasso: 0 };
             piattiMap[p.nome].quantita += q;
-            piattiMap[p.nome].incasso += prezzoTot;
-            
+            piattiMap[p.nome].incasso += prezzoEffettivo; // <-- FIX: Ora usa il prezzo decurtato!
+
             // Calcolo ingredienti base (per la tabella Ingredienti x Utilizzo)
             (p.ingredienti || []).forEach(ing => {
                 const qty = (Number(ing.qtyPerUnit) || 1) * q;
                 ingrMap[ing.nome] = (ingrMap[ing.nome] || 0) + qty;
-                incassiIngredienti[ing.nome] = (incassiIngredienti[ing.nome] || 0) + prezzoTot;
+                // Anche l'incasso per ingrediente assorbe lo sconto globale
+                incassiIngredienti[ing.nome] = (incassiIngredienti[ing.nome] || 0) + prezzoEffettivo;
             });
-            
+
             // Aggiungiamo al conteggio ingredienti anche le "Aggiunte"
             (p.varianti || []).filter(v => v.tipo === "aggiunta").forEach(v => {
-               const qty = (Number(v.qty) || 1) * q;
-               ingrMap[v.nome] = (ingrMap[v.nome] || 0) + qty;
+                const qty = (Number(v.qty) || 1) * q;
+                ingrMap[v.nome] = (ingrMap[v.nome] || 0) + qty;
             });
         });
-        if (c.scontoGlobale) {
-            if (c.scontoGlobale.tipo === "gratis") {
-                totaleComanda = 0;
-            } else if (c.scontoGlobale.tipo === "percentuale") {
-                totaleComanda = totaleComanda - (totaleComanda * c.scontoGlobale.valore / 100);
-            } else if (c.scontoGlobale.tipo === "fisso") {
-                totaleComanda = totaleComanda - c.scontoGlobale.valore;
-            }
-            if (totaleComanda < 0) totaleComanda = 0;
-        }
-        if (c.metodoPagamento === "pos") totalePos += totaleComanda;
-        else totaleContanti += totaleComanda;
-        
-        totaleIncasso += totaleComanda;
-        if (c.commento) incassoAsporto += totaleComanda;
-        if (comandaEPreordine) incassoPreordini += totaleComanda;
+
+        // 5. Aggiorno i totali di cassa con il totale reale scontato
+        if (c.metodoPagamento === "pos") totalePos += totaleComandaScontata;
+        else totaleContanti += totaleComandaScontata;
+
+        totaleIncasso += totaleComandaScontata;
+        if (c.commento) incassoAsporto += totaleComandaScontata;
+        if (comandaEPreordine) incassoPreordini += totaleComandaScontata;
 
         listaComande.push({
-            id, numero: c.numero, lettera: c.lettera,
-            totale: totaleComanda,
+            id,
+            numero: c.numero,
+            lettera: c.lettera,
+            totale: totaleComandaScontata,
             piatti: (c.piatti || []).map(p => p.quantita + "x " + p.nome).join(", "),
             data: c.timestamp,
             isPreordine: comandaEPreordine
@@ -7647,10 +7666,20 @@ function analizzaComande(comandeObj, fondoCassaTot) {
     const ingrIncassiArray = Object.entries(incassiIngredienti).map(([n,i]) => ({ nome: n, incasso: i }));
 
     return {
-        totaleComande, totaleIncasso, totalePos, totaleContanti, incassoAsporto, 
-        incassoPreordini, totaleComandePreordini, incassoSoloExtra,
-        piattiByQuantita, piattiByIncasso, ingrByQuantita, ingrIncassiArray,
-        listaComande, fondoCassa: fondoCassaTot
+        totaleComande,
+        totaleIncasso,
+        totalePos,
+        totaleContanti,
+        incassoAsporto,
+        incassoPreordini,
+        totaleComandePreordini,
+        incassoSoloExtra,
+        piattiByQuantita,
+        piattiByIncasso,
+        ingrByQuantita,
+        ingrIncassiArray,
+        listaComande,
+        fondoCassa: fondoCassaTot
     };
 }
 
