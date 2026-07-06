@@ -6219,19 +6219,19 @@ async function caricaComandePerRuolo(daFareDiv, storicoDiv, ruolo) {
 // =========================================================================
 // GESTIONE VISIBILITÀ PIATTI NELLA PAGINA PUBBLICA DEI PREORDINI
 // =========================================================================
-
 // Event Listeners per Apertura e Chiusura Popup
 document.getElementById("btnGestioneVisibilitaPreordini").addEventListener("click", apriPopupVisibilitaPreordini);
 document.getElementById("btnChiudiVisibilitaPreordini").addEventListener("click", () => {
-    document.getElementById("popupVisibilitaPreordini").classList.add("hidden");
+    // Chiudiamo la modale forzando il display none
+    document.getElementById("popupVisibilitaPreordini").style.display = "none";
 });
 
 function apriPopupVisibilitaPreordini() {
     const container = document.getElementById("listaPiattiVisibilitaContainer");
     container.innerHTML = "<p style='text-align:center; font-style:italic; color:#777;'>Caricamento menù...</p>";
     
-    // Mostriamo la modale
-    document.getElementById("popupVisibilitaPreordini").classList.remove("hidden");
+    // Mostriamo la modale forzando il display flex
+    document.getElementById("popupVisibilitaPreordini").style.display = "flex";
 
     // Leggiamo l'intero menù da Firebase
     firebase.database().ref("menu").once("value", (snapshot) => {
