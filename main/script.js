@@ -5108,44 +5108,35 @@ async function caricaGestioneComandeAdmin() {
     initRicercaComande("listaComandeAdmin", "cercaComandaAdmin");
     hideLoader();
 }
-// ================= MOTORE DASHBOARD ADMIN =================
+// ================= MOTORE DASHBOARD ULTRA (NEXUS) =================
 function aggiornaDashboardAdmin(comandeData) {
     if (!document.getElementById("dashboardAdminTab")) return;
 
-    // 1. Configurazione dei reparti dinamicamente
     const repartiConfig = [
-        { id: "cucina", nome: "Cucina", statoKey: "statoCucina", abil: true },
-        { id: "bere", nome: "Bere", statoKey: "statoBere", abil: true },
-        { id: "snack", nome: "Snack", statoKey: "statoSnack", abil: window.settings.snackAbilitato },
-        { id: "extra1", nome: window.nomiRepartiExtra?.extra1 || "Extra 1", statoKey: "statoExtra1", abil: window.settings.extra1Abilitato },
-        { id: "extra2", nome: window.nomiRepartiExtra?.extra2 || "Extra 2", statoKey: "statoExtra2", abil: window.settings.extra2Abilitato },
-        { id: "extra3", nome: window.nomiRepartiExtra?.extra3 || "Extra 3", statoKey: "statoExtra3", abil: window.settings.extra3Abilitato }
-    ].filter(r => r.abil); // Filtra solo quelli attivati
+        { id: "cucina", nome: "Cucina", statoKey: "statoCucina", abil: true, colore: "#FF9800" }, // Arancione
+        { id: "bere", nome: "Bar / Bere", statoKey: "statoBere", abil: true, colore: "#00E5FF" }, // Ciano neon
+        { id: "snack", nome: "Snack", statoKey: "statoSnack", abil: window.settings?.snackAbilitato, colore: "#FFEA00" }, // Giallo
+        { id: "extra1", nome: window.nomiRepartiExtra?.extra1 || "Extra 1", statoKey: "statoExtra1", abil: window.settings?.extra1Abilitato, colore: "#D500F9" }, // Viola
+        { id: "extra2", nome: window.nomiRepartiExtra?.extra2 || "Extra 2", statoKey: "statoExtra2", abil: window.settings?.extra2Abilitato, colore: "#00E676" }, // Verde neon
+        { id: "extra3", nome: window.nomiRepartiExtra?.extra3 || "Extra 3", statoKey: "statoExtra3", abil: window.settings?.extra3Abilitato, colore: "#FF1744" }  // Rosso neon
+    ].filter(r => r.abil);
 
-    let totComande = 0;
-    let totInAttesa = 0;
-    
-    // Inizializza i contatori per ogni reparto
     const statsReparti = {};
     repartiConfig.forEach(r => {
         statsReparti[r.id] = {
-            nome: r.nome,
-            inAttesa: 0,
-            tempiCompletamento: [], // in millisecondi
-            fastest: Infinity,
-            fastestId: null,
-            oldestDaFare: null // conserverà { id, timestamp, orario }
+            inCoda: 0, 
+            tempiEvasione: [], 
+            fastest: Infinity, 
+            oldestTimestamp: null,
+            oldestId: null
         };
     });
 
     const now = Date.now();
+    let maxGlobalStress = 0; // Per l'allarme globale
 
-    // 2. Analisi Comande
+    // ANALISI COMANDE
     Object.entries(comandeData).forEach(([id, c]) => {
-        totComande++;
-        let isComandaInAttesa = false;
-
-        // Separiamo i piatti per capire in quali reparti si trova la comanda
         const { cibo, bere, snack, extra1, extra2, extra3 } = separaComanda(c.piatti || []);
         
         repartiConfig.forEach(r => {
@@ -5158,97 +5149,97 @@ function aggiornaDashboardAdmin(comandeData) {
             if (r.id === "extra3" && extra3.length > 0) hasItems = true;
 
             if (hasItems) {
-                // Legge lo stato specifico per quel reparto (es. statoCucina)
                 const stato = c[r.statoKey] || "da fare";
-                
                 if (stato === "da fare" || stato === "in elaborazione") {
-                    statsReparti[r.id].inAttesa++;
-                    isComandaInAttesa = true;
-
-                    // Trova la comanda più vecchia in attesa
-                    if (!statsReparti[r.id].oldestDaFare || c.timestamp < statsReparti[r.id].oldestDaFare.timestamp) {
-                        statsReparti[r.id].oldestDaFare = { 
-                            id: (c.numero + (c.lettera || "")).toUpperCase(), 
-                            timestamp: c.timestamp, 
-                            orario: c.orario 
-                        };
+                    statsReparti[r.id].inCoda++;
+                    if (!statsReparti[r.id].oldestTimestamp || c.timestamp < statsReparti[r.id].oldestTimestamp) {
+                        statsReparti[r.id].oldestTimestamp = c.timestamp;
+                        statsReparti[r.id].oldestId = (c.numero + (c.lettera || "")).toUpperCase();
                     }
                 } else if (stato === "completato" && c.timestamp && c.timestampTermine) {
-                    // Se completato e abbiamo il timestamp di termine, calcoliamo record e tempi medi
                     let durata = c.timestampTermine - c.timestamp;
-                    if (durata > 0 && durata < 86400000) { // scartiamo durate anomale (>24h)
-                        statsReparti[r.id].tempiCompletamento.push(durata);
-                        if (durata < statsReparti[r.id].fastest) {
-                            statsReparti[r.id].fastest = durata;
-                            statsReparti[r.id].fastestId = (c.numero + (c.lettera || "")).toUpperCase();
-                        }
+                    if (durata > 0 && durata < 86400000) { 
+                        statsReparti[r.id].tempiEvasione.push(durata);
+                        if (durata < statsReparti[r.id].fastest) statsReparti[r.id].fastest = durata;
                     }
                 }
             }
         });
-
-        if (isComandaInAttesa) totInAttesa++;
     });
 
-    // 3. Stampa a Schermo - PANORAMICA GLOBALE
-    const globalHtml = `
-        <div class="dash-card">
-            <div class="dash-title">Totale Transitate</div>
-            <div class="dash-value">${totComande}</div>
-        </div>
-        <div class="dash-card">
-            <div class="dash-title">Comande in Lavorazione</div>
-            <div class="dash-value" style="color: ${totInAttesa > 10 ? '#d32f2f' : '#f57c00'}">${totInAttesa}</div>
-        </div>
-        <div class="dash-card">
-            <div class="dash-title">Reparti Attivi</div>
-            <div class="dash-value">${repartiConfig.length}</div>
-        </div>
-    `;
-    document.getElementById("dash-global-stats").innerHTML = globalHtml;
-
-    // 4. Stampa a Schermo - REPARTI E VECCHIE COMANDE
-    let deptHtml = "";
+    // RENDER DELLA GRIGLIA
+    let gridHtml = "";
     repartiConfig.forEach(r => {
         const sr = statsReparti[r.id];
         
-        let oldestText = sr.oldestDaFare 
-            ? `⏳ Più vecchia: <b>#${sr.oldestDaFare.id}</b> delle ${sr.oldestDaFare.orario} (<span style="color:#d32f2f">${Math.floor((now - sr.oldestDaFare.timestamp)/60000)} min fa</span>)`
-            : `<span style="color: green;">Nessuna comanda arretrata! 🎉</span>`;
+        // Calcolo Stress Level (0 - 15 comande come scala massima indicativa)
+        let stressPercent = Math.min((sr.inCoda / 15) * 100, 100);
+        let stressColor = "#00e676"; // Verde
+        if (sr.inCoda > 5) stressColor = "#ffea00"; // Giallo
+        if (sr.inCoda >= 10) stressColor = "#ff1744"; // Rosso
+        
+        if (sr.inCoda >= 10 && maxGlobalStress < 2) maxGlobalStress = 2;
+        else if (sr.inCoda > 5 && maxGlobalStress < 1) maxGlobalStress = 1;
 
-        deptHtml += `
-            <div class="dash-card dept-${r.id}">
-                <div class="dash-title">${r.nome}</div>
-                <div class="dash-value" style="font-size: 1.5em; color: ${sr.inAttesa > 5 ? 'red' : 'inherit'};">${sr.inAttesa} <span style="font-size:0.5em; font-weight:normal; color:#777;">comande attive</span></div>
-                <div class="dash-oldest">${oldestText}</div>
-            </div>
-        `;
-    });
-    document.getElementById("dash-departments").innerHTML = deptHtml;
+        // Calcolo Medie
+        let mediaMin = "--";
+        if (sr.tempiEvasione.length > 0) {
+            let sum = sr.tempiEvasione.reduce((a, b) => a + b, 0);
+            mediaMin = (sum / sr.tempiEvasione.length / 60000).toFixed(1) + " m";
+        }
+        let fastestText = sr.fastest !== Infinity ? (sr.fastest / 60000).toFixed(1) + " m" : "--";
 
-    // 5. Stampa a Schermo - RECORD E TEMPI MEDI
-    let recordHtml = "";
-    repartiConfig.forEach(r => {
-        const sr = statsReparti[r.id];
-        let mediaMin = 0;
-        if (sr.tempiCompletamento.length > 0) {
-            const sum = sr.tempiCompletamento.reduce((a, b) => a + b, 0);
-            mediaMin = (sum / sr.tempiCompletamento.length / 60000).toFixed(1);
+        // Attesa Comanda più vecchia
+        let oldestText = "Nessuna in coda";
+        if (sr.oldestTimestamp) {
+            let minPassati = Math.floor((now - sr.oldestTimestamp) / 60000);
+            oldestText = minPassati > 15 
+                ? `<span class="hud-critical-text blink">ATTENZIONE: #${sr.oldestId} aspetta da ${minPassati}m!</span>`
+                : `#${sr.oldestId} (${minPassati}m fa)`;
         }
 
-        let fastestText = sr.fastest !== Infinity 
-            ? `⚡ Record Assoluto: <b>${(sr.fastest / 60000).toFixed(1)} min</b> (Comanda #${sr.fastestId})` 
-            : `Ancora nessun record.`;
+        gridHtml += `
+            <div class="hud-card" style="--dept-color: ${r.colore};">
+                <div class="hud-card-header">
+                    <span>${r.nome}</span>
+                    <span style="color: ${stressColor}">${sr.inCoda} ATTIVE</span>
+                </div>
+                
+                <div style="font-size: 0.75em; color: #888; margin-bottom: 3px;">CARICO DI LAVORO</div>
+                <div class="hud-gauge-bg">
+                    <div class="hud-gauge-fill" style="width: ${stressPercent}%; background-color: ${stressColor};"></div>
+                </div>
 
-        recordHtml += `
-            <div class="dash-card dept-${r.id}">
-                <div class="dash-title">Velocità ${r.nome}</div>
-                <div class="dash-value dash-record">${mediaMin > 0 ? mediaMin : '--'} <span style="font-size:0.5em; font-weight:normal; color:#777;">min medi</span></div>
-                <div style="margin-top: 5px; font-size: 0.85em; color: #555;">${fastestText}</div>
+                <div class="hud-stats-row">
+                    <span>Comanda più vecchia:</span>
+                    <span class="hud-stats-val">${oldestText}</span>
+                </div>
+                <div class="hud-stats-row">
+                    <span>Tempo Medio Evasione:</span>
+                    <span class="hud-stats-val">${mediaMin}</span>
+                </div>
+                <div class="hud-stats-row">
+                    <span>Record Velocità:</span>
+                    <span class="hud-stats-val" style="color:#00e5ff">${fastestText}</span>
+                </div>
             </div>
         `;
     });
-    document.getElementById("dash-records").innerHTML = recordHtml;
+
+    document.getElementById("hud-departments").innerHTML = gridHtml;
+
+    // Aggiornamento Status Globale
+    const globalStatusDiv = document.getElementById("hud-global-status");
+    if (maxGlobalStress === 2) {
+        globalStatusDiv.className = "hud-status-crit";
+        globalStatusDiv.innerText = "⚠ SOVRACCARICO CRITICO RILEVATO IN ALCUNI REPARTI ⚠";
+    } else if (maxGlobalStress === 1) {
+        globalStatusDiv.className = "hud-status-warn";
+        globalStatusDiv.innerText = "⚡ CARICO ELEVATO - MANTENERE IL RITMO";
+    } else {
+        globalStatusDiv.className = "hud-status-ok";
+        globalStatusDiv.innerText = "Sistemi Operativi - Flusso Regolare";
+    }
 }
 // ================= MODIFICA COMANDA ADMIN (A MODALE) =================
 function modificaComanda(id, comanda) {
