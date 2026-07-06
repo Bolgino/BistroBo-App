@@ -2248,7 +2248,10 @@ function mostraSchermata() {
         caricaStatistiche();
         caricaMenuAdmin();
         caricaUtenti();
-        document.getElementById("comandeTab").classList.add("active");
+        setTimeout(() => {
+            const dashBtn = document.querySelector("#adminDiv .tabBtn[data-tab='dashboardAdminTab']");
+            if (dashBtn) dashBtn.click();
+        }, 100);
 
         const passaBtn = document.getElementById("passaACassaBtn");
         passaBtn.style.display = "none"; // Nascosto di default, si mostra solo in simulazione
@@ -4742,6 +4745,8 @@ async function caricaGestioneComandeAdmin() {
     db.ref("comande").off(); // pulizia totale
     db.ref("comande").on("value", async snap => {
         calcolaEVisualizzaTempoMedio(snap);
+		const data = snap.val() || {};
+        if (typeof aggiornaDashboardAdmin === "function") aggiornaDashboardAdmin(data);
         listaDiv.innerHTML = "";
         let ordiniCount = 0;
         // 🔹 Leggi una sola volta se lo snack è abilitato
@@ -5102,6 +5107,148 @@ async function caricaGestioneComandeAdmin() {
     }
     initRicercaComande("listaComandeAdmin", "cercaComandaAdmin");
     hideLoader();
+}
+// ================= MOTORE DASHBOARD ADMIN =================
+function aggiornaDashboardAdmin(comandeData) {
+    if (!document.getElementById("dashboardAdminTab")) return;
+
+    // 1. Configurazione dei reparti dinamicamente
+    const repartiConfig = [
+        { id: "cucina", nome: "Cucina", statoKey: "statoCucina", abil: true },
+        { id: "bere", nome: "Bere", statoKey: "statoBere", abil: true },
+        { id: "snack", nome: "Snack", statoKey: "statoSnack", abil: window.settings.snackAbilitato },
+        { id: "extra1", nome: window.nomiRepartiExtra?.extra1 || "Extra 1", statoKey: "statoExtra1", abil: window.settings.extra1Abilitato },
+        { id: "extra2", nome: window.nomiRepartiExtra?.extra2 || "Extra 2", statoKey: "statoExtra2", abil: window.settings.extra2Abilitato },
+        { id: "extra3", nome: window.nomiRepartiExtra?.extra3 || "Extra 3", statoKey: "statoExtra3", abil: window.settings.extra3Abilitato }
+    ].filter(r => r.abil); // Filtra solo quelli attivati
+
+    let totComande = 0;
+    let totInAttesa = 0;
+    
+    // Inizializza i contatori per ogni reparto
+    const statsReparti = {};
+    repartiConfig.forEach(r => {
+        statsReparti[r.id] = {
+            nome: r.nome,
+            inAttesa: 0,
+            tempiCompletamento: [], // in millisecondi
+            fastest: Infinity,
+            fastestId: null,
+            oldestDaFare: null // conserverà { id, timestamp, orario }
+        };
+    });
+
+    const now = Date.now();
+
+    // 2. Analisi Comande
+    Object.entries(comandeData).forEach(([id, c]) => {
+        totComande++;
+        let isComandaInAttesa = false;
+
+        // Separiamo i piatti per capire in quali reparti si trova la comanda
+        const { cibo, bere, snack, extra1, extra2, extra3 } = separaComanda(c.piatti || []);
+        
+        repartiConfig.forEach(r => {
+            let hasItems = false;
+            if (r.id === "cucina" && cibo.length > 0) hasItems = true;
+            if (r.id === "bere" && bere.length > 0) hasItems = true;
+            if (r.id === "snack" && snack.length > 0) hasItems = true;
+            if (r.id === "extra1" && extra1.length > 0) hasItems = true;
+            if (r.id === "extra2" && extra2.length > 0) hasItems = true;
+            if (r.id === "extra3" && extra3.length > 0) hasItems = true;
+
+            if (hasItems) {
+                // Legge lo stato specifico per quel reparto (es. statoCucina)
+                const stato = c[r.statoKey] || "da fare";
+                
+                if (stato === "da fare" || stato === "in elaborazione") {
+                    statsReparti[r.id].inAttesa++;
+                    isComandaInAttesa = true;
+
+                    // Trova la comanda più vecchia in attesa
+                    if (!statsReparti[r.id].oldestDaFare || c.timestamp < statsReparti[r.id].oldestDaFare.timestamp) {
+                        statsReparti[r.id].oldestDaFare = { 
+                            id: (c.numero + (c.lettera || "")).toUpperCase(), 
+                            timestamp: c.timestamp, 
+                            orario: c.orario 
+                        };
+                    }
+                } else if (stato === "completato" && c.timestamp && c.timestampTermine) {
+                    // Se completato e abbiamo il timestamp di termine, calcoliamo record e tempi medi
+                    let durata = c.timestampTermine - c.timestamp;
+                    if (durata > 0 && durata < 86400000) { // scartiamo durate anomale (>24h)
+                        statsReparti[r.id].tempiCompletamento.push(durata);
+                        if (durata < statsReparti[r.id].fastest) {
+                            statsReparti[r.id].fastest = durata;
+                            statsReparti[r.id].fastestId = (c.numero + (c.lettera || "")).toUpperCase();
+                        }
+                    }
+                }
+            }
+        });
+
+        if (isComandaInAttesa) totInAttesa++;
+    });
+
+    // 3. Stampa a Schermo - PANORAMICA GLOBALE
+    const globalHtml = `
+        <div class="dash-card">
+            <div class="dash-title">Totale Transitate</div>
+            <div class="dash-value">${totComande}</div>
+        </div>
+        <div class="dash-card">
+            <div class="dash-title">Comande in Lavorazione</div>
+            <div class="dash-value" style="color: ${totInAttesa > 10 ? '#d32f2f' : '#f57c00'}">${totInAttesa}</div>
+        </div>
+        <div class="dash-card">
+            <div class="dash-title">Reparti Attivi</div>
+            <div class="dash-value">${repartiConfig.length}</div>
+        </div>
+    `;
+    document.getElementById("dash-global-stats").innerHTML = globalHtml;
+
+    // 4. Stampa a Schermo - REPARTI E VECCHIE COMANDE
+    let deptHtml = "";
+    repartiConfig.forEach(r => {
+        const sr = statsReparti[r.id];
+        
+        let oldestText = sr.oldestDaFare 
+            ? `⏳ Più vecchia: <b>#${sr.oldestDaFare.id}</b> delle ${sr.oldestDaFare.orario} (<span style="color:#d32f2f">${Math.floor((now - sr.oldestDaFare.timestamp)/60000)} min fa</span>)`
+            : `<span style="color: green;">Nessuna comanda arretrata! 🎉</span>`;
+
+        deptHtml += `
+            <div class="dash-card dept-${r.id}">
+                <div class="dash-title">${r.nome}</div>
+                <div class="dash-value" style="font-size: 1.5em; color: ${sr.inAttesa > 5 ? 'red' : 'inherit'};">${sr.inAttesa} <span style="font-size:0.5em; font-weight:normal; color:#777;">comande attive</span></div>
+                <div class="dash-oldest">${oldestText}</div>
+            </div>
+        `;
+    });
+    document.getElementById("dash-departments").innerHTML = deptHtml;
+
+    // 5. Stampa a Schermo - RECORD E TEMPI MEDI
+    let recordHtml = "";
+    repartiConfig.forEach(r => {
+        const sr = statsReparti[r.id];
+        let mediaMin = 0;
+        if (sr.tempiCompletamento.length > 0) {
+            const sum = sr.tempiCompletamento.reduce((a, b) => a + b, 0);
+            mediaMin = (sum / sr.tempiCompletamento.length / 60000).toFixed(1);
+        }
+
+        let fastestText = sr.fastest !== Infinity 
+            ? `⚡ Record Assoluto: <b>${(sr.fastest / 60000).toFixed(1)} min</b> (Comanda #${sr.fastestId})` 
+            : `Ancora nessun record.`;
+
+        recordHtml += `
+            <div class="dash-card dept-${r.id}">
+                <div class="dash-title">Velocità ${r.nome}</div>
+                <div class="dash-value dash-record">${mediaMin > 0 ? mediaMin : '--'} <span style="font-size:0.5em; font-weight:normal; color:#777;">min medi</span></div>
+                <div style="margin-top: 5px; font-size: 0.85em; color: #555;">${fastestText}</div>
+            </div>
+        `;
+    });
+    document.getElementById("dash-records").innerHTML = recordHtml;
 }
 // ================= MODIFICA COMANDA ADMIN (A MODALE) =================
 function modificaComanda(id, comanda) {
