@@ -5253,49 +5253,44 @@ function aggiornaDashboardAdmin(comandeData) {
     }
 }
 
-// ================= POPUP ESCLUSIONE TEMPO CASSA =================
-// ================= POPUP ESCLUSIONE TEMPO CASSA =================
+// ================= POPUP ESCLUSIONE TEMPO CASSA (DESIGN INTEGRATO) =================
 function apriConfigurazioneTempoCassa() {
     db.ref("impostazioni/esclusioniTempoCassa").once("value").then(snap => {
         let esclusioni = snap.val() || { bere: false, snack: false, extra1: false, extra2: false, extra3: false };
 
         const div = document.createElement("div");
-        div.className = "modal"; // Usa la tua classe CSS nativa
-        div.style.display = "block"; // Lo rende visibile
+        div.id = "modalFiltroCassa";
+        div.style.cssText = "position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: flex; justify-content: center; align-items: center; z-index: 10000; backdrop-filter: blur(2px);";
         
         div.innerHTML = `
-            <div class="modal-content" style="max-width: 400px; padding: 30px;">
-                <h2 style="margin-top: 0; margin-bottom: 10px; color: #333;">Calcolo Tempo Medio</h2>
-                <p style="color: #666; margin-bottom: 25px; font-size: 0.95em;">
-                    Seleziona i reparti da <b>escludere</b> dal conteggio in Cassa:
-                </p>
+            <div style="background: #fff; padding: 25px; border-radius: 12px; width: 90%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
+                <h3 style="margin-top: 0; margin-bottom: 5px; color: #333;">Filtri Tempo Medio</h3>
+                <p style="font-size: 0.9em; color: #666; margin-bottom: 20px;">Seleziona i reparti da escludere dal conteggio:</p>
                 
-                <div style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 30px;">
-                    <label style="display: flex; align-items: center; cursor: pointer; font-size: 1.1em;">
-                        <input type="checkbox" id="escl-bere" ${esclusioni.bere ? "checked" : ""} style="transform: scale(1.3); margin-right: 12px;"> 
-                        Bere
-                    </label>
-                    <label style="display: flex; align-items: center; cursor: pointer; font-size: 1.1em;">
-                        <input type="checkbox" id="escl-snack" ${esclusioni.snack ? "checked" : ""} style="transform: scale(1.3); margin-right: 12px;"> 
-                        Snack
-                    </label>
-                    <label style="display: flex; align-items: center; cursor: pointer; font-size: 1.1em;">
-                        <input type="checkbox" id="escl-extra1" ${esclusioni.extra1 ? "checked" : ""} style="transform: scale(1.3); margin-right: 12px;"> 
-                        ${window.nomiRepartiExtra?.extra1 || "Cucina Veloce"}
-                    </label>
-                    <label style="display: flex; align-items: center; cursor: pointer; font-size: 1.1em;">
-                        <input type="checkbox" id="escl-extra2" ${esclusioni.extra2 ? "checked" : ""} style="transform: scale(1.3); margin-right: 12px;"> 
-                        ${window.nomiRepartiExtra?.extra2 || "Pizzeria"}
-                    </label>
-                    <label style="display: flex; align-items: center; cursor: pointer; font-size: 1.1em;">
-                        <input type="checkbox" id="escl-extra3" ${esclusioni.extra3 ? "checked" : ""} style="transform: scale(1.3); margin-right: 12px;"> 
-                        ${window.nomiRepartiExtra?.extra3 || "Extra 3"}
-                    </label>
+                <div class="settingItem" style="padding: 10px 0; border-bottom: 1px solid #f0f0f0;">
+                    <div><strong>Bere</strong></div>
+                    <input type="checkbox" id="escl-bere" ${esclusioni.bere ? "checked" : ""} style="transform: scale(1.3);">
+                </div>
+                <div class="settingItem" style="padding: 10px 0; border-bottom: 1px solid #f0f0f0;">
+                    <div><strong>Snack</strong></div>
+                    <input type="checkbox" id="escl-snack" ${esclusioni.snack ? "checked" : ""} style="transform: scale(1.3);">
+                </div>
+                <div class="settingItem" style="padding: 10px 0; border-bottom: 1px solid #f0f0f0;">
+                    <div><strong>${window.nomiRepartiExtra?.extra1 || "Extra 1"}</strong></div>
+                    <input type="checkbox" id="escl-extra1" ${esclusioni.extra1 ? "checked" : ""} style="transform: scale(1.3);">
+                </div>
+                <div class="settingItem" style="padding: 10px 0; border-bottom: 1px solid #f0f0f0;">
+                    <div><strong>${window.nomiRepartiExtra?.extra2 || "Extra 2"}</strong></div>
+                    <input type="checkbox" id="escl-extra2" ${esclusioni.extra2 ? "checked" : ""} style="transform: scale(1.3);">
+                </div>
+                <div class="settingItem" style="padding: 10px 0; margin-bottom: 15px;">
+                    <div><strong>${window.nomiRepartiExtra?.extra3 || "Extra 3"}</strong></div>
+                    <input type="checkbox" id="escl-extra3" ${esclusioni.extra3 ? "checked" : ""} style="transform: scale(1.3);">
                 </div>
                 
-                <div style="display: flex; justify-content: flex-end; gap: 10px;">
-                    <button onclick="this.closest('.modal').remove()" style="background: #e0e0e0; color: #333; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-weight: bold;">Annulla</button>
-                    <button onclick="salvaConfigurazioneTempoCassa(this)" style="background: #2196F3; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold;">Salva</button>
+                <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                    <button class="btn" style="background: #9e9e9e;" onclick="document.getElementById('modalFiltroCassa').remove()">Annulla</button>
+                    <button class="btn" onclick="salvaConfigurazioneTempoCassa()">Salva</button>
                 </div>
             </div>
         `;
@@ -5303,7 +5298,7 @@ function apriConfigurazioneTempoCassa() {
     });
 }
 
-async function salvaConfigurazioneTempoCassa(btn) {
+async function salvaConfigurazioneTempoCassa() {
     const config = {
         bere: document.getElementById("escl-bere").checked,
         snack: document.getElementById("escl-snack").checked,
@@ -5314,15 +5309,16 @@ async function salvaConfigurazioneTempoCassa(btn) {
     
     try {
         await db.ref("impostazioni/esclusioniTempoCassa").set(config);
-        btn.closest('.modal').remove(); 
-        if (typeof notify === "function") notify("Impostazioni salvate con successo!", "success");
+        document.getElementById('modalFiltroCassa').remove();
+        
+        if (typeof notify === "function") {
+            notify("Impostazioni salvate con successo!", "success");
+        }
     } catch(err) {
-        console.error("Errore", err);
+        console.error("Errore salvataggio esclusioni tempo cassa", err);
         if (typeof notify === "function") notify("Errore nel salvataggio", "error");
     }
 }
-
-
 // ================= MODIFICA COMANDA ADMIN (A MODALE) =================
 function modificaComanda(id, comanda) {
     if (!checkOnline(true)) return;
