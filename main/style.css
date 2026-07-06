@@ -2017,31 +2017,28 @@ body.tema-estate button {
 #noteDestinazioniDiv input[type="checkbox"] {
     margin-right: 6px !important;
 }
-/* ================= DASHBOARD BISTROBO ================= */
+/* ================= DASHBOARD BISTROBO (DESIGN INTEGRATO) ================= */
 .bb-dash-container {
-    background: #f8f9fa;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    background: transparent;
+    padding: 10px 0;
     margin-bottom: 20px;
 }
 .bb-dash-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 2px solid #e9ecef;
+    border-bottom: 2px solid #eee;
     padding-bottom: 15px;
     margin-bottom: 20px;
 }
-.bb-dash-header h3 {
-    margin: 0; color: #333; font-size: 1.6em;
-}
+.bb-dash-header h3 { margin: 0; color: #673AB7; font-size: 1.6em; }
+
 .bb-status-badge {
-    padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 0.9em;
+    padding: 6px 14px; border-radius: 20px; font-weight: bold; font-size: 0.95em; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
 }
-.bb-status-badge.ok { background: #e8f5e9; color: #2e7d32; }
-.bb-status-badge.warn { background: #fff3e0; color: #e65100; }
-.bb-status-badge.crit { background: #ffebee; color: #c62828; animation: pulse 1.5s infinite; }
+.bb-status-badge.ok { background: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9;}
+.bb-status-badge.warn { background: #fff3e0; color: #e65100; border: 1px solid #ffe0b2;}
+.bb-status-badge.crit { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; animation: pulse 1.5s infinite; }
 
 .bb-dash-grid {
     display: grid;
@@ -2049,25 +2046,35 @@ body.tema-estate button {
     gap: 20px;
 }
 .bb-dash-card {
-    background: #fff;
-    border-radius: 10px;
-    padding: 15px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    border-top: 4px solid var(--dept-color, #ccc);
+    background: #ffffff;
+    border-radius: 16px; /* Angoli più dolci a tema app */
+    padding: 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.06); /* Ombra morbida */
+    border: 1px solid #f5f5f5;
+    border-top: 6px solid var(--dept-color, #ccc); /* Linea superiore per il reparto */
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.bb-dash-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.12);
 }
 .bb-card-title {
-    font-size: 1.1em; font-weight: 800; color: #444; margin-bottom: 10px;
-    display: flex; justify-content: space-between;
+    font-size: 1.25em; font-weight: 800; color: #333; margin-bottom: 15px;
+    display: flex; justify-content: space-between; align-items: center;
 }
 /* Barra di Carico */
 .bb-gauge-bg {
-    background: #e9ecef; height: 10px; border-radius: 5px; width: 100%; margin-bottom: 15px; overflow: hidden;
+    background: #f1f3f5; height: 8px; border-radius: 4px; width: 100%; margin-bottom: 18px; overflow: hidden;
 }
-.bb-gauge-fill { height: 100%; transition: 0.4s ease; }
+.bb-gauge-fill { height: 100%; transition: width 0.4s ease, background-color 0.4s ease; border-radius: 4px; }
 
-.bb-stat-row { display: flex; justify-content: space-between; font-size: 0.9em; margin-bottom: 6px; color: #555; }
+.bb-stat-row { 
+    display: flex; justify-content: space-between; font-size: 0.95em; margin-bottom: 10px; color: #666; 
+    border-bottom: 1px dashed #eee; padding-bottom: 6px;
+}
+.bb-stat-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
 .bb-stat-val { font-weight: bold; color: #222; }
-.bb-crit-text { color: #d32f2f; font-weight: bold; }
+.bb-crit-text { color: #d32f2f; font-weight: bold; background: #ffebee; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
 
 @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
 
