@@ -3078,7 +3078,7 @@ function initBloccoPiattiListener() {
 function aggiornaBottoniBloccati() {
     const ingData = window.ingredientData || {};
     const menuData = window.menuData || {};
-    const isOpt = window.settings.cassaOttimizzata; // Necessario per determinare quale stile applicare
+    const isOpt = window.settings.cassaOttimizzata; // Determina quale stile applicare
 
     ["menuCibi", "menuBevande", "menuSnack", "menuExtra1", "menuExtra2", "menuExtra3"].forEach(sezioneId => {
         const container = document.getElementById(sezioneId);
@@ -3112,7 +3112,7 @@ function aggiornaBottoniBloccati() {
                 }
             }
 
-            // Determina il colore base in caso di Cassa Ottimizzata
+            // Determina il colore base in caso di Cassa Ottimizzata per i piatti disponibili
             let ctg = (item.categoria || "cibi").toLowerCase().trim();
             let coloreBase = "#4CAF50"; 
             if (ctg === "bevande") coloreBase = "#2196F3";
@@ -3121,25 +3121,25 @@ function aggiornaBottoniBloccati() {
             else if (ctg === "extra2") coloreBase = "#009688";
             else if (ctg === "extra3") coloreBase = "#795548";
 
-            // Applica stili e blocchi
+            // --- APPLICAZIONE STILI VISIVI E BLOCCHI ---
             if (!disponibile) {
                 btn.disabled = true; // Impedisce il click
                 
                 if (item.bloccato === true) {
+                    // BLOCCO ADMIN MANUALE -> ARANCIONE
+                    if (isOpt) {
+                        btn.style.cssText = `background: #fff3cd !important; color: #ff9800 !important; border: 2px dashed orange !important; opacity: 0.8 !important; padding: 8px 6px; margin: 0; border-radius: 6px; flex: 1 1 110px; max-width: 160px; min-height: 60px; display: flex; flex-direction: column; justify-content: center; align-items: center; border-left: 5px solid orange !important;`;
+                    } else {
+                        btn.style.cssText = "";
+                        Object.assign(btn.style, { opacity: 0.8, border: "2px dashed orange", background: "#fff3cd", color: "#ff9800" });
+                    }
+                } else {
+                    // INGREDIENTE ESAURITO -> ROSSO
                     if (isOpt) {
                         btn.style.cssText = `background: #f8d7da !important; color: #d9534f !important; border: 2px dashed #d9534f !important; opacity: 0.6 !important; padding: 8px 6px; margin: 0; border-radius: 6px; flex: 1 1 110px; max-width: 160px; min-height: 60px; display: flex; flex-direction: column; justify-content: center; align-items: center; border-left: 5px solid #d9534f !important;`;
                     } else {
-                        // VECCHIO BLOCCO MANUALE (Rosso)
                         btn.style.cssText = "";
                         Object.assign(btn.style, { opacity: 0.6, border: "2px solid #d9534f", background: "#f8d7da", color: "#d9534f" });
-                    }
-                } else {
-                    if (isOpt) {
-                        btn.style.cssText = `background: #fff3cd !important; color: #ff9800 !important; border: 2px dashed orange !important; opacity: 0.7 !important; padding: 8px 6px; margin: 0; border-radius: 6px; flex: 1 1 110px; max-width: 160px; min-height: 60px; display: flex; flex-direction: column; justify-content: center; align-items: center; border-left: 5px solid orange !important;`;
-                    } else {
-                        // VECCHIO BLOCCO INGREDIENTI (Arancione chiaro)
-                        btn.style.cssText = "";
-                        Object.assign(btn.style, { opacity: 0.5, border: "2px dashed orange", background: "#fff3cd", color: "#333" });
                     }
                 }
             } else {
@@ -3149,7 +3149,7 @@ function aggiornaBottoniBloccati() {
                     // Ottimizzata Standard: Grigino pulito con lato colorato
                     btn.style.cssText = `background: #f8f9fa !important; color: #333 !important; border: 1px solid #ccc !important; border-left: 5px solid ${coloreBase} !important; padding: 8px 6px; margin: 0; border-radius: 6px; flex: 1 1 110px; max-width: 160px; min-height: 60px; display: flex; flex-direction: column; justify-content: center; align-items: center;`;
                 } else {
-                    // Cassa Estesa Standard: Ritorna il tuo Grigio Classico
+                    // Cassa Estesa Standard: Grigio Classico
                     btn.style.cssText = ""; 
                     Object.assign(btn.style, { opacity: 1, border: "1px solid #aaa", background: "#f5f5f5", color: "#333" });
                 }
