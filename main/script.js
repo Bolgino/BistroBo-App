@@ -3076,10 +3076,9 @@ function initBloccoPiattiListener() {
     console.log("[initBloccoPiattiListener] FINE");
 }
 function aggiornaBottoniBloccati() {
-    console.log("🔵 [aggiornaBottoniBloccati] INIZIO");
-
     const ingData = window.ingredientData || {};
     const menuData = window.menuData || {};
+    const isOpt = window.settings.cassaOttimizzata; // Necessario per determinare quale stile applicare
 
     ["menuCibi", "menuBevande", "menuSnack", "menuExtra1", "menuExtra2", "menuExtra3"].forEach(sezioneId => {
         const container = document.getElementById(sezioneId);
@@ -3087,14 +3086,50 @@ function aggiornaBottoniBloccati() {
 
         const bottoni = Array.from(container.querySelectorAll("button"));
 
-        if (!disponibile) {
-                btn.disabled = true;
+        // Ciclo su ogni singolo bottone per verificare se deve essere bloccato
+        bottoni.forEach(btn => {
+            const menuId = btn.dataset.menuId;
+            if (!menuId) return;
+
+            const item = menuData[menuId];
+            if (!item) return;
+
+            let disponibile = true;
+
+            // 1. Controllo blocco manuale da Admin
+            if (item.bloccato === true) {
+                disponibile = false;
+            }
+
+            // 2. Controllo disponibilità degli ingredienti associati
+            if (disponibile && item.ingredienti) {
+                for (const ing of item.ingredienti) {
+                    const dbIng = ingData[ing.id];
+                    if (dbIng && dbIng.disponibile === false) {
+                        disponibile = false;
+                        break;
+                    }
+                }
+            }
+
+            // Determina il colore base in caso di Cassa Ottimizzata
+            let ctg = (item.categoria || "cibi").toLowerCase().trim();
+            let coloreBase = "#4CAF50"; 
+            if (ctg === "bevande") coloreBase = "#2196F3";
+            else if (ctg === "snack") coloreBase = "#FF5722";
+            else if (ctg === "extra1" || ctg === "risto") coloreBase = "#9C27B0";
+            else if (ctg === "extra2") coloreBase = "#009688";
+            else if (ctg === "extra3") coloreBase = "#795548";
+
+            // Applica stili e blocchi
+            if (!disponibile) {
+                btn.disabled = true; // Impedisce il click
                 
                 if (item.bloccato === true) {
                     if (isOpt) {
                         btn.style.cssText = `background: #f8d7da !important; color: #d9534f !important; border: 2px dashed #d9534f !important; opacity: 0.6 !important; padding: 8px 6px; margin: 0; border-radius: 6px; flex: 1 1 110px; max-width: 160px; min-height: 60px; display: flex; flex-direction: column; justify-content: center; align-items: center; border-left: 5px solid #d9534f !important;`;
                     } else {
-                        // VECCHIO BLOCCO MANUALE
+                        // VECCHIO BLOCCO MANUALE (Rosso)
                         btn.style.cssText = "";
                         Object.assign(btn.style, { opacity: 0.6, border: "2px solid #d9534f", background: "#f8d7da", color: "#d9534f" });
                     }
@@ -3108,7 +3143,7 @@ function aggiornaBottoniBloccati() {
                     }
                 }
             } else {
-                btn.disabled = false;
+                btn.disabled = false; // Sblocca il click
                 
                 if (isOpt) {
                     // Ottimizzata Standard: Grigino pulito con lato colorato
@@ -3119,9 +3154,8 @@ function aggiornaBottoniBloccati() {
                     Object.assign(btn.style, { opacity: 1, border: "1px solid #aaa", background: "#f5f5f5", color: "#333" });
                 }
             }
+        });
     });
-
-    console.log("🔵 [aggiornaBottoniBloccati] FINE");
 }
 function aggiornaComandaCorrente(){
     if (!checkOnline(true)) return;
