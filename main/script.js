@@ -5253,53 +5253,78 @@ function aggiornaDashboardAdmin(comandeData) {
     }
 }
 
-// ================= POPUP ESCLUSIONE TEMPO CASSA (DA ADMIN) =================
+// ================= POPUP ESCLUSIONE TEMPO CASSA =================
 function apriConfigurazioneTempoCassa() {
     db.ref("impostazioni/esclusioniTempoCassa").once("value").then(snap => {
-        let esclusioni = snap.val() || { bere: true, snack: false, extra1: false, extra2: false, extra3: false };
+        // Se non ci sono dati, impostiamo tutto a false (nessun reparto escluso di default)
+        let esclusioni = snap.val() || { bere: false, snack: false, extra1: false, extra2: false, extra3: false };
 
         const div = document.createElement("div");
-        div.className = "modal-cassa-overlay";
+        div.className = "modal-overlay-cassa";
+        // Stile inline per il popup così si integra senza dover toccare il file CSS
+        div.style.cssText = "position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 9999;";
+        
         div.innerHTML = `
-            <div class="modal-cassa-box">
-                <h3 style="margin-top:0; color:#2196F3;">⚙️ Filtro Tempo Medio</h3>
-                <p style="font-size:0.9em; color:#555; margin-bottom: 20px;">
-                    Seleziona i reparti da <b>escludere</b> dal calcolo del tempo d'attesa in Cassa:
+            <div style="background: #fff; padding: 25px; border-radius: 8px; width: 90%; max-width: 350px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+                <h3 style="margin-top: 0; margin-bottom: 10px; font-size: 1.3em; color: #333;">Calcolo Tempo Medio</h3>
+                <p style="font-size: 0.9em; color: #666; margin-bottom: 25px;">
+                    Seleziona i reparti da <b>escludere</b> dal conteggio in Cassa:
                 </p>
                 
-                <label style="display:block; margin: 10px 0; font-size: 1.1em; color: #777;">
-                    <input type="checkbox" id="escl-bere" ${esclusioni.bere ? "checked" : ""} disabled> 
-                    Bere <i>(Sempre escluso)</i>
-                </label>
-                <label style="display:block; margin: 10px 0; font-size: 1.1em;">
-                    <input type="checkbox" id="escl-snack" ${esclusioni.snack ? "checked" : ""}> 
-                    Snack
-                </label>
-                <label style="display:block; margin: 10px 0; font-size: 1.1em;">
-                    <input type="checkbox" id="escl-extra1" ${esclusioni.extra1 ? "checked" : ""}> 
-                    ${window.nomiRepartiExtra?.extra1 || "Extra 1"}
-                </label>
-                <label style="display:block; margin: 10px 0; font-size: 1.1em;">
-                    <input type="checkbox" id="escl-extra2" ${esclusioni.extra2 ? "checked" : ""}> 
-                    ${window.nomiRepartiExtra?.extra2 || "Extra 2"}
-                </label>
-                <label style="display:block; margin: 10px 0; font-size: 1.1em;">
-                    <input type="checkbox" id="escl-extra3" ${esclusioni.extra3 ? "checked" : ""}> 
-                    ${window.nomiRepartiExtra?.extra3 || "Extra 3"}
-                </label>
+                <div style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 30px;">
+                    <label style="display: flex; align-items: center; cursor: pointer; font-size: 1.1em;">
+                        <input type="checkbox" id="escl-bere" ${esclusioni.bere ? "checked" : ""} style="transform: scale(1.3); margin-right: 12px;"> 
+                        Bere
+                    </label>
+                    <label style="display: flex; align-items: center; cursor: pointer; font-size: 1.1em;">
+                        <input type="checkbox" id="escl-snack" ${esclusioni.snack ? "checked" : ""} style="transform: scale(1.3); margin-right: 12px;"> 
+                        Snack
+                    </label>
+                    <label style="display: flex; align-items: center; cursor: pointer; font-size: 1.1em;">
+                        <input type="checkbox" id="escl-extra1" ${esclusioni.extra1 ? "checked" : ""} style="transform: scale(1.3); margin-right: 12px;"> 
+                        ${window.nomiRepartiExtra?.extra1 || "Extra 1"}
+                    </label>
+                    <label style="display: flex; align-items: center; cursor: pointer; font-size: 1.1em;">
+                        <input type="checkbox" id="escl-extra2" ${esclusioni.extra2 ? "checked" : ""} style="transform: scale(1.3); margin-right: 12px;"> 
+                        ${window.nomiRepartiExtra?.extra2 || "Extra 2"}
+                    </label>
+                    <label style="display: flex; align-items: center; cursor: pointer; font-size: 1.1em;">
+                        <input type="checkbox" id="escl-extra3" ${esclusioni.extra3 ? "checked" : ""} style="transform: scale(1.3); margin-right: 12px;"> 
+                        ${window.nomiRepartiExtra?.extra3 || "Extra 3"}
+                    </label>
+                </div>
                 
-                <div style="margin-top: 25px; text-align:right;">
-                    <button onclick="document.querySelector('.modal-cassa-overlay').remove()" style="background:#eee; color:#333; border:none; padding:10px 15px; border-radius:5px; cursor:pointer; margin-right:10px; font-weight:bold;">
-                        Annulla
-                    </button>
-                    <button onclick="salvaConfigurazioneTempoCassa()" style="background:#2196F3; color:#fff; border:none; padding:10px 20px; border-radius:5px; cursor:pointer; font-weight:bold;">
-                        Salva in Firebase
-                    </button>
+                <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                    <button onclick="this.closest('.modal-overlay-cassa').remove()" style="background: #e0e0e0; color: #333; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-weight: bold;">Annulla</button>
+                    <button onclick="salvaConfigurazioneTempoCassa(this)" style="background: #2196F3; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-weight: bold;">Salva</button>
                 </div>
             </div>
         `;
         document.body.appendChild(div);
     });
+}
+
+async function salvaConfigurazioneTempoCassa(btn) {
+    // Raccoglie i nuovi valori dal popup
+    const config = {
+        bere: document.getElementById("escl-bere").checked,
+        snack: document.getElementById("escl-snack").checked,
+        extra1: document.getElementById("escl-extra1").checked,
+        extra2: document.getElementById("escl-extra2").checked,
+        extra3: document.getElementById("escl-extra3").checked
+    };
+    
+    try {
+        await db.ref("impostazioni/esclusioniTempoCassa").set(config);
+        btn.closest('.modal-overlay-cassa').remove(); // Chiude il popup
+        
+        if (typeof notify === "function") {
+            notify("Impostazioni salvate con successo!", "success");
+        }
+    } catch(err) {
+        console.error("Errore salvataggio esclusioni tempo cassa", err);
+        if (typeof notify === "function") notify("Errore nel salvataggio", "error");
+    }
 }
 
 async function salvaConfigurazioneTempoCassa() {
