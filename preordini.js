@@ -774,6 +774,7 @@ async function initPreordiniClienti() {
         if (items.length === 0) return;
 
         // Titolo categoria
+        // Titolo categoria
         const titoloDiv = document.createElement("div");
         titoloDiv.className = "categoria-titolo";
         
@@ -789,6 +790,10 @@ async function initPreordiniClienti() {
 
         // Piatti della categoria
         items.forEach(([id, item]) => {
+            
+            // 🛑 NUOVO CONTROLLO: Se l'admin ha nascosto il piatto, salta la generazione grafica!
+            if (item.visibilePreordini === false) return;
+
             const piattoBloccato = item.bloccato === true;
             let ingredientiEsauriti = false;
             if (item.ingredienti) {
