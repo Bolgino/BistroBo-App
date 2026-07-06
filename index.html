@@ -641,6 +641,7 @@
 	<div id="adminDiv" class="hidden">
 		<h2>Admin</h2>
 		<div>
+			<button class="tabBtn active" data-tab="dashboardAdminTab">🚀 Dashboard</button> 
 			<button class="tabBtn" data-tab="comandeTab">Comande</button>
 			<button class="tabBtn" data-tab="preordiniAdminTab">Preordini</button>
 			<button class="tabBtn" data-tab="menuTab">Menu</button>
@@ -651,6 +652,21 @@
 		    <button class="tabBtn" data-tab="chatAdminTab">Chat</button>
 			<button class="tabBtn" data-tab="gestioneProfiliTab">Gestione Profili</button>
 			<button class="tabBtn" data-tab="impostazioniTab">⚙️Impostazioni</button>
+		</div>
+		<div id="dashboardAdminTab" class="tabContent active">
+		    <div style="background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-top: 5px solid #673AB7; margin-bottom: 20px;">
+		        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:15px;">
+		            <h3 style="margin:0; color: #673AB7; font-size: 1.5em;">🚀 Centro di Controllo</h3>
+		        </div>
+		        
+		        <div id="dash-global-stats" class="dash-grid"></div>
+
+		        <h4 style="color: #444; margin-top: 25px; margin-bottom: 10px; border-bottom: 1px solid #ccc; padding-bottom: 5px;">📊 Stato Reparti (Comande da fare)</h4>
+		        <div id="dash-departments" class="dash-dept-grid"></div>
+
+		        <h4 style="color: #444; margin-top: 25px; margin-bottom: 10px; border-bottom: 1px solid #ccc; padding-bottom: 5px;">🏆 Record e Tempi Medi</h4>
+		        <div id="dash-records" class="dash-grid"></div>
+		    </div>
 		</div>
 
 		<!-- Comande Admin -->
