@@ -1096,13 +1096,7 @@
 						<option value="estate">Estate</option>
 					</select>
 				</div>
-				<div class="settingItem">
-					<div class="settingLabel">
-						<span>Fondo Cassa Iniziale</span>
-						<small>Modifica l'importo o azzeralo (se azzerato, verrà richiesto obbligatoriamente al prossimo accesso in Cassa)</small>
-					</div>
-					<button id="impostaFondoCassaBtn" class="toggleBtn" style="background-color: #2196F3; color: white;">MODIFICA</button>
-				</div>
+				
 				<div class="settingItem">
 					<div class="settingLabel">
 						<span>Suono nuove comande per i profili</span>
@@ -1131,13 +1125,7 @@
 					</div>
 					<button id="toggleChatAbilitataBtn" class="toggleBtn">ON</button>
 				</div>
-				<div class="settingItem">
-					<div class="settingLabel">
-						<span>Stampa Scontrini Separati</span>
-						<small>Stampa uno scontrino dedicato per Cucina, Bere e Snack invece di uno unico totale.</small>
-					</div>
-					<button id="toggleScontriniSeparatiBtn" class="toggleBtn">OFF</button>
-				</div>
+				
 				<div class="settingItem">
 					<div class="settingLabel">
 						<span>Abilita Sistema Extra</span>
@@ -1236,6 +1224,7 @@
 					</div>
 					<button id="toggleAsportoBtn" class="toggleBtn">OFF</button>
 				</div>
+				
 				<div class="settingItem">
 					<div class="settingLabel">
 						<span>Selettore quantità in Cassa</span>
@@ -1249,6 +1238,13 @@
 						<small>Se disattivato, nasconde la calcolatrice dei soldi, le banconote e il calcolo del resto in Cassa.</small>
 					</div>
 					<button id="toggleGestioneSoldiBtn" class="toggleBtn">ON</button>
+				</div>
+				<div class="settingItem">
+					<div class="settingLabel">
+						<span>Fondo Cassa Iniziale</span>
+						<small>Modifica l'importo o azzeralo (se azzerato, verrà richiesto obbligatoriamente al prossimo accesso in Cassa)</small>
+					</div>
+					<button id="impostaFondoCassaBtn" class="toggleBtn" style="background-color: #2196F3; color: white;">MODIFICA</button>
 				</div>
 				<div class="settingItem">
 					<div class="settingLabel">
@@ -1273,11 +1269,34 @@
 				</div>
 				<div class="settingItem">
 					<div class="settingLabel">
+						<span>Stampa Scontrini Separati</span>
+						<small>Stampa uno scontrino dedicato per Cucina, Bere e Snack invece di uno unico totale.</small>
+					</div>
+					<button id="toggleScontriniSeparatiBtn" class="toggleBtn">OFF</button>
+				</div>
+				<!-- NUOVA SEZIONE: IMPOSTAZIONI CASSA -->
+			    <div style="background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-top: 5px solid #2196F3; margin-top: 20px;">
+			        <h3 style="margin-top:0; color: #2196F3;">💻 Impostazioni Cassa</h3>
+			        <p style="color: #666; font-size: 0.9em; margin-bottom: 15px;">Configura i parametri visualizzati nell'interfaccia della postazione Cassa.</p>
+			        
+			        <div style="display: flex; align-items: center; justify-content: space-between; background: #f9f9f9; padding: 15px; border-radius: 8px; border: 1px solid #ddd;">
+			            <div>
+			                <strong style="color: #333; font-size: 1.1em;">⏱️ Calcolo Tempo Medio Attesa</strong><br>
+			                <span style="font-size: 0.85em; color: #777;">Scegli quali reparti escludere dal calcolo del tempo stimato mostrato al cassiere.</span>
+			            </div>
+			            <button onclick="apriConfigurazioneTempoCassa()" style="background: #2196F3; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s;">
+			                Configura ⚙️
+			            </button>
+			        </div>
+			    </div>
+				<div class="settingItem">
+					<div class="settingLabel">
 						<span>Comande Progressive Auto</span>
 						<small>Assegna automaticamente il numero della comanda. Sicuro per l'uso con più casse simultanee.</small>
 					</div>
 					<button id="toggleComandeProgressiveBtn" class="toggleBtn">OFF</button>
 				</div>
+				
 				<div class="settingItem">
 					<div class="settingLabel">
 						<span>Richiedi Lettera Comanda</span>
