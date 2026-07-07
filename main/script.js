@@ -3993,7 +3993,7 @@ function caricaComandeCassa() {
 
   // Listener realtime
   db.ref("comande").on("value", snap => {
-    calcolaEVisualizzaTempoMedio(snap);
+    aggiornaTempoMedioCassa(snap.val() || {});
     const ordiniIds = new Set();
 
     // Se non ci sono comande
@@ -9797,10 +9797,10 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 });
-// ================= TEMPO MEDIO ATTESA =================
 // ================= CALCOLO TEMPO MEDIO CASSA =================
 async function aggiornaTempoMedioCassa(comandeData) {
     const spanCassa = document.getElementById("valoreTempoMedioCassa");
+    const boxCassa = document.getElementById("boxTempoMedioCassa");
     if (!spanCassa) return;
 
     // 1. Recupera le impostazioni dei filtri da Firebase
@@ -9853,8 +9853,12 @@ async function aggiornaTempoMedioCassa(comandeData) {
         let sum = tempiValidi.reduce((a, b) => a + b, 0);
         let mediaMin = (sum / tempiValidi.length / 60000).toFixed(1);
         spanCassa.innerText = mediaMin;
+        
+        if(boxCassa) boxCassa.style.display = "block"; // <-- AGGIUNGI QUESTO
     } else {
         spanCassa.innerText = "--";
+        
+        if(boxCassa) boxCassa.style.display = "none"; // <-- AGGIUNGI QUESTO
     }
 }
 // Funzione intelligente per aggiornare lo stato e salvare il timestamp di fine preparazione cibo
@@ -9933,94 +9937,7 @@ document.addEventListener("click", e => {
         if (badge) badge.remove();
     }
 });
-// Funzione di calcolo e visualizzazione media
-function calcolaEVisualizzaTempoMedio(comandeSnapshot) {
-    const boxCassa = document.getElementById("boxTempoMedioCassa");
-    const valCassa = document.getElementById("valoreTempoMedioCassa");
-    const boxAdmin = document.getElementById("boxTempoMedioAdmin");
-    const valAdmin = document.getElementById("valoreTempoMedioAdmin");
 
-    if (!comandeSnapshot.exists()) {
-        if(boxCassa) boxCassa.style.display = "none";
-        if(boxAdmin) boxAdmin.style.display = "none";
-        return;
-    }
-
-    const comandeConTermine = [];
-
-    comandeSnapshot.forEach(s => {
-        const c = s.val();
-        // Consideriamo solo comande che hanno un timestampTermine e un timestamp creazione
-        // E che non sono SOLO bere (ovvero avevano cibo da preparare)
-        // Controllo semplice: se timestampTermine esiste, significa che è passata dalla logica "Cibo Pronto".
-        if (c.timestamp && c.timestampTermine) {
-            const durata = c.timestampTermine - c.timestamp;
-            // Filtro errori dati (durata negativa o assurda) e comande istantanee (es. solo bere che nascono completate)
-            // Se durata < 30 secondi, probabilmente era solo bere o pre-completata. La ignoriamo per la media "Cucina".
-            if (durata > 30000) { 
-                comandeConTermine.push(durata);
-            }
-        }
-    });
-
-    // Se non ci sono dati sufficienti
-    if (comandeConTermine.length === 0) {
-        if(boxCassa) boxCassa.style.display = "none";
-        if(boxAdmin) boxAdmin.style.display = "none";
-        return;
-    }
-
-    // Ordina: le ultime completate (in realtà qui ho solo le durate, ma sto iterando su tutte. 
-    // Per precisione "Ultime 10 comande":
-    // Dovrei ordinare l'array originale per timestampTermine decrescente.
-    // Rifacciamo il loop per prendere gli oggetti completi.
-    
-    const listaCompleta = [];
-    comandeSnapshot.forEach(s => {
-        const c = s.val();
-        if (c.timestamp && c.timestampTermine) {
-            listaCompleta.push(c);
-        }
-    });
-
-    // Ordina per data di completamento (più recenti prima)
-    listaCompleta.sort((a, b) => b.timestampTermine - a.timestampTermine);
-
-    // Prendi le prime 10
-    const ultime10 = listaCompleta.slice(0, 10);
-    
-    if (ultime10.length === 0) return;
-
-    let somma = 0;
-    let conteggio = 0;
-
-    ultime10.forEach(c => {
-        const durata = c.timestampTermine - c.timestamp;
-        if (durata > 30000) { // filtro 30 secondi
-            somma += durata;
-            conteggio++;
-        }
-    });
-
-    if (conteggio === 0) {
-        if(boxCassa) boxCassa.style.display = "none";
-        if(boxAdmin) boxAdmin.style.display = "none";
-        return;
-    }
-
-    const mediaMs = somma / conteggio;
-    const mediaMin = Math.round(mediaMs / 60000);
-
-    // Aggiorna UI
-    if (boxCassa && window.isLoggedInCassa) {
-        boxCassa.style.display = "block";
-        valCassa.innerText = mediaMin;
-    }
-    if (boxAdmin && window.isLoggedInAdmin) {
-        boxAdmin.style.display = "block";
-        valAdmin.innerText = mediaMin;
-    }
-}
 // -------------------- TABS --------------------
 document.querySelectorAll(".tabBtn").forEach(b=>{
     b.addEventListener("click",()=>{
