@@ -6559,7 +6559,6 @@ db.ref("impostazioni/scontiGlobaliAbilitati").on("value", snap => {
     if (btn) {
         btn.innerText = abilitato ? "ON" : "OFF";
         btn.style.backgroundColor = abilitato ? "#4CAF50" : "#f44336";
-        btn.style.color = "white";
     }
 
     // Mostra/Nascondi Div in Admin (RIPRISTINATO A "block" INVECE DI "flex")
