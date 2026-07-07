@@ -1384,7 +1384,7 @@
 	<script>
 		(function(){
 			// 1. CONFIGURAZIONE
-			const TEMPO_MINIMO_LOADER = 5000; // 5 secondi di panino garantiti
+			const TEMPO_MINIMO_LOADER = 3500; // 5 secondi di panino garantiti
 			const start = Date.now();
 			const loader = document.getElementById("loader");
 			const textEl = document.getElementById("loaderText");
@@ -1435,7 +1435,7 @@
 				setInterval(() => {
 					i = (i + 1) % frasi.length;
 					textEl.innerText = frasi[i].toUpperCase();
-				}, 3000);
+				}, 1800);
 			}
 			// 3. LOGICA DI CHIUSURA "RITARDATA"
 			// Questa funzione controlla ciclicamente se possiamo nascondere il loader
