@@ -9798,7 +9798,65 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 // ================= TEMPO MEDIO ATTESA =================
+// ================= CALCOLO TEMPO MEDIO CASSA =================
+async function aggiornaTempoMedioCassa(comandeData) {
+    const spanCassa = document.getElementById("valoreTempoMedioCassa");
+    if (!spanCassa) return;
 
+    // 1. Recupera le impostazioni dei filtri da Firebase
+    let esclusioni = { bere: false, snack: false, extra1: false, extra2: false, extra3: false };
+    try {
+        const snap = await db.ref("impostazioni/esclusioniTempoCassa").once("value");
+        if (snap.exists()) {
+            esclusioni = snap.val();
+        }
+    } catch(e) { console.error("Errore lettura esclusioni:", e); }
+
+    const reparti = ["cucina", "bere", "snack", "extra1", "extra2", "extra3"];
+    let tempiValidi = [];
+
+    // 2. Calcola i tempi solo per i reparti NON esclusi
+    Object.values(comandeData).forEach(c => {
+        const { cibo, bere, snack, extra1, extra2, extra3 } = separaComanda(c.piatti || []);
+        
+        reparti.forEach(rep => {
+            // Se il reparto è escluso dalle impostazioni, lo saltiamo
+            if (esclusioni[rep]) return;
+
+            // Verifichiamo se ci sono piatti in questo reparto per questa comanda
+            let hasItems = false;
+            if (rep === "cucina" && cibo.length > 0) hasItems = true;
+            if (rep === "bere" && bere.length > 0) hasItems = true;
+            if (rep === "snack" && snack.length > 0) hasItems = true;
+            if (rep === "extra1" && extra1.length > 0) hasItems = true;
+            if (rep === "extra2" && extra2.length > 0) hasItems = true;
+            if (rep === "extra3" && extra3.length > 0) hasItems = true;
+
+            // Se il reparto aveva piatti ed è "completato", prendiamo il suo tempo specifico
+            if (hasItems) {
+                const statoKey = "stato" + rep.charAt(0).toUpperCase() + rep.slice(1);
+                const stato = c[statoKey];
+                
+                if (stato === "completato" && c.timestamp && c["timestampFine_" + rep]) {
+                    let durata = c["timestampFine_" + rep] - c.timestamp;
+                    // Scartiamo anomalie (es. negative o più vecchie di 24 ore)
+                    if (durata > 0 && durata < 86400000) { 
+                        tempiValidi.push(durata);
+                    }
+                }
+            }
+        });
+    });
+
+    // 3. Mostra la media in Cassa
+    if (tempiValidi.length > 0) {
+        let sum = tempiValidi.reduce((a, b) => a + b, 0);
+        let mediaMin = (sum / tempiValidi.length / 60000).toFixed(1);
+        spanCassa.innerText = mediaMin;
+    } else {
+        spanCassa.innerText = "--";
+    }
+}
 // Funzione intelligente per aggiornare lo stato e salvare il timestamp di fine preparazione cibo
 // --- FUNZIONE DI AGGIORNAMENTO STATO E CONTROLLO TERMINE GLOBALE ---
 async function aggiornaStatoConTermine(comandaId, chiaveStato, nuovoStato) {
