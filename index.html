@@ -1384,7 +1384,7 @@
 	<script>
 		(function(){
 			// 1. CONFIGURAZIONE
-			const TEMPO_MINIMO_LOADER = 3000; // 3.5 secondi di panino garantiti
+			const TEMPO_MINIMO_LOADER = 5000; // 5 secondi di panino garantiti
 			const start = Date.now();
 			const loader = document.getElementById("loader");
 			const textEl = document.getElementById("loaderText");
@@ -1425,7 +1425,7 @@
 				"Togliendo il bruciato dai bordi..."
 			];
 
-			// Cambio frase ogni 1.2 secondi
+			// Cambio frase ogni 3 secondi
 			if(textEl) {
 				let i = 0;
 				// Imposta subito la prima frase a caso per variare
@@ -1435,9 +1435,8 @@
 				setInterval(() => {
 					i = (i + 1) % frasi.length;
 					textEl.innerText = frasi[i].toUpperCase();
-				}, 1200);
+				}, 3000);
 			}
-
 			// 3. LOGICA DI CHIUSURA "RITARDATA"
 			// Questa funzione controlla ciclicamente se possiamo nascondere il loader
 			function checkRimuoviLoader() {
