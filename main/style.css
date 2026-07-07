@@ -2005,7 +2005,11 @@ body.tema-estate button {
     gap: 15px;
     align-items: center;
 }
-#noteDestinazioniDiv[style*="display: none"] {
+#noteDestinazioniDiv[style*="none"] {
+    display: none !important;
+}
+
+#noteDestinazioniDiv label[style*="none"] {
     display: none !important;
 }
 #noteDestinazioniDiv label {
@@ -2017,9 +2021,7 @@ body.tema-estate button {
 #noteDestinazioniDiv input[type="checkbox"] {
     margin-right: 6px !important;
 }
-#noteDestinazioniDiv label[style*="display: none"] {
-    display: none !important;
-}
+
 /* ================= DASHBOARD BISTROBO (DESIGN INTEGRATO) ================= */
 .bb-dash-container {
     background: transparent;
