@@ -10616,31 +10616,35 @@ function aggiornaVistaSommario(reparto) {
         const comande = snap.val() || {};
         const totali = {};
 
-        // Mappatura stato dinamica (es: statoCucina, statoBere, statoExtra1)
+        // 1. Mappatura stato dinamica (es: statoCucina, statoBere)
         const statoKey = reparto.startsWith("extra") 
             ? "stato" + reparto.charAt(0).toUpperCase() + reparto.slice(1) 
             : (reparto === "cucina" ? "statoCucina" : (reparto === "bere" ? "statoBere" : "statoSnack"));
+
+        // 2. ⚠️ FIX CRUCIALE: Il tuo separaComanda restituisce 'cibo', non 'cucina'!
+        const arrayKey = reparto === "cucina" ? "cibo" : reparto;
 
         Object.values(comande).forEach(ordine => {
             // Conta solo ciò che è "da fare" o "in elaborazione"
             if (ordine[statoKey] === 'da fare' || ordine[statoKey] === 'in elaborazione') {
                 
-                // Usiamo la TUA funzione nativa separaComanda! Infallibile.
                 const piattiSeparati = separaComanda(ordine.piatti || []);
-                const piattiReparto = piattiSeparati[reparto] || [];
+                
+                // Usiamo l'arrayKey corretta ('cibo' invece di 'cucina')
+                const piattiReparto = piattiSeparati[arrayKey] || [];
                 
                 piattiReparto.forEach(articolo => {
-                    // Contiamo la quantità. Rimuoviamo info tra parentesi (es. varianti) per raggruppare i piatti identici
+                    // Contiamo i piatti principali
                     if (articolo.isMainHere !== false) {
                         let nomePiatto = articolo.nome.replace(/\s*\([\+\-].*?\)/g, "").trim(); 
-                        totali[nomePiatto] = (totali[nomePiatto] || 0) + parseInt(articolo.quantita);
+                        totali[nomePiatto] = (totali[nomePiatto] || 0) + parseInt(articolo.quantita || 1);
                     }
 
                     // Se ci sono contorni gestiti dallo stesso reparto, sommiamo anche loro
                     if (articolo.contorniScelti && articolo.contorniScelti.length > 0) {
                         articolo.contorniScelti.forEach(c => {
                             let nomeContorno = c.nome.replace(/\s*\([\+\-].*?\)/g, "").trim();
-                            totali[nomeContorno] = (totali[nomeContorno] || 0) + parseInt(articolo.quantita);
+                            totali[nomeContorno] = (totali[nomeContorno] || 0) + parseInt(articolo.quantita || 1);
                         });
                     }
                 });
@@ -10649,13 +10653,14 @@ function aggiornaVistaSommario(reparto) {
 
         // Disegna l'interfaccia
         const listaHtml = document.getElementById('lista-totali-sommario');
+        if (!listaHtml) return;
         listaHtml.innerHTML = ''; 
 
         // Ordiniamo dalla quantità più alta alla più bassa
         const voci = Object.entries(totali).sort((a, b) => b[1] - a[1]); 
 
         if (voci.length === 0) {
-            listaHtml.innerHTML = `<li style="justify-content:center; color:#777; font-size:1.5rem; border:none; padding:40px;">Nessun piatto in coda! 🎉 Dai una pulita alla griglia!</li>`;
+            listaHtml.innerHTML = `<li style="justify-content:center; color:#777; font-size:1.2rem; border:none; padding:40px;">Nessun piatto in coda! 🎉 Dai una pulita alla griglia!</li>`;
         } else {
             for (const [nome, qta] of voci) {
                 listaHtml.innerHTML += `
@@ -10666,12 +10671,14 @@ function aggiornaVistaSommario(reparto) {
             }
         }
 
-        // Aggiorna il titolo (Usa anche i nomi personalizzati per gli extra!)
+        // Aggiorna il titolo
         let nomeReparto = reparto;
         if (reparto.startsWith("extra") && window.nomiRepartiExtra && window.nomiRepartiExtra[reparto]) {
             nomeReparto = window.nomiRepartiExtra[reparto];
         }
-        document.getElementById('reparto-titolo').innerText = `(${nomeReparto.toUpperCase()})`;
+        
+        const repTitolo = document.getElementById('reparto-titolo');
+        if (repTitolo) repTitolo.innerText = `(${nomeReparto.toUpperCase()})`;
     });
 }
 
