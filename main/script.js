@@ -2420,7 +2420,19 @@ function initChat() {
 
         const sender = document.createElement("div");
         sender.className = "chat-sender";
-        sender.textContent = msg.uid === uid ? "Tu" : `${msg.email} (${msg.ruolo})`;
+        
+        // --- INIZIO MODIFICA NOME REPARTO ---
+        let displayRuolo = msg.ruolo || "sconosciuto";
+        if (displayRuolo.startsWith("extra")) {
+            // Cerca il nome personalizzato globale, altrimenti usa un fallback
+            displayRuolo = window.nomiRepartiExtra?.[displayRuolo] || displayRuolo.charAt(0).toUpperCase() + displayRuolo.slice(1);
+        } else {
+            // Capitalizza l'iniziale per ruoli come "cucina", "cassa", "bere"
+            displayRuolo = displayRuolo.charAt(0).toUpperCase() + displayRuolo.slice(1);
+        }
+        // --- FINE MODIFICA ---
+
+        sender.textContent = msg.uid === uid ? "Tu" : `${msg.email} (${displayRuolo})`;
 
         const text = document.createElement("div");
         text.textContent = msg.testo;
@@ -2437,7 +2449,17 @@ function initChat() {
             if (!window.settings.chatAbilitata) return;
 
             if (window.settings.suonoChat) riproduciSuonoNotifica();
-            notify(`💬 Nuovo messaggio da: ${msg.email} (${msg.ruolo})`, "info");
+            
+            // --- INIZIO MODIFICA NOME REPARTO PER NOTIFICA ---
+            let displayRuolo = msg.ruolo || "sconosciuto";
+            if (displayRuolo.startsWith("extra")) {
+                displayRuolo = window.nomiRepartiExtra?.[displayRuolo] || displayRuolo.charAt(0).toUpperCase() + displayRuolo.slice(1);
+            } else {
+                displayRuolo = displayRuolo.charAt(0).toUpperCase() + displayRuolo.slice(1);
+            }
+            // --- FINE MODIFICA ---
+
+            notify(`💬 Nuovo messaggio da: ${msg.email} (${displayRuolo})`, "info");
 
             notificati.add(msgKey); 
             localStorage.setItem("chatNotificati_" + uid, JSON.stringify([...notificati])); 
