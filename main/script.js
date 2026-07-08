@@ -10078,31 +10078,34 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
                     break;
 
                 case "parole_intrecciate":
-                    // 🔠 6. PAROLE INTRECCIATE (Con incastri perfetti)
+                    // 🔠 6. PAROLE INTRECCIATE 
                     doc.text("TROVA LE PAROLE NASCOSTE", pageWidth / 2, y, { align: "center" });
                     y += 6;
                     startX = (pageWidth / 2) - 14;
                     doc.setFontSize(10);
                     doc.setFont("courier", "bold");
+                    
                     let grid = [
                         "T O N R O F C",
                         "M A X Y Z W U",
-                        "E P V K J H C",
-                        "N Q L O X Y I",
-                        "U S D F L G N",
+                        "E A V K J H C",
+                        "N Z L O X Y I",
+                        "U Z D F L G N",
                         "B I R R A O A",
-                        "P I Z Z A T K"
+                        "F P Y K T K B"
                     ];
+                    
                     grid.forEach((row, i) => {
                         doc.text(row, startX, y + (i*5));
                     });
+                    
                     doc.setFont("helvetica", "normal");
                     doc.setFontSize(7);
                     doc.text("Attento! Si leggono in ogni direzione:", pageWidth / 2, y + 36, { align: "center" });
                     doc.text("BIRRA, CUCINA, FORNO, MENU, PIZZA, TAVOLO", pageWidth / 2, y + 40, { align: "center" });
                     y += 45;
                     break;
-
+					
                 case "scatole":
                     // ⬛ 7. IL GIOCO DEI PUNTINI E SCATOLE
                     doc.text("PUNTINI: Chiudi più quadrati di tutti!", pageWidth / 2, y, { align: "center" });
@@ -10116,43 +10119,138 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
                     y += 30;
                     break;
 
-                case "cruciverba":
-                    // 📝 8. CRUCIVERBA (Perfetto a 16 lettere, incastro 4x4)
-                    doc.text("CRUCIVERBA MAGICO 4x4", pageWidth / 2, y, { align: "center" });
-                    y += 6;
-                    startX = (pageWidth / 2) - 14;
-                    let cellSize = 7;
-                    
-                    // Disegna Griglia 4x4 Senza caselle nere
-                    for (let r=0; r<4; r++) {
-                        for (let c=0; c<4; c++) {
-                            doc.setLineWidth(0.3);
-                            doc.rect(startX + c*cellSize, y + r*cellSize, cellSize, cellSize, "S");
-                        }
-                    }
-                    
-                    // Numerini
-                    doc.setFontSize(5);
-                    doc.text("1", startX + 1, y + 2.5);
-                    doc.text("2", startX + 1 + cellSize, y + 2.5);
-                    doc.text("3", startX + 1 + 2*cellSize, y + 2.5);
-                    doc.text("4", startX + 1 + 3*cellSize, y + 2.5);
-                    
-                    doc.text("5", startX + 1, y + 2.5 + cellSize);
-                    doc.text("6", startX + 1, y + 2.5 + 2*cellSize);
-                    doc.text("7", startX + 1, y + 2.5 + 3*cellSize);
+               case "cruciverba":
 
-                    // Definizioni
-                    doc.setFontSize(7);
-                    doc.text("ORIZZONTALI:", startX, y + 33);
-                    doc.text("1. Nettare di Bacco   5. Lampo di genio", startX, y + 37);
-                    doc.text("6. Un colore scuro   7. Paradiso di sabbia", startX, y + 41);
-                    
-                    doc.text("VERTICALI:", startX, y + 46);
-                    doc.text("1. Lo versi nel calice   2. Spunto mentale", startX, y + 50);
-                    doc.text("3. L'opposto del bianco 4. Specchio d'acqua", startX, y + 54);
-                    y += 60;
-                    break;
+				    doc.setFontSize(11);
+				    doc.text("CRUCIVERBA MAGICO 7x7", pageWidth / 2, y, { align:"center" });
+				
+				    y += 8;
+				
+				    const cell = 6;
+				    const size = 7;
+				    startX = pageWidth / 2 - (size * cell) / 2;
+				
+				
+				    // # = casella nera
+				    // schema verificato 7x7
+				
+				    const grid = [
+				        ["C","A","N","E","#","L","U"],
+				        ["A","#","A","R","T","E","#"],
+				        ["S","O","L","E","#","A","R"],
+				        ["A","#","M","A","R","E","#"],
+				        ["#","P","I","A","N","O",""],
+				        ["V","I","A","#","L","U","C"],
+				        ["O","R","O","#","E","R","A"]
+				    ];
+				
+				
+				    // Corregge ultima riga vuota
+				    grid[4][6]="O";
+				
+				
+				    // Numerazione automatica
+				    let number = 1;
+				    let nums = {};
+				
+				    for(let r=0;r<size;r++){
+				
+				        for(let c=0;c<size;c++){
+				
+				            if(grid[r][c]=="#") continue;
+				
+				            let start =
+				            (c==0 || grid[r][c-1]=="#") ||
+				            (r==0 || grid[r-1][c]=="#");
+				
+				            if(start){
+				                nums[`${r}-${c}`]=number++;
+				            }
+				        }
+				    }
+				
+				
+				    // Disegno griglia
+				
+				    doc.setFontSize(5);
+				
+				    for(let r=0;r<size;r++){
+				
+				        for(let c=0;c<size;c++){
+				
+				            let x=startX+c*cell;
+				            let yy=y+r*cell;
+				
+				
+				            if(grid[r][c]=="#"){
+				
+				                doc.setFillColor(0);
+				                doc.rect(x,yy,cell,cell,"F");
+				
+				            }else{
+				
+				                doc.rect(x,yy,cell,cell);
+				
+				                if(nums[`${r}-${c}`]){
+				
+				                    doc.text(
+				                        String(nums[`${r}-${c}`]),
+				                        x+0.8,
+				                        yy+2
+				                    );
+				                }
+				
+				            }
+				        }
+				    }
+				
+				
+				    y += 50;
+				
+				
+				    doc.setFontSize(7);
+				
+				
+				    doc.text("ORIZZONTALI", startX, y);
+				    y+=5;
+				
+				    doc.text("1. Animale domestico fedele",startX,y);
+				    y+=4;
+				
+				    doc.text("3. Stella del nostro sistema",startX,y);
+				    y+=4;
+				
+				    doc.text("5. Distesa d'acqua salata",startX,y);
+				    y+=4;
+				
+				    doc.text("7. Colore prezioso",startX,y);
+				    y+=4;
+				
+				    doc.text("9. Movimento della strada",startX,y);
+				    y+=7;
+				
+				
+				    doc.text("VERTICALI",startX,y);
+				    y+=5;
+				
+				    doc.text("1. Opposto di mai",startX,y);
+				    y+=4;
+				
+				    doc.text("2. Arte di creare",startX,y);
+				    y+=4;
+				
+				    doc.text("4. Superficie su cui cammini",startX,y);
+				    y+=4;
+				
+				    doc.text("6. Metallo molto prezioso",startX,y);
+				    y+=4;
+				
+				    doc.text("8. Periodo storico",startX,y);
+				
+				
+				    y += 10;
+				
+				break;
             }
         }
     });
