@@ -6854,26 +6854,41 @@ async function caricaIngredientiPerRuolo(ruolo) {
         container.appendChild(fragment);
     });
 }
-// -------------------- GAMIFICATION AVANZATA & RECORD REPARTI --------------------
+// -------------------- WALL OF FAME (10 RECORD AUTOMATICI) --------------------
+
+// Cache per non riscaricare tutto l'archivio storico ogni volta che si aggiorna
+window.storicoGamificationCache = null;
+window.gamificationInterval = null;
+
 window.caricaGamification = async function() {
     if (!checkOnline(true)) return;
-    showLoader();
+    
+    // Mostra il loader solo al primissimo caricamento
+    const gamificationTab = document.getElementById("gamificationTab");
+    if (gamificationTab && !gamificationTab.innerHTML.includes("Wall of Fame")) {
+        showLoader();
+    }
     
     try {
-        // Scarichiamo tutto: Comande correnti, Archivio storico e Nomi Utenti
-        const [snapComande, snapStorico, snapUtenti] = await Promise.all([
+        // Scarichiamo Comande attuali e Utenti
+        const [snapComande, snapUtenti] = await Promise.all([
             db.ref("comande").once("value"),
-            db.ref("storico_giornate").once("value"),
             db.ref("utenti").once("value")
         ]);
         
+        // Se la cache dello storico è vuota, la scarichiamo una volta sola
+        if (!window.storicoGamificationCache) {
+            const snapStorico = await db.ref("storico_giornate").once("value");
+            window.storicoGamificationCache = snapStorico.val() || {};
+        }
+        
         const comande = snapComande.val() || {};
-        const storico = snapStorico.val() || {};
+        const storico = window.storicoGamificationCache;
         const utenti = snapUtenti.val() || {};
         
         const tutteLeComande = [];
         
-        // 1. Uniamo le comande di oggi e dello storico
+        // Uniamo le comande di oggi e dello storico
         Object.values(comande).forEach(c => tutteLeComande.push(c));
         Object.values(storico).forEach(giornata => {
             if (giornata.comande) {
@@ -6891,15 +6906,12 @@ window.caricaGamification = async function() {
             extra3: { ordini: 0, tempoTot: 0 }
         };
         
-        // Variabili Record Staff
+        // Variabili per i 10 Record
         let fastestBeerTime = Infinity;
         let maxPiattiInOrdine = 0;
-        let recordOrdineNome = "";
-
-        // Nuove Variabili Record Reparti
+        let recordFameNome = "";
         let tartaruga = { reparto: "Nessuno", tempo: 0, nomeOrdine: "" };
         let razzo = { reparto: "Nessuno", tempo: Infinity, nomeOrdine: "" };
-        let montagna = { reparto: "Nessuno", quantita: 0, nomeOrdine: "" };
         let onFire = { reparto: "Nessuno", ordini: 0 };
 
         // Analizziamo comanda per comanda
@@ -6909,9 +6921,7 @@ window.caricaGamification = async function() {
             let totaleOrdine = 0;
             let totalePiatti = 0;
             let haBirra = false;
-            let piattiPerReparto = { cucina: 0, bere: 0, snack: 0, extra1: 0, extra2: 0, extra3: 0 };
             
-            // Calcolo totale ordine, piatti e distribuzione reparti
             if (c.piatti) {
                 c.piatti.forEach(p => {
                      let pPrezzo = (p.prezzo || 0) + (p.extraPrezzo || 0);
@@ -6921,35 +6931,22 @@ window.caricaGamification = async function() {
                      
                      const n = (p.nome || "").toLowerCase();
                      if (n.includes("birra") || n.includes("beer")) haBirra = true;
-
-                     // Contiamo i piatti per ogni singolo reparto in questa specifica comanda
-                     let rep = (p.reparto || "").toLowerCase();
-                     if (piattiPerReparto[rep] !== undefined) {
-                         piattiPerReparto[rep] += q;
-                     }
                 });
             }
             
-            // Trofeo "Fame da Lupi" Globale
+            // Record 1: Fame da Lupi (Comanda più grande in assoluto)
             if (totalePiatti > maxPiattiInOrdine) {
                 maxPiattiInOrdine = totalePiatti;
-                recordOrdineNome = `Comanda #${c.numero || "?"} (${totalePiatti} pz)`;
+                recordFameNome = `Comanda #${c.numero || "?"}`;
             }
 
-            // Trofeo "Montagna di Lavoro" (Maggior numero di piatti ad un singolo reparto)
-            Object.entries(piattiPerReparto).forEach(([r, qty]) => {
-                if (qty > montagna.quantita) {
-                    montagna = { reparto: r, quantita: qty, nomeOrdine: `Comanda #${c.numero || "?"}` };
-                }
-            });
-            
-            // Logica e Record Cassieri
+            // Statistiche Cassieri
             if (c.uidCassiere) {
                 const uid = c.uidCassiere;
                 if (!statsCassieri[uid]) {
                     let uName = utenti[uid]?.username || uid;
                     if (uName.includes("@")) uName = uName.split("@")[0]; 
-                    statsCassieri[uid] = { uid, nome: uName, ordini: 0, ordiniCompletati: 0, tempoTot: 0, incasso: 0, birre: 0, piattiTotali: 0 };
+                    statsCassieri[uid] = { nome: uName, ordini: 0, ordiniCompletati: 0, tempoTot: 0, incasso: 0, birre: 0 };
                 }
                 
                 statsCassieri[uid].ordini++;
@@ -6958,7 +6955,6 @@ window.caricaGamification = async function() {
                 if (c.piatti) {
                     c.piatti.forEach(p => {
                         let q = p.quantita || 1;
-                        statsCassieri[uid].piattiTotali += q;
                         const n = (p.nome || "").toLowerCase();
                         if (n.includes("birra") || n.includes("beer")) {
                             statsCassieri[uid].birre += q;
@@ -6976,34 +6972,34 @@ window.caricaGamification = async function() {
                 
                 if (maxFine > timestamp) {
                     let tempo = maxFine - timestamp;
-                    if (tempo > 0 && tempo < 36000000) { // scarta > 10 ore
+                    if (tempo > 0 && tempo < 36000000) { 
                         statsCassieri[uid].tempoTot += tempo;
                         statsCassieri[uid].ordiniCompletati++;
                     }
                 }
             }
             
-            // Logica e Record Tempi Reparti
+            // Statistiche Reparti
             const repartiKeys = ["cucina", "bere", "snack", "extra1", "extra2", "extra3"];
             repartiKeys.forEach(r => {
                 if (c["timestampFine_" + r] && c["timestampFine_" + r] > timestamp) {
                     let tempo = c["timestampFine_" + r] - timestamp;
                     
-                    if (tempo > 10000 && tempo < 14400000) { // Tra 10 secondi e 4 ore
+                    if (tempo > 10000 && tempo < 14400000) { 
                         statsReparti[r].ordini++;
                         statsReparti[r].tempoTot += tempo;
                         
-                        // Trofeo: La Tartaruga (Lento)
+                        // Record 2: La Tartaruga
                         if (tempo > tartaruga.tempo) {
                             tartaruga = { reparto: r, tempo: tempo, nomeOrdine: `Comanda #${c.numero || "?"}` };
                         }
                         
-                        // Trofeo: Il Razzo (Veloce)
+                        // Record 3: Il Razzo
                         if (tempo < razzo.tempo) {
                             razzo = { reparto: r, tempo: tempo, nomeOrdine: `Comanda #${c.numero || "?"}` };
                         }
                         
-                        // Record Spillatura Assoluta
+                        // Record 4: Spillatura Record
                         if (r === "bere" && haBirra && tempo < fastestBeerTime) {
                             fastestBeerTime = tempo;
                         }
@@ -7012,21 +7008,26 @@ window.caricaGamification = async function() {
             });
         });
         
-        // --- ESTRAZIONE VINCITORI STAFF ---
+        // --- CALCOLO DEI 10 VINCITORI ---
         let bestCassiereTempo = { nome: "Nessuno", val: Infinity };
         let bestCassiereOrdini = { nome: "Nessuno", val: 0 };
         let bestCassiereIncasso = { nome: "Nessuno", val: 0 };
+        let bestCassiereBirre = { nome: "Nessuno", val: 0 };
         
         Object.values(statsCassieri).forEach(s => {
+            // Record 5: Stacanovista
             if (s.ordini > bestCassiereOrdini.val) bestCassiereOrdini = { nome: s.nome, val: s.ordini };
+            // Record 6: Cassiere d'Oro
             if (s.incasso > bestCassiereIncasso.val) bestCassiereIncasso = { nome: s.nome, val: s.incasso };
+            // Record 7: Re della Spina
+            if (s.birre > bestCassiereBirre.val) bestCassiereBirre = { nome: s.nome, val: s.birre };
+            // Record 8: Cassiere Flash
             if (s.ordiniCompletati >= 5) {
                 let media = s.tempoTot / s.ordiniCompletati;
                 if (media < bestCassiereTempo.val) bestCassiereTempo = { nome: s.nome, val: media };
             }
         });
         
-        // --- ESTRAZIONE VINCITORI REPARTI ---
         let bestRepartoMedia = { nome: "Nessuno", val: Infinity };
         const getNomeReparto = (id) => {
             const nomi = {
@@ -7039,18 +7040,18 @@ window.caricaGamification = async function() {
         };
         
         Object.entries(statsReparti).forEach(([k, v]) => {
-            // Reparto più veloce in media
+            // Record 9: La Ferrari (Miglior Media Reparto)
             if (v.ordini >= 5) {
                 let media = v.tempoTot / v.ordini;
                 if (media < bestRepartoMedia.val) bestRepartoMedia = { nome: getNomeReparto(k), val: media };
             }
-            // Reparto On Fire (maggior numero di ordini gestiti)
+            // Record 10: Reparto On Fire
             if (v.ordini > onFire.ordini) {
                 onFire = { reparto: k, ordini: v.ordini };
             }
         });
 
-        // Helper per i tempi (es: 2m 15s invece di 2.25 min)
+        // Formattazione Tempi
         const formatTime = (ms) => {
             if (ms === Infinity || ms === 0) return "--";
             let totalSecs = Math.floor(ms / 1000);
@@ -7062,154 +7063,105 @@ window.caricaGamification = async function() {
             return `${s}s`;
         };
 
-        const gamificationTab = document.getElementById("gamificationTab");
         if (!gamificationTab) return;
 
-        // INIEZIONE GRAFICA SCHERMATA
+        // COSTRUZIONE GRAFICA (10 CARD)
         gamificationTab.innerHTML = `
-            <div style="background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-top: 5px solid #FFD700;">
+            <div style="background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-top: 5px solid #FFD700;">
                 
-                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
-                    <h3 style="margin:0; color: #FFD700; font-size: 1.4em;">🏆 Wall of Fame</h3>
-                    <button id="refreshGamificationBtn" class="primaryButton" style="padding: 8px 16px; background: linear-gradient(135deg, #FFD700, #FFA500); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">🔄 Aggiorna</button>
+                <div style="text-align: center; margin-bottom: 25px;">
+                    <h3 style="margin:0; color: #333; font-size: 1.8em; text-transform: uppercase; letter-spacing: 2px;">🏆 Wall of Fame 🏆</h3>
+                    <small style="color: #888;">Record assoluti dall'inizio della sagra (Auto-aggiornamento attivo)</small>
                 </div>
                 
-                <h4 style="color: #555; margin-bottom: 10px; font-size: 1.1em; border-left: 4px solid #03A9F4; padding-left: 10px;">👤 Record Cassa & Staff</h4>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px;">
-                    <div style="background: linear-gradient(135deg, #FFF9C4, #FFF59D); padding: 15px; border-radius: 10px; border: 2px solid #FBC02D; text-align: center;">
-                        <div style="font-size: 1.8em; margin-bottom: 5px;">⚡</div>
-                        <h4 style="margin:0 0 5px 0; color: #F57F17; font-size: 1em;">Cassiere Flash</h4>
-                        <div style="font-size: 1.1em; font-weight: bold; color: #333;">${bestCassiereTempo.nome}</div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px;">
+                    
+                    <div style="background: linear-gradient(135deg, #FFF9C4, #FFF59D); padding: 20px; border-radius: 12px; border: 2px solid #FBC02D; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                        <div style="font-size: 2.2em; margin-bottom: 5px;">⚡</div>
+                        <h4 style="margin:0 0 8px 0; color: #F57F17; font-size: 1.1em;">Cassiere Flash</h4>
+                        <div style="font-size: 1.3em; font-weight: bold; color: #333;">${bestCassiereTempo.nome}</div>
                         <small style="color: #666;">Media: ${formatTime(bestCassiereTempo.val)}</small>
                     </div>
                     
-                    <div style="background: linear-gradient(135deg, #E1F5FE, #B3E5FC); padding: 15px; border-radius: 10px; border: 2px solid #03A9F4; text-align: center;">
-                        <div style="font-size: 1.8em; margin-bottom: 5px;">🏆</div>
-                        <h4 style="margin:0 0 5px 0; color: #0277BD; font-size: 1em;">Stacanovista</h4>
-                        <div style="font-size: 1.1em; font-weight: bold; color: #333;">${bestCassiereOrdini.nome}</div>
+                    <div style="background: linear-gradient(135deg, #E1F5FE, #B3E5FC); padding: 20px; border-radius: 12px; border: 2px solid #03A9F4; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                        <div style="font-size: 2.2em; margin-bottom: 5px;">🏆</div>
+                        <h4 style="margin:0 0 8px 0; color: #0277BD; font-size: 1.1em;">Lo Stacanovista</h4>
+                        <div style="font-size: 1.3em; font-weight: bold; color: #333;">${bestCassiereOrdini.nome}</div>
                         <small style="color: #666;">${bestCassiereOrdini.val} ordini battuti</small>
                     </div>
                     
-                    <div style="background: linear-gradient(135deg, #E8F5E9, #C8E6C9); padding: 15px; border-radius: 10px; border: 2px solid #4CAF50; text-align: center;">
-                        <div style="font-size: 1.8em; margin-bottom: 5px;">💰</div>
-                        <h4 style="margin:0 0 5px 0; color: #2E7D32; font-size: 1em;">Cassiere d'Oro</h4>
-                        <div style="font-size: 1.1em; font-weight: bold; color: #333;">${bestCassiereIncasso.nome}</div>
+                    <div style="background: linear-gradient(135deg, #E8F5E9, #C8E6C9); padding: 20px; border-radius: 12px; border: 2px solid #4CAF50; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                        <div style="font-size: 2.2em; margin-bottom: 5px;">💰</div>
+                        <h4 style="margin:0 0 8px 0; color: #2E7D32; font-size: 1.1em;">Cassiere d'Oro</h4>
+                        <div style="font-size: 1.3em; font-weight: bold; color: #333;">${bestCassiereIncasso.nome}</div>
                         <small style="color: #666;">Incasso: €${bestCassiereIncasso.val.toFixed(2)}</small>
                     </div>
 
-                    <div style="background: linear-gradient(135deg, #FFF3E0, #FFCC80); padding: 15px; border-radius: 10px; border: 2px solid #FF9800; text-align: center;">
-                        <div style="font-size: 1.8em; margin-bottom: 5px;">🍺</div>
-                        <h4 style="margin:0 0 5px 0; color: #E65100; font-size: 1em;">Spillatura Record</h4>
-                        <div style="font-size: 1.1em; font-weight: bold; color: #333;">${formatTime(fastestBeerTime)}</div>
-                        <small style="color: #666;">Miglior tempo ordine birra</small>
+                    <div style="background: linear-gradient(135deg, #FFF3E0, #FFCC80); padding: 20px; border-radius: 12px; border: 2px solid #FF9800; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                        <div style="font-size: 2.2em; margin-bottom: 5px;">🍻</div>
+                        <h4 style="margin:0 0 8px 0; color: #E65100; font-size: 1.1em;">Re della Spina</h4>
+                        <div style="font-size: 1.3em; font-weight: bold; color: #333;">${bestCassiereBirre.nome}</div>
+                        <small style="color: #666;">${bestCassiereBirre.val} birre vendute</small>
                     </div>
-                </div>
 
-                <h4 style="color: #555; margin-bottom: 10px; font-size: 1.1em; border-left: 4px solid #E91E63; padding-left: 10px;">🏭 Record Reparti (Cucina, Bere, Snack, Extra)</h4>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px;">
-                    
-                    <div style="background: #FCE4EC; padding: 15px; border-radius: 10px; border: 2px solid #F06292; text-align: center;">
-                        <div style="font-size: 1.8em; margin-bottom: 5px;">👑</div>
-                        <h4 style="margin:0 0 5px 0; color: #C2185B; font-size: 1em;">La Ferrari (Media)</h4>
-                        <div style="font-size: 1.1em; font-weight: bold; color: #333;">${bestRepartoMedia.nome}</div>
+                    <div style="background: linear-gradient(135deg, #FFECB3, #FFD54F); padding: 20px; border-radius: 12px; border: 2px solid #FFB300; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                        <div style="font-size: 2.2em; margin-bottom: 5px;">🍺</div>
+                        <h4 style="margin:0 0 8px 0; color: #FF8F00; font-size: 1.1em;">Spillatura Record</h4>
+                        <div style="font-size: 1.3em; font-weight: bold; color: #333;">${formatTime(fastestBeerTime)}</div>
+                        <small style="color: #666;">Ordine birra più veloce</small>
+                    </div>
+
+                    <div style="background: linear-gradient(135deg, #FCE4EC, #F8BBD0); padding: 20px; border-radius: 12px; border: 2px solid #F06292; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                        <div style="font-size: 2.2em; margin-bottom: 5px;">👑</div>
+                        <h4 style="margin:0 0 8px 0; color: #C2185B; font-size: 1.1em;">La Ferrari (Media)</h4>
+                        <div style="font-size: 1.3em; font-weight: bold; color: #333;">${bestRepartoMedia.nome}</div>
                         <small style="color: #666;">Media generale: ${formatTime(bestRepartoMedia.val)}</small>
                     </div>
 
-                    <div style="background: #F3E5F5; padding: 15px; border-radius: 10px; border: 2px solid #BA68C8; text-align: center;">
-                        <div style="font-size: 1.8em; margin-bottom: 5px;">🚀</div>
-                        <h4 style="margin:0 0 5px 0; color: #6A1B9A; font-size: 1em;">Il Razzo</h4>
-                        <div style="font-size: 1.1em; font-weight: bold; color: #333;">${getNomeReparto(razzo.reparto)}</div>
+                    <div style="background: linear-gradient(135deg, #F3E5F5, #E1BEE7); padding: 20px; border-radius: 12px; border: 2px solid #BA68C8; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                        <div style="font-size: 2.2em; margin-bottom: 5px;">🚀</div>
+                        <h4 style="margin:0 0 8px 0; color: #6A1B9A; font-size: 1.1em;">Il Razzo</h4>
+                        <div style="font-size: 1.3em; font-weight: bold; color: #333;">${getNomeReparto(razzo.reparto)}</div>
                         <small style="color: #666;">${razzo.nomeOrdine} in <b>${formatTime(razzo.tempo)}</b></small>
                     </div>
 
-                    <div style="background: #EFEBE9; padding: 15px; border-radius: 10px; border: 2px solid #8D6E63; text-align: center;">
-                        <div style="font-size: 1.8em; margin-bottom: 5px;">🐢</div>
-                        <h4 style="margin:0 0 5px 0; color: #4E342E; font-size: 1em;">La Tartaruga</h4>
-                        <div style="font-size: 1.1em; font-weight: bold; color: #333;">${getNomeReparto(tartaruga.reparto)}</div>
+                    <div style="background: linear-gradient(135deg, #EFEBE9, #D7CCC8); padding: 20px; border-radius: 12px; border: 2px solid #8D6E63; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                        <div style="font-size: 2.2em; margin-bottom: 5px;">🐢</div>
+                        <h4 style="margin:0 0 8px 0; color: #4E342E; font-size: 1.1em;">La Tartaruga</h4>
+                        <div style="font-size: 1.3em; font-weight: bold; color: #333;">${getNomeReparto(tartaruga.reparto)}</div>
                         <small style="color: #666;">${tartaruga.nomeOrdine} in <b>${formatTime(tartaruga.tempo)}</b></small>
                     </div>
 
-                    <div style="background: #FFEBEE; padding: 15px; border-radius: 10px; border: 2px solid #E57373; text-align: center;">
-                        <div style="font-size: 1.8em; margin-bottom: 5px;">🔥</div>
-                        <h4 style="margin:0 0 5px 0; color: #C62828; font-size: 1em;">Reparto On Fire</h4>
-                        <div style="font-size: 1.1em; font-weight: bold; color: #333;">${getNomeReparto(onFire.reparto)}</div>
-                        <small style="color: #666;"><b>${onFire.ordini}</b> ordini totali smaltiti</small>
+                    <div style="background: linear-gradient(135deg, #FFEBEE, #FFCDD2); padding: 20px; border-radius: 12px; border: 2px solid #E57373; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                        <div style="font-size: 2.2em; margin-bottom: 5px;">🔥</div>
+                        <h4 style="margin:0 0 8px 0; color: #C62828; font-size: 1.1em;">Reparto On Fire</h4>
+                        <div style="font-size: 1.3em; font-weight: bold; color: #333;">${getNomeReparto(onFire.reparto)}</div>
+                        <small style="color: #666;"><b>${onFire.ordini}</b> ordini totali completati</small>
                     </div>
 
-                    <div style="background: #E0F7FA; padding: 15px; border-radius: 10px; border: 2px solid #4DD0E1; text-align: center;">
-                        <div style="font-size: 1.8em; margin-bottom: 5px;">🏔️</div>
-                        <h4 style="margin:0 0 5px 0; color: #00838F; font-size: 1em;">Montagna di Lavoro</h4>
-                        <div style="font-size: 1.1em; font-weight: bold; color: #333;">${getNomeReparto(montagna.reparto)}</div>
-                        <small style="color: #666;">${montagna.nomeOrdine}: <b>${montagna.quantita}</b> pz in un colpo</small>
+                    <div style="background: linear-gradient(135deg, #E0F7FA, #B2EBF2); padding: 20px; border-radius: 12px; border: 2px solid #4DD0E1; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                        <div style="font-size: 2.2em; margin-bottom: 5px;">🍕</div>
+                        <h4 style="margin:0 0 8px 0; color: #00838F; font-size: 1.1em;">Fame da Lupi</h4>
+                        <div style="font-size: 1.3em; font-weight: bold; color: #333;">${maxPiattiInOrdine} piatti</div>
+                        <small style="color: #666;">Nella singola ${recordFameNome}</small>
                     </div>
-                </div>
-                
-                <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #ddd;">
-                    <h4 style="margin:0 0 15px 0; color: #333; font-size: 1.2em;">📊 Classifica Generale Cassieri</h4>
-                    <div id="classificaCassieri" style="overflow-x: auto;"></div>
+                    
                 </div>
             </div>
         `;
         
-        const classificaDiv = document.getElementById("classificaCassieri");
-        const classificaArray = Object.values(statsCassieri).map(s => ({
-            ...s,
-            tempoMedio: s.ordiniCompletati > 0 ? formatTime(s.tempoTot / s.ordiniCompletati) : "--"
-        })).sort((a, b) => b.ordini - a.ordini);
-        
-        if (classificaArray.length === 0) {
-            classificaDiv.innerHTML = '<div style="text-align: center; padding: 20px; color: #777;">Nessuna comanda nel sistema</div>';
-        } else {
-            const table = document.createElement("table");
-            table.style.width = "100%";
-            table.style.borderCollapse = "collapse";
-            table.style.minWidth = "650px";
-            
-            table.innerHTML = `
-                <thead>
-                    <tr style="background: #333; color: #fff;">
-                        <th style="padding: 12px; text-align: left; border-radius: 8px 0 0 0;">#</th>
-                        <th style="padding: 12px; text-align: left;">Cassiere</th>
-                        <th style="padding: 12px; text-align: center;">Ordini</th>
-                        <th style="padding: 12px; text-align: center;">Piatti</th>
-                        <th style="padding: 12px; text-align: center;">Incasso Totale</th>
-                        <th style="padding: 12px; text-align: center;">Tempo Medio</th>
-                        <th style="padding: 12px; text-align: center; border-radius: 0 8px 0 0;">Birre</th>
-                    </tr>
-                </thead>
-                <tbody>
-            `;
-            
-            classificaArray.forEach((stats, index) => {
-                const row = document.createElement("tr");
-                row.style.borderBottom = "1px solid #ddd";
-                
-                if (index === 0) row.style.background = "#FFF9C4";
-                else if (index === 1) row.style.background = "#F5F5F5";
-                else if (index === 2) row.style.background = "#EFEBE9";
-                else row.style.background = "#fff";
-                
-                const medal = index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `<span style="color:#777; font-weight:bold; padding-left:5px;">${index + 1}</span>`;
-                
-                row.innerHTML = `
-                    <td style="padding: 12px; font-weight: bold; font-size: 1.2em;">${medal}</td>
-                    <td style="padding: 12px; font-weight: bold;">${stats.nome}</td>
-                    <td style="padding: 12px; text-align: center; font-weight: bold; color: #1976D2;">${stats.ordini}</td>
-                    <td style="padding: 12px; text-align: center;">${stats.piattiTotali}</td>
-                    <td style="padding: 12px; text-align: center; color: #388E3C; font-weight: bold;">€${stats.incasso.toFixed(2)}</td>
-                    <td style="padding: 12px; text-align: center;">${stats.tempoMedio}</td>
-                    <td style="padding: 12px; text-align: center; font-size: 1.1em;">🍺 ${stats.birre}</td>
-                `;
-                table.querySelector("tbody").appendChild(row);
-            });
-            classificaDiv.appendChild(table);
-        }
-        
-        document.getElementById("refreshGamificationBtn").onclick = () => window.caricaGamification();
+        // Imposta l'auto-aggiornamento ogni 60 secondi
+        if (window.gamificationInterval) clearInterval(window.gamificationInterval);
+        window.gamificationInterval = setInterval(() => {
+            // Aggiorna solo se la tab è attualmente visibile (se usi display: none/block per le tab)
+            if (gamificationTab.style.display !== "none") {
+                window.caricaGamification();
+            }
+        }, 60000);
         
     } catch (err) {
         console.error("Errore caricamento gamification:", err);
-        notify("Errore caricamento classifica: " + err.message, "error");
+        notify("Errore caricamento record: " + err.message, "error");
     } finally {
         hideLoader();
     }
