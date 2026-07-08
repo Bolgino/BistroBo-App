@@ -10037,7 +10037,7 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
                     // 🗺️ 4. LABIRINTO (Griglia 6x6 ad alta densità con vicoli ciechi)
                     doc.text("Trova l'uscita del LABIRINTO!", pageWidth / 2, y, { align: "center" });
                     y += 6;
-                    let startX = (pageWidth / 2) - 15;
+                    startX = (pageWidth / 2) - 15;
                     let cs = 5; // Dimensione cella (5mm x 6 celle = 30mm totali)
                     
                     doc.setLineWidth(0.4);
