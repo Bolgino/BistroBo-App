@@ -10006,60 +10006,91 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
                     break;
 
                 case "puntini":
-                    // 🏠 3. UNISCI I PUNTINI
-                    doc.text("Unisci i puntini da 1 a 11", pageWidth / 2, y, { align: "center" });
+                    // 🏠 3. UNISCI I PUNTINI (Tazzina di caffè fumante - 17 punti)
+                    doc.text("Cosa appare? Unisci da 1 a 17!", pageWidth / 2, y, { align: "center" });
                     y += 6;
                     let cx = (pageWidth / 2);
+                    
+                    // Coordinate per formare una tazzina con piattino e fumo
                     const punti = [
-                        {x: 0, y: 2, n: "1"}, {x: 15, y: 12, n: "2"}, {x: 10, y: 12, n: "3"},
-                        {x: 10, y: 30, n: "4"}, {x: 4, y: 30, n: "5"}, {x: 4, y: 20, n: "6"},
-                        {x: -4, y: 20, n: "7"}, {x: -4, y: 30, n: "8"}, {x: -10, y: 30, n: "9"},
-                        {x: -10, y: 12, n: "10"}, {x: -15, y: 12, n: "11"}
+                        {x: -2, y: 2, n: "1"}, {x: 2, y: 6, n: "2"}, {x: -2, y: 9, n: "3"}, // Fumo
+                        {x: -12, y: 13, n: "4"}, {x: 8, y: 13, n: "5"}, // Bordo superiore tazza
+                        {x: 13, y: 14, n: "6"}, {x: 16, y: 18, n: "7"}, {x: 13, y: 22, n: "8"}, // Manico
+                        {x: 8, y: 23, n: "9"}, {x: 6, y: 28, n: "10"}, // Fondo destro
+                        {x: 14, y: 29, n: "11"}, {x: 16, y: 32, n: "12"}, // Piattino destro
+                        {x: -16, y: 32, n: "13"}, {x: -14, y: 29, n: "14"}, // Piattino sinistro
+                        {x: -6, y: 28, n: "15"}, {x: -8, y: 23, n: "16"}, // Fondo sinistro
+                        {x: -12, y: 13, n: "17"} // Chiusura sul bordo sinistro
                     ];
-                    doc.setFontSize(8);
+                    
+                    doc.setFontSize(6);
                     punti.forEach(p => {
                         doc.circle(cx + p.x, y + p.y, 0.5, "F");
-                        doc.text(p.n, cx + p.x + 1.5, y + p.y + 1);
+                        // Posiziona il numerino leggermente spostato per non coprire il punto
+                        doc.text(p.n, cx + p.x + 1.2, y + p.y + 1.2);
                     });
-                    y += 35;
+                    
+                    y += 40;
                     break;
 
                 case "labirinto":
-                    // 🗺️ 4. LABIRINTO (Complessità Elevata con uscita garantita)
+                    // 🗺️ 4. LABIRINTO (Griglia 6x6 ad alta densità con vicoli ciechi)
                     doc.text("Trova l'uscita del LABIRINTO!", pageWidth / 2, y, { align: "center" });
                     y += 6;
-                    startX = (pageWidth / 2) - 15;
-                    doc.setLineWidth(0.5);
+                    let startX = (pageWidth / 2) - 15;
+                    let cs = 5; // Dimensione cella (5mm x 6 celle = 30mm totali)
                     
-                    // Muri perimetrali
-                    doc.line(startX, y+6, startX, y+30); // Sinistra
-                    doc.line(startX+30, y, startX+30, y+24); // Destra
-                    doc.line(startX, y, startX+30, y); // Alto
-                    doc.line(startX, y+30, startX+30, y+30); // Basso
+                    doc.setLineWidth(0.4);
                     
-                    // Muri orizzontali interni
-                    doc.line(startX, y+6, startX+6, y+6);
-                    doc.line(startX+18, y+6, startX+24, y+6);
-                    doc.line(startX, y+12, startX+6, y+12);
-                    doc.line(startX+12, y+12, startX+18, y+12);
-                    doc.line(startX+24, y+12, startX+30, y+12);
-                    doc.line(startX, y+18, startX+12, y+18);
-                    doc.line(startX+18, y+18, startX+30, y+18);
-                    doc.line(startX, y+24, startX+24, y+24);
+                    // 1 = Muro, 0 = Passaggio
+                    // Array dei muri orizzontali interni (5 righe divisorie)
+                    const hWalls = [
+                        [0, 1, 0, 1, 0, 0], // Tra riga 1 e 2
+                        [0, 1, 1, 1, 0, 0], // Tra riga 2 e 3
+                        [0, 0, 0, 0, 1, 1], // Tra riga 3 e 4
+                        [0, 0, 0, 1, 1, 0], // Tra riga 4 e 5
+                        [0, 1, 0, 0, 0, 1]  // Tra riga 5 e 6
+                    ];
                     
-                    // Muri verticali interni
-                    doc.line(startX+6, y+6, startX+6, y+12);
-                    doc.line(startX+6, y+18, startX+6, y+30);
-                    doc.line(startX+12, y+12, startX+12, y+24);
-                    doc.line(startX+18, y, startX+18, y+6);
-                    doc.line(startX+18, y+24, startX+18, y+30);
-                    doc.line(startX+24, y+6, startX+24, y+18);
-                    doc.line(startX+24, y+24, startX+24, y+30);
+                    // Array dei muri verticali interni (5 colonne divisorie)
+                    const vWalls = [
+                        [0, 0, 1, 0, 1, 0], // Tra colonna 1 e 2
+                        [1, 0, 0, 1, 1, 0], // Tra colonna 2 e 3
+                        [0, 1, 1, 1, 0, 0], // Tra colonna 3 e 4
+                        [0, 1, 0, 0, 1, 1], // Tra colonna 4 e 5
+                        [0, 0, 1, 0, 0, 0]  // Tra colonna 5 e 6
+                    ];
 
-                    doc.setFontSize(7);
-                    doc.text("IN", startX - 6, y + 4);
-                    doc.text("OUT", startX + 31, y + 28);
-                    y += 35;
+                    // Disegna i muri perimetrali con le aperture IN e OUT
+                    doc.line(startX, y + cs, startX, y + 30); // Sinistra (aperto in alto per IN)
+                    doc.line(startX + 30, y, startX + 30, y + 25); // Destra (aperto in basso per OUT)
+                    doc.line(startX, y, startX + 30, y); // Alto
+                    doc.line(startX, y + 30, startX + 30, y + 30); // Basso
+                    
+                    // Ciclo per disegnare i muri orizzontali interni
+                    for(let r = 0; r < 5; r++) {
+                        for(let c = 0; c < 6; c++) {
+                            if(hWalls[r][c]) {
+                                doc.line(startX + c*cs, y + (r+1)*cs, startX + (c+1)*cs, y + (r+1)*cs);
+                            }
+                        }
+                    }
+                    
+                    // Ciclo per disegnare i muri verticali interni
+                    for(let c = 0; c < 5; c++) {
+                        for(let r = 0; r < 6; r++) {
+                            if(vWalls[c][r]) {
+                                doc.line(startX + (c+1)*cs, y + r*cs, startX + (c+1)*cs, y + (r+1)*cs);
+                            }
+                        }
+                    }
+
+                    // Etichette IN e OUT
+                    doc.setFontSize(6);
+                    doc.text("IN", startX - 6, y + 3.5);
+                    doc.text("OUT", startX + 31, y + 28.5);
+                    
+                    y += 40;
                     break;
 
                 case "forza4":
