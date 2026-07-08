@@ -9955,9 +9955,10 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
             doc.setFontSize(10);
             doc.setFont("helvetica", "normal");
 
+            // Rimosso Impiccato e Battaglia Navale, rimangono 8 giochi più curati!
             const tipiGiochi = [
-                "tris", "sudoku", "puntini", "labirinto", "impiccato", 
-                "battaglia_navale", "forza4", "parole_intrecciate", "scatole", "cruciverba"
+                "tris", "sudoku", "puntini", "labirinto", 
+                "forza4", "parole_intrecciate", "scatole", "cruciverba"
             ];
             
             const giocoScelto = tipiGiochi[Math.floor(Math.random() * tipiGiochi.length)];
@@ -9978,7 +9979,7 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
                     break;
 
                 case "sudoku":
-                    // 🧩 2. SUDOKU (Griglia completa e risolvibile)
+                    // 🧩 2. SUDOKU
                     doc.text("Risolvi questo SUDOKU per veri chef!", pageWidth / 2, y, { align: "center" });
                     y += 6;
                     startX = (pageWidth / 2) - 22.5;
@@ -10006,7 +10007,7 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
                     break;
 
                 case "puntini":
-                    // 🏠 3. UNISCI I PUNTINI (Forma di una casetta)
+                    // 🏠 3. UNISCI I PUNTINI
                     doc.text("Unisci i puntini da 1 a 11", pageWidth / 2, y, { align: "center" });
                     y += 6;
                     let cx = (pageWidth / 2);
@@ -10025,79 +10026,49 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
                     break;
 
                 case "labirinto":
-                    // 🗺️ 4. LABIRINTO (Complessità aumentata)
+                    // 🗺️ 4. LABIRINTO (Complessità Elevata e Risolvibile)
                     doc.text("Trova l'uscita del LABIRINTO!", pageWidth / 2, y, { align: "center" });
                     y += 6;
                     startX = (pageWidth / 2) - 15;
                     doc.setLineWidth(0.5);
+                    
                     // Muri perimetrali
-                    doc.line(startX, y+6, startX, y+30); 
-                    doc.line(startX+30, y, startX+30, y+24); 
+                    doc.line(startX, y+5, startX, y+30); 
+                    doc.line(startX+30, y, startX+30, y+25); 
                     doc.line(startX, y, startX+30, y); 
                     doc.line(startX, y+30, startX+30, y+30); 
-                    // Muri interni
-                    doc.line(startX+6, y, startX+6, y+12);
-                    doc.line(startX+6, y+18, startX+6, y+24);
-                    doc.line(startX+12, y+6, startX+12, y+30);
-                    doc.line(startX+12, y+12, startX+24, y+12);
-                    doc.line(startX+18, y+18, startX+18, y+30);
-                    doc.line(startX+18, y+18, startX+30, y+18);
-                    doc.line(startX+24, y, startX+24, y+6);
                     
+                    // Muri orizzontali interni
+                    doc.line(startX+10, y+5, startX+15, y+5);
+                    doc.line(startX+20, y+5, startX+30, y+5);
+                    doc.line(startX+15, y+10, startX+25, y+10);
+                    doc.line(startX, y+15, startX+15, y+15);
+                    doc.line(startX+20, y+15, startX+30, y+15);
+                    doc.line(startX, y+20, startX+5, y+20);
+                    doc.line(startX+15, y+20, startX+20, y+20);
+                    doc.line(startX+5, y+25, startX+10, y+25);
+                    doc.line(startX+20, y+25, startX+25, y+25);
+                    
+                    // Muri verticali interni
+                    doc.line(startX+5, y, startX+5, y+10);
+                    doc.line(startX+5, y+15, startX+5, y+20);
+                    doc.line(startX+10, y+5, startX+10, y+30);
+                    doc.line(startX+15, y+5, startX+15, y+15);
+                    doc.line(startX+15, y+20, startX+15, y+25);
+                    doc.line(startX+20, y, startX+20, y+5);
+                    doc.line(startX+20, y+15, startX+20, y+20);
+                    doc.line(startX+20, y+25, startX+20, y+30);
+                    doc.line(startX+25, y, startX+25, y+15);
+                    doc.line(startX+25, y+20, startX+25, y+30);
+
                     doc.setFontSize(7);
                     doc.text("IN", startX - 6, y + 4);
                     doc.text("OUT", startX + 31, y + 28);
                     y += 35;
                     break;
 
-                case "impiccato":
-                    // 🪢 5. L'IMPICCATO
-                    doc.text("Giochiamo all'IMPICCATO?", pageWidth / 2, y, { align: "center" });
-                    y += 6;
-                    startX = (pageWidth / 2) - 15;
-                    doc.setLineWidth(0.5);
-                    doc.line(startX, y + 25, startX + 10, y + 25); // Base
-                    doc.line(startX + 5, y + 25, startX + 5, y + 5); // Palo
-                    doc.line(startX + 5, y + 5, startX + 20, y + 5); // Traversa
-                    doc.line(startX + 20, y + 5, startX + 20, y + 8); // Corda
-                    doc.circle(startX + 20, y + 10, 2); // Testa
-                    doc.setFontSize(14);
-                    doc.text("_ _ _ _ _ _", startX + 5, y + 35);
-                    doc.setFontSize(8);
-                    doc.text("Indizio: Lo ordini con le patatine", pageWidth / 2, y + 42, { align: "center" });
-                    y += 48;
-                    break;
-
-                case "battaglia_navale":
-                    // 🚢 6. BATTAGLIA NAVALE (Con coordinate)
-                    doc.text("BATTAGLIA NAVALE (1 contro 1)", pageWidth / 2, y, { align: "center" });
-                    y += 8;
-                    let startX1 = (pageWidth / 2) - 25;
-                    let startX2 = (pageWidth / 2) + 5;
-                    doc.setLineWidth(0.2);
-                    
-                    for(let i=0; i<=5; i++) {
-                        doc.line(startX1, y + (i*4), startX1 + 20, y + (i*4));
-                        doc.line(startX1 + (i*4), y, startX1 + (i*4), y + 20);
-                        doc.line(startX2, y + (i*4), startX2 + 20, y + (i*4));
-                        doc.line(startX2 + (i*4), y, startX2 + (i*4), y + 20);
-                    }
-                    doc.setFontSize(6);
-                    const letters = ["A","B","C","D","E"];
-                    for(let i=0; i<5; i++) {
-                        doc.text((i+1).toString(), startX1 - 3, y + (i*4) + 3);
-                        doc.text((i+1).toString(), startX2 - 3, y + (i*4) + 3);
-                        doc.text(letters[i], startX1 + (i*4) + 1.5, y - 1);
-                        doc.text(letters[i], startX2 + (i*4) + 1.5, y - 1);
-                    }
-                    doc.setFontSize(7);
-                    doc.text("Tuo Campo", startX1 + 10, y + 24, {align: "center"});
-                    doc.text("Avversario", startX2 + 10, y + 24, {align: "center"});
-                    y += 30;
-                    break;
-
                 case "forza4":
-                    // 🔴 7. FORZA 4
+                    // 🔴 5. FORZA 4
                     doc.text("FORZA 4: Sfida chi hai di fronte!", pageWidth / 2, y, { align: "center" });
                     y += 6;
                     startX = (pageWidth / 2) - 17.5;
@@ -10112,28 +10083,33 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
                     break;
 
                 case "parole_intrecciate":
-                    // 🔠 8. PAROLE INTRECCIATE
-                    doc.text("TROVA: FAME, BERE, CIBO, PANE, VINO", pageWidth / 2, y, { align: "center" });
+                    // 🔠 6. PAROLE INTRECCIATE (Avanzato con verticali e diagonali)
+                    doc.text("TROVA LE PAROLE NASCOSTE", pageWidth / 2, y, { align: "center" });
                     y += 6;
-                    startX = (pageWidth / 2) - 12;
+                    startX = (pageWidth / 2) - 14;
                     doc.setFontSize(10);
                     doc.setFont("courier", "bold");
                     let grid = [
-                        "F A M E X",
-                        "B E R E Z",
-                        "C I B O Q",
-                        "P A N E K",
-                        "V I N O Y"
+                        "M B I R R A Z",
+                        "E X P Z O J K",
+                        "N Q U I I C U",
+                        "U W F A Z I X",
+                        "F O R N O Z W",
+                        "C U C I N A A",
+                        "T A V O L O S"
                     ];
                     grid.forEach((row, i) => {
                         doc.text(row, startX, y + (i*5));
                     });
                     doc.setFont("helvetica", "normal");
-                    y += 32;
+                    doc.setFontSize(7);
+                    doc.text("Cerca in orizzontale, verticale e diagonale:", pageWidth / 2, y + 36, { align: "center" });
+                    doc.text("BIRRA, CUCINA, FORNO, MENU, PIZZA, TAVOLO", pageWidth / 2, y + 40, { align: "center" });
+                    y += 45;
                     break;
 
                 case "scatole":
-                    // ⬛ 9. IL GIOCO DEI PUNTINI E SCATOLE
+                    // ⬛ 7. IL GIOCO DEI PUNTINI E SCATOLE
                     doc.text("PUNTINI: Chiudi più quadrati di tutti!", pageWidth / 2, y, { align: "center" });
                     y += 6;
                     startX = (pageWidth / 2) - 11.25;
@@ -10146,31 +10122,40 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
                     break;
 
                 case "cruciverba":
-                    // 📝 10. MINI CRUCIVERBA (Griglia 4x4 giocabile)
-                    doc.text("CRUCIVERBA 4x4", pageWidth / 2, y, { align: "center" });
+                    // 📝 8. MINI CRUCIVERBA (Griglia Reale con caselle nere, 3 Orizz + 3 Vert = 6 parole)
+                    doc.text("CRUCIVERBA SCONTRINO", pageWidth / 2, y, { align: "center" });
                     y += 6;
-                    startX = (pageWidth / 2) - 14;
-                    doc.setLineWidth(0.3);
+                    startX = (pageWidth / 2) - 15;
+                    let cellSize = 6;
                     
-                    // Disegna Griglia 4x4
-                    for(let i=0; i<=4; i++) {
-                        doc.line(startX, y + (i*7), startX + 28, y + (i*7));
-                        doc.line(startX + (i*7), y, startX + (i*7), y + 28);
+                    // Disegna Griglia 4x5 con caselle nere integrate
+                    for (let r=0; r<4; r++) {
+                        for (let c=0; c<5; c++) {
+                            let isBlack = (r===1 && c>=3) || (r===2 && c>=4) || (r===3 && c>=1);
+                            if (isBlack) {
+                                doc.setFillColor(0, 0, 0);
+                                doc.rect(startX + c*cellSize, y + r*cellSize, cellSize, cellSize, "F");
+                            } else {
+                                doc.setLineWidth(0.3);
+                                doc.rect(startX + c*cellSize, y + r*cellSize, cellSize, cellSize, "S");
+                            }
+                        }
                     }
-                    // Numerini
-                    doc.setFontSize(6);
-                    doc.text("1", startX + 1, y + 2.5);
-                    doc.text("2", startX + 8, y + 2.5);
-                    doc.text("3", startX + 15, y + 2.5);
-                    doc.text("4", startX + 22, y + 2.5);
-                    doc.text("2", startX + 1, y + 9.5);
-                    doc.text("3", startX + 1, y + 16.5);
-                    doc.text("4", startX + 1, y + 23.5);
+                    
+                    // Numerini delle parole
+                    doc.setFontSize(5);
+                    doc.text("1", startX + 1, y + 2);
+                    doc.text("2", startX + 1 + cellSize, y + 2);
+                    doc.text("3", startX + 1 + 2*cellSize, y + 2);
+                    doc.text("4", startX + 1, y + 2 + cellSize);
+                    doc.text("5", startX + 1, y + 2 + 2*cellSize);
 
-                    // Definizioni (Stesse Orizzontali e Verticali)
-                    doc.setFontSize(8);
-                    doc.text("1. Rosso o bianco. 2. Lampo di genio.", pageWidth/2, y + 34, {align: "center"});
-                    doc.text("3. Assenza di svago. 4. Paradiso nel deserto", pageWidth/2, y + 38, {align: "center"});
+                    // Definizioni
+                    doc.setFontSize(7);
+                    doc.text("Orizz: 1.Piatto italiano   4.Saluto romano", pageWidth/2, y + 28, {align: "center"});
+                    doc.text("5.Forte sensazione di fastidio", pageWidth/2, y + 31, {align: "center"});
+                    doc.text("Vert: 1.Lo fa il fornaio   2.Lontano parente", pageWidth/2, y + 35, {align: "center"});
+                    doc.text("3.La metà esatta di dodici", pageWidth/2, y + 38, {align: "center"});
                     y += 45;
                     break;
             }
