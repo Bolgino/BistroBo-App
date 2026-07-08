@@ -10119,41 +10119,67 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
                     y += 30;
                     break;
 
-               // 📝 8. CRUCIVERBA (Perfetto a 16 lettere, incastro 4x4)
-                    doc.text("CRUCIVERBA MAGICO 4x4", pageWidth / 2, y, { align: "center" });
+               case "cruciverba":
+                    // 📝 8. VERO CRUCIVERBA (5x5 con caselle nere, stile classico)
+                    doc.text("IL MINI CRUCIVERBA", pageWidth / 2, y, { align: "center" });
                     y += 6;
-                    startX = (pageWidth / 2) - 14;
-                    let cellSize = 7;
                     
-                    // Disegna Griglia 4x4 Senza caselle nere
-                    for (let r=0; r<4; r++) {
-                        for (let c=0; c<4; c++) {
+                    // Griglia 5x5 da 6mm a cella (totale 30mm, centrata)
+                    let cellSize = 6;
+                    let startX = (pageWidth / 2) - 15; 
+                    
+                    // Coordinate delle caselle nere "riga,colonna"
+                    let blackCells = ["0,0", "0,4", "2,2", "4,0", "4,4"];
+                    
+                    // Disegna Griglia 5x5
+                    for (let r = 0; r < 5; r++) {
+                        for (let c = 0; c < 5; c++) {
+                            let cellId = r + "," + c;
                             doc.setLineWidth(0.3);
-                            doc.rect(startX + c*cellSize, y + r*cellSize, cellSize, cellSize, "S");
+                            
+                            if (blackCells.includes(cellId)) {
+                                doc.setFillColor(0, 0, 0); // Colore Nero
+                                doc.rect(startX + c * cellSize, y + r * cellSize, cellSize, cellSize, "FD"); // Fill & Draw
+                            } else {
+                                doc.setFillColor(255, 255, 255); // Colore Bianco (sicurezza)
+                                doc.rect(startX + c * cellSize, y + r * cellSize, cellSize, cellSize, "FD");
+                            }
                         }
                     }
                     
-                    // Numerini
-                    doc.setFontSize(5);
-                    doc.text("1", startX + 1, y + 2.5);
-                    doc.text("2", startX + 1 + cellSize, y + 2.5);
-                    doc.text("3", startX + 1 + 2*cellSize, y + 2.5);
-                    doc.text("4", startX + 1 + 3*cellSize, y + 2.5);
-                    
-                    doc.text("5", startX + 1, y + 2.5 + cellSize);
-                    doc.text("6", startX + 1, y + 2.5 + 2*cellSize);
-                    doc.text("7", startX + 1, y + 2.5 + 3*cellSize);
+                    // Numerini delle definizioni
+                    doc.setFontSize(4.5);
+                    // Riga 0
+                    doc.text("1", startX + cellSize + 0.8, y + 1.8);
+                    doc.text("2", startX + 2*cellSize + 0.8, y + 1.8);
+                    doc.text("3", startX + 3*cellSize + 0.8, y + 1.8);
+                    // Riga 1
+                    doc.text("4", startX + 0.8, y + cellSize + 1.8);
+                    doc.text("5", startX + 4*cellSize + 0.8, y + cellSize + 1.8);
+                    // Riga 2
+                    doc.text("6", startX + 0.8, y + 2*cellSize + 1.8);
+                    doc.text("7", startX + 3*cellSize + 0.8, y + 2*cellSize + 1.8);
+                    // Riga 3
+                    doc.text("8", startX + 0.8, y + 3*cellSize + 1.8);
+                    doc.text("9", startX + 2*cellSize + 0.8, y + 3*cellSize + 1.8);
+                    // Riga 4
+                    doc.text("10", startX + cellSize + 0.8, y + 4*cellSize + 1.8);
 
                     // Definizioni
-                    doc.setFontSize(7);
-                    doc.text("ORIZZONTALI:", startX, y + 33);
-                    doc.text("1. Nettare di Bacco   5. Lampo di genio", startX, y + 37);
-                    doc.text("6. Un colore scuro   7. Paradiso di sabbia", startX, y + 41);
+                    doc.setFontSize(6);
+                    let textX = startX - 2; // Allineamento del testo
+
+                    doc.text("ORIZZONTALI:", textX, y + 35);
+                    doc.text("1. Richiesta d'aiuto   4. Il seguito del sovrano", textX, y + 38);
+                    doc.text("6. A + il   7. Adesso in poesia   8. Strumento a tasti", textX, y + 41);
+                    doc.text("10. Sento con le orecchie", textX, y + 44);
                     
-                    doc.text("VERTICALI:", startX, y + 46);
-                    doc.text("1. Lo versi nel calice   2. Spunto mentale", startX, y + 50);
-                    doc.text("3. L'opposto del bianco 4. Specchio d'acqua", startX, y + 54);
-                    y += 60;
+                    doc.text("VERTICALI:", textX, y + 49);
+                    doc.text("1. Il trono papale   2. Come il 7 orizzontale", textX, y + 52);
+                    doc.text("3. Canto in modo stonato   4. Il codice per le poste", textX, y + 55);
+                    doc.text("5. Lo fui in passato   9. Preposizione... esempio!", textX, y + 58);
+                    
+                    y += 65;
                     break;
             }
         }
