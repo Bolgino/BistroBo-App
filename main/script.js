@@ -10126,7 +10126,7 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
                     
                     // Griglia 5x5 da 6mm a cella (totale 30mm, centrata)
                     let cellSize = 6;
-                    startX = (pageWidth / 2) - 15; 
+                    let startX = (pageWidth / 2) - 15; 
                     
                     // Coordinate delle caselle nere "riga,colonna"
                     let blackCells = ["0,0", "0,4", "2,2", "4,0", "4,4"];
@@ -10138,10 +10138,10 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
                             doc.setLineWidth(0.3);
                             
                             if (blackCells.includes(cellId)) {
-                                doc.setFillColor(0, 0, 0); // Colore Nero
-                                doc.rect(startX + c * cellSize, y + r * cellSize, cellSize, cellSize, "FD"); // Fill & Draw
+                                doc.setFillColor(0, 0, 0); // Nero
+                                doc.rect(startX + c * cellSize, y + r * cellSize, cellSize, cellSize, "FD");
                             } else {
-                                doc.setFillColor(255, 255, 255); // Colore Bianco (sicurezza)
+                                doc.setFillColor(255, 255, 255); // Bianco
                                 doc.rect(startX + c * cellSize, y + r * cellSize, cellSize, cellSize, "FD");
                             }
                         }
@@ -10167,17 +10167,17 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
 
                     // Definizioni
                     doc.setFontSize(6);
-                    let textX = startX - 2; // Allineamento del testo
+                    let textX = startX - 2; // Allineamento ottimizzato per lo scontrino
 
                     doc.text("ORIZZONTALI:", textX, y + 35);
                     doc.text("1. Richiesta d'aiuto   4. Il seguito del sovrano", textX, y + 38);
-                    doc.text("6. A + il   7. Adesso in poesia   8. Strumento a tasti", textX, y + 41);
-                    doc.text("10. Sento con le orecchie", textX, y + 44);
+                    doc.text("6. Congiunzione eufonica  7. Adesso... in poesia", textX, y + 41);
+                    doc.text("8. Strumento a tasti   10. Percepisco con le orecchie", textX, y + 44);
                     
                     doc.text("VERTICALI:", textX, y + 49);
-                    doc.text("1. Il trono papale   2. Come il 7 orizzontale", textX, y + 52);
-                    doc.text("3. Canto in modo stonato   4. Il codice per le poste", textX, y + 55);
-                    doc.text("5. Lo fui in passato   9. Preposizione... esempio!", textX, y + 58);
+                    doc.text("1. Componente del sale da cucina  2. Una porta logica in informatica", textX, y + 52);
+                    doc.text("3. Canto calando di tono          4. Il codice per le poste", textX, y + 55);
+                    doc.text("5. Lo fui nel passato             9. Preposizione semplice", textX, y + 58);
                     
                     y += 65;
                     break;
