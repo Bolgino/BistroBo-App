@@ -10126,7 +10126,7 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
                     
                     // Griglia 5x5 da 6mm a cella (totale 30mm, centrata)
                     let cellSize = 6;
-                    let startX = (pageWidth / 2) - 15; 
+                    startX = (pageWidth / 2) - 15; 
                     
                     // Coordinate delle caselle nere "riga,colonna"
                     let blackCells = ["0,0", "0,4", "2,2", "4,0", "4,4"];
