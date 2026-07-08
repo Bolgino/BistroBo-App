@@ -60,7 +60,8 @@ window.settings = {
 	menuSnack: true,
 	sistemaExtraAbilitato: true,
     scontriniSeparati: false,
-    piattiComboAbilitati: false
+    piattiComboAbilitati: false,
+    giocoScontrino: false
 };
 
 //Ingredienti Critici
@@ -1047,6 +1048,14 @@ function initImpostazioniToggle() {
 	if (toggleSistemaExtraBtn) {
 	    initToggle(toggleSistemaExtraBtn, sistemaExtraRef, {on: "ON", off: "OFF"}, true, val => {
 	        window.settings.sistemaExtraAbilitato = val;
+	    });
+	}
+	// ================= GIOCO SCONTRINO =================
+	const toggleGiocoScontrinoBtn = document.getElementById("toggleGiocoScontrinoBtn");
+	const giocoScontrinoRef = db.ref("impostazioni/giocoScontrino");
+	if (toggleGiocoScontrinoBtn) {
+	    initToggle(toggleGiocoScontrinoBtn, giocoScontrinoRef, {on: "ON", off: "OFF"}, false, val => {
+	        window.settings.giocoScontrino = val;
 	    });
 	}
 	
@@ -9733,22 +9742,25 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
     const dataOdierna = ora.toLocaleDateString();
 
     // --- 1. DIVISIONE IN REPARTI ---
-	let reparti = [];
-	if (window.settings.scontriniSeparati) {
-	    // Usiamo il nuovo smistatore intelligente
-	    const separati = separaComanda(items);
-	    if (separati.cibo.length > 0) reparti.push({ nome: "CUCINA", items: separati.cibo });
-	    if (separati.bere.length > 0) reparti.push({ nome: "BERE", items: separati.bere });
-	    if (separati.snack.length > 0) reparti.push({ nome: "SNACK", items: separati.snack });
-	    
-	    // Aggiungi i profili extra con il loro nome personalizzato in MAIUSCOLO
-	    if (separati.extra1.length > 0) reparti.push({ nome: (window.nomiRepartiExtra?.extra1 || "EXTRA 1").toUpperCase(), items: separati.extra1 });
-	    if (separati.extra2.length > 0) reparti.push({ nome: (window.nomiRepartiExtra?.extra2 || "EXTRA 2").toUpperCase(), items: separati.extra2 });
-	    if (separati.extra3.length > 0) reparti.push({ nome: (window.nomiRepartiExtra?.extra3 || "EXTRA 3").toUpperCase(), items: separati.extra3 });
-	} else {
-	    // Scontrino Unico
-	    reparti.push({ nome: null, items: items });
-	}
+    let reparti = [];
+    if (window.settings.scontriniSeparati) {
+        // 🔹 MODIFICA: Stampa SEMPRE prima la copia cliente completa
+        reparti.push({ nome: "COPIA CLIENTE", items: items });
+
+        // Usiamo il nuovo smistatore intelligente
+        const separati = separaComanda(items);
+        if (separati.cibo.length > 0) reparti.push({ nome: "CUCINA", items: separati.cibo });
+        if (separati.bere.length > 0) reparti.push({ nome: "BERE", items: separati.bere });
+        if (separati.snack.length > 0) reparti.push({ nome: "SNACK", items: separati.snack });
+        
+        // Aggiungi i profili extra con il loro nome personalizzato in MAIUSCOLO
+        if (separati.extra1.length > 0) reparti.push({ nome: (window.nomiRepartiExtra?.extra1 || "EXTRA 1").toUpperCase(), items: separati.extra1 });
+        if (separati.extra2.length > 0) reparti.push({ nome: (window.nomiRepartiExtra?.extra2 || "EXTRA 2").toUpperCase(), items: separati.extra2 });
+        if (separati.extra3.length > 0) reparti.push({ nome: (window.nomiRepartiExtra?.extra3 || "EXTRA 3").toUpperCase(), items: separati.extra3 });
+    } else {
+        // Scontrino Unico
+        reparti.push({ nome: null, items: items });
+    }
 
     // --- 2. DISEGNO DEL PDF PER OGNI REPARTO ---
     reparti.forEach((reparto, index) => {
@@ -9916,12 +9928,45 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
         doc.setFontSize(11); doc.setFont("helvetica", "normal");
         if (cliente && cliente.restoRichiesto && cliente.restoRichiesto > 0) { doc.text(`Da dare resto su: € ${cliente.restoRichiesto}`, margin, y); y += 6; }
         if (note) {
-            y += 2; doc.setFontSize(10); doc.setFont("helvetica", "bold");
+            y += 2;
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "bold");
             const noteSplit = doc.splitTextToSize(`NOTE: ${note}`, pageWidth - margin*2);
-            doc.text(noteSplit, margin, y); y += (noteSplit.length * 5);
+            doc.text(noteSplit, margin, y);
+            y += (noteSplit.length * 5);
         }
-        y += 5; doc.setFontSize(10); doc.setFont("helvetica", "italic");
+
+        y += 5;
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "italic");
         doc.text("Grazie e Buon Appetito!", pageWidth / 2, y, { align: "center" });
+
+        // --- GIOCO SULLO SCONTRINO (Tris) ---
+        if (window.settings.giocoScontrino && (!reparto.nome || reparto.nome === "COPIA CLIENTE")) {
+            if (y > 210) { doc.addPage(); y = 10; }
+            y += 10;
+            doc.setFontSize(12);
+            doc.setFont("helvetica", "bold");
+            doc.text("--- GIOCO DEL GIORNO ---", pageWidth / 2, y, { align: "center" });
+            y += 6;
+            
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "normal");
+            doc.text("Sfida i tuoi amici a TRIS nell'attesa!", pageWidth / 2, y, { align: "center" });
+            y += 6;
+            
+            let startX = (pageWidth / 2) - 15;
+            let startY = y;
+            doc.setLineWidth(0.5);
+            // Griglia Tris 30x30 centrata
+            doc.line(startX + 10, startY, startX + 10, startY + 30);
+            doc.line(startX + 20, startY, startX + 20, startY + 30);
+            doc.line(startX, startY + 10, startX + 30, startY + 10);
+            doc.line(startX, startY + 20, startX + 30, startY + 20);
+            
+            y += 35;
+        }
+
     });
 
     // --- 3. CREAZIONE FINESTRA SINGOLA ---
