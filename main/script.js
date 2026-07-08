@@ -5117,7 +5117,7 @@ async function caricaGestioneComandeAdmin() {
     initRicercaComande("listaComandeAdmin", "cercaComandaAdmin");
     hideLoader();
 }
-// ================= DASHBOARD ADMIN (STILE BISTROBO) =================
+
 // ================= DASHBOARD ADMIN (STILE BISTROBO AVANZATO) =================
 function aggiornaDashboardAdmin(comandeData) {
     if (!document.getElementById("dashboardAdminTab")) return;
@@ -5210,37 +5210,50 @@ function aggiornaDashboardAdmin(comandeData) {
         }
         let fastestText = sr.fastest !== Infinity ? (sr.fastest / 60000).toFixed(1) + " min" : "--";
 
-        // Gestione Ritardi (> 30 min) e Titoli
+        // Gestione Ritardi (> 30 min)
         let minPassati = sr.oldestTimestamp ? Math.floor((now - sr.oldestTimestamp) / 60000) : 0;
         let oldestText = sr.oldestTimestamp 
             ? `#${sr.oldestId} (${minPassati}m fa)`
             : "Nessuna in coda";
 
-        let deptNameHtml = r.nome;
-        if (r.id === fastestDeptId) {
-            deptNameHtml += ` <span title="Reparto con la media più veloce" style="font-size:1.2em;">🏆</span>`;
-        }
+        let alertHtml = "";
         if (sr.oldestTimestamp && minPassati >= 30) {
-            deptNameHtml += ` <span class="bb-crit-text" style="font-size:0.7em; margin-left: 8px; animation: pulse 1.5s infinite;">⚠️ RITARDI RILEVATI</span>`;
+            alertHtml = `<div style="background:#FFEBEE; color:#D32F2F; font-size:0.7em; padding:4px 8px; border-radius:6px; font-weight:bold; align-self: flex-start;">⚠️ RITARDI RILEVATI</div>`;
         }
 
+        let trofeo = r.id === fastestDeptId ? `<span title="Reparto più veloce" style="font-size:1.1em;"> 🏆</span>` : '';
+
+        // Sostituito bb-card-title con un layout Flex per tenere il badge ritardi sotto
         gridHtml += `
-            <div class="bb-dash-card" style="--dept-color: ${r.colore};">
-                <div class="bb-card-title">
-                    <span>${deptNameHtml}</span>
-                    <span style="color: ${stressColor}">${sr.inCoda} Attive</span>
+            <div class="bb-dash-card" style="--dept-color: ${r.colore}; display: flex; flex-direction: column;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                        <span style="font-weight: bold; font-size: 1.3em; color: #333;">${r.nome}${trofeo}</span>
+                        ${alertHtml}
+                    </div>
+                    <div style="text-align: right; line-height: 1;">
+                        <div style="font-size: 1.8em; font-weight: bold; color: ${stressColor};">${sr.inCoda}</div>
+                        <div style="color: ${stressColor}; font-weight: bold; font-size: 0.9em; margin-top: 2px;">Attive</div>
+                    </div>
                 </div>
-                <div class="bb-gauge-bg">
+                <div class="bb-gauge-bg" style="margin-bottom: 12px;">
                     <div class="bb-gauge-fill" style="width: ${stressPercent}%; background-color: ${stressColor};"></div>
                 </div>
-                <div class="bb-stat-row"><span>In attesa da più tempo:</span> <span class="bb-stat-val">${oldestText}</span></div>
-                <div class="bb-stat-row"><span>Tempo Medio Evasione:</span> <span class="bb-stat-val">${mediaMin}</span></div>
-                <div class="bb-stat-row"><span>Record di Velocità:</span> <span class="bb-stat-val">${fastestText}</span></div>
+                <div style="display: flex; flex-direction: column; gap: 8px; font-size: 0.9em; flex-grow: 1;">
+                    <div class="bb-stat-row"><span>In attesa da più tempo:</span> <span class="bb-stat-val">${oldestText}</span></div>
+                    <div class="bb-stat-row"><span>Tempo Medio Evasione:</span> <span class="bb-stat-val">${mediaMin}</span></div>
+                    <div class="bb-stat-row"><span>Record di Velocità:</span> <span class="bb-stat-val">${fastestText}</span></div>
+                </div>
             </div>
         `;
     });
 
-    document.getElementById("bb-departments").innerHTML = gridHtml;
+    const contenitoreReparti = document.getElementById("bb-departments");
+    // Forziamo il layout Grid a 4 colonne (minimo ~240px per scheda, altrimenti va a capo)
+    contenitoreReparti.style.display = "grid";
+    contenitoreReparti.style.gridTemplateColumns = "repeat(auto-fit, minmax(240px, 1fr))";
+    contenitoreReparti.style.gap = "15px";
+    contenitoreReparti.innerHTML = gridHtml;
 
     // 4. Aggiornamento Status Globale
     const globalStatusDiv = document.getElementById("bb-global-status");
@@ -5253,7 +5266,6 @@ function aggiornaDashboardAdmin(comandeData) {
     }
 }
 
-// ================= POPUP ESCLUSIONE TEMPO CASSA (DESIGN INTEGRATO) =================
 // ================= POPUP ESCLUSIONE TEMPO CASSA (DESIGN INTEGRATO BISTROBO) =================
 function apriConfigurazioneTempoCassa() {
     db.ref("impostazioni/esclusioniTempoCassa").once("value").then(snap => {
