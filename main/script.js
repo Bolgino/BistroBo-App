@@ -6854,6 +6854,194 @@ async function caricaIngredientiPerRuolo(ruolo) {
         container.appendChild(fragment);
     });
 }
+// -------------------- GAMIFICATION --------------------
+async function caricaGamification(){
+    if (!checkOnline(true)) return;
+    showLoader();
+    
+    try {
+        // Get today's date at midnight
+        const oggi = new Date();
+        oggi.setHours(0, 0, 0, 0);
+        const timestampOggi = oggi.getTime();
+        
+        // Get 60 minutes ago
+        const sessantaMinutiFa = Date.now() - (60 * 60 * 1000);
+        
+        // Fetch all orders
+        const snapComande = await db.ref("comande").once("value");
+        const comande = snapComande.val() || {};
+        
+        // Fetch users to get names
+        const snapUtenti = await db.ref("utenti").once("value");
+        const utenti = snapUtenti.val() || {};
+        
+        // Initialize statistics
+        const statsCassieri = {};
+        const statsCucina = [];
+        let birreOggi = {};
+        
+        // Process each order
+        Object.entries(comande).forEach(([id, c]) => {
+            const timestamp = c.timestamp || 0;
+            
+            // Track kitchen times (last 60 minutes)
+            if (timestamp >= sessantaMinutiFa && c.statoCucina === "completato" && c.timestampCucinaCompletato) {
+                const tempoPreparazione = c.timestampCucinaCompletato - timestamp;
+                if (tempoPreparazione > 0 && tempoPreparazione < 3600000) { // Less than 1 hour
+                    statsCucina.push(tempoPreparazione);
+                }
+            }
+            
+            // Track cashier statistics (today only)
+            if (timestamp >= timestampOggi && c.uidCassiere) {
+                const uid = c.uidCassiere;
+                
+                if (!statsCassieri[uid]) {
+                    statsCassieri[uid] = {
+                        uid: uid,
+                        nome: utenti[uid]?.username || uid,
+                        numeroComande: 0,
+                        tempoTotale: 0,
+                        birreVendute: 0
+                    };
+                }
+                
+                statsCassieri[uid].numeroComande++;
+                
+                // Calculate order processing time (from creation to completion)
+                if (c.timestampCompletata) {
+                    const tempoOrdine = c.timestampCompletata - timestamp;
+                    if (tempoOrdine > 0 && tempoOrdine < 3600000) {
+                        statsCassieri[uid].tempoTotale += tempoOrdine;
+                    }
+                }
+                
+                // Count beers sold
+                if (c.piatti) {
+                    c.piatti.forEach(p => {
+                        const nomePiatto = (p.nome || "").toLowerCase();
+                        if (nomePiatto.includes("birra") || nomePiatto.includes("beer")) {
+                            const qty = p.quantita || 1;
+                            statsCassieri[uid].birreVendute += qty;
+                            
+                            // Track total beers today for leaderboard
+                            if (!birreOggi[uid]) birreOggi[uid] = 0;
+                            birreOggi[uid] += qty;
+                        }
+                    });
+                }
+            }
+        });
+        
+        // Calculate fastest cashier
+        let cassierePiuVeloce = { nome: "Nessun dato", tempo: "--" };
+        Object.values(statsCassieri).forEach(stats => {
+            if (stats.numeroComande > 0 && stats.tempoTotale > 0) {
+                const tempoMedio = stats.tempoTotale / stats.numeroComande;
+                if (!cassierePiuVeloce.tempo || tempoMedio < cassierePiuVeloce.tempo) {
+                    cassierePiuVeloce = {
+                        nome: stats.nome,
+                        tempo: (tempoMedio / 1000 / 60).toFixed(1) + " min"
+                    };
+                }
+            }
+        });
+        
+        // Calculate who sold most beers today
+        let piuBirre = { nome: "Nessun dato", quantita: 0 };
+        Object.entries(birreOggi).forEach(([uid, qty]) => {
+            if (qty > piuBirre.quantita) {
+                piuBirre = {
+                    nome: utenti[uid]?.username || uid,
+                    quantita: qty
+                };
+            }
+        });
+        
+        // Calculate average kitchen time (last 60 minutes)
+        let tempoMedioCucina = "Nessun dato";
+        if (statsCucina.length > 0) {
+            const totale = statsCucina.reduce((a, b) => a + b, 0);
+            const media = totale / statsCucina.length;
+            tempoMedioCucina = (media / 1000 / 60).toFixed(1) + " minuti";
+        }
+        
+        // Update UI
+        document.getElementById("cassierePiuVeloce").innerHTML = 
+            `<span style="color: #F57F17;">🥇 ${cassierePiuVeloce.nome}</span><br><small>Tempo medio: ${cassierePiuVeloce.tempo}</small>`;
+        
+        document.getElementById("piuBirreOggi").innerHTML = 
+            `<span style="color: #0277BD;">🍺 ${piuBirre.nome}</span><br><small>${piuBirre.quantita} birre oggi</small>`;
+        
+        document.getElementById("tempoMedioCucina").innerHTML = 
+            `<span style="color: #C62828;">⏱️ ${tempoMedioCucina}</span>`;
+        
+        // Build full leaderboard
+        const classificaDiv = document.getElementById("classificaCassieri");
+        classificaDiv.innerHTML = "";
+        
+        const classificaArray = Object.values(statsCassieri).map(s => ({
+            ...s,
+            tempoMedio: s.numeroComande > 0 && s.tempoTotale > 0 ? (s.tempoTotale / s.numeroComande / 1000 / 60).toFixed(1) : "--"
+        })).sort((a, b) => b.numeroComande - a.numeroComande);
+        
+        if (classificaArray.length === 0) {
+            classificaDiv.innerHTML = '<div style="text-align: center; padding: 20px; color: #777;">Nessuna comanda oggi</div>';
+        } else {
+            const table = document.createElement("table");
+            table.style.width = "100%";
+            table.style.borderCollapse = "collapse";
+            
+            table.innerHTML = `
+                <thead>
+                    <tr style="background: #FFD700; color: #333;">
+                        <th style="padding: 10px; text-align: left;">#</th>
+                        <th style="padding: 10px; text-align: left;">Cassiere</th>
+                        <th style="padding: 10px; text-align: center;">Comande</th>
+                        <th style="padding: 10px; text-align: center;">Tempo medio</th>
+                        <th style="padding: 10px; text-align: center;">Birre</th>
+                    </tr>
+                </thead>
+                <tbody>
+            `;
+            
+            classificaArray.forEach((stats, index) => {
+                const row = document.createElement("tr");
+                row.style.borderBottom = "1px solid #eee";
+                if (index === 0) row.style.background = "#FFF9C4";
+                else if (index === 1) row.style.background = "#F5F5F5";
+                else if (index === 2) row.style.background = "#FAFAFA";
+                
+                const medal = index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : (index + 1);
+                
+                row.innerHTML = `
+                    <td style="padding: 10px; font-weight: bold;">${medal}</td>
+                    <td style="padding: 10px;">${stats.nome}</td>
+                    <td style="padding: 10px; text-align: center; font-weight: bold;">${stats.numeroComande}</td>
+                    <td style="padding: 10px; text-align: center;">${stats.tempoMedio} min</td>
+                    <td style="padding: 10px; text-align: center;">🍺 ${stats.birreVendute}</td>
+                `;
+                
+                table.querySelector("tbody").appendChild(row);
+            });
+            
+            classificaDiv.appendChild(table);
+        }
+        
+        // Setup refresh button
+        const refreshBtn = document.getElementById("refreshGamificationBtn");
+        if (refreshBtn) {
+            refreshBtn.onclick = () => caricaGamification();
+        }
+        
+    } catch (err) {
+        console.error("Errore caricamento gamification:", err);
+        notify("Errore caricamento classifica: " + err.message, "error");
+    } finally {
+        hideLoader();
+    }
+}
 // -------------------- UTENTI --------------------
 async function caricaUtenti(){
     if (!checkOnline(true)) return;
@@ -8719,7 +8907,8 @@ document.addEventListener("DOMContentLoaded", () => {
 			    noteDestinazioni: noteDestinazioni,
 			    commento: commentoAsporto || null,
 			    metodoPagamento: metodoPagamento,
-			    scontoGlobale: window.scontoGlobaleCorrente || null
+			    scontoGlobale: window.scontoGlobaleCorrente || null,
+			    uidCassiere: uid
 			};
 			
 			// 🔹 FIX: Elimina o commenta i 4 if() successivi che accendevano gli Extra. 
@@ -9960,6 +10149,8 @@ document.querySelectorAll(".tabBtn").forEach(b=>{
         if(b.dataset.tab === "incassiTab") caricaStatistiche();
         if(b.dataset.tab === "comandeTab") caricaGestioneComandeAdmin();
         if(b.dataset.tab === "scontiTab") caricaScontiAdmin();
+		if(b.dataset.tab === "gamificationTab") caricaGamification();
+		
     });
 });
 // tabs interne Cassa
