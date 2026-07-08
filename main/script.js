@@ -10594,7 +10594,94 @@ document.addEventListener("click", e => {
         if (badge) badge.remove();
     }
 });
+// ================= VISTA SOMMARIO GLOBALE =================
+let ruoloSommarioAperto = null;
 
+window.apriVistaSommario = function(reparto) {
+    ruoloSommarioAperto = reparto;
+    document.getElementById('modal-sommario').style.display = 'flex';
+    aggiornaVistaSommario(reparto);
+};
+
+window.chiudiVistaSommario = function() {
+    ruoloSommarioAperto = null;
+    document.getElementById('modal-sommario').style.display = 'none';
+};
+
+function aggiornaVistaSommario(reparto) {
+    if (!reparto || !checkOnline(true)) return;
+    
+    // Leggiamo tutte le comande direttamente dal DB
+    db.ref("comande").once("value", snap => {
+        const comande = snap.val() || {};
+        const totali = {};
+
+        // Mappatura stato dinamica (es: statoCucina, statoBere, statoExtra1)
+        const statoKey = reparto.startsWith("extra") 
+            ? "stato" + reparto.charAt(0).toUpperCase() + reparto.slice(1) 
+            : (reparto === "cucina" ? "statoCucina" : (reparto === "bere" ? "statoBere" : "statoSnack"));
+
+        Object.values(comande).forEach(ordine => {
+            // Conta solo ciò che è "da fare" o "in elaborazione"
+            if (ordine[statoKey] === 'da fare' || ordine[statoKey] === 'in elaborazione') {
+                
+                // Usiamo la TUA funzione nativa separaComanda! Infallibile.
+                const piattiSeparati = separaComanda(ordine.piatti || []);
+                const piattiReparto = piattiSeparati[reparto] || [];
+                
+                piattiReparto.forEach(articolo => {
+                    // Contiamo la quantità. Rimuoviamo info tra parentesi (es. varianti) per raggruppare i piatti identici
+                    if (articolo.isMainHere !== false) {
+                        let nomePiatto = articolo.nome.replace(/\s*\([\+\-].*?\)/g, "").trim(); 
+                        totali[nomePiatto] = (totali[nomePiatto] || 0) + parseInt(articolo.quantita);
+                    }
+
+                    // Se ci sono contorni gestiti dallo stesso reparto, sommiamo anche loro
+                    if (articolo.contorniScelti && articolo.contorniScelti.length > 0) {
+                        articolo.contorniScelti.forEach(c => {
+                            let nomeContorno = c.nome.replace(/\s*\([\+\-].*?\)/g, "").trim();
+                            totali[nomeContorno] = (totali[nomeContorno] || 0) + parseInt(articolo.quantita);
+                        });
+                    }
+                });
+            }
+        });
+
+        // Disegna l'interfaccia
+        const listaHtml = document.getElementById('lista-totali-sommario');
+        listaHtml.innerHTML = ''; 
+
+        // Ordiniamo dalla quantità più alta alla più bassa
+        const voci = Object.entries(totali).sort((a, b) => b[1] - a[1]); 
+
+        if (voci.length === 0) {
+            listaHtml.innerHTML = `<li style="justify-content:center; color:#777; font-size:1.5rem; border:none; padding:40px;">Nessun piatto in coda! 🎉 Dai una pulita alla griglia!</li>`;
+        } else {
+            for (const [nome, qta] of voci) {
+                listaHtml.innerHTML += `
+                    <li>
+                        <span class="qta-evidenza">${qta}</span> ${nome}
+                    </li>
+                `;
+            }
+        }
+
+        // Aggiorna il titolo (Usa anche i nomi personalizzati per gli extra!)
+        let nomeReparto = reparto;
+        if (reparto.startsWith("extra") && window.nomiRepartiExtra && window.nomiRepartiExtra[reparto]) {
+            nomeReparto = window.nomiRepartiExtra[reparto];
+        }
+        document.getElementById('reparto-titolo').innerText = `(${nomeReparto.toUpperCase()})`;
+    });
+}
+
+// AGGIORNAMENTO IN TEMPO REALE!
+// Quando qualsiasi comanda cambia sul database, aggiorniamo il modale se è aperto
+db.ref("comande").on("value", snap => {
+    if (ruoloSommarioAperto) {
+        aggiornaVistaSommario(ruoloSommarioAperto);
+    }
+});
 // -------------------- TABS --------------------
 document.querySelectorAll(".tabBtn").forEach(b=>{
     b.addEventListener("click",()=>{
