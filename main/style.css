@@ -2105,9 +2105,9 @@ body.tema-estate button {
 .btn-sommario:hover { transform: scale(1.05); }
 
 #lista-totali-sommario li {
-    font-size: 2rem; /* Enorme e visibile da lontano */
+    font-size: 1.4rem; /* Ridotto (prima era 2rem) */
     font-weight: bold;
-    padding: 15px 10px;
+    padding: 10px 5px; /* Meno spazio tra le righe */
     border-bottom: 1px solid #ccc;
     display: flex;
     align-items: center;
@@ -2116,10 +2116,12 @@ body.tema-estate button {
 
 #lista-totali-sommario .qta-evidenza {
     color: #d32f2f;
-    font-size: 2.5rem;
+    font-size: 1.6rem; /* Ridotto (prima era 2.5rem) */
     margin-right: 15px;
     background: #ffebee;
-    padding: 5px 20px;
+    padding: 4px 15px;
     border-radius: 8px;
     border: 2px solid #ffcdd2;
+    min-width: 40px; /* Assicura che i numeri a 1 e 2 cifre siano allineati */
+    text-align: center;
 }
