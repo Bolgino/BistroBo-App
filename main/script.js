@@ -10006,27 +10006,36 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
                     break;
 
                 case "puntini":
-                    // 🏠 3. UNISCI I PUNTINI (Tazzina di caffè fumante - 17 punti)
+                    // 🏠 3. UNISCI I PUNTINI (Tazzina di caffè perfetta - 17 punti)
                     doc.text("Cosa appare? Unisci da 1 a 17!", pageWidth / 2, y, { align: "center" });
                     y += 6;
                     let cx = (pageWidth / 2);
                     
-                    // Coordinate per formare una tazzina con piattino e fumo
+                    // Coordinate geometricamente bilanciate (nessun punto sovrapposto)
                     const punti = [
-                        {x: -2, y: 2, n: "1"}, {x: 2, y: 6, n: "2"}, {x: -2, y: 9, n: "3"}, // Fumo
-                        {x: -12, y: 13, n: "4"}, {x: 8, y: 13, n: "5"}, // Bordo superiore tazza
-                        {x: 13, y: 14, n: "6"}, {x: 16, y: 18, n: "7"}, {x: 13, y: 22, n: "8"}, // Manico
-                        {x: 8, y: 23, n: "9"}, {x: 6, y: 28, n: "10"}, // Fondo destro
-                        {x: 14, y: 29, n: "11"}, {x: 16, y: 32, n: "12"}, // Piattino destro
-                        {x: -16, y: 32, n: "13"}, {x: -14, y: 29, n: "14"}, // Piattino sinistro
-                        {x: -6, y: 28, n: "15"}, {x: -8, y: 23, n: "16"}, // Fondo sinistro
-                        {x: -12, y: 13, n: "17"} // Chiusura sul bordo sinistro
+                        {x: -4, y: 2, n: "1"},   // Inizio fumo
+                        {x: -1, y: 6, n: "2"},   // Curva fumo
+                        {x: -6, y: 10, n: "3"},  // Base fumo
+                        {x: -11, y: 13, n: "4"}, // Bordo alto sinistro tazza
+                        {x: 11, y: 13, n: "5"},  // Bordo alto destro tazza
+                        {x: 16, y: 13, n: "6"},  // Manico alto
+                        {x: 19, y: 16, n: "7"},  // Manico esterno
+                        {x: 15, y: 19, n: "8"},  // Manico basso
+                        {x: 8, y: 19, n: "9"},   // Lato destro tazza
+                        {x: 6, y: 24, n: "10"},  // Fondo destro tazza
+                        {x: 16, y: 25, n: "11"}, // Punta destra piattino
+                        {x: 12, y: 28, n: "12"}, // Base destra piattino
+                        {x: -12, y: 28, n: "13"},// Base sinistra piattino
+                        {x: -16, y: 25, n: "14"},// Punta sinistra piattino
+                        {x: -6, y: 24, n: "15"}, // Fondo sinistro tazza
+                        {x: -8, y: 19, n: "16"}, // Lato sinistro tazza
+                        {x: -10, y: 15, n: "17"} // Chiusura lato sinistro (separato dal 4)
                     ];
                     
                     doc.setFontSize(6);
                     punti.forEach(p => {
                         doc.circle(cx + p.x, y + p.y, 0.5, "F");
-                        // Posiziona il numerino leggermente spostato per non coprire il punto
+                        // Posiziona il numerino distanziato per una lettura chiara
                         doc.text(p.n, cx + p.x + 1.2, y + p.y + 1.2);
                     });
                     
@@ -10196,19 +10205,20 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
                     // Riga 4
                     doc.text("10", startX + cellSize + 0.8, y + 4*cellSize + 1.8);
 
+
                     // Definizioni
                     doc.setFontSize(6);
                     let textX = startX - 2; // Allineamento ottimizzato per lo scontrino
 
                     doc.text("ORIZZONTALI:", textX, y + 35);
-                    doc.text("1. Richiesta d'aiuto   4. Il seguito del sovrano", textX, y + 38);
-                    doc.text("6. Congiunzione eufonica  7. Adesso... in poesia", textX, y + 41);
-                    doc.text("8. Strumento a tasti   10. Percepisco con le orecchie", textX, y + 44);
+                    doc.text("1. Segno d'aiuto       4. Seguito del re", textX, y + 38);
+                    doc.text("6. La e eufonica       7. Adesso in versi", textX, y + 41);
+                    doc.text("8. Ha molti tasti      10. Sento, intendo", textX, y + 44);
                     
                     doc.text("VERTICALI:", textX, y + 49);
-                    doc.text("1. Componente del sale da cucina  2. Una porta logica in informatica", textX, y + 52);
-                    doc.text("3. Canto calando di tono          4. Il codice per le poste", textX, y + 55);
-                    doc.text("5. Lo fui nel passato             9. Preposizione semplice", textX, y + 58);
+                    doc.text("1. Nel sale da cucina  2. Porta logica", textX, y + 52);
+                    doc.text("3. Canto male       4. Codice postale", textX, y + 55);
+                    doc.text("5. Lo fui in passato   9. Preposizione", textX, y + 58);
                     
                     y += 65;
                     break;
