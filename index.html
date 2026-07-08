@@ -284,6 +284,7 @@
 			<div style="background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-top: 5px solid #FF9800;">
 				<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
 					<h3 style="margin:0; color: #FF9800; font-size: 1.3em;">🍳 Comande da Preparare (<span id="conteggioCucina">0</span>)</h3>
+					<button class="btn-sommario" onclick="apriVistaSommario('cucina')">🍳 VISTA SOMMARIO</button>
 				</div>
 				<input type="text" id="cercaComandaCucina" placeholder="🔍 Cerca numero comanda..." style="margin:10px 0; width:100%; padding:5px; font-size:16px;">
 				<div id="daFareComandeContainer"></div>
@@ -346,6 +347,7 @@
 			<div style="background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-top: 5px solid #3F51B5;">
 				<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
 					<h3 style="margin:0; color: #3F51B5; font-size: 1.3em;">🍺 Comande da Preparare (<span id="conteggioBere">0</span>)</h3>
+					<button class="btn-sommario" onclick="apriVistaSommario('bere')" style="background-color:#3F51B5;">🍺 VISTA SOMMARIO</button>
 				</div>
 				<input type="text" id="cercaComandaBere" placeholder="🔍 Cerca numero comanda..." style="margin:10px 0; width:100%; padding:5px; font-size:16px;">
 				<div id="daBereComandeContainer"></div>
@@ -408,6 +410,7 @@
 			<div style="background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-top: 5px solid #FF5722;">
 				<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
 					<h3 style="margin:0; color: #FF5722; font-size: 1.3em;">🍟 Comande da Preparare (<span id="conteggioSnack">0</span>)</h3>
+					<button class="btn-sommario" onclick="apriVistaSommario('snack')" style="background-color:#FF5722;">🍟 VISTA SOMMARIO</button>
 				</div>
 				<input type="text" id="cercaComandaSnack" placeholder="🔍 Cerca numero comanda..." style="margin:10px 0; width:100%; padding:5px; font-size:16px;">
 				<div id="daSnackComandeContainer"></div>
@@ -468,6 +471,7 @@
 			<div style="background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-top: 5px solid #9C27B0;">
 				<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
 					<h3 style="margin:0; color: #9C27B0; font-size: 1.3em;" id="comandeTitleExtra1">📦 Comande da Preparare (<span id="conteggioExtra1">0</span>)</h3>
+					<button class="btn-sommario" onclick="apriVistaSommario('extra1')" style="background-color:#9C27B0;">📦 VISTA SOMMARIO</button>
 				</div>
 				<input type="text" id="cercaComandaExtra1" placeholder="🔍 Cerca numero comanda..." style="margin:10px 0; width:100%; padding:5px; font-size:16px;">
 				<div id="daExtra1ComandeContainer"></div>
@@ -529,6 +533,7 @@
 			<div style="background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-top: 5px solid #009688;">
 				<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
 					<h3 style="margin:0; color: #009688; font-size: 1.3em;" id="comandeTitleExtra2">📦 Comande da Preparare (<span id="conteggioExtra2">0</span>)</h3>
+					<button class="btn-sommario" onclick="apriVistaSommario('extra2')" style="background-color:#009688;">📦 VISTA SOMMARIO</button>
 				</div>
 				<input type="text" id="cercaComandaExtra2" placeholder="🔍 Cerca numero comanda..." style="margin:10px 0; width:100%; padding:5px; font-size:16px;">
 				<div id="daExtra2ComandeContainer"></div>
@@ -590,6 +595,7 @@
 			<div style="background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-top: 5px solid #795548;">
 				<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
 					<h3 style="margin:0; color: #795548; font-size: 1.3em;" id="comandeTitleExtra3">📦 Comande da Preparare (<span id="conteggioExtra3">0</span>)</h3>
+					<button class="btn-sommario" onclick="apriVistaSommario('extra3')" style="background-color:#795548;">📦 VISTA SOMMARIO</button>
 				</div>
 				<input type="text" id="cercaComandaExtra3" placeholder="🔍 Cerca numero comanda..." style="margin:10px 0; width:100%; padding:5px; font-size:16px;">
 				<div id="daExtra3ComandeContainer"></div>
@@ -1419,6 +1425,16 @@
 				<button id="btnChiudiVisibilitaPreordini" class="btn-chiudi" style="width: 100%; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer;">Chiudi</button>
 			</div>
 		</div>
+	</div>
+	<div id="modal-sommario" class="modal-overlay" style="display: none; z-index: 11000;">
+	    <div class="modal-varianti" style="max-width: 600px; width: 90%;">
+	        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #333; padding-bottom: 10px; margin-bottom: 20px;">
+	            <h2 style="margin:0; color:#333; font-size:1.8em;">DA PREPARARE <span id="reparto-titolo" style="color:#d32f2f;"></span></h2>
+	            <button onclick="chiudiVistaSommario()" style="background:#f44336; color:white; border:none; padding:8px 15px; border-radius:8px; font-weight:bold; font-size:1.2em; cursor:pointer;">✖ Chiudi</button>
+	        </div>
+	        <ul id="lista-totali-sommario" style="list-style: none; padding: 0; margin: 0; max-height: 60vh; overflow-y: auto;">
+	            </ul>
+	    </div>
 	</div>
 	<!-- ================= SCRIPT ================= -->
 	<script src="main/script.js"></script>
