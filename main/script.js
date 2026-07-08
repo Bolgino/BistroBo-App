@@ -1240,85 +1240,97 @@ if (settingLetteraPreordini && inputLetteraPreordini) {
     });
 }
 // ================= ARCHIVIA COMANDE =================
+// ================= ARCHIVIA COMANDE =================
 const archiviaComandeBtn = document.getElementById("archiviaComandeBtn");
-if (archiviaComandeBtn) {
-    archiviaComandeBtn.onclick = async () => {
-        if (!checkOnline(true)) return;
+const archiviaComandeStatsBtn = document.getElementById("archiviaComandeStatsBtn");
 
-        // Controlliamo se ci sono comande da archiviare
-        const snapComande = await db.ref("comande").once("value");
-        if (!snapComande.exists()) {
-            notify("⚠️ Nessuna comanda presente da archiviare.", "warn");
-            return;
-        }
+async function apriModaleArchiviazione() {
+    if (!checkOnline(true)) return;
 
-        // Generiamo un nome di default (es: "15/08/2026 - 23:30")
-        const now = new Date();
-        const defaultName = `${now.toLocaleDateString('it-IT')} - ${now.toLocaleTimeString('it-IT', {hour: '2-digit', minute:'2-digit'})}`;
+    // Controlliamo se ci sono comande da archiviare
+    const snapComande = await db.ref("comande").once("value");
+    if (!snapComande.exists()) {
+        notify("⚠️ Nessuna comanda presente da archiviare.", "warn");
+        return;
+    }
 
-        // Creiamo un modale personalizzato per chiedere il nome del turno
-        const overlay = document.createElement("div");
-        overlay.className = "modal-overlay";
-        overlay.style.zIndex = "10005";
+    // Generiamo un nome di default (es: "15/08/2026 - 23:30")
+    const now = new Date();
+    const defaultName = `${now.toLocaleDateString('it-IT')} - ${now.toLocaleTimeString('it-IT', {hour: '2-digit', minute:'2-digit'})}`;
+
+    // Creiamo un modale personalizzato per chiedere il nome del turno
+    const overlay = document.createElement("div");
+    overlay.className = "modal-overlay";
+    overlay.style.zIndex = "10005";
+    
+    const modal = document.createElement("div");
+    modal.className = "modal-varianti";
+    modal.style.padding = "25px";
+    modal.style.boxSizing = "border-box";
+    modal.innerHTML = `
+        <h3 style="margin-bottom: 10px;">📦 Archivia Turno</h3>
+        <p style="font-size: 0.9em; color: #555; margin-bottom: 15px;">Le comande verranno rimosse dai monitor attuali e salvate nello storico.</p>
+        <label style="display:block; text-align:left; font-weight:bold; margin-bottom:5px;">Nome Turno / Giornata:</label>
+        <input type="text" id="nomeTurnoInput" value="Turno ${defaultName}" style="width: 100%; box-sizing: border-box; padding: 10px; margin-bottom: 10px; border-radius: 6px; border: 1px solid #ccc; font-size: 1.1em; outline: none;">
         
-        const modal = document.createElement("div");
-        modal.className = "modal-varianti";
-        modal.style.padding = "25px";
-        modal.style.boxSizing = "border-box";
-        modal.innerHTML = `
-            <h3 style="margin-bottom: 10px;">📦 Archivia Turno</h3>
-            <p style="font-size: 0.9em; color: #555; margin-bottom: 15px;">Le comande verranno rimosse dai monitor attuali e salvate nello storico.</p>
-            <label style="display:block; text-align:left; font-weight:bold; margin-bottom:5px;">Nome Turno / Giornata:</label>
-            <input type="text" id="nomeTurnoInput" value="Turno ${defaultName}" style="width: 100%; box-sizing: border-box; padding: 10px; margin-bottom: 10px; border-radius: 6px; border: 1px solid #ccc; font-size: 1.1em; outline: none;">
+        <div class="modal-actions" style="margin-top: 20px; display: flex; gap: 10px;">
+            <button class="btn-chiudi" id="annullaArchiviaBtn" style="flex: 1; margin:0;">Annulla</button>
+            <button class="btn-salva" id="confermaArchiviaBtn" style="flex: 1; margin:0; background-color: #4CAF50;">Archivia Ora</button>
+        </div>
+    `;
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    document.getElementById("annullaArchiviaBtn").onclick = () => overlay.remove();
+    
+    document.getElementById("confermaArchiviaBtn").onclick = async () => {
+        const nomeTurno = document.getElementById("nomeTurnoInput").value.trim() || defaultName;
+        document.getElementById("confermaArchiviaBtn").disabled = true;
+        document.getElementById("confermaArchiviaBtn").innerText = "Archiviazione...";
+
+        try {
+            // 1. Leggi il fondo cassa attuale (se vuoi salvarlo nello storico)
+            const snapFondo = await db.ref("impostazioni/fondoCassa").once("value");
+            const fondoCassa = snapFondo.val() || 0;
+
+            // 2. Salva in storico_giornate
+            const nuovoArchivioRef = db.ref("storico_giornate").push();
+            await nuovoArchivioRef.set({
+                nome: nomeTurno,
+                timestamp: Date.now(),
+                fondoCassa: fondoCassa,
+                comande: snapComande.val()
+            });
+
+            // 3. Cancella le comande attive, il contatore e il fondo cassa
+            await db.ref("comande").remove();
+            await db.ref("impostazioni/contatoreComande").set(0); 
+            await db.ref("impostazioni/fondoCassa").remove(); 
+
+            notify(`✅ Turno "${nomeTurno}" archiviato con successo!`, "success");
             
-            <div class="modal-actions" style="margin-top: 20px; display: flex; gap: 10px;">
-                <button class="btn-chiudi" id="annullaArchiviaBtn" style="flex: 1; margin:0;">Annulla</button>
-                <button class="btn-salva" id="confermaArchiviaBtn" style="flex: 1; margin:0; background-color: #4CAF50;">Archivia Ora</button>
-            </div>
-        `;
-        overlay.appendChild(modal);
-        document.body.appendChild(overlay);
+            // Pulisci l'interfaccia admin
+            const listaComandeAdmin = document.getElementById("listaComandeAdmin");
+            if (listaComandeAdmin) listaComandeAdmin.innerHTML = "";
+            
+            // Aggiorna in tempo reale la dashboard statistiche se stiamo guardando quella tab!
+            if (typeof caricaStatistiche === "function") caricaStatistiche();
 
-        document.getElementById("annullaArchiviaBtn").onclick = () => overlay.remove();
-        
-        document.getElementById("confermaArchiviaBtn").onclick = async () => {
-            const nomeTurno = document.getElementById("nomeTurnoInput").value.trim() || defaultName;
-            document.getElementById("confermaArchiviaBtn").disabled = true;
-            document.getElementById("confermaArchiviaBtn").innerText = "Archiviazione...";
-
-            try {
-                // 1. Leggi il fondo cassa attuale (se vuoi salvarlo nello storico)
-                const snapFondo = await db.ref("impostazioni/fondoCassa").once("value");
-                const fondoCassa = snapFondo.val() || 0;
-
-                // 2. Salva in storico_giornate
-                const nuovoArchivioRef = db.ref("storico_giornate").push();
-                await nuovoArchivioRef.set({
-                    nome: nomeTurno,
-                    timestamp: Date.now(),
-                    fondoCassa: fondoCassa,
-                    comande: snapComande.val()
-                });
-
-                // 3. Cancella le comande attive, il contatore e il fondo cassa
-                await db.ref("comande").remove();
-                await db.ref("impostazioni/contatoreComande").set(0); 
-                await db.ref("impostazioni/fondoCassa").remove(); 
-
-                notify(`✅ Turno "${nomeTurno}" archiviato con successo!`, "success");
-                
-                // Pulisci l'interfaccia admin
-                const listaComandeAdmin = document.getElementById("listaComandeAdmin");
-                if (listaComandeAdmin) listaComandeAdmin.innerHTML = "";
-
-                overlay.remove();
-            } catch (error) {
-                console.error(error);
-                notify("❌ Errore durante l'archiviazione: " + error.message, "error");
-                document.getElementById("confermaArchiviaBtn").disabled = false;
-            }
-        };
+            overlay.remove();
+        } catch (error) {
+            console.error(error);
+            notify("❌ Errore durante l'archiviazione: " + error.message, "error");
+            document.getElementById("confermaArchiviaBtn").disabled = false;
+        }
     };
+}
+
+if (archiviaComandeBtn) {
+    archiviaComandeBtn.onclick = apriModaleArchiviazione;
+}
+
+if (archiviaComandeStatsBtn) {
+    archiviaComandeStatsBtn.onclick = apriModaleArchiviazione;
 }
 // =====================================================
 // 🔹 Aggiunge "Snack" nei menu a tendina ruoli se attivo
