@@ -10730,6 +10730,76 @@ db.ref("comande").on("value", snap => {
         aggiornaVistaSommario(ruoloSommarioAperto);
     }
 });
+// ================= GESTIONE TASTIERA (ESC / ENTER) =================
+document.addEventListener("keydown", function(e) {
+    // Escludiamo il caso in cui l'utente sta scrivendo in una textarea (es. le note comanda o la chat).
+    // Vogliamo che l'INVIO mandi a capo il testo, non che confermi/invii cose per sbaglio.
+    if (e.target.tagName === "TEXTAREA" && e.key === "Enter") {
+        return; 
+    }
+
+    // 1. GESTIONE POPUP COMBO (Piatti con contorni)
+    const popupCombo = document.getElementById("popupCombo");
+    if (popupCombo && popupCombo.style.display === "flex") {
+        if (e.key === "Escape") {
+            e.preventDefault();
+            if (typeof chiudiPopupCombo === "function") chiudiPopupCombo();
+        } else if (e.key === "Enter") {
+            e.preventDefault();
+            const btn = document.getElementById("btnConfermaCombo");
+            if (btn) btn.click();
+        }
+        return; // Ferma l'esecuzione qui se il popup combo era aperto
+    }
+
+    // 2. GESTIONE ALTRI MODALI (Filtri, Archiviazione, Disonotify, Sconti, Varianti ecc.)
+    // Cerchiamo tutti i modali visibili in primo piano
+    const modaliAperti = document.querySelectorAll(".modal-overlay, #popupVisibilitaPreordini, #modal-sommario");
+    const modaliVisibili = Array.from(modaliAperti).filter(m => m.style.display !== "none" && !m.classList.contains("hidden"));
+
+    if (modaliVisibili.length > 0) {
+        // Prendiamo l'ultimo modale aperto (quello in primissimo piano)
+        const modaleAttivo = modaliVisibili[modaliVisibili.length - 1];
+
+        if (e.key === "Escape") {
+            e.preventDefault();
+            // Cerca il bottone annulla/chiudi usando le classi o il testo
+            const btnAnnulla = modaleAttivo.querySelector(".btn-chiudi, #annullaArchiviaBtn, #btnChiudiVisibilitaPreordini") 
+                || Array.from(modaleAttivo.querySelectorAll("button")).find(b => b.innerText.toLowerCase().includes("annull") || b.innerText.toLowerCase().includes("chiud"));
+            
+            if (btnAnnulla) btnAnnulla.click();
+            else if (modaleAttivo.id !== "loader" && modaleAttivo.id !== "offlineLoader") modaleAttivo.remove(); 
+        } 
+        else if (e.key === "Enter") {
+            e.preventDefault();
+            // Cerca il bottone di conferma/salvataggio 
+            const btnConferma = modaleAttivo.querySelector(".btn-salva, #confermaArchiviaBtn, #btnSalvaFondo, #btnSalvaSconto") 
+                || Array.from(modaleAttivo.querySelectorAll("button")).find(b => {
+                    const txt = b.innerText.toLowerCase();
+                    return txt.includes("conferm") || txt.includes("salva") || txt.includes("archivia");
+                });
+            
+            if (btnConferma && !btnConferma.disabled) btnConferma.click();
+        }
+        return; // Ferma qui se c'era un modale aperto
+    }
+
+    // 3. GESTIONE CASSA PRINCIPALE (Se nessun modale è aperto)
+    // Permette di usare "INVIO" per spedire la comanda se sei nella schermata Aggiungi Comanda
+    if (e.key === "Enter" && window.isLoggedInCassa) {
+        const tabAggiungi = document.getElementById("aggiungiComandaTab");
+        if (tabAggiungi && tabAggiungi.classList.contains("active")) {
+            // Impedisce di inviare la comanda se stiamo cercando qualcosa nella barra di ricerca
+            if (e.target.id !== "cercaComandaCassa") {
+                const btnInvia = document.getElementById("inviaComandaBtn");
+                if (btnInvia && !btnInvia.disabled) {
+                    e.preventDefault();
+                    btnInvia.click();
+                }
+            }
+        }
+    }
+});
 // -------------------- TABS --------------------
 document.querySelectorAll(".tabBtn").forEach(b=>{
     b.addEventListener("click",()=>{
