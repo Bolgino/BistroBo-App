@@ -9955,7 +9955,6 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
             doc.setFontSize(10);
             doc.setFont("helvetica", "normal");
 
-            // Rimosso Impiccato e Battaglia Navale, rimangono 8 giochi più curati!
             const tipiGiochi = [
                 "tris", "sudoku", "puntini", "labirinto", 
                 "forza4", "parole_intrecciate", "scatole", "cruciverba"
@@ -9985,8 +9984,8 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
                     startX = (pageWidth / 2) - 22.5;
                     for(let i=0; i<=9; i++) {
                         doc.setLineWidth(i % 3 === 0 ? 0.6 : 0.2);
-                        doc.line(startX, y + (i*5), startX + 45, y + (i*5)); // Orizzontali
-                        doc.line(startX + (i*5), y, startX + (i*5), y + 45); // Verticali
+                        doc.line(startX, y + (i*5), startX + 45, y + (i*5));
+                        doc.line(startX + (i*5), y, startX + (i*5), y + 45); 
                     }
                     doc.setFontSize(8);
                     const numSudoku = [
@@ -10026,40 +10025,36 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
                     break;
 
                 case "labirinto":
-                    // 🗺️ 4. LABIRINTO (Complessità Elevata e Risolvibile)
+                    // 🗺️ 4. LABIRINTO (Complessità Elevata con uscita garantita)
                     doc.text("Trova l'uscita del LABIRINTO!", pageWidth / 2, y, { align: "center" });
                     y += 6;
                     startX = (pageWidth / 2) - 15;
                     doc.setLineWidth(0.5);
                     
                     // Muri perimetrali
-                    doc.line(startX, y+5, startX, y+30); 
-                    doc.line(startX+30, y, startX+30, y+25); 
-                    doc.line(startX, y, startX+30, y); 
-                    doc.line(startX, y+30, startX+30, y+30); 
+                    doc.line(startX, y+6, startX, y+30); // Sinistra
+                    doc.line(startX+30, y, startX+30, y+24); // Destra
+                    doc.line(startX, y, startX+30, y); // Alto
+                    doc.line(startX, y+30, startX+30, y+30); // Basso
                     
                     // Muri orizzontali interni
-                    doc.line(startX+10, y+5, startX+15, y+5);
-                    doc.line(startX+20, y+5, startX+30, y+5);
-                    doc.line(startX+15, y+10, startX+25, y+10);
-                    doc.line(startX, y+15, startX+15, y+15);
-                    doc.line(startX+20, y+15, startX+30, y+15);
-                    doc.line(startX, y+20, startX+5, y+20);
-                    doc.line(startX+15, y+20, startX+20, y+20);
-                    doc.line(startX+5, y+25, startX+10, y+25);
-                    doc.line(startX+20, y+25, startX+25, y+25);
+                    doc.line(startX, y+6, startX+6, y+6);
+                    doc.line(startX+18, y+6, startX+24, y+6);
+                    doc.line(startX, y+12, startX+6, y+12);
+                    doc.line(startX+12, y+12, startX+18, y+12);
+                    doc.line(startX+24, y+12, startX+30, y+12);
+                    doc.line(startX, y+18, startX+12, y+18);
+                    doc.line(startX+18, y+18, startX+30, y+18);
+                    doc.line(startX, y+24, startX+24, y+24);
                     
                     // Muri verticali interni
-                    doc.line(startX+5, y, startX+5, y+10);
-                    doc.line(startX+5, y+15, startX+5, y+20);
-                    doc.line(startX+10, y+5, startX+10, y+30);
-                    doc.line(startX+15, y+5, startX+15, y+15);
-                    doc.line(startX+15, y+20, startX+15, y+25);
-                    doc.line(startX+20, y, startX+20, y+5);
-                    doc.line(startX+20, y+15, startX+20, y+20);
-                    doc.line(startX+20, y+25, startX+20, y+30);
-                    doc.line(startX+25, y, startX+25, y+15);
-                    doc.line(startX+25, y+20, startX+25, y+30);
+                    doc.line(startX+6, y+6, startX+6, y+12);
+                    doc.line(startX+6, y+18, startX+6, y+30);
+                    doc.line(startX+12, y+12, startX+12, y+24);
+                    doc.line(startX+18, y, startX+18, y+6);
+                    doc.line(startX+18, y+24, startX+18, y+30);
+                    doc.line(startX+24, y+6, startX+24, y+18);
+                    doc.line(startX+24, y+24, startX+24, y+30);
 
                     doc.setFontSize(7);
                     doc.text("IN", startX - 6, y + 4);
@@ -10083,27 +10078,27 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
                     break;
 
                 case "parole_intrecciate":
-                    // 🔠 6. PAROLE INTRECCIATE (Avanzato con verticali e diagonali)
+                    // 🔠 6. PAROLE INTRECCIATE (Con incastri perfetti)
                     doc.text("TROVA LE PAROLE NASCOSTE", pageWidth / 2, y, { align: "center" });
                     y += 6;
                     startX = (pageWidth / 2) - 14;
                     doc.setFontSize(10);
                     doc.setFont("courier", "bold");
                     let grid = [
-                        "M B I R R A Z",
-                        "E X P Z O J K",
-                        "N Q U I I C U",
-                        "U W F A Z I X",
-                        "F O R N O Z W",
-                        "C U C I N A A",
-                        "T A V O L O S"
+                        "T O N R O F C",
+                        "M A X Y Z W U",
+                        "E P V K J H C",
+                        "N Q L O X Y I",
+                        "U S D F L G N",
+                        "B I R R A O A",
+                        "P I Z Z A T K"
                     ];
                     grid.forEach((row, i) => {
                         doc.text(row, startX, y + (i*5));
                     });
                     doc.setFont("helvetica", "normal");
                     doc.setFontSize(7);
-                    doc.text("Cerca in orizzontale, verticale e diagonale:", pageWidth / 2, y + 36, { align: "center" });
+                    doc.text("Attento! Si leggono in ogni direzione:", pageWidth / 2, y + 36, { align: "center" });
                     doc.text("BIRRA, CUCINA, FORNO, MENU, PIZZA, TAVOLO", pageWidth / 2, y + 40, { align: "center" });
                     y += 45;
                     break;
@@ -10122,41 +10117,41 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
                     break;
 
                 case "cruciverba":
-                    // 📝 8. MINI CRUCIVERBA (Griglia Reale con caselle nere, 3 Orizz + 3 Vert = 6 parole)
-                    doc.text("CRUCIVERBA SCONTRINO", pageWidth / 2, y, { align: "center" });
+                    // 📝 8. CRUCIVERBA (Perfetto a 16 lettere, incastro 4x4)
+                    doc.text("CRUCIVERBA MAGICO 4x4", pageWidth / 2, y, { align: "center" });
                     y += 6;
-                    startX = (pageWidth / 2) - 15;
-                    let cellSize = 6;
+                    startX = (pageWidth / 2) - 14;
+                    let cellSize = 7;
                     
-                    // Disegna Griglia 4x5 con caselle nere integrate
+                    // Disegna Griglia 4x4 Senza caselle nere
                     for (let r=0; r<4; r++) {
-                        for (let c=0; c<5; c++) {
-                            let isBlack = (r===1 && c>=3) || (r===2 && c>=4) || (r===3 && c>=1);
-                            if (isBlack) {
-                                doc.setFillColor(0, 0, 0);
-                                doc.rect(startX + c*cellSize, y + r*cellSize, cellSize, cellSize, "F");
-                            } else {
-                                doc.setLineWidth(0.3);
-                                doc.rect(startX + c*cellSize, y + r*cellSize, cellSize, cellSize, "S");
-                            }
+                        for (let c=0; c<4; c++) {
+                            doc.setLineWidth(0.3);
+                            doc.rect(startX + c*cellSize, y + r*cellSize, cellSize, cellSize, "S");
                         }
                     }
                     
-                    // Numerini delle parole
+                    // Numerini
                     doc.setFontSize(5);
-                    doc.text("1", startX + 1, y + 2);
-                    doc.text("2", startX + 1 + cellSize, y + 2);
-                    doc.text("3", startX + 1 + 2*cellSize, y + 2);
-                    doc.text("4", startX + 1, y + 2 + cellSize);
-                    doc.text("5", startX + 1, y + 2 + 2*cellSize);
+                    doc.text("1", startX + 1, y + 2.5);
+                    doc.text("2", startX + 1 + cellSize, y + 2.5);
+                    doc.text("3", startX + 1 + 2*cellSize, y + 2.5);
+                    doc.text("4", startX + 1 + 3*cellSize, y + 2.5);
+                    
+                    doc.text("5", startX + 1, y + 2.5 + cellSize);
+                    doc.text("6", startX + 1, y + 2.5 + 2*cellSize);
+                    doc.text("7", startX + 1, y + 2.5 + 3*cellSize);
 
                     // Definizioni
                     doc.setFontSize(7);
-                    doc.text("Orizz: 1.Piatto italiano   4.Saluto romano", pageWidth/2, y + 28, {align: "center"});
-                    doc.text("5.Forte sensazione di fastidio", pageWidth/2, y + 31, {align: "center"});
-                    doc.text("Vert: 1.Lo fa il fornaio   2.Lontano parente", pageWidth/2, y + 35, {align: "center"});
-                    doc.text("3.La metà esatta di dodici", pageWidth/2, y + 38, {align: "center"});
-                    y += 45;
+                    doc.text("ORIZZONTALI:", startX, y + 33);
+                    doc.text("1. Nettare di Bacco   5. Lampo di genio", startX, y + 37);
+                    doc.text("6. Un colore scuro   7. Paradiso di sabbia", startX, y + 41);
+                    
+                    doc.text("VERTICALI:", startX, y + 46);
+                    doc.text("1. Lo versi nel calice   2. Spunto mentale", startX, y + 50);
+                    doc.text("3. L'opposto del bianco 4. Specchio d'acqua", startX, y + 54);
+                    y += 60;
                     break;
             }
         }
