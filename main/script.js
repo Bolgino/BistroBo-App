@@ -9944,7 +9944,7 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
         // --- GIOCHI RANDOM SULLO SCONTRINO ---
         if (window.settings.giocoScontrino && (!reparto.nome || reparto.nome === "COPIA CLIENTE")) {
             // Controlla se c'è spazio sufficiente sulla pagina, altrimenti ne aggiunge una
-            if (y > 220) { doc.addPage(); y = 10; }
+            if (y > 210) { doc.addPage(); y = 10; }
             
             y += 10;
             doc.setFontSize(12);
@@ -9955,16 +9955,14 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
             doc.setFontSize(10);
             doc.setFont("helvetica", "normal");
 
-            // Array con i 10 giochi disponibili
             const tipiGiochi = [
                 "tris", "sudoku", "puntini", "labirinto", "impiccato", 
                 "battaglia_navale", "forza4", "parole_intrecciate", "scatole", "cruciverba"
             ];
             
-            // Sceglie un gioco a caso
             const giocoScelto = tipiGiochi[Math.floor(Math.random() * tipiGiochi.length)];
-
             let startX;
+
             switch(giocoScelto) {
                 case "tris":
                     // 🎮 1. TRIS
@@ -9980,35 +9978,43 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
                     break;
 
                 case "sudoku":
-                    // 🧩 2. SUDOKU
+                    // 🧩 2. SUDOKU (Griglia completa e risolvibile)
                     doc.text("Risolvi questo SUDOKU per veri chef!", pageWidth / 2, y, { align: "center" });
                     y += 6;
                     startX = (pageWidth / 2) - 22.5;
                     for(let i=0; i<=9; i++) {
                         doc.setLineWidth(i % 3 === 0 ? 0.6 : 0.2);
-                        doc.line(startX, y + (i*5), startX + 45, y + (i*5));
-                        doc.line(startX + (i*5), y, startX + (i*5), y + 45);
+                        doc.line(startX, y + (i*5), startX + 45, y + (i*5)); // Orizzontali
+                        doc.line(startX + (i*5), y, startX + (i*5), y + 45); // Verticali
                     }
                     doc.setFontSize(8);
-                    doc.text("5", startX + 2.5, y + 3.5, {align: "center"});
-                    doc.text("3", startX + 7.5, y + 3.5, {align: "center"});
-                    doc.text("7", startX + 42.5, y + 13.5, {align: "center"});
-                    doc.text("1", startX + 17.5, y + 23.5, {align: "center"});
-                    doc.text("9", startX + 32.5, y + 33.5, {align: "center"});
-                    doc.text("8", startX + 22.5, y + 43.5, {align: "center"});
-                    doc.text("4", startX + 37.5, y + 8.5, {align: "center"});
+                    const numSudoku = [
+                        {r:0,c:0,n:"5"}, {r:0,c:1,n:"3"}, {r:0,c:4,n:"7"},
+                        {r:1,c:0,n:"6"}, {r:1,c:3,n:"1"}, {r:1,c:4,n:"9"}, {r:1,c:5,n:"5"},
+                        {r:2,c:1,n:"9"}, {r:2,c:2,n:"8"}, {r:2,c:7,n:"6"},
+                        {r:3,c:0,n:"8"}, {r:3,c:4,n:"6"}, {r:3,c:8,n:"3"},
+                        {r:4,c:0,n:"4"}, {r:4,c:3,n:"8"}, {r:4,c:5,n:"3"}, {r:4,c:8,n:"1"},
+                        {r:5,c:0,n:"7"}, {r:5,c:4,n:"2"}, {r:5,c:8,n:"6"},
+                        {r:6,c:1,n:"6"}, {r:6,c:6,n:"2"}, {r:6,c:7,n:"8"},
+                        {r:7,c:3,n:"4"}, {r:7,c:4,n:"1"}, {r:7,c:5,n:"9"}, {r:7,c:8,n:"5"},
+                        {r:8,c:4,n:"8"}, {r:8,c:7,n:"7"}, {r:8,c:8,n:"9"}
+                    ];
+                    numSudoku.forEach(num => {
+                        doc.text(num.n, startX + (num.c * 5) + 2.5, y + (num.r * 5) + 3.5, {align: "center"});
+                    });
                     y += 50;
                     break;
 
                 case "puntini":
-                    // 🍔 3. UNISCI I PUNTINI
-                    doc.text("Unisci i puntini (1-8): Cosa appare?", pageWidth / 2, y, { align: "center" });
+                    // 🏠 3. UNISCI I PUNTINI (Forma di una casetta)
+                    doc.text("Unisci i puntini da 1 a 11", pageWidth / 2, y, { align: "center" });
                     y += 6;
                     let cx = (pageWidth / 2);
                     const punti = [
-                        {x: -12, y: 10, n: "1"}, {x: 0, y: 2, n: "2"}, {x: 12, y: 10, n: "3"},
-                        {x: 14, y: 16, n: "4"}, {x: 10, y: 24, n: "5"}, {x: 0, y: 26, n: "6"},
-                        {x: -10, y: 24, n: "7"}, {x: -14, y: 16, n: "8"}
+                        {x: 0, y: 2, n: "1"}, {x: 15, y: 12, n: "2"}, {x: 10, y: 12, n: "3"},
+                        {x: 10, y: 30, n: "4"}, {x: 4, y: 30, n: "5"}, {x: 4, y: 20, n: "6"},
+                        {x: -4, y: 20, n: "7"}, {x: -4, y: 30, n: "8"}, {x: -10, y: 30, n: "9"},
+                        {x: -10, y: 12, n: "10"}, {x: -15, y: 12, n: "11"}
                     ];
                     doc.setFontSize(8);
                     punti.forEach(p => {
@@ -10019,25 +10025,28 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
                     break;
 
                 case "labirinto":
-                    // 🗺️ 4. LABIRINTO
+                    // 🗺️ 4. LABIRINTO (Complessità aumentata)
                     doc.text("Trova l'uscita del LABIRINTO!", pageWidth / 2, y, { align: "center" });
                     y += 6;
                     startX = (pageWidth / 2) - 15;
                     doc.setLineWidth(0.5);
-                    // Muri Esterni (con aperture)
-                    doc.line(startX, y+5, startX, y+30); // Sinistra
-                    doc.line(startX+30, y, startX+30, y+25); // Destra
-                    doc.line(startX, y, startX+30, y); // Alto
-                    doc.line(startX, y+30, startX+30, y+30); // Basso
+                    // Muri perimetrali
+                    doc.line(startX, y+6, startX, y+30); 
+                    doc.line(startX+30, y, startX+30, y+24); 
+                    doc.line(startX, y, startX+30, y); 
+                    doc.line(startX, y+30, startX+30, y+30); 
                     // Muri interni
-                    doc.line(startX+5, y+5, startX+25, y+5);
-                    doc.line(startX+5, y+5, startX+5, y+20);
-                    doc.line(startX+5, y+20, startX+20, y+20);
-                    doc.line(startX+10, y+10, startX+10, y+25);
-                    doc.line(startX+15, y+10, startX+25, y+10);
-                    doc.setFontSize(8);
-                    doc.text("IN", startX - 5, y + 4);
-                    doc.text("OUT", startX + 32, y + 28);
+                    doc.line(startX+6, y, startX+6, y+12);
+                    doc.line(startX+6, y+18, startX+6, y+24);
+                    doc.line(startX+12, y+6, startX+12, y+30);
+                    doc.line(startX+12, y+12, startX+24, y+12);
+                    doc.line(startX+18, y+18, startX+18, y+30);
+                    doc.line(startX+18, y+18, startX+30, y+18);
+                    doc.line(startX+24, y, startX+24, y+6);
+                    
+                    doc.setFontSize(7);
+                    doc.text("IN", startX - 6, y + 4);
+                    doc.text("OUT", startX + 31, y + 28);
                     y += 35;
                     break;
 
@@ -10060,17 +10069,26 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
                     break;
 
                 case "battaglia_navale":
-                    // 🚢 6. BATTAGLIA NAVALE
+                    // 🚢 6. BATTAGLIA NAVALE (Con coordinate)
                     doc.text("BATTAGLIA NAVALE (1 contro 1)", pageWidth / 2, y, { align: "center" });
-                    y += 6;
+                    y += 8;
                     let startX1 = (pageWidth / 2) - 25;
                     let startX2 = (pageWidth / 2) + 5;
                     doc.setLineWidth(0.2);
+                    
                     for(let i=0; i<=5; i++) {
                         doc.line(startX1, y + (i*4), startX1 + 20, y + (i*4));
                         doc.line(startX1 + (i*4), y, startX1 + (i*4), y + 20);
                         doc.line(startX2, y + (i*4), startX2 + 20, y + (i*4));
                         doc.line(startX2 + (i*4), y, startX2 + (i*4), y + 20);
+                    }
+                    doc.setFontSize(6);
+                    const letters = ["A","B","C","D","E"];
+                    for(let i=0; i<5; i++) {
+                        doc.text((i+1).toString(), startX1 - 3, y + (i*4) + 3);
+                        doc.text((i+1).toString(), startX2 - 3, y + (i*4) + 3);
+                        doc.text(letters[i], startX1 + (i*4) + 1.5, y - 1);
+                        doc.text(letters[i], startX2 + (i*4) + 1.5, y - 1);
                     }
                     doc.setFontSize(7);
                     doc.text("Tuo Campo", startX1 + 10, y + 24, {align: "center"});
@@ -10095,17 +10113,23 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
 
                 case "parole_intrecciate":
                     // 🔠 8. PAROLE INTRECCIATE
-                    doc.text("TROVA LE PAROLE: FAME, CIBO, BERE", pageWidth / 2, y, { align: "center" });
+                    doc.text("TROVA: FAME, BERE, CIBO, PANE, VINO", pageWidth / 2, y, { align: "center" });
                     y += 6;
                     startX = (pageWidth / 2) - 12;
                     doc.setFontSize(10);
                     doc.setFont("courier", "bold");
-                    let grid = ["F A X K P", "M I A C H", "P M L I K", "B C I B O", "E R R R T", "R T E M S", "E Z L E A"];
+                    let grid = [
+                        "F A M E X",
+                        "B E R E Z",
+                        "C I B O Q",
+                        "P A N E K",
+                        "V I N O Y"
+                    ];
                     grid.forEach((row, i) => {
                         doc.text(row, startX, y + (i*5));
                     });
                     doc.setFont("helvetica", "normal");
-                    y += 38;
+                    y += 32;
                     break;
 
                 case "scatole":
@@ -10122,33 +10146,35 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
                     break;
 
                 case "cruciverba":
-                    // 📝 10. MINI CRUCIVERBA
-                    doc.text("MINI CRUCIVERBA", pageWidth / 2, y, { align: "center" });
+                    // 📝 10. MINI CRUCIVERBA (Griglia 4x4 giocabile)
+                    doc.text("CRUCIVERBA 4x4", pageWidth / 2, y, { align: "center" });
                     y += 6;
-                    startX = (pageWidth / 2) - 15;
+                    startX = (pageWidth / 2) - 14;
                     doc.setLineWidth(0.3);
-                    for(let i=0; i<=5; i++) {
-                        doc.line(startX, y + (i*6), startX + 30, y + (i*6));
-                        doc.line(startX + (i*6), y, startX + (i*6), y + 30);
+                    
+                    // Disegna Griglia 4x4
+                    for(let i=0; i<=4; i++) {
+                        doc.line(startX, y + (i*7), startX + 28, y + (i*7));
+                        doc.line(startX + (i*7), y, startX + (i*7), y + 28);
                     }
-                    doc.setFillColor(0, 0, 0);
-                    doc.rect(startX, y, 6, 6, "F");
-                    doc.rect(startX + 24, y, 6, 6, "F");
-                    doc.rect(startX + 12, y + 12, 6, 6, "F");
-                    doc.rect(startX, y + 24, 6, 6, "F");
-                    doc.rect(startX + 24, y + 24, 6, 6, "F");
+                    // Numerini
                     doc.setFontSize(6);
-                    doc.text("1", startX + 7, y + 2);
-                    doc.text("2", startX + 13, y + 2);
-                    doc.text("3", startX + 1, y + 8);
+                    doc.text("1", startX + 1, y + 2.5);
+                    doc.text("2", startX + 8, y + 2.5);
+                    doc.text("3", startX + 15, y + 2.5);
+                    doc.text("4", startX + 22, y + 2.5);
+                    doc.text("2", startX + 1, y + 9.5);
+                    doc.text("3", startX + 1, y + 16.5);
+                    doc.text("4", startX + 1, y + 23.5);
+
+                    // Definizioni (Stesse Orizzontali e Verticali)
                     doc.setFontSize(8);
-                    doc.text("Orizz.: 3. Piatto tipico italiano", pageWidth/2, y + 36, {align: "center"});
-                    doc.text("Vert.: 1. Si beve fresca d'estate", pageWidth/2, y + 40, {align: "center"});
+                    doc.text("1. Rosso o bianco. 2. Lampo di genio.", pageWidth/2, y + 34, {align: "center"});
+                    doc.text("3. Assenza di svago. 4. Paradiso nel deserto", pageWidth/2, y + 38, {align: "center"});
                     y += 45;
                     break;
             }
         }
-
     });
 
     // --- 3. CREAZIONE FINESTRA SINGOLA E STAMPA ---
