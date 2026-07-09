@@ -1324,15 +1324,17 @@ function initImpostazioniToggle() {
             if(!checkOnline(true)) return;
             const currentState = window.settings.copertoAbilitato;
             if(!currentState) { 
-                let val = prompt("Inserisci il costo del coperto a persona in € (es. 1.50):", "1.50");
-                if(val !== null) {
-                    val = val.replace(",", "."); 
-                    const num = parseFloat(val);
-                    if(!isNaN(num)) {
-                        await copertoValRef.set(num);
-                        await copertoRef.set(true);
-                    } else { notify("Valore non valido", "error"); }
-                }
+                // APRE IL POPUP CUSTOM INVECE DEL PROMPT
+                chiediValoreConPopup("🍽️ Imposta Coperto", "Inserisci il costo del coperto a persona in €:", "1.50", async (val) => {
+                    if(val !== null) {
+                        val = val.replace(",", "."); 
+                        const num = parseFloat(val);
+                        if(!isNaN(num)) {
+                            await copertoValRef.set(num);
+                            await copertoRef.set(true);
+                        } else { notify("Valore non valido", "error"); }
+                    }
+                });
             } else { await copertoRef.set(false); }
         };
     }
@@ -1343,19 +1345,21 @@ function initImpostazioniToggle() {
             window.settings.costoAsportoAbilitato = val;
         });
 
-        toggleCostoAsportoBtn.onclick = async () => {
+       toggleCostoAsportoBtn.onclick = async () => {
             if(!checkOnline(true)) return;
             const currentState = window.settings.costoAsportoAbilitato;
             if(!currentState) { 
-                let val = prompt("Inserisci il costo fisso per l'asporto in € (es. 2.00):", "2.00");
-                if(val !== null) {
-                    val = val.replace(",", ".");
-                    const num = parseFloat(val);
-                    if(!isNaN(num)) {
-                        await costoAsportoValRef.set(num);
-                        await costoAsportoRef.set(true);
-                    } else { notify("Valore non valido", "error"); }
-                }
+                // APRE IL POPUP CUSTOM INVECE DEL PROMPT
+                chiediValoreConPopup("📦 Costo Asporto", "Inserisci il costo fisso per l'asporto in €:", "2.00", async (val) => {
+                    if(val !== null) {
+                        val = val.replace(",", ".");
+                        const num = parseFloat(val);
+                        if(!isNaN(num)) {
+                            await costoAsportoValRef.set(num);
+                            await costoAsportoRef.set(true);
+                        } else { notify("Valore non valido", "error"); }
+                    }
+                });
             } else { await costoAsportoRef.set(false); }
         };
     }
@@ -9163,33 +9167,46 @@ function mostraFormSconto(piatto, id, containerRow) {
 document.addEventListener("DOMContentLoaded", () => {
     // --- FUNZIONAMENTO TASTO COPERTO ---
     const btnCoperto = document.getElementById("btnCopertoCassa");
+    // --- FUNZIONAMENTO TASTO COPERTO ---
+    const btnCoperto = document.getElementById("btnCopertoCassa");
     if (btnCoperto) {
         btnCoperto.addEventListener("click", () => {
-            let quant = 1;
-            // Legge il tastierino delle quantità (se attivo) o chiede il numero
+            // Funzione interna per iniettare i coperti
+            const aggiungiCopertoAComanda = (q) => {
+                const esiste = comandaCorrente.find(i => i.nome === "Coperto");
+                if (esiste) {
+                    esiste.quantita += q;
+                } else {
+                    comandaCorrente.push({
+                        nome: "Coperto",
+                        prezzo: window.settings.copertoValore || 0,
+                        quantita: q,
+                        categoria: "servizio" // NON STAMPA IN CUCINA
+                    });
+                }
+                if (typeof aggiornaComandaCorrente === "function") aggiornaComandaCorrente();
+            };
+
+            // Se è attivo il tastierino legge la quantità, altrimenti apre il POPUP
             if (window.settings.selettoreQuantitaCassa) {
                 const quantVal = document.getElementById("quantita").value;
-                quant = parseInt(quantVal);
-                if (!quant || quant <= 0) { notify("Seleziona la quantità di coperti dal tastierino!", "warn"); return; }
+                const quant = parseInt(quantVal);
+                if (!quant || quant <= 0) { 
+                    notify("Seleziona la quantità di coperti dal tastierino!", "warn"); 
+                    return; 
+                }
+                aggiungiCopertoAComanda(quant);
             } else {
-                const res = prompt("Quanti coperti vuoi aggiungere?", "1");
-                if(!res) return;
-                quant = parseInt(res);
-                if(isNaN(quant) || quant <= 0) return;
-            }
-
-            const esiste = comandaCorrente.find(i => i.nome === "Coperto");
-            if (esiste) {
-                esiste.quantita += quant;
-            } else {
-                comandaCorrente.push({
-                    nome: "Coperto",
-                    prezzo: window.settings.copertoValore || 0,
-                    quantita: quant,
-                    categoria: "servizio" // 🔹 FONDAMENTALE: "servizio" viene stampato solo al cliente!
+                // APRE IL POPUP CUSTOM INVECE DEL PROMPT
+                chiediValoreConPopup("🍽️ Aggiungi Coperti", "Quanti coperti vuoi aggiungere?", "1", (res) => {
+                    if (res !== null) {
+                        const quant = parseInt(res);
+                        if (!isNaN(quant) && quant > 0) {
+                            aggiungiCopertoAComanda(quant);
+                        }
+                    }
                 });
             }
-            if (typeof aggiornaComandaCorrente === "function") aggiornaComandaCorrente();
         });
     }
 
@@ -11107,3 +11124,44 @@ document.querySelectorAll("#cassaDiv .tabBtn").forEach(b=>{
 });
 // attiva di default "Aggiungi Comanda"
 document.getElementById("aggiungiComandaTab").classList.add("active");
+// ================= FUNZIONE POPUP CUSTOM (Sostituisce i prompt) =================
+function chiediValoreConPopup(titolo, messaggio, valoreDefault, callback) {
+    const overlay = document.createElement("div");
+    overlay.className = "modal-overlay";
+    overlay.style.zIndex = "10005";
+    
+    const modal = document.createElement("div");
+    modal.className = "modal-varianti";
+    modal.style.padding = "25px";
+    modal.style.textAlign = "center";
+    modal.style.maxWidth = "350px";
+    
+    modal.innerHTML = `
+        <h3 style="margin-top: 0; margin-bottom: 10px; color: #333;">${titolo}</h3>
+        <p style="font-size: 0.95em; color: #555; margin-bottom: 15px;">${messaggio}</p>
+        <input type="number" id="inputPopupGenerico" value="${valoreDefault}" step="0.01" style="width: 100%; padding: 12px; margin-bottom: 20px; border-radius: 8px; border: 1px solid #ccc; font-size: 1.2em; font-weight: bold; outline: none; text-align: center; box-sizing: border-box;">
+        <div class="modal-actions" style="display: flex; gap: 10px;">
+            <button class="btn-chiudi" id="btnAnnullaPopup" style="flex: 1; margin:0;">Annulla</button>
+            <button class="btn-salva" id="btnConfermaPopup" style="flex: 1; margin:0; background-color: #4CAF50; color: white;">Conferma</button>
+        </div>
+    `;
+    
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+    
+    // Focussa l'input e seleziona il testo automaticamente per facilitare la digitazione
+    const input = document.getElementById("inputPopupGenerico");
+    input.focus();
+    input.select();
+    
+    document.getElementById("btnAnnullaPopup").onclick = () => {
+        overlay.remove();
+        callback(null); // Utente ha annullato
+    };
+    
+    document.getElementById("btnConfermaPopup").onclick = () => {
+        const val = input.value;
+        overlay.remove();
+        callback(val); // Ritorna il valore inserito
+    };
+}
