@@ -4696,7 +4696,6 @@ async function caricaIngredienti() {
                         const modal = document.createElement("div");
                         const displayImpostazioni = currentIng.usabileComeExtra ? "block" : "none";
 
-                        const modal = document.createElement("div");
                         modal.className = "modal-varianti";
                         modal.innerHTML = `
                             <h3>Impostazioni: ${ing.nome}</h3>
