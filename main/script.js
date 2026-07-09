@@ -4665,37 +4665,42 @@ async function caricaIngredienti() {
 						const nE3 = window.nomiRepartiExtra?.extra3 || "Extra 3";
 
                         const modal = document.createElement("div");
+                        const displayImpostazioni = currentIng.usabileComeExtra ? "block" : "none";
+
+                        const modal = document.createElement("div");
                         modal.className = "modal-varianti";
                         modal.innerHTML = `
                             <h3>Impostazioni: ${ing.nome}</h3>
                             
                             <div style="margin-bottom:15px; text-align:left; background: #e8f5e9; padding: 10px; border-radius: 6px; border: 1px solid #c8e6c9;">
                                 <label style="cursor:pointer; display:flex; align-items:center;">
-                                    <input type="checkbox" id="chkUsabileExtra" ${isExtraChecked} style="transform: scale(1.2); margin-right: 8px;"> 
+                                    <input type="checkbox" id="chkUsabileExtra" ${isExtraChecked} style="transform: scale(1.2); margin-right: 8px;" onchange="document.getElementById('bloccoImpostazioniExtra').style.display = this.checked ? 'block' : 'none';"> 
                                     <b>Utilizzabile come variante / aggiunta nei piatti</b>
                                 </label>
                             </div>
 
-                            <div style="margin-bottom:15px; text-align:left;">
-                                <label><b>Prezzo Extra (€):</b></label>
-                                <input type="number" step="0.01" id="valPrezzo" value="${defP}" style="width:100%; box-sizing:border-box; padding:8px; margin-top:5px; border-radius:6px; border: 1px solid #ccc;">
-                            </div>
-                            
-                            <div style="margin-bottom:15px; text-align:left;">
-                                <label><b>Quantità scalata dal magazzino:</b></label>
-                                <input type="number" step="0.1" id="valQty" value="${defQ}" style="width:100%; box-sizing:border-box; padding:8px; margin-top:5px; border-radius:6px; border: 1px solid #ccc;">
-                            </div>
-                            
-                            <div style="margin-bottom:20px; text-align:left;">
-                                <label><b>Mostra come variante per i piatti in:</b></label><br>
-                                <div style="margin-top:8px;">
-								    <label style="margin-right:15px;"><input type="checkbox" class="chk-cat" value="cibi" ${isCibi}> Cibi</label>
-								    <label style="margin-right:15px;"><input type="checkbox" class="chk-cat" value="bevande" ${isBevande}> Bevande</label>
-								    <label style="margin-right:15px;"><input type="checkbox" class="chk-cat" value="snack" ${isSnack}> Snack</label>
-								    ${window.settings.extra1Abilitato ? `<label style="margin-right:15px;"><input type="checkbox" class="chk-cat" value="extra1" ${isExtra1}> ${nE1}</label>` : ''}
-								    ${window.settings.extra2Abilitato ? `<label style="margin-right:15px;"><input type="checkbox" class="chk-cat" value="extra2" ${isExtra2}> ${nE2}</label>` : ''}
-								    ${window.settings.extra3Abilitato ? `<label><input type="checkbox" class="chk-cat" value="extra3" ${isExtra3}> ${nE3}</label>` : ''}
-								</div>
+                            <div id="bloccoImpostazioniExtra" style="display: ${displayImpostazioni};">
+                                <div style="margin-bottom:15px; text-align:left;">
+                                    <label><b>Prezzo Extra (€):</b></label>
+                                    <input type="number" step="0.01" id="valPrezzo" value="${defP}" style="width:100%; box-sizing:border-box; padding:8px; margin-top:5px; border-radius:6px; border: 1px solid #ccc;">
+                                </div>
+                                
+                                <div style="margin-bottom:15px; text-align:left;">
+                                    <label><b>Quantità scalata dal magazzino:</b></label>
+                                    <input type="number" step="0.1" id="valQty" value="${defQ}" style="width:100%; box-sizing:border-box; padding:8px; margin-top:5px; border-radius:6px; border: 1px solid #ccc;">
+                                </div>
+                                
+                                <div style="margin-bottom:20px; text-align:left;">
+                                    <label><b>Mostra come variante per i piatti in:</b></label><br>
+                                    <div style="margin-top:8px;">
+                                        <label style="margin-right:15px;"><input type="checkbox" class="chk-cat" value="cibi" ${isCibi}> Cibi</label>
+                                        <label style="margin-right:15px;"><input type="checkbox" class="chk-cat" value="bevande" ${isBevande}> Bevande</label>
+                                        <label style="margin-right:15px;"><input type="checkbox" class="chk-cat" value="snack" ${isSnack}> Snack</label>
+                                        ${window.settings.extra1Abilitato ? `<label style="margin-right:15px;"><input type="checkbox" class="chk-cat" value="extra1" ${isExtra1}> ${nE1}</label>` : ''}
+                                        ${window.settings.extra2Abilitato ? `<label style="margin-right:15px;"><input type="checkbox" class="chk-cat" value="extra2" ${isExtra2}> ${nE2}</label>` : ''}
+                                        ${window.settings.extra3Abilitato ? `<label><input type="checkbox" class="chk-cat" value="extra3" ${isExtra3}> ${nE3}</label>` : ''}
+                                    </div>
+                                </div>
                             </div>
                             
                             <div class="modal-actions">
