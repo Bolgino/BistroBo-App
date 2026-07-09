@@ -2867,18 +2867,21 @@ async function caricaMenuCassa() {
              if (divParent) {
                  divParent.style.display = "grid";
                  divParent.style.gridTemplateColumns = "repeat(3, 1fr)"; 
-                 // IL TRUCCO: 2 righe per i profili, 1 riga per gli sconti (auto = si rimpicciolisce al contenuto)
-                 divParent.style.gridTemplateRows = "1fr 1fr auto"; 
+                 // Nessuna riga fissa (1fr), lasciamo fare al contenuto!
+                 divParent.style.gridAutoRows = "max-content"; 
+                 divParent.style.alignContent = "start"; // FONDAMENTALE: spinge tutto in alto compatto
                  divParent.style.gap = "8px";
-                 divParent.style.height = "calc(100vh - 120px)"; // Sfrutta l'altezza dello schermo
-                 divParent.style.minHeight = "0"; 
-                 divParent.style.overflow = "hidden"; // NIENTE barre di scorrimento laterali/verticali
+                 
+                 // Adattiamo l'altezza in modo che non superi lo schermo, ma sia "libera" di rimpicciolirsi
+                 divParent.style.height = "auto"; 
+                 divParent.style.maxHeight = "calc(100vh - 120px)"; 
+                 divParent.style.overflow = "hidden"; 
                  
                  const scontiCont = document.getElementById("scontiGlobaliCassaContainer");
                  if (scontiCont) {
                      scontiCont.style.gridColumn = "1 / -1";
                      scontiCont.style.marginTop = "0"; 
-                     scontiCont.style.padding = "6px"; // Più compatto
+                     scontiCont.style.padding = "6px"; 
                  }
              }
 
@@ -3023,8 +3026,7 @@ async function caricaMenuCassa() {
                           if (!div.querySelector("h5")) {
                               div.style.display = "flex";
                               div.style.flexDirection = "column";
-                              div.style.minWidth = "0"; 
-                              div.style.minHeight = "0"; 
+                              div.style.height = "max-content"; // IL TRUCCO: altezza limitata ai tasti
                               div.style.boxSizing = "border-box";
                               div.style.background = "#fcfcfc";
                               div.style.border = "1px solid #e0e0e0";
@@ -3038,7 +3040,7 @@ async function caricaMenuCassa() {
                                       <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background-color:${conf.color}; margin-right:6px;"></span>
                                       ${conf.nome}
                                   </h5>
-                                  <div class="cassa-ottimizzata-container" style="display:grid; grid-template-columns: repeat(2, 1fr); grid-auto-rows: max-content; align-content: start; gap:4px; flex: 1; overflow: hidden; min-height: 0;"></div>
+                                  <div class="cassa-ottimizzata-container" style="display:grid; grid-template-columns: repeat(2, 1fr); grid-auto-rows: max-content; gap:4px; overflow: hidden;"></div>
                               `;
                           }
                           div.querySelector(".cassa-ottimizzata-container").appendChild(btn);
