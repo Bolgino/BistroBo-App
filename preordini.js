@@ -611,9 +611,25 @@ async function aggiungiPreordineAlleComande(id) {
     }
 
     // 6️⃣ Commento asporto (MODIFICATO PER ASPORTO AUTOMATICO)
+    let isAsporto = false;
     let commentoAsporto = null;
     if (window.settings.preordiniAsportoAutomatico || (window.settings.asportoAbilitato && p.asporto)) {
+        isAsporto = true;
         commentoAsporto = "ASPORTO";
+    }
+
+    // 🔹 AGGIUNTA AUTOMATICA COSTO ASPORTO AI PREORDINI
+    if (isAsporto && window.settings.costoAsportoAbilitato) {
+        const fee = window.settings.costoAsportoValore || 0;
+        // Controlla che non sia già stato aggiunto
+        if (fee > 0 && !p.piatti.some(i => i.nome === "Costo Asporto")) {
+            p.piatti.push({
+                nome: "Costo Asporto",
+                prezzo: fee,
+                quantita: 1,
+                categoria: "servizio"
+            });
+        }
     }
 
     // 7️⃣ Metodo pagamento predefinito
