@@ -7041,7 +7041,9 @@ async function caricaIngredientiPerRuolo(ruolo) {
             });
         }
 
-        const categorie = {};
+        // 2. Creiamo una singola lista "piatta" (array) di tutti gli ingredienti autorizzati per questo ruolo
+        const ingredientiDaMostrare = [];
+        
         Object.entries(data).forEach(([id, ing]) => {
             let cat = (ing.categoria || "cibi").toLowerCase().trim();
             
@@ -7053,45 +7055,50 @@ async function caricaIngredientiPerRuolo(ruolo) {
             else if (cat === "extra2" || (lE2 && cat === lE2)) cat = "extra2";
             else if (cat === "extra3" || (lE3 && cat === lE3)) cat = "extra3";
 
-            // 🔹 MODIFICA: Mostra se appartiene al ruolo OPPURE se è usato in un suo piatto!
-            if (!categorieRuolo.includes(cat) && !ingredientiUsati.has(id)) return;
-            
-            // Se l'ingrediente viene da un altro reparto (in prestito), lo mostriamo nella tab del ruolo in modo che sia accessibile e gestibile
-            let displayCat = categorieRuolo.includes(cat) ? cat : categorieRuolo[0];
-
-            if (!categorie[displayCat]) categorie[displayCat] = [];
-            categorie[displayCat].push({ id, ...ing });
+            // MOSTRA se l'ingrediente appartiene alla categoria principale del ruolo OPPURE se è usato in un piatto di questo ruolo
+            if (categorieRuolo.includes(cat) || ingredientiUsati.has(id)) {
+                // Aggiungiamo un flag per sapere se è un ingrediente "in prestito" da un altro reparto
+                let inPrestito = !categorieRuolo.includes(cat);
+                ingredientiDaMostrare.push({ id, inPrestito, nomeCatOriginale: cat, ...ing });
+            }
         });
 
-        if (Object.keys(categorie).length === 0) {
-		     let msgIngr = "La dispensa è vuota... aria fritta stasera? 🌬️";
-		     if (ruolo === "cucina") msgIngr = "Niente ingredienti per te. Oggi si ordina la pizza! 🍕";
-		     if (ruolo === "bere") msgIngr = "Cantina vuota. Fai scorrere l'acqua del rubinetto! 🚰";
-		     if (ruolo === "snack") msgIngr = "Niente patatine o fritti... Mettiti a dieta! 🥕";
-		     if (ruolo.startsWith("extra")) msgIngr = `Nessun ingrediente in ${window.nomiRepartiExtra?.[ruolo] || ruolo}. Qui si fa la fame! 👻`;
-		     
-		     container.innerHTML = `<div style='text-align:center; padding: 30px; color: #777; font-style: italic; font-size: 1.1em; background: #f9f9f9; border-radius: 10px; margin-top: 20px;'>${msgIngr}</div>`;
-		     return;
-		}
+        if (ingredientiDaMostrare.length === 0) {
+             let msgIngr = "La dispensa è vuota... aria fritta stasera? 🌬️";
+             if (ruolo === "cucina") msgIngr = "Niente ingredienti per te. Oggi si ordina la pizza! 🍕";
+             if (ruolo === "bere") msgIngr = "Cantina vuota. Fai scorrere l'acqua del rubinetto! 🚰";
+             if (ruolo === "snack") msgIngr = "Niente patatine o fritti... Mettiti a dieta! 🥕";
+             if (ruolo.startsWith("extra")) msgIngr = `Nessun ingrediente in ${window.nomiRepartiExtra?.[ruolo] || ruolo}. Qui si fa la fame! 👻`;
+             
+             container.innerHTML = `<div style='text-align:center; padding: 30px; color: #777; font-style: italic; font-size: 1.1em; background: #f9f9f9; border-radius: 10px; margin-top: 20px;'>${msgIngr}</div>`;
+             return;
+        }
 
-        const fragment = document.createDocumentFragment();
+       const fragment = document.createDocumentFragment();
 
-        Object.entries(categorie).forEach(([cat, items]) => {
-            items.forEach(ing => {
+        ingredientiDaMostrare.forEach(ing => {
                 // 🔹 CONTENITORE RIGA 
                 const row = document.createElement("div");
                 row.style.display = "flex";
-                row.style.justifyContent = "space-between"; // Spinge nome a sx, controlli a dx
+                row.style.justifyContent = "space-between";
                 row.style.alignItems = "center";
-                row.style.flexWrap = "wrap"; // Salva l'impaginazione su schermi piccoli
+                row.style.flexWrap = "wrap";
                 row.style.gap = "10px";
                 row.style.padding = "8px 0";
                 
+                // Se è un ingrediente in prestito, mettiamo un'etichetta
+                let etichettaPrestito = "";
+                if (ing.inPrestito) {
+                     let nomeRep = ing.nomeCatOriginale.charAt(0).toUpperCase() + ing.nomeCatOriginale.slice(1);
+                     if (ing.nomeCatOriginale.startsWith("extra")) nomeRep = window.nomiRepartiExtra?.[ing.nomeCatOriginale] || nomeRep;
+                     etichettaPrestito = `<small style="color:#f57c00; font-weight:normal; margin-left:5px;">[Da ${nomeRep}]</small>`;
+                }
+                
                 // 🔹 BLOCCO 1: NOME A SINISTRA
                 const nameSpan = document.createElement("div");
-                nameSpan.innerText = ing.nome;
+                nameSpan.innerHTML = `${ing.nome} ${etichettaPrestito}`;
                 nameSpan.style.fontWeight = "bold";
-                nameSpan.style.flex = "1 1 120px"; // Occupa lo spazio disponibile
+                nameSpan.style.flex = "1 1 120px";
                 
                 // 🔹 BLOCCO 2: GRUPPO CONTROLLI A DESTRA
                 const controls = document.createElement("div");
@@ -7171,7 +7178,6 @@ async function caricaIngredientiPerRuolo(ruolo) {
                 hr.style.border = "none";
                 hr.style.borderTop = "1px solid #eee";
                 fragment.appendChild(hr);
-            });
         });
 
         container.appendChild(fragment);
@@ -7868,6 +7874,10 @@ document.addEventListener("DOMContentLoaded", () => {
 	            <label><b>Aggiunte max gratuite:</b></label>
 	            <input type="number" id="modalPiattoMaxGratis" min="0" placeholder="0 (Nessuna gratuità)" style="width: 100%; padding: 8px; box-sizing: border-box; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px;">
 	        </div>
+			<div style="margin-bottom: 15px;">
+	            <label><b>Ingredienti / Ricetta Piatto:</b></label>
+                <div id="modalPiattoIngredientiContainer" style="margin-top: 8px; max-height: 220px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; border-radius: 6px; background: #fafafa;"></div>
+            </div>
 
            <div style="background: #f4f9f4; padding: 15px; border: 1px solid #d0e8d0; border-radius: 8px; margin-bottom: 15px; box-sizing: border-box;">
                 <label style="cursor:pointer; display:flex; align-items:center; gap: 10px;">
@@ -7885,10 +7895,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     </div>
                 </div>
             </div>
-            <div style="margin-bottom: 15px;">
-	            <label><b>Ingredienti / Ricetta Piatto:</b></label>
-	            <div id="modalPiattoIngredientiContainer" style="margin-top: 8px; max-height: 220px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; border-radius: 6px; background: #fafafa;"></div>
-	        </div>
 	        <div class="modal-actions" style="margin-top: 25px; display: flex; justify-content: flex-end; gap: 10px;">
 	            <button class="btn-chiudi" id="btnAnnullaNuovoPiatto" style="padding: 10px 20px;">Annulla</button>
 	            <button class="btn-salva" id="btnSalvaNuovoPiatto" style="padding: 10px 20px;">Salva Piatto</button>
@@ -8178,6 +8184,10 @@ function modificaPiattoMenu(menuId, piatto) {
             <label><b>Aggiunte max gratuite:</b></label>
             <input type="number" id="editPiattoMaxGratis" min="0" placeholder="0" style="width: 100%; padding: 8px; box-sizing: border-box; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px;">
         </div>
+		<div style="margin-bottom: 15px;">
+            <label><b>Ingredienti / Composizione:</b></label>
+            <div id="editPiattoIngredientiContainer" style="margin-top: 8px; max-height: 220px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; border-radius: 6px; background: #fafafa;"></div>
+        </div>
 
        <div style="background: #f4f9f4; padding: 15px; border: 1px solid #d0e8d0; border-radius: 8px; margin-bottom: 15px; box-sizing: border-box;">
             <label style="cursor:pointer; display:flex; align-items:center; gap: 10px;">
@@ -8195,10 +8205,7 @@ function modificaPiattoMenu(menuId, piatto) {
                 </div>
             </div>
         </div>
-        <div style="margin-bottom: 15px;">
-            <label><b>Ingredienti / Composizione:</b></label>
-            <div id="editPiattoIngredientiContainer" style="margin-top: 8px; max-height: 220px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; border-radius: 6px; background: #fafafa;"></div>
-        </div>
+
         <div class="modal-actions" style="margin-top: 25px; display: flex; justify-content: flex-end; gap: 10px;">
             <button class="btn-chiudi" id="btnAnnullaEditPiatto" style="padding: 10px 20px;">Annulla</button>
             <button class="btn-salva" id="btnSalvaEditPiatto" style="padding: 10px 20px;">Salva Modifiche</button>
