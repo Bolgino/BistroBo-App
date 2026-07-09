@@ -2893,25 +2893,7 @@ async function caricaMenuCassa() {
                         div = document.createElement("div"); div.id = `menu${id}`;
                         if (divParent) divParent.insertBefore(div, document.getElementById("scontiGlobaliCassaContainer"));
                   }
-                  div.style.display = "flex";
-				  div.style.flexDirection = "column";
-				  div.style.minWidth = "0"; 
-				  div.style.minHeight = "0"; // TRUCCO CSS (Evita lo sforamento flex)
-				  div.style.boxSizing = "border-box";
-				  div.style.background = "#fcfcfc";
-				  div.style.border = "1px solid #e0e0e0";
-				  div.style.borderRadius = "8px";
-				  div.style.padding = "8px";
-				  div.style.margin = "0";
-				  div.style.overflow = "hidden"; // Taglia tutto ciò che sfora
-
-				  div.innerHTML = `
-					  <h5 style="margin:0 0 8px 0; color:#333; font-size:0.95em; border-bottom:1px solid #ddd; padding-bottom:4px; display:flex; align-items:center; flex-shrink: 0;">
-						  <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background-color:${conf.color}; margin-right:6px;"></span>
-						  ${conf.nome}
-					  </h5>
-					  <div class="cassa-ottimizzata-container" style="display:grid; grid-template-columns: repeat(2, 1fr); grid-auto-rows: minmax(35px, 1fr); gap:6px; flex: 1; overflow-y: auto; min-height: 0; padding-right: 4px;"></div>
-				  `;
+                  div.innerHTML = ""; div.style.display = "none";
              });
         }
 
@@ -3042,22 +3024,25 @@ async function caricaMenuCassa() {
                       const div = document.getElementById(conf.id);
                       if (div) {
                           if (!div.querySelector("h5")) {
-                              div.style.display = "block";
-                              div.style.flex = "1 1 30%"; 
-                              div.style.minWidth = "220px";
+                              // NUOVO STILE A GRIGLIA COMPATTA (Nessuno sforamento!)
+                              div.style.display = "flex";
+                              div.style.flexDirection = "column";
+                              div.style.minWidth = "0"; 
+                              div.style.minHeight = "0"; 
                               div.style.boxSizing = "border-box";
                               div.style.background = "#fcfcfc";
                               div.style.border = "1px solid #e0e0e0";
                               div.style.borderRadius = "8px";
                               div.style.padding = "8px";
                               div.style.margin = "0";
+                              div.style.overflow = "hidden"; // Essenziale per non sforare
 
                               div.innerHTML = `
-                                  <h5 style="margin:0 0 8px 0; color:#333; font-size:0.95em; border-bottom:1px solid #ddd; padding-bottom:4px; display:flex; align-items:center;">
-                                      <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background-color:${item.color}; margin-right:6px;"></span>
-                                      ${item.nome}
+                                  <h5 style="margin:0 0 8px 0; color:#333; font-size:0.95em; border-bottom:1px solid #ddd; padding-bottom:4px; display:flex; align-items:center; flex-shrink: 0;">
+                                      <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background-color:${conf.color}; margin-right:6px;"></span>
+                                      ${conf.nome}
                                   </h5>
-                                  <div class="cassa-ottimizzata-container" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
+                                  <div class="cassa-ottimizzata-container" style="display:grid; grid-template-columns: repeat(2, 1fr); grid-auto-rows: minmax(35px, 1fr); gap:6px; flex: 1; overflow-y: auto; min-height: 0; padding-right: 4px;"></div>
                               `;
                           }
                           div.querySelector(".cassa-ottimizzata-container").appendChild(btn);
