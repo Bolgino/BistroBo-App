@@ -60,6 +60,7 @@ window.settings = {
 	sistemaExtraAbilitato: true,
     scontriniSeparati: false,
     piattiComboAbilitati: false,
+	preordiniAsportoAutomatico: false,
     giocoScontrino: false
 };
 
@@ -1161,6 +1162,21 @@ function initImpostazioniToggle() {
 		    });
 		}
     });
+	// 🔹 ASPORTO AUTOMATICO PREORDINI
+    const togglePreordiniAsportoAutoBtn = document.getElementById("togglePreordiniAsportoAutoBtn");
+    const preordiniAsportoAutoRef = db.ref("impostazioni/preordiniAsportoAutomatico");
+    
+    if (togglePreordiniAsportoAutoBtn) {
+        initToggle(togglePreordiniAsportoAutoBtn, preordiniAsportoAutoRef, {on:"ON", off:"OFF"}, false, val => {
+            window.settings.preordiniAsportoAutomatico = val;
+        });
+
+        // Mostra il bottone nelle impostazioni solo se i preordini sono abilitati
+        db.ref("impostazioni/preordiniAbilitati").on("value", snap => {
+            const preordiniOn = snap.exists() && snap.val() === true;
+            togglePreordiniAsportoAutoBtn.parentElement.style.display = preordiniOn ? "flex" : "none";
+        });
+    }
 }
 function initTickNoteDestinazioni() {
     db.ref("impostazioni/noteDestinazioniAbilitate").on("value", snap => {
