@@ -1302,13 +1302,12 @@ function initImpostazioniToggle() {
             togglePreordiniAsportoAutoBtn.parentElement.style.display = preordiniOn ? "flex" : "none";
         });
     }
-	// ================= COPERTO E ASPORTO =================
+	// ================= COPERTO E COSTO ASPORTO =================
     const copertoRef = db.ref("impostazioni/copertoAbilitato");
     const copertoValRef = db.ref("impostazioni/copertoValore");
     const costoAsportoRef = db.ref("impostazioni/costoAsportoAbilitato");
     const costoAsportoValRef = db.ref("impostazioni/costoAsportoValore");
 
-    // Sincronizza i valori in tempo reale
     copertoValRef.on("value", snap => window.settings.copertoValore = snap.val() || 0);
     costoAsportoValRef.on("value", snap => window.settings.costoAsportoValore = snap.val() || 0);
 
@@ -1321,14 +1320,13 @@ function initImpostazioniToggle() {
             if(btnCopertoCassa) btnCopertoCassa.style.display = val ? "inline-block" : "none";
         });
 
-        // SOVRASCRIVIAMO IL CLICK PER INSERIRE IL POPUP
         toggleCopertoBtn.onclick = async () => {
             if(!checkOnline(true)) return;
             const currentState = window.settings.copertoAbilitato;
             if(!currentState) { 
                 let val = prompt("Inserisci il costo del coperto a persona in € (es. 1.50):", "1.50");
                 if(val !== null) {
-                    val = val.replace(",", "."); // Supporta la virgola
+                    val = val.replace(",", "."); 
                     const num = parseFloat(val);
                     if(!isNaN(num)) {
                         await copertoValRef.set(num);
@@ -1345,7 +1343,6 @@ function initImpostazioniToggle() {
             window.settings.costoAsportoAbilitato = val;
         });
 
-        // SOVRASCRIVIAMO IL CLICK PER INSERIRE IL POPUP
         toggleCostoAsportoBtn.onclick = async () => {
             if(!checkOnline(true)) return;
             const currentState = window.settings.costoAsportoAbilitato;
@@ -2936,6 +2933,9 @@ function separaComanda(items) {
     }
 
     items.forEach(i => {
+        // 🔹 IGNORA LE VOCI DI SERVIZIO: NON VANNO NEI MONITOR O SCONTRINI DI REPARTO (Ma andranno nello scontrino cliente!)
+        if ((i.categoria || "").toLowerCase().trim() === "servizio") return;
+
         const destMain = getDest(i.categoria, i.tipo, i.nome);
 
         let cloneCibo = null, cloneBere = null, cloneSnack = null;
@@ -9159,7 +9159,64 @@ function mostraFormSconto(piatto, id, containerRow) {
         });
     };
 }
+// ================= GESTIONE TASTI COPERTO E ASPORTO =================
+document.addEventListener("DOMContentLoaded", () => {
+    // --- FUNZIONAMENTO TASTO COPERTO ---
+    const btnCoperto = document.getElementById("btnCopertoCassa");
+    if (btnCoperto) {
+        btnCoperto.addEventListener("click", () => {
+            let quant = 1;
+            // Legge il tastierino delle quantità (se attivo) o chiede il numero
+            if (window.settings.selettoreQuantitaCassa) {
+                const quantVal = document.getElementById("quantita").value;
+                quant = parseInt(quantVal);
+                if (!quant || quant <= 0) { notify("Seleziona la quantità di coperti dal tastierino!", "warn"); return; }
+            } else {
+                const res = prompt("Quanti coperti vuoi aggiungere?", "1");
+                if(!res) return;
+                quant = parseInt(res);
+                if(isNaN(quant) || quant <= 0) return;
+            }
 
+            const esiste = comandaCorrente.find(i => i.nome === "Coperto");
+            if (esiste) {
+                esiste.quantita += quant;
+            } else {
+                comandaCorrente.push({
+                    nome: "Coperto",
+                    prezzo: window.settings.copertoValore || 0,
+                    quantita: quant,
+                    categoria: "servizio" // 🔹 FONDAMENTALE: "servizio" viene stampato solo al cliente!
+                });
+            }
+            if (typeof aggiornaComandaCorrente === "function") aggiornaComandaCorrente();
+        });
+    }
+
+    // --- FUNZIONAMENTO AUTOMATICO COSTO ASPORTO ---
+    const asportoCheckElem = document.getElementById("checkAsporto");
+    if (asportoCheckElem) {
+        asportoCheckElem.addEventListener("change", (e) => {
+            if (window.settings.costoAsportoAbilitato) {
+                const fee = window.settings.costoAsportoValore || 0;
+                if (e.target.checked) {
+                    if (fee > 0 && !comandaCorrente.find(i => i.nome === "Costo Asporto")) {
+                        comandaCorrente.push({
+                            nome: "Costo Asporto",
+                            prezzo: fee,
+                            quantita: 1,
+                            categoria: "servizio" // 🔹 FONDAMENTALE: "servizio" viene stampato solo al cliente!
+                        });
+                    }
+                } else {
+                    // Se disattivi la spunta, lo rimuove in automatico
+                    comandaCorrente = comandaCorrente.filter(i => i.nome !== "Costo Asporto");
+                }
+                if (typeof aggiornaComandaCorrente === "function") aggiornaComandaCorrente();
+            }
+        });
+    }
+});
 //invio comanda di ogni tipo in fondo per evitari errori
 document.addEventListener("DOMContentLoaded", () => {
     const inviaBtn = document.getElementById("inviaComandaBtn");
