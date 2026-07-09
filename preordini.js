@@ -656,8 +656,12 @@ async function aggiungiPreordineAlleComande(id) {
             telefono: p.telefono,
             posizione: p.posizione,
             nomeStand: window.settings.nomeStand,
-            restoRichiesto: p.restoRichiesto
+            restoRichiesto: p.restoRichiesto,
+            commento: commentoAsporto, // 🔹 AGGIUNTO: Permette di stampare "*** ASPORTO ***" sui ticket separati!
+            scontoGlobale: p.scontoGlobale // 🔹 AGGIUNTO: Allinea perfettamente i calcoli e il layout a quelli della Cassa
         };
+        
+        // La funzione è letteralmente la stessa usata dalla Cassa, ora riceve gli argomenti perfetti
         stampaComanda(p.piatti || [], numeroComandaFinale, p.note || "", datiDellaStampa);
     }
 
