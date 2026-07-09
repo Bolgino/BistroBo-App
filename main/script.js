@@ -1302,6 +1302,66 @@ function initImpostazioniToggle() {
             togglePreordiniAsportoAutoBtn.parentElement.style.display = preordiniOn ? "flex" : "none";
         });
     }
+	// ================= COPERTO E ASPORTO =================
+    const copertoRef = db.ref("impostazioni/copertoAbilitato");
+    const copertoValRef = db.ref("impostazioni/copertoValore");
+    const costoAsportoRef = db.ref("impostazioni/costoAsportoAbilitato");
+    const costoAsportoValRef = db.ref("impostazioni/costoAsportoValore");
+
+    // Sincronizza i valori in tempo reale
+    copertoValRef.on("value", snap => window.settings.copertoValore = snap.val() || 0);
+    costoAsportoValRef.on("value", snap => window.settings.costoAsportoValore = snap.val() || 0);
+
+    const toggleCopertoBtn = document.getElementById("toggleCopertoBtn");
+    const btnCopertoCassa = document.getElementById("btnCopertoCassa");
+    
+    if (toggleCopertoBtn) {
+        initToggle(toggleCopertoBtn, copertoRef, {on:"ON", off:"OFF"}, false, val => {
+            window.settings.copertoAbilitato = val;
+            if(btnCopertoCassa) btnCopertoCassa.style.display = val ? "inline-block" : "none";
+        });
+
+        // SOVRASCRIVIAMO IL CLICK PER INSERIRE IL POPUP
+        toggleCopertoBtn.onclick = async () => {
+            if(!checkOnline(true)) return;
+            const currentState = window.settings.copertoAbilitato;
+            if(!currentState) { 
+                let val = prompt("Inserisci il costo del coperto a persona in € (es. 1.50):", "1.50");
+                if(val !== null) {
+                    val = val.replace(",", "."); // Supporta la virgola
+                    const num = parseFloat(val);
+                    if(!isNaN(num)) {
+                        await copertoValRef.set(num);
+                        await copertoRef.set(true);
+                    } else { notify("Valore non valido", "error"); }
+                }
+            } else { await copertoRef.set(false); }
+        };
+    }
+
+    const toggleCostoAsportoBtn = document.getElementById("toggleCostoAsportoBtn");
+    if (toggleCostoAsportoBtn) {
+        initToggle(toggleCostoAsportoBtn, costoAsportoRef, {on:"ON", off:"OFF"}, false, val => {
+            window.settings.costoAsportoAbilitato = val;
+        });
+
+        // SOVRASCRIVIAMO IL CLICK PER INSERIRE IL POPUP
+        toggleCostoAsportoBtn.onclick = async () => {
+            if(!checkOnline(true)) return;
+            const currentState = window.settings.costoAsportoAbilitato;
+            if(!currentState) { 
+                let val = prompt("Inserisci il costo fisso per l'asporto in € (es. 2.00):", "2.00");
+                if(val !== null) {
+                    val = val.replace(",", ".");
+                    const num = parseFloat(val);
+                    if(!isNaN(num)) {
+                        await costoAsportoValRef.set(num);
+                        await costoAsportoRef.set(true);
+                    } else { notify("Valore non valido", "error"); }
+                }
+            } else { await costoAsportoRef.set(false); }
+        };
+    }
 }
 function initTickNoteDestinazioni() {
     db.ref("impostazioni/noteDestinazioniAbilitate").on("value", snap => {
