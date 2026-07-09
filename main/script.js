@@ -3054,8 +3054,8 @@ async function caricaMenuCassa() {
 
                               div.innerHTML = `
                                   <h5 style="margin:0 0 8px 0; color:#333; font-size:0.95em; border-bottom:1px solid #ddd; padding-bottom:4px; display:flex; align-items:center;">
-                                      <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background-color:${conf.color}; margin-right:6px;"></span>
-                                      ${conf.nome}
+                                      <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background-color:${item.color}; margin-right:6px;"></span>
+                                      ${item.nome}
                                   </h5>
                                   <div class="cassa-ottimizzata-container" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
                               `;
