@@ -610,8 +610,11 @@ async function aggiungiPreordineAlleComande(id) {
         }
     }
 
-    // 6️⃣ Commento asporto
-    const commentoAsporto = (window.settings.asportoAbilitato && p.asporto) ? "ASPORTO" : null;
+    // 6️⃣ Commento asporto (MODIFICATO PER ASPORTO AUTOMATICO)
+    let commentoAsporto = null;
+    if (window.settings.preordiniAsportoAutomatico || (window.settings.asportoAbilitato && p.asporto)) {
+        commentoAsporto = "ASPORTO";
+    }
 
     // 7️⃣ Metodo pagamento predefinito
     const metodoPagamento = p.metodoPagamento || "contanti";
