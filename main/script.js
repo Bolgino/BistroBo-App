@@ -2865,14 +2865,22 @@ async function caricaMenuCassa() {
              // Layout Cassa Ottimizzata
              // GRIGLIA DINAMICA COMPATTA A PIÙ COLONNE
              if (divParent) {
-                 divParent.style.display = "flex";
-                 divParent.style.flexWrap = "wrap";
-                 divParent.style.gap = "8px";
-                 divParent.style.alignItems = "flex-start";
+                 // Usiamo GRID: Il box si prende esattamente lo spazio a schermo e non sfora mai
+                 divParent.style.display = "grid";
+                 divParent.style.gridTemplateColumns = "repeat(3, 1fr)"; // Fissa 3 profili per riga
+                 divParent.style.gridAutoRows = "1fr"; // Le righe si dividono l'altezza equamente
+                 divParent.style.gap = "10px";
+                 // L'altezza è fissa rispetto allo schermo (sottraendo la barra in alto e i bordi)
+                 divParent.style.height = "calc(100vh - 250px)"; 
+                 divParent.style.minHeight = "0"; // TRUCCO CSS: Impedisce al contenitore di ingrandirsi
+                 divParent.style.overflow = "hidden"; // Niente scroll generale della pagina
                  
-                 // Assicura che la barra sconti (se c'è) vada a capo occupando il 100%
+                 // La barra sconti va in fondo a tutto e prende tutta la riga (se c'è)
                  const scontiCont = document.getElementById("scontiGlobaliCassaContainer");
-                 if (scontiCont) scontiCont.style.flex = "1 1 100%";
+                 if (scontiCont) {
+                     scontiCont.style.gridColumn = "1 / -1";
+                     scontiCont.style.marginTop = "0"; 
+                 }
              }
 
              // Inizializza i div (vuoti)
@@ -2885,7 +2893,25 @@ async function caricaMenuCassa() {
                         div = document.createElement("div"); div.id = `menu${id}`;
                         if (divParent) divParent.insertBefore(div, document.getElementById("scontiGlobaliCassaContainer"));
                   }
-                  div.innerHTML = ""; div.style.display = "none";
+                  div.style.display = "flex";
+				  div.style.flexDirection = "column";
+				  div.style.minWidth = "0"; 
+				  div.style.minHeight = "0"; // TRUCCO CSS (Evita lo sforamento flex)
+				  div.style.boxSizing = "border-box";
+				  div.style.background = "#fcfcfc";
+				  div.style.border = "1px solid #e0e0e0";
+				  div.style.borderRadius = "8px";
+				  div.style.padding = "8px";
+				  div.style.margin = "0";
+				  div.style.overflow = "hidden"; // Taglia tutto ciò che sfora
+
+				  div.innerHTML = `
+					  <h5 style="margin:0 0 8px 0; color:#333; font-size:0.95em; border-bottom:1px solid #ddd; padding-bottom:4px; display:flex; align-items:center; flex-shrink: 0;">
+						  <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background-color:${conf.color}; margin-right:6px;"></span>
+						  ${conf.nome}
+					  </h5>
+					  <div class="cassa-ottimizzata-container" style="display:grid; grid-template-columns: repeat(2, 1fr); grid-auto-rows: minmax(35px, 1fr); gap:6px; flex: 1; overflow-y: auto; min-height: 0; padding-right: 4px;"></div>
+				  `;
              });
         }
 
@@ -2974,30 +3000,32 @@ async function caricaMenuCassa() {
                  else if (ctg === "extra3") coloreBase = "#795548";
 
                  // Stile ultra-pulito: forza il grigino/bianco, ignora il tema
+                 // Nessuna altezza/larghezza fissa: si adattano alla griglia
                  btn.style.cssText = `
                      background-color: #f8f9fa !important;
                      color: #333 !important;
                      border: 1px solid #ccc !important;
                      border-left: 5px solid ${coloreBase} !important;
-                     padding: 8px 6px;
+                     padding: 4px 2px;
                      margin: 0;
                      border-radius: 6px;
                      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-                     flex: 1 1 110px;
-                     max-width: 160px;
-                     min-height: 60px;
                      display: flex;
                      flex-direction: column;
                      justify-content: center;
                      align-items: center;
+                     width: 100%;
+                     height: 100%;
+                     box-sizing: border-box;
+                     overflow: hidden;
                  `;
                  
                  const prezzoScontato = item.sconto ? calcolaPrezzoConSconto(item).toFixed(2) : item.prezzo.toFixed(2);
                  
-                 // Testo sempre centrato e visibile su più righe
+                 // Uso "clamp" sul font e un limite rigido a 2 righe per evitare rotture del bottone
                  btn.innerHTML = `
-                    <span style="font-weight:bold; font-size:0.9em; white-space:normal; line-height:1.2; margin-bottom:4px; text-align:center;">${item.nome}</span>
-                    <small style="color:#555; font-size:0.85em; font-weight:bold;">€${prezzoScontato}</small>
+                    <span style="font-weight:bold; font-size:clamp(10px, 1.1vw, 14px); white-space:normal; line-height:1.1; margin-bottom:2px; text-align:center; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;">${item.nome}</span>
+                    <small style="color:#555; font-size:0.85em; font-weight:bold; flex-shrink: 0;">€${prezzoScontato}</small>
                  `;
                  
                  const containerIdMap = {
@@ -3174,7 +3202,7 @@ function aggiornaBottoniBloccati() {
                 if (item.bloccato === true) {
                     // BLOCCO ADMIN MANUALE -> ARANCIONE
                     if (isOpt) {
-                        btn.style.cssText = `background: #fff3cd !important; color: #ff9800 !important; border: 2px dashed orange !important; opacity: 0.8 !important; padding: 8px 6px; margin: 0; border-radius: 6px; flex: 1 1 110px; max-width: 160px; min-height: 60px; display: flex; flex-direction: column; justify-content: center; align-items: center; border-left: 5px solid orange !important;`;
+                        btn.style.cssText = `background: #fff3cd !important; color: #ff9800 !important; border: 2px dashed orange !important; opacity: 0.8 !important; padding: 4px 2px; margin: 0; border-radius: 6px; width: 100%; height: 100%; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; align-items: center; border-left: 5px solid orange !important; overflow: hidden;`;
                     } else {
                         btn.style.cssText = "";
                         Object.assign(btn.style, { opacity: 0.8, border: "2px dashed orange", background: "#fff3cd", color: "#ff9800" });
@@ -3182,7 +3210,7 @@ function aggiornaBottoniBloccati() {
                 } else {
                     // INGREDIENTE ESAURITO -> ROSSO
                     if (isOpt) {
-                        btn.style.cssText = `background: #f8d7da !important; color: #d9534f !important; border: 2px dashed #d9534f !important; opacity: 0.6 !important; padding: 8px 6px; margin: 0; border-radius: 6px; flex: 1 1 110px; max-width: 160px; min-height: 60px; display: flex; flex-direction: column; justify-content: center; align-items: center; border-left: 5px solid #d9534f !important;`;
+                        btn.style.cssText = `background: #f8d7da !important; color: #d9534f !important; border: 2px dashed #d9534f !important; opacity: 0.6 !important; padding: 4px 2px; margin: 0; border-radius: 6px; width: 100%; height: 100%; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; align-items: center; border-left: 5px solid #d9534f !important; overflow: hidden;`;
                     } else {
                         btn.style.cssText = "";
                         Object.assign(btn.style, { opacity: 0.6, border: "2px solid #d9534f", background: "#f8d7da", color: "#d9534f" });
@@ -3193,7 +3221,7 @@ function aggiornaBottoniBloccati() {
                 
                 if (isOpt) {
                     // Ottimizzata Standard: Grigino pulito con lato colorato
-                    btn.style.cssText = `background: #f8f9fa !important; color: #333 !important; border: 1px solid #ccc !important; border-left: 5px solid ${coloreBase} !important; padding: 8px 6px; margin: 0; border-radius: 6px; flex: 1 1 110px; max-width: 160px; min-height: 60px; display: flex; flex-direction: column; justify-content: center; align-items: center;`;
+                    btn.style.cssText = `background: #f8f9fa !important; color: #333 !important; border: 1px solid #ccc !important; border-left: 5px solid ${coloreBase} !important; padding: 4px 2px; margin: 0; border-radius: 6px; width: 100%; height: 100%; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; align-items: center; overflow: hidden;`;
                 } else {
                     // Cassa Estesa Standard: Grigio Classico
                     btn.style.cssText = ""; 
