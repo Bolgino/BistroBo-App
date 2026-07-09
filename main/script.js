@@ -1154,7 +1154,34 @@ function initImpostazioniToggle() {
                 const nextState = !currentState;
                 
                 if (!nextState) {
-                    // STIAMO DISATTIVANDO IL REPARTO: Chiedi dove mandare le comande
+                    // --- 1. CONTROLLO PIATTI: Ci sono piatti in questo reparto? ---
+                    const snapMenu = await db.ref("menu").once("value");
+                    const menuData = snapMenu.val() || {};
+                    let hasPiatti = false;
+                    const catCercata = prof.toLowerCase(); // es. "extra1"
+                    const nomeCustom = (window.nomiRepartiExtra?.[prof] || "").toLowerCase().trim();
+
+                    for (const key in menuData) {
+                        let catPiatto = (menuData[key].categoria || "cibi").toLowerCase().trim();
+                        // Controlla se il piatto ha la categoria dell'extra o il suo nome personalizzato
+                        if (catPiatto === catCercata || (nomeCustom && catPiatto === nomeCustom) || (catCercata === "extra1" && catPiatto === "risto")) {
+                            hasPiatti = true;
+                            break; // Ne basta 1 per far aprire il popup
+                        }
+                    }
+
+                    // Se il menù di questa categoria è VUOTO, disattiva subito senza fare domande
+                    if (!hasPiatti) {
+                        try {
+                            await fallbackRef.remove(); // Pulisce vecchi reindirizzamenti
+                            await ref.set(false); // Spegne il reparto
+                        } catch(e) { console.error(e); }
+                        setTimeout(() => { toggleBtn.disabled = false; }, 300);
+                        return; // 🛑 IMPORTANTISSIMO: Ferma l'esecuzione qui, non apre il popup!
+                    }
+                    // --- FINE CONTROLLO PIATTI ---
+
+                    // 2. SE SIAMO QUI, SIGNIFICA CHE CI SONO PIATTI: Mostriamo il Popup
                     const nomeReparto = window.nomiRepartiExtra?.[prof] || CapProf;
                     
                     const opzioni = [
