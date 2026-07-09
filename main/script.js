@@ -1121,9 +1121,16 @@ function initImpostazioniToggle() {
     }
 	// ================= PROFILI EXTRA =================
     ["extra1", "extra2", "extra3"].forEach(prof => {
-        const toggleBtn = document.getElementById("toggle" + prof.charAt(0).toUpperCase() + prof.slice(1) + "Btn");
+        const CapProf = prof.charAt(0).toUpperCase() + prof.slice(1);
+        const toggleBtn = document.getElementById("toggle" + CapProf + "Btn");
         const ref = db.ref("impostazioni/" + prof + "Abilitato");
+        const fallbackRef = db.ref("impostazioni/fallback" + CapProf);
         const dependentDiv = document.getElementById(prof + "DependentSettings");
+
+        // Ascolta in tempo reale dove vanno i piatti quando l'extra è disabilitato
+        fallbackRef.on("value", snap => {
+            window.settings["fallback" + CapProf] = snap.val();
+        });
 
         // Funzione per mostrare/nascondere le impostazioni specifiche del reparto
         function updateDependentVisibility(val) {
@@ -1131,17 +1138,89 @@ function initImpostazioniToggle() {
         }
 
         if (toggleBtn) {
+            // Usa initToggle per mantenere aggiornata l'interfaccia UI
             initToggle(toggleBtn, ref, {on: "ON", off: "OFF"}, false, val => {
-                window.settings[prof + "Abilitato"] = val;
-                updateDependentVisibility(val);
-            });
-            ref.on("value", snap => {
-                const val = !!snap.val();
                 window.settings[prof + "Abilitato"] = val;
                 updateDependentVisibility(val);
                 aggiornaSelectRuoliDinamici(); 
                 if (typeof aggiornaTickSnackPreordini === "function") aggiornaTickSnackPreordini();
             });
+
+            // 🔹 SOVRASCRIVIAMO IL CLICK PER INSERIRE IL MODALE DI DESTINAZIONE
+            toggleBtn.onclick = async () => {
+                if (!checkOnline(true)) return;
+                toggleBtn.disabled = true;
+                const currentState = window.settings[prof + "Abilitato"];
+                const nextState = !currentState;
+                
+                if (!nextState) {
+                    // STIAMO DISATTIVANDO IL REPARTO: Chiedi dove mandare le comande
+                    const nomeReparto = window.nomiRepartiExtra?.[prof] || CapProf;
+                    
+                    const opzioni = [
+                        { val: "cibo", label: "Cucina" },
+                        { val: "bere", label: "Bere" }
+                    ];
+                    if (window.settings.snackAbilitato) opzioni.push({ val: "snack", label: "Snack" });
+                    
+                    ["extra1", "extra2", "extra3"].forEach(altroProf => {
+                        if (altroProf !== prof && window.settings[altroProf + "Abilitato"]) {
+                            opzioni.push({ val: altroProf, label: window.nomiRepartiExtra?.[altroProf] || altroProf.toUpperCase() });
+                        }
+                    });
+
+                    const optionsHtml = opzioni.map(o => `<option value="${o.val}">${o.label}</option>`).join("");
+                    
+                    const overlay = document.createElement("div");
+                    overlay.className = "modal-overlay";
+                    overlay.style.zIndex = "10005";
+                    
+                    const modal = document.createElement("div");
+                    modal.className = "modal-varianti";
+                    modal.style.padding = "25px";
+                    modal.style.textAlign = "center";
+                    
+                    modal.innerHTML = `
+                        <h3 style="margin-bottom: 15px; color: #333;">Disattiva ${nomeReparto}</h3>
+                        <p style="font-size: 0.95em; color: #555; margin-bottom: 15px;">
+                            Scegli in quale reparto inviare i piatti di <b>${nomeReparto}</b> finché è spento:
+                        </p>
+                        <select id="fallbackSelect_${prof}" style="width: 100%; padding: 10px; margin-bottom: 20px; border-radius: 6px; border: 1px solid #ccc; font-size: 1.1em; font-weight: bold; outline: none;">
+                            ${optionsHtml}
+                        </select>
+                        <div class="modal-actions" style="display: flex; gap: 10px;">
+                            <button class="btn-chiudi" id="btnAnnullaFallback_${prof}" style="flex: 1; margin:0;">Annulla</button>
+                            <button class="btn-salva" id="btnConfermaFallback_${prof}" style="flex: 1; margin:0; background-color: #f44336; color: white;">Disattiva Reparto</button>
+                        </div>
+                    `;
+                    overlay.appendChild(modal);
+                    document.body.appendChild(overlay);
+
+                    document.getElementById(`btnAnnullaFallback_${prof}`).onclick = () => {
+                        overlay.remove();
+                        toggleBtn.disabled = false;
+                    };
+                    
+                    document.getElementById(`btnConfermaFallback_${prof}`).onclick = async () => {
+                        const dest = document.getElementById(`fallbackSelect_${prof}`).value;
+                        document.getElementById(`btnConfermaFallback_${prof}`).innerText = "Salvataggio...";
+                        document.getElementById(`btnConfermaFallback_${prof}`).disabled = true;
+                        try {
+                            await fallbackRef.set(dest);
+                            await ref.set(false);
+                            overlay.remove();
+                        } catch(e) { console.error(e); }
+                        setTimeout(() => { toggleBtn.disabled = false; }, 300);
+                    };
+                } else {
+                    // STIAMO RIATTIVANDO IL REPARTO
+                    try {
+                        await fallbackRef.remove(); // Rimuoviamo il fallback, torna indipendente
+                        await ref.set(true);
+                    } catch(e) { console.error(e); }
+                    setTimeout(() => { toggleBtn.disabled = false; }, 300);
+                }
+            };
         }
         
         // Nuove in alto extra
@@ -2751,9 +2830,10 @@ function separaComanda(items) {
         if (cat === "bevande" || tip === "bere") return "bere";
         
         // Incanaliamo le comande nel posto giusto
-        if (cat === "extra1" || tip === "extra1" || (lE1 && (cat === lE1 || tip === lE1)) || cat === "risto") return extra1Abilitato ? "extra1" : "cibo";
-        if (cat === "extra2" || tip === "extra2" || (lE2 && (cat === lE2 || tip === lE2))) return extra2Abilitato ? "extra2" : "cibo";
-        if (cat === "extra3" || tip === "extra3" || (lE3 && (cat === lE3 || tip === lE3))) return extra3Abilitato ? "extra3" : "cibo";
+        // Incanaliamo le comande nel posto giusto in base al Fallback scelto
+        if (cat === "extra1" || tip === "extra1" || (lE1 && (cat === lE1 || tip === lE1)) || cat === "risto") return extra1Abilitato ? "extra1" : (window.settings.fallbackExtra1 || "cibo");
+        if (cat === "extra2" || tip === "extra2" || (lE2 && (cat === lE2 || tip === lE2))) return extra2Abilitato ? "extra2" : (window.settings.fallbackExtra2 || "cibo");
+        if (cat === "extra3" || tip === "extra3" || (lE3 && (cat === lE3 || tip === lE3))) return extra3Abilitato ? "extra3" : (window.settings.fallbackExtra3 || "cibo");
         
         if (cat === "snack" || cat.includes("fritti") || tip === "snack" || nom.includes("patatine") || nom.includes("fritto")) {
             return snackAbilitato ? "snack" : "cibo";
@@ -2872,9 +2952,10 @@ async function caricaMenuCassa() {
                 }
             };
 
-            manageExtraDiv("Extra1", window.nomiRepartiExtra?.extra1 || "Extra 1", window.settings.extra1Abilitato);
-            manageExtraDiv("Extra2", window.nomiRepartiExtra?.extra2 || "Extra 2", window.settings.extra2Abilitato);
-            manageExtraDiv("Extra3", window.nomiRepartiExtra?.extra3 || "Extra 3", window.settings.extra3Abilitato);
+            // 🔹 Mostra SEMPRE gli extra in Cassa se hanno piatti configurati
+            manageExtraDiv("Extra1", window.nomiRepartiExtra?.extra1 || "Extra 1", true);
+            manageExtraDiv("Extra2", window.nomiRepartiExtra?.extra2 || "Extra 2", true);
+            manageExtraDiv("Extra3", window.nomiRepartiExtra?.extra3 || "Extra 3", true);
             
        } else {
              // Layout Cassa Ottimizzata
@@ -3029,9 +3110,10 @@ async function caricaMenuCassa() {
                      cibi: { id: "menuCibi", nome: "Cibi", enabled: true, color: "#4CAF50" },
                      bevande: { id: "menuBevande", nome: "Bevande", enabled: true, color: "#2196F3" },
                      snack: { id: "menuSnack", nome: "Snack", enabled: window.settings.snackAbilitato, color: "#FF5722" },
-                     extra1: { id: "menuExtra1", nome: window.nomiRepartiExtra?.extra1 || "Extra 1", enabled: window.settings.extra1Abilitato, color: "#9C27B0" },
-                     extra2: { id: "menuExtra2", nome: window.nomiRepartiExtra?.extra2 || "Extra 2", enabled: window.settings.extra2Abilitato, color: "#009688" },
-                     extra3: { id: "menuExtra3", nome: window.nomiRepartiExtra?.extra3 || "Extra 3", enabled: window.settings.extra3Abilitato, color: "#795548" }
+                     // 🔹 Mostra SEMPRE gli extra in Cassa se hanno piatti configurati
+                     extra1: { id: "menuExtra1", nome: window.nomiRepartiExtra?.extra1 || "Extra 1", enabled: true, color: "#9C27B0" },
+                     extra2: { id: "menuExtra2", nome: window.nomiRepartiExtra?.extra2 || "Extra 2", enabled: true, color: "#009688" },
+                     extra3: { id: "menuExtra3", nome: window.nomiRepartiExtra?.extra3 || "Extra 3", enabled: true, color: "#795548" }
                  };
                  
                  const conf = containerIdMap[ctg] || containerIdMap["cibi"];
@@ -4357,8 +4439,8 @@ async function caricaIngredienti() {
             }
 
             for (const [cat, items] of Object.entries(categorie)) {
-                // Nascondi gli ingredienti se il reparto extra è disabilitato
-                if (cat.startsWith("extra") && !window.settings[cat + "Abilitato"]) continue;
+                // 🔹 RIMOSSO IL BLOCCO: Ora gli ingredienti degli Extra si vedono sempre nel magazzino!
+                // (riga eliminata per permettere la gestione anche a reparto spento)
 
                 const catDiv = document.createElement("div");
                 const h3 = document.createElement("h3");
@@ -7767,8 +7849,7 @@ function caricaMenuAdmin(){
         }
 
         for(const cat of ["cibi","bevande","snack", "extra1", "extra2", "extra3"]){
-             // Salta se l'extra non è abilitato
-            if (cat.startsWith("extra") && !window.settings[cat + "Abilitato"]) continue;
+            // 🔹 RIMOSSO IL BLOCCO: mostriamo sempre le categorie Extra in Admin
 
             const h = document.createElement("h4");
             let catTitle = cat.charAt(0).toUpperCase() + cat.slice(1);
