@@ -3084,10 +3084,26 @@ async function caricaMenuCassa() {
              menuCibiDiv.style.display = "none"; menuBevandeDiv.style.display = "none"; menuSnackDiv.style.display = "none";
              
              ["Extra1", "Extra2", "Extra3"].forEach(id => {
+                  let cat = id.toLowerCase();
+                  let abilitato = window.settings[cat + "Abilitato"];
+                  
+                  // 🔹 SE IL REPARTO E' SPENTO E VUOTO, NON CREARE IL SUO BOX IN CASSA!
+                  if (!abilitato && !window.categoriaHaPiatti(cat)) {
+                      let divEx = document.getElementById(`menu${id}`);
+                      if (divEx) divEx.style.display = "none";
+                      return;
+                  }
+
                   let div = document.getElementById(`menu${id}`);
                   if (!div) {
                         div = document.createElement("div"); div.id = `menu${id}`;
-                        if (divParent) divParent.insertBefore(div, document.getElementById("scontiGlobaliCassaContainer"));
+                        const refNode = document.getElementById("scontiGlobaliCassaContainer");
+                        // IL FIX: Anche qui ci assicuriamo che l'inserimento non dia errori di gerarchia DOM
+                        if (refNode && refNode.parentNode) {
+                            refNode.parentNode.insertBefore(div, refNode);
+                        } else if (divParent) {
+                            divParent.appendChild(div);
+                        }
                   }
                   div.innerHTML = ""; div.style.display = "none";
              });
@@ -4772,12 +4788,13 @@ function aggiornaStatoIngredient(id) {
     span.style.color = rimanente > 0 ? "green" : "red";
 }
 function renderIngredientOptionsForCategory(cat, container) {
-  container.innerHTML = "";
-  const items = Object.keys(ingredientData || {})
-    .filter(k => (ingredientData[k].categoria || 'cibi') === cat)
-    .map(k => ({ id: k, ...ingredientData[k] }));
+    container.innerHTML = "";
+    
+    // 🔹 RIMOSSO IL FILTRO: Ora mostra tutto il magazzino globale!
+    const items = Object.keys(window.ingredientData || {})
+        .map(k => ({ id: k, ...window.ingredientData[k] }));
 
-  if (items.length === 0) {
+    if (items.length === 0) {
     container.innerHTML = "<div style='font-style:italic;'>Nessun ingrediente per questa categoria</div>";
     return;
   }
@@ -4797,8 +4814,11 @@ function renderIngredientOptionsForCategory(cat, container) {
     const label = document.createElement("label");
     label.style.flex = "1";
     const rText = (it.rimanente === null || typeof it.rimanente === "undefined") ? "illimitato" : it.rimanente;
-    const unitaTxt = it.unita ? it.unita : "pz";
-    label.innerText = `${it.nome} (${rText !== "illimitato" ? rText + " " + unitaTxt : "illimitato"}) ${it.disponibile === false ? '(esaurito)' : ''}`;
+        const unitaTxt = it.unita ? it.unita : "pz";
+        
+        // 🔹 AGGIUNTA CATEGORIA: Mostra da quale reparto viene l'ingrediente per evitare confusione
+        const nomeCat = it.categoria ? it.categoria.charAt(0).toUpperCase() + it.categoria.slice(1) : "Cibi";
+        label.innerHTML = `<b>${it.nome}</b> <small style="color:#888;">[${nomeCat}]</small> <span style="font-size:0.9em;">(${rText !== "illimitato" ? rText + " " + unitaTxt : "illimitato"}) ${it.disponibile === false ? '(esaurito)' : ''}</span>`;
 
 
     const qty = document.createElement("input");
@@ -7002,6 +7022,25 @@ async function caricaIngredientiPerRuolo(ruolo) {
             }
         });
 
+        // 🔹 CERVELLO CONDIVISO: Trova TUTTI gli ingredienti usati dai piatti assegnati a questo ruolo
+        const ingredientiUsati = new Set();
+        if (window.menuData) {
+            Object.values(window.menuData).forEach(piatto => {
+                let catPiatto = (piatto.categoria || "cibi").toLowerCase().trim();
+                const lE1 = (window.nomiRepartiExtra?.extra1 || "").toLowerCase().trim();
+                const lE2 = (window.nomiRepartiExtra?.extra2 || "").toLowerCase().trim();
+                const lE3 = (window.nomiRepartiExtra?.extra3 || "").toLowerCase().trim();
+                if (catPiatto === "extra1" || catPiatto === "risto" || (lE1 && catPiatto === lE1)) catPiatto = "extra1";
+                else if (catPiatto === "extra2" || (lE2 && catPiatto === lE2)) catPiatto = "extra2";
+                else if (catPiatto === "extra3" || (lE3 && catPiatto === lE3)) catPiatto = "extra3";
+
+                // Se il piatto è del nostro ruolo, segniamoci tutti i suoi ingredienti
+                if (categorieRuolo.includes(catPiatto) && piatto.ingredienti) {
+                    piatto.ingredienti.forEach(ing => ingredientiUsati.add(ing.id));
+                }
+            });
+        }
+
         const categorie = {};
         Object.entries(data).forEach(([id, ing]) => {
             let cat = (ing.categoria || "cibi").toLowerCase().trim();
@@ -7014,9 +7053,14 @@ async function caricaIngredientiPerRuolo(ruolo) {
             else if (cat === "extra2" || (lE2 && cat === lE2)) cat = "extra2";
             else if (cat === "extra3" || (lE3 && cat === lE3)) cat = "extra3";
 
-            if (!categorieRuolo.includes(cat)) return;
-            if (!categorie[cat]) categorie[cat] = [];
-            categorie[cat].push({ id, ...ing });
+            // 🔹 MODIFICA: Mostra se appartiene al ruolo OPPURE se è usato in un suo piatto!
+            if (!categorieRuolo.includes(cat) && !ingredientiUsati.has(id)) return;
+            
+            // Se l'ingrediente viene da un altro reparto (in prestito), lo mostriamo nella tab del ruolo in modo che sia accessibile e gestibile
+            let displayCat = categorieRuolo.includes(cat) ? cat : categorieRuolo[0];
+
+            if (!categorie[displayCat]) categorie[displayCat] = [];
+            categorie[displayCat].push({ id, ...ing });
         });
 
         if (Object.keys(categorie).length === 0) {
