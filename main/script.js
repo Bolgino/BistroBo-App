@@ -61,6 +61,8 @@ window.settings = {
     scontriniSeparati: false,
     piattiComboAbilitati: false,
 	preordiniAsportoAutomatico: false,
+	annullamentoVendita: false,
+	tempoAnnullamento: 30,
     giocoScontrino: false
 };
 
@@ -1362,6 +1364,33 @@ function initImpostazioniToggle() {
                 });
             } else { await costoAsportoRef.set(false); }
         };
+    }
+	// ================= ANNULLAMENTO ULTIMA VENDITA =================
+    const toggleAnnullamentoVenditaBtn = document.getElementById("toggleAnnullamentoVenditaBtn");
+    const annullamentoVenditaRef = db.ref("impostazioni/annullamentoVendita");
+    const settingTempoAnnullamento = document.getElementById("settingTempoAnnullamento");
+    const inputTempoAnnullamento = document.getElementById("inputTempoAnnullamento");
+
+    if (toggleAnnullamentoVenditaBtn) {
+        initToggle(toggleAnnullamentoVenditaBtn, annullamentoVenditaRef, {on: "ON", off: "OFF"}, false, val => {
+            window.settings.annullamentoVendita = val;
+            if (settingTempoAnnullamento) settingTempoAnnullamento.style.display = val ? "flex" : "none";
+        });
+    }
+
+    const tempoAnnullamentoRef = db.ref("impostazioni/tempoAnnullamento");
+    if (inputTempoAnnullamento) {
+        tempoAnnullamentoRef.on("value", snap => {
+            const val = snap.val() || 30;
+            window.settings.tempoAnnullamento = parseInt(val, 10);
+            inputTempoAnnullamento.value = val;
+        });
+
+        inputTempoAnnullamento.addEventListener("change", () => {
+            let val = parseInt(inputTempoAnnullamento.value, 10);
+            if (isNaN(val) || val < 5) val = 5;
+            tempoAnnullamentoRef.set(val);
+        });
     }
 }
 function initTickNoteDestinazioni() {
@@ -9288,6 +9317,96 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 });
+// ================= SISTEMA ANNULLAMENTO ULTIMA VENDITA =================
+let timerAnnullamentoInterval = null;
+
+window.avviaTimerAnnullamento = function(idComanda, datiComanda) {
+    const btn = document.getElementById("annullaUltimaVenditaBtn");
+    const spanTimer = document.getElementById("timerAnnullamento");
+    if (!btn || !spanTimer) return;
+
+    // Resetta eventuale timer precedente
+    clearInterval(timerAnnullamentoInterval);
+    
+    let secondiRimasti = window.settings.tempoAnnullamento || 30;
+    
+    // Mostra il pulsante con l'animazione pulsante morbida
+    btn.style.display = "inline-block";
+    btn.style.animation = "pulse 1.5s infinite alternate";
+    spanTimer.innerText = secondiRimasti;
+
+    window.ultimaComandaDaAnnullare = { id: idComanda, dati: datiComanda };
+
+    // Timer decrescente
+    timerAnnullamentoInterval = setInterval(() => {
+        secondiRimasti--;
+        spanTimer.innerText = secondiRimasti;
+        
+        // Se mancano 5 secondi, inizia a lampeggiare furiosamente per allertare il cassiere
+        if (secondiRimasti <= 5) {
+            btn.style.animation = "blinkalert 0.4s infinite"; 
+        }
+        
+        // Fine tempo
+        if (secondiRimasti <= 0) {
+            clearInterval(timerAnnullamentoInterval);
+            btn.style.display = "none";
+            btn.style.animation = "";
+            window.ultimaComandaDaAnnullare = null;
+        }
+    }, 1000);
+    
+    // Azione al Click
+    btn.onclick = async () => {
+        clearInterval(timerAnnullamentoInterval);
+        btn.style.display = "none";
+        btn.style.animation = "";
+        
+        if (!window.ultimaComandaDaAnnullare) return;
+        const id = window.ultimaComandaDaAnnullare.id;
+        const c = window.ultimaComandaDaAnnullare.dati;
+        window.ultimaComandaDaAnnullare = null;
+        
+        showLoader();
+        try {
+            // 1. RIPRISTINA GLI INGREDIENTI (Ripercorre la logica intelligente di scalo e inverte il processo)
+            const richieste = calcolaRichiesteDaPiatti(c.piatti || []);
+            const jobs = [];
+            const ingData = window.ingredientData || {};
+            
+            for (const idIng in richieste.byId) {
+                jobs.push({ id: idIng, need: richieste.byId[idIng] });
+            }
+            for (const nameLow in richieste.byName) {
+                const mapped = Object.keys(ingData).find(k => (ingData[k].nome||"").trim().toLowerCase() === nameLow);
+                if (mapped) {
+                    const existing = jobs.find(j => j.id === mapped);
+                    if (existing) existing.need += richieste.byName[nameLow]; 
+                    else jobs.push({ id: mapped, need: richieste.byName[nameLow] });
+                }
+            }
+            
+            for (const j of jobs) {
+                await applicaIncrementoSingolo(j.id, j.need);
+            }
+            
+            // 2. ELIMINA LA COMANDA DEFINITIVAMENTE
+            await db.ref("comande/" + id).remove();
+            
+            // 3. RIPRISTINA IL CARRELLO A SCHERMO (Cosa utilissima se c'era solo un errore al volo)
+            comandaCorrente = c.piatti || [];
+            aggiornaComandaCorrente();
+            
+            notify("✅ Ultima vendita annullata! Carrello e ingredienti ripristinati.", "success");
+            
+        } catch (err) {
+            console.error("Errore annullamento:", err);
+            notify("❌ Errore annullamento: " + err.message, "error");
+        } finally {
+            hideLoader();
+        }
+    };
+};
 //invio comanda di ogni tipo in fondo per evitari errori
 document.addEventListener("DOMContentLoaded", () => {
     const inviaBtn = document.getElementById("inviaComandaBtn");
@@ -9474,10 +9593,15 @@ document.addEventListener("DOMContentLoaded", () => {
 			// La nuovaComanda gestisce già tutto al suo interno in modo infallibile!
 			
 				
-			// Salvataggio nel DB
-			await ref.set(nuovaComanda);
-
-            // --- 7. STAMPA E RESET FRONTEND (MANTENUTO) ---
+				// Salvataggio nel DB
+	        await ref.set(nuovaComanda);
+	
+	        // 🔹 AVVIO TIMER ANNULLAMENTO (SE ABILITATO)
+	        if (window.settings.annullamentoVendita) {
+	            avviaTimerAnnullamento(ref.key, nuovaComanda);
+	        }
+	
+	        // --- 7. STAMPA E RESET FRONTEND (MANTENUTO) ---
             const piattiDaStampare = [...comandaCorrente];
             const noteDaStampare = note;
             const numeroComandaDaStampare = numeroComandaFinale;
