@@ -9167,8 +9167,6 @@ function mostraFormSconto(piatto, id, containerRow) {
 document.addEventListener("DOMContentLoaded", () => {
     // --- FUNZIONAMENTO TASTO COPERTO ---
     const btnCoperto = document.getElementById("btnCopertoCassa");
-    // --- FUNZIONAMENTO TASTO COPERTO ---
-    const btnCoperto = document.getElementById("btnCopertoCassa");
     if (btnCoperto) {
         btnCoperto.addEventListener("click", () => {
             // Funzione interna per iniettare i coperti
