@@ -1392,6 +1392,17 @@ function initImpostazioniToggle() {
             tempoAnnullamentoRef.set(val);
         });
     }
+	// ================= MODALITA' NOTTE AUTOMATICA =================
+    const toggleModalitaNotteBtn = document.getElementById("toggleModalitaNotteBtn");
+    const modalitaNotteRef = db.ref("impostazioni/modalitaNotte");
+
+    if (toggleModalitaNotteBtn) {
+        initToggle(toggleModalitaNotteBtn, modalitaNotteRef, {on: "ON", off: "OFF"}, false, val => {
+            // Il cambiamento nel DB innescherà automaticamente il listener globale creato prima,
+            // quindi non serve fare altro qui!
+            console.log("Modalità notte automatica impostata su:", val);
+        });
+    }
 }
 function initTickNoteDestinazioni() {
     db.ref("impostazioni/noteDestinazioniAbilitate").on("value", snap => {
@@ -4923,6 +4934,7 @@ window.apriModalCreaIngrediente = function() {
     const chkExtra1 = window.settings.extra1Abilitato ? `<label style="margin-right:15px;"><input type="checkbox" class="mod-chk-cat" value="extra1"> ${nE1}</label>` : '';
     const chkExtra2 = window.settings.extra2Abilitato ? `<label style="margin-right:15px;"><input type="checkbox" class="mod-chk-cat" value="extra2"> ${nE2}</label>` : '';
     const chkExtra3 = window.settings.extra3Abilitato ? `<label><input type="checkbox" class="mod-chk-cat" value="extra3"> ${nE3}</label>` : '';
+    
     modal.innerHTML = `
         <h3>Crea Nuovo Ingrediente</h3>
         
@@ -4964,27 +4976,28 @@ window.apriModalCreaIngrediente = function() {
             </label>
         </div>
 
-        <div style="margin-bottom:15px; text-align:left; display:flex; gap:10px;">
-            <div style="flex:1;">
-                <label><b>Prezzo Extra (€):</b></label>
-                <input type="number" step="0.01" id="modIngPrezzoExtra" value="0.50" style="width:100%; box-sizing:border-box; padding:8px; margin-top:5px; border-radius:6px; border:1px solid #ccc;">
+        <div id="impostazioniVarianteContainer" style="display: none;">
+            <div style="margin-bottom:15px; text-align:left; display:flex; gap:10px;">
+                <div style="flex:1;">
+                    <label><b>Prezzo Extra (€):</b></label>
+                    <input type="number" step="0.01" id="modIngPrezzoExtra" value="0.50" style="width:100%; box-sizing:border-box; padding:8px; margin-top:5px; border-radius:6px; border:1px solid #ccc;">
+                </div>
+                <div style="flex:1;">
+                    <label><b>Qty scalata magazzino:</b></label>
+                    <input type="number" step="0.1" id="modIngQtyExtra" value="1" style="width:100%; box-sizing:border-box; padding:8px; margin-top:5px; border-radius:6px; border:1px solid #ccc;">
+                </div>
             </div>
-            <div style="flex:1;">
-                <label><b>Qty scalata magazzino:</b></label>
-                <input type="number" step="0.1" id="modIngQtyExtra" value="1" style="width:100%; box-sizing:border-box; padding:8px; margin-top:5px; border-radius:6px; border:1px solid #ccc;">
+            
+            <div style="margin-bottom:20px; text-align:left;">
+                <label><b>Mostra come variante per i piatti in:</b></label><br>
+                <div style="margin-top:8px;">
+                    <label style="margin-right:15px;"><input type="checkbox" class="mod-chk-cat" value="cibi" checked> Cibi</label>
+                    <label style="margin-right:15px;"><input type="checkbox" class="mod-chk-cat" value="bevande"> Bevande</label>
+                    <label style="margin-right:15px;"><input type="checkbox" class="mod-chk-cat" value="snack"> Snack</label>
+                    ${chkExtra1} ${chkExtra2} ${chkExtra3}
+                </div>
             </div>
         </div>
-        
-        <div style="margin-bottom:20px; text-align:left;">
-            <label><b>Mostra come variante per i piatti in:</b></label><br>
-            <div style="margin-top:8px;">
-                <label style="margin-right:15px;"><input type="checkbox" class="mod-chk-cat" value="cibi" checked> Cibi</label>
-                <label style="margin-right:15px;"><input type="checkbox" class="mod-chk-cat" value="bevande"> Bevande</label>
-                <label style="margin-right:15px;"><input type="checkbox" class="mod-chk-cat" value="snack"> Snack</label>
-                ${chkExtra1} ${chkExtra2} ${chkExtra3}
-            </div>
-        </div>
-        
         <div class="modal-actions" style="display:flex; justify-content:flex-end; gap:10px;">
             <button class="btn-chiudi" id="closeCreaIng">Annulla</button>
             <button class="btn-salva" id="saveCreaIng">Crea Ingrediente</button>
@@ -4994,9 +5007,21 @@ window.apriModalCreaIngrediente = function() {
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
 
+    // Gestione della visibilità dinamica
+    const chkExtra = document.getElementById("modIngExtra");
+    const impostazioniContainer = document.getElementById("impostazioniVarianteContainer");
+    
+    chkExtra.addEventListener("change", function() {
+        if (this.checked) {
+            impostazioniContainer.style.display = "block";
+        } else {
+            impostazioniContainer.style.display = "none";
+        }
+    });
+
     document.getElementById("closeCreaIng").onclick = () => overlay.remove();
     
-document.getElementById("saveCreaIng").onclick = () => {
+    document.getElementById("saveCreaIng").onclick = () => {
         const nome = document.getElementById("modIngNome").value.trim();
         const categoria = document.getElementById("modIngCat").value;
         const unita = document.getElementById("modIngUnita").value;
@@ -11342,3 +11367,32 @@ function chiediValoreConPopup(titolo, messaggio, valoreDefault, callback) {
         callback(val); // Ritorna il valore inserito
     };
 }
+// ================= MODALITA' NOTTE AUTOMATICA (GLOBALE) =================
+window.settings = window.settings || {};
+
+function controllaModalitaNotte() {
+    // Se la modalità notte automatica è abilitata
+    if (window.settings.modalitaNotte) {
+        const oraAttuale = new Date().getHours();
+        
+        // Attivo dalle 21:00 (incluse) fino alle 04:59 (5 escluso)
+        if (oraAttuale >= 21 || oraAttuale < 5) {
+            document.body.classList.add("dark-mode");
+        } else {
+            document.body.classList.remove("dark-mode");
+        }
+    } else {
+        // Se disabilitata dalle impostazioni, rimuovi sempre la classe
+        document.body.classList.remove("dark-mode");
+    }
+}
+
+// 1. Ascolta i cambiamenti in tempo reale dal database per TUTTE le pagine
+db.ref("impostazioni/modalitaNotte").on("value", snap => {
+    window.settings.modalitaNotte = snap.val() || false;
+    controllaModalitaNotte(); // Aggiorna subito l'interfaccia
+});
+
+// 2. Controlla l'orologio ogni 60 secondi
+// Se scoccano le 21:00 mentre l'app è aperta, il tema cambia da solo in tempo reale!
+setInterval(controllaModalitaNotte, 60000);
