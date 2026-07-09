@@ -330,13 +330,13 @@ async function renderPreordiniAdmin(data) {
                     </span>
 
                     <div style="display:flex; align-items:center; gap:10px;">
-                        ${asportoAbilitato ? `
+                        ${(asportoAbilitato && !window.settings.preordiniAsportoAutomatico) ? `
                             <label>
                                 <input type="checkbox"
                                     onchange="segnaAsporto('${id}', this.checked)"
                                     ${p.asporto ? 'checked' : ''}/> Asporto
                             </label>
-                        ` : ""}
+                        ` : (window.settings.preordiniAsportoAutomatico ? `<span style="color:#007b00; font-weight:bold; font-size:0.95em;">📦 Asporto Auto</span>` : "")}
 
                         <label>
                             <select onchange="impostaMetodoPagamento('${id}', this.value)">
@@ -518,13 +518,13 @@ function renderPreordiniCassa(data) {
                     </span>
 
                     <div style="display:flex; align-items:center; gap:10px;">
-                        ${window.settings.asportoAbilitato ? `
+                       ${(window.settings.asportoAbilitato && !window.settings.preordiniAsportoAutomatico) ? `
                             <label>
                                 <input type="checkbox"
                                     onchange="segnaAsporto('${id}', this.checked)"
                                     ${p.asporto ? 'checked' : ''}/> Asporto
                             </label>
-                        ` : ""}
+                        ` : (window.settings.preordiniAsportoAutomatico ? `<span style="color:#007b00; font-weight:bold; font-size:0.95em;">📦 Asporto Auto</span>` : "")}
 
                         <label>
                             <select onchange="impostaMetodoPagamento('${id}', this.value)">
