@@ -130,6 +130,25 @@ function hideLoader() {
   const loader = document.getElementById("loader");
   if (loader) loader.classList.add("hidden");
 }
+// Aggiungi questo sotto le impostazioni globali
+window.categoriaHaPiatti = function(catCercata) {
+    if (!window.menuData) return false;
+    const search = catCercata.toLowerCase();
+    const lE1 = (window.nomiRepartiExtra?.extra1 || "").toLowerCase().trim();
+    const lE2 = (window.nomiRepartiExtra?.extra2 || "").toLowerCase().trim();
+    const lE3 = (window.nomiRepartiExtra?.extra3 || "").toLowerCase().trim();
+
+    for (let key in window.menuData) {
+        let ctg = (window.menuData[key].categoria || "cibi").toLowerCase().trim();
+        // Normalizza il nome
+        if (ctg === "extra1" || ctg === "risto" || (lE1 && ctg === lE1)) ctg = "extra1";
+        else if (ctg === "extra2" || (lE2 && ctg === lE2)) ctg = "extra2";
+        else if (ctg === "extra3" || (lE3 && ctg === lE3)) ctg = "extra3";
+
+        if (ctg === search) return true;
+    }
+    return false;
+};
 // ----------- IMPOSTAZIONI ----------------
 // Funzione toggle sicuro, dinamico e multi-uso
 function initToggle(btn, ref, labels = {on: "ON", off: "OFF"}, fallback = false, callback = null) {
@@ -2253,57 +2272,45 @@ function initRuoloTab(ruolo) {
             const data = snap.val() || {};
             menuContainer.innerHTML = "";
 
-            if (ruolo === "cucina") {
-                const snackAttivo = window.settings?.snackAbilitato || false;
+            // 1. Capiamo quali categorie appartengono a questo monitor (comprese quelle deviate!)
+            let categorieRuolo = [];
+            if (ruolo === "cucina") categorieRuolo.push("cibi");
+            else if (ruolo === "bere") categorieRuolo.push("bevande");
+            else if (["snack", "extra1", "extra2", "extra3"].includes(ruolo)) {
+                if (window.settings[ruolo + "Abilitato"]) categorieRuolo.push(ruolo);
+            }
 
-                // Cibi: includi snack solo se snack disabilitato
-                const cibi = Object.values(data).filter(i => 
-                    i.categoria?.toLowerCase() === "cibi" || 
-                    (!snackAttivo && i.categoria?.toLowerCase() === "snack")
-                );
+            // Aggiungiamo lo Snack alla Cucina se è spento
+            if (ruolo === "cucina" && !window.settings.snackAbilitato) categorieRuolo.push("snack");
 
-                if (cibi.length) {
-                    const t = document.createElement("h4"); 
-                    t.innerText = "Cibi";
-                    menuContainer.appendChild(t);
-                    cibi.forEach(item => {
-                        const divP = creaPiattoDiv(item);
-                        menuContainer.appendChild(divP);
-                        aggiungiIngredienti(item, menuContainer);
-                    });
+            // Aggiungiamo gli Extra a questo monitor se sono spenti e hanno noi come Fallback!
+            ["extra1", "extra2", "extra3"].forEach(ex => {
+                if (!window.settings[ex + "Abilitato"]) {
+                    let CapProf = ex.charAt(0).toUpperCase() + ex.slice(1);
+                    let fallback = window.settings["fallback" + CapProf] || "cibo";
+                    let targetRuolo = fallback === "cibo" ? "cucina" : fallback;
+                    if (targetRuolo === ruolo) categorieRuolo.push(ex);
                 }
+            });
 
-                // Snack: mostra solo se attivo
-                if (!snackAttivo) {
-                    const snack = Object.values(data).filter(i => i.categoria?.toLowerCase() === "snack");
-                    if (snack.length) {
-                        const t = document.createElement("h4"); 
-                        t.innerText = "Snack";
-                        menuContainer.appendChild(t);
-                        snack.forEach(item => {
-                            const divP = creaPiattoDiv(item);
-                            menuContainer.appendChild(divP);
-                            aggiungiIngredienti(item, menuContainer);
-                        });
-                    }
-                }
-            } else if (ruolo === "bere") {
-                const bevande = Object.values(data).filter(i => i.categoria?.toLowerCase() === "bevande");
-                const t = document.createElement("h4"); t.innerText = "Bevande";
-                menuContainer.appendChild(t);
-                bevande.forEach(item => {
-                    const divP = creaPiattoDiv(item);
-                    menuContainer.appendChild(divP);
-                    aggiungiIngredienti(item, menuContainer);
+            // 2. Disegniamo il menu solo per le categorie trovate
+            categorieRuolo.forEach(catReq => {
+                const items = Object.values(data).filter(i => {
+                    let cat = (i.categoria || "cibi").toLowerCase().trim();
+                    const lE1 = (window.nomiRepartiExtra?.extra1 || "").toLowerCase().trim();
+                    const lE2 = (window.nomiRepartiExtra?.extra2 || "").toLowerCase().trim();
+                    const lE3 = (window.nomiRepartiExtra?.extra3 || "").toLowerCase().trim();
+                    if (cat === "extra1" || cat === "risto" || (lE1 && cat === lE1)) cat = "extra1";
+                    else if (cat === "extra2" || (lE2 && cat === lE2)) cat = "extra2";
+                    else if (cat === "extra3" || (lE3 && cat === lE3)) cat = "extra3";
+                    
+                    return cat === catReq;
                 });
-            } else if (["snack", "extra1", "extra2", "extra3"].includes(ruolo)) {
-            const abilita = ruolo === "snack" ? (window.settings?.snackAbilitato || false) : true;
-            if (abilita) {
-                const items = Object.values(data).filter(i => i.categoria?.toLowerCase() === ruolo);
+
                 if (items.length > 0) {
                     const title = document.createElement("h4");
-                    let realName = ruolo.charAt(0).toUpperCase() + ruolo.slice(1);
-                    if (ruolo.startsWith("extra")) realName = window.nomiRepartiExtra?.[ruolo] || realName;
+                    let realName = catReq.charAt(0).toUpperCase() + catReq.slice(1);
+                    if (catReq.startsWith("extra")) realName = window.nomiRepartiExtra?.[catReq] || realName;
                     title.innerText = realName;
                     menuContainer.appendChild(title);
 
@@ -2312,12 +2319,12 @@ function initRuoloTab(ruolo) {
                         menuContainer.appendChild(divPiatto);
                         aggiungiIngredienti(item, menuContainer);
                     });
-                } else {
-                    menuContainer.innerHTML = `<div style="text-align:center; padding: 30px; color: #777; font-style: italic; font-size: 1.1em; background: #f9f9f9; border-radius: 10px; margin-top: 20px;">Nessun piatto configurato per questo reparto. Qui si batte la fiacca! 😴🍳</div>`;
                 }
-            }
-        }
+            });
 
+            if (menuContainer.innerHTML === "") {
+                menuContainer.innerHTML = `<div style="text-align:center; padding: 30px; color: #777; font-style: italic; font-size: 1.1em; background: #f9f9f9; border-radius: 10px; margin-top: 20px;">Niente da vedere qui! 😴🍳</div>`;
+            }
         });
     }
     // 🔹 Quando apro la tab menu del ruolo, aggiorna ingredienti e menu
@@ -4466,8 +4473,12 @@ async function caricaIngredienti() {
             }
 
             for (const [cat, items] of Object.entries(categorie)) {
-                // 🔹 RIMOSSO IL BLOCCO: Ora gli ingredienti degli Extra si vedono sempre nel magazzino!
-                // (riga eliminata per permettere la gestione anche a reparto spento)
+                // 🔹 SE IL PROFILO E' SPENTO E NON HA PIATTI, NASCONDILO
+                let abilita = true;
+                if (cat === "snack") abilita = window.settings.snackAbilitato;
+                if (cat.startsWith("extra")) abilita = window.settings[cat + "Abilitato"];
+                
+                if (!abilita && !window.categoriaHaPiatti(cat)) continue;
 
                 const catDiv = document.createElement("div");
                 const h3 = document.createElement("h3");
@@ -6907,27 +6918,41 @@ async function caricaIngredientiPerRuolo(ruolo) {
         window.ingredientData = data;
         if (typeof aggiornaMenuRuolo === "function") aggiornaMenuRuolo();
 
-        let categorieRuolo;
-	    if (ruolo === "cucina") {
-	        const snapSnack = await db.ref("impostazioni/snackAbilitato").once("value");
-	        const snackAttivo = snapSnack.exists() && snapSnack.val() === true;
-	        categorieRuolo = snackAttivo ? ["cibi"] : ["cibi", "snack"];
-	    } else if (ruolo === "snack") {
-	        const snapSnack = await db.ref("impostazioni/snackAbilitato").once("value");
-	        const snackAttivo = snapSnack.exists() && snapSnack.val() === true;
-	        categorieRuolo = snackAttivo ? ["snack"] : [];
-	    } else if (["extra1", "extra2", "extra3"].includes(ruolo)) {
-	        // Assegna la categoria in base al ruolo extra in modo dinamico
-	        categorieRuolo = window.settings[ruolo + "Abilitato"] ? [ruolo] : [];
-	    } else {
-	        categorieRuolo = ["bevande"];
-	    }
+        // Sostituisci la vecchia logica hardcoded con questa dinamica!
+        let categorieRuolo = [];
+        if (ruolo === "cucina") categorieRuolo.push("cibi");
+        else if (ruolo === "bere") categorieRuolo.push("bevande");
+        else if (["snack", "extra1", "extra2", "extra3"].includes(ruolo)) {
+            if (window.settings[ruolo + "Abilitato"]) categorieRuolo.push(ruolo);
+        }
+
+        // Aggiungiamo Snack e Extra deviati
+        if (ruolo === "cucina" && !window.settings.snackAbilitato) categorieRuolo.push("snack");
+        
+        ["extra1", "extra2", "extra3"].forEach(ex => {
+            if (!window.settings[ex + "Abilitato"]) {
+                let CapProf = ex.charAt(0).toUpperCase() + ex.slice(1);
+                let fallback = window.settings["fallback" + CapProf] || "cibo";
+                let targetRuolo = fallback === "cibo" ? "cucina" : fallback;
+                if (targetRuolo === ruolo) categorieRuolo.push(ex);
+            }
+        });
 
         const categorie = {};
         Object.entries(data).forEach(([id, ing]) => {
-            if (!categorieRuolo.includes(ing.categoria)) return;
-            if (!categorie[ing.categoria]) categorie[ing.categoria] = [];
-            categorie[ing.categoria].push({ id, ...ing });
+            let cat = (ing.categoria || "cibi").toLowerCase().trim();
+            
+            // Normalizza per leggere bene Risto o Nomi Extra
+            const lE1 = (window.nomiRepartiExtra?.extra1 || "").toLowerCase().trim();
+            const lE2 = (window.nomiRepartiExtra?.extra2 || "").toLowerCase().trim();
+            const lE3 = (window.nomiRepartiExtra?.extra3 || "").toLowerCase().trim();
+            if (cat === "extra1" || cat === "risto" || (lE1 && cat === lE1)) cat = "extra1";
+            else if (cat === "extra2" || (lE2 && cat === lE2)) cat = "extra2";
+            else if (cat === "extra3" || (lE3 && cat === lE3)) cat = "extra3";
+
+            if (!categorieRuolo.includes(cat)) return;
+            if (!categorie[cat]) categorie[cat] = [];
+            categorie[cat].push({ id, ...ing });
         });
 
         if (Object.keys(categorie).length === 0) {
@@ -7876,7 +7901,12 @@ function caricaMenuAdmin(){
         }
 
         for(const cat of ["cibi","bevande","snack", "extra1", "extra2", "extra3"]){
-            // 🔹 RIMOSSO IL BLOCCO: mostriamo sempre le categorie Extra in Admin
+            // 🔹 SE IL PROFILO E' SPENTO E NON HA PIATTI, NASCONDILO
+            let abilita = true;
+            if (cat === "snack") abilita = window.settings.snackAbilitato;
+            if (cat.startsWith("extra")) abilita = window.settings[cat + "Abilitato"];
+            
+            if (!abilita && !window.categoriaHaPiatti(cat)) continue;
 
             const h = document.createElement("h4");
             let catTitle = cat.charAt(0).toUpperCase() + cat.slice(1);
