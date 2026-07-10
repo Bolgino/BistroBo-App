@@ -2128,118 +2128,95 @@ body.tema-estate button {
     min-width: 40px; /* Assicura che i numeri a 1 e 2 cifre siano allineati */
     text-align: center;
 }
-/* ===========================================================
-   TEMA NOTTE
-   =========================================================== */
+/* ================= TEMA: NOTTE (Sfondo Blu Scuro, Box Neri) ================= */
 
-body.tema-notte{
-    color:#f5f5f5;
-}
-
-body.tema-notte #themeBackground{
-    background:
-        linear-gradient(180deg,#0b1220,#141b2d,#1d2436);
-}
-
-body.tema-notte h1{
-    color:#64b5f6;
-    text-shadow:none;
-}
-
-body.tema-notte h3,
-body.tema-notte h4{
-    color:#90caf9;
-    text-shadow:none;
+/* 1. SFONDO PRINCIPALE: BLU SCURO */
+/* Colpiamo il body e tutti i possibili wrapper/contenitori principali */
+body.theme-notte,
+body.theme-notte #mainContent,
+body.theme-notte .main-container,
+body.theme-notte .tab-content,
+body.theme-notte .container,
+body.theme-notte .container-fluid,
+body.theme-notte .wrapper,
+body.theme-notte .content {
+    background: #0A1128 !important; /* Blu scuro profondo ed elegante */
+    background-color: #0A1128 !important;
+    border: none !important;
+    box-shadow: none !important;
 }
 
-body.tema-notte button{
-    background:linear-gradient(135deg,#37474f,#263238);
-    color:white;
+/* 2. TUTTI I BOX E LE CARD: NERI */
+/* Colpiamo tutte le card, i piatti, i profili e gli elementi in risalto */
+body.theme-notte .utente-card,
+body.theme-notte .card,
+body.theme-notte .box,
+body.theme-notte .panel,
+body.theme-notte .piatto,
+body.theme-notte .categoria,
+body.theme-notte .comanda-card,
+body.theme-notte .colonna-comande,
+body.theme-notte .modal-content,
+body.theme-notte .settingItem,
+body.theme-notte header,
+body.theme-notte footer,
+body.theme-notte #totaleDiv,
+body.theme-notte .stat-card,
+body.theme-notte .cart-item,
+body.theme-notte .ingrediente-item {
+    background: #000000 !important; /* Nero puro */
+    background-color: #000000 !important;
+    border: 1px solid #1E293B !important; /* Bordo sottile blu-grigio per delineare i box neri sul fondo blu */
+    box-shadow: 0 4px 12px rgba(0,0,0,0.9) !important;
 }
 
-body.tema-notte input,
-body.tema-notte textarea,
-body.tema-notte select{
-    background:#232323;
-    color:white;
-    border:1px solid #555;
+/* 3. SCRITTE: SFUMATURE DI BIANCO */
+/* Colore base per tutti i testi (escludiamo bottoni, input e icone per non rompere il design) */
+body.theme-notte *:not(button):not(input):not(select):not(.nav-btn):not(i):not(svg) {
+    color: #E2E8F0 !important; /* Bianco sporco / Grigio chiarissimo per un'ottima leggibilità */
 }
 
-body.tema-notte input:focus,
-body.tema-notte textarea:focus,
-body.tema-notte select:focus{
-    border-color:#64b5f6;
-    box-shadow:0 0 5px #64b5f6;
-}
-body.tema-notte .order,
-body.tema-notte .settingItem,
-body.tema-notte .popup-content,
-body.tema-notte .modal-varianti,
-body.tema-notte .bb-dash-card,
-body.tema-notte .bb-dash-container,
-body.tema-notte .menu-item,
-body.tema-notte .popup-riep,
-body.tema-notte #loginDiv,
-body.tema-notte #registerDiv,
-body.tema-notte #forgotPasswordDiv{
-
-    background:#222;
-    color:white;
-    border:1px solid #444;
-}
-body.tema-notte .stickyBar{
-    background:#1c1c1c;
-    border-top:1px solid #444;
+/* Titoli, testi in grassetto e label principali in Bianco Puro per farli risaltare */
+body.theme-notte h1,
+body.theme-notte h2,
+body.theme-notte h3,
+body.theme-notte h4,
+body.theme-notte strong,
+body.theme-notte b,
+body.theme-notte .settingLabel span,
+body.theme-notte .titolo-piatto {
+    color: #FFFFFF !important; /* Bianco puro brillante */
 }
 
-body.tema-notte .stickyLeft b,
-body.tema-notte .stickyRight{
-    color:white;
-}
-body.tema-notte .chat-container{
-    background:#181818;
-}
-
-body.tema-notte .chat-message.other{
-    background:#2b2b2b;
-    color:white;
+/* Testi secondari, descrizioni e testi piccoli in un grigio-bianco più tenue */
+body.theme-notte small,
+body.theme-notte p,
+body.theme-notte .descrizione,
+body.theme-notte .settingLabel small {
+    color: #94A3B8 !important; /* Grigio/Bianco tenue per creare gerarchia visiva */
 }
 
-body.tema-notte .chat-message.me{
-    background:#0d5b45;
-    color:white;
+/* Prezzi (Manteniamo un tocco di colore pastello per evidenziarli) */
+body.theme-notte .prezzo,
+body.theme-notte .totale-testo {
+    color: #FDE047 !important; /* Giallo chiaro */
 }
 
-body.tema-notte .chat-input-bar{
-    background:#222;
+/* 4. CAMPI DI INPUT E SELECT */
+body.theme-notte input,
+body.theme-notte select,
+body.theme-notte textarea {
+    background-color: #121A2F !important; /* Blu-grigio scuro per i campi di inserimento */
+    color: #FFFFFF !important;
+    border: 1px solid #334155 !important;
 }
 
-body.tema-notte #chatInputCassa,
-body.tema-notte #chatInputCucina,
-body.tema-notte #chatInputBere,
-body.tema-notte #chatInputAdmin,
-body.tema-notte #chatInputSnack{
-    background:#2b2b2b;
-    color:white;
-}
-body.tema-notte .piatto-btn{
-    background:#303030 !important;
-    color:white !important;
-    border-color:#555;
-}
-
-body.tema-notte .piatto-prezzo{
-    color:#ffd54f !important;
-}
-
-body.tema-notte .piatto-ing{
-    color:#bdbdbd !important;
-}
-body.tema-notte #loader{
-    --loader-bg:
-        radial-gradient(circle,#20263b,#0f1724);
-
-    --loader-text:#90caf9;
+/* 5. FIX PER I BADGE DI EMERGENZA (es. "RITARDI RILEVATI") */
+body.theme-notte div[style*="background-color: #ffebee"],
+body.theme-notte div[style*="background-color: rgb(255, 235, 238)"] {
+    background-color: #4A0000 !important; /* Rosso scurissimo */
+    color: #FFB3B3 !important; /* Bianco rosato */
+    border: 1px solid #FF8A80 !important;
 }
 /* ===========================================================
    TEMA CHIARO
