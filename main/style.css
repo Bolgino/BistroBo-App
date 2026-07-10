@@ -2507,6 +2507,8 @@ body.tema-notte #btnCopertoCassa div {
     background-color: #F8FAFC !important;
     color: #000000 !important;
 }
-body.tema-notte .qta-evidenza {
-    color: #000000 !important; 
+/* Selettore ancora più specifico per le liste delle statistiche */
+body.tema-notte #lista-totali-sommario .qta-evidenza {
+    color: #000000 !important;
+    background-color: #FFFFFF !important;
 }
