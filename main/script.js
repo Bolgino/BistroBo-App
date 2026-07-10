@@ -11371,34 +11371,44 @@ function chiediValoreConPopup(titolo, messaggio, valoreDefault, callback) {
 window.settings = window.settings || {};
 
 function controllaModalitaNotte() {
+    // Recuperiamo il tema originale scelto (se non c'è, usiamo "default")
+    const temaOriginale = window.settings.temaSalvato || "default";
+
     // Se la modalità notte automatica è abilitata
     if (window.settings.modalitaNotte) {
         const oraAttuale = new Date().getHours();
         
         // Attivo dalle 21:00 (incluse) fino alle 04:59 (5 escluso)
         if (oraAttuale >= 21 || oraAttuale < 5) {
-            document.body.classList.add("dark-mode");
+            // Applica il tema notte ignorando quello originale. 
+            // "false" assicura che NON venga salvato nel Database globale!
+            aggiornaTema("notte", false);
         } else {
-            document.body.classList.remove("dark-mode");
+            // È giorno: ripristiniamo il tema originale scelto
+            aggiornaTema(temaOriginale, false);
         }
     } else {
-        // Se disabilitata dalle impostazioni, rimuovi sempre la classe
-        document.body.classList.remove("dark-mode");
+        // Se la modalità automatica è spenta, ci assicuriamo che torni il tema originale
+        aggiornaTema(temaOriginale, false);
     }
 }
 
-// 1. Ascolta i cambiamenti in tempo reale dal database per TUTTE le pagine
+// 1. Ascolta i cambiamenti della modalità notte in tempo reale
 db.ref("impostazioni/modalitaNotte").on("value", snap => {
     window.settings.modalitaNotte = snap.val() || false;
     controllaModalitaNotte(); // Aggiorna subito l'interfaccia
 });
 
+// 2. Registriamo anche il tema originale scelto.
+// Questo ci serve come "memoria" per sapere a quale tema tornare di giorno!
+db.ref("impostazioni/tema").on("value", snap => {
+    window.settings.temaSalvato = snap.exists() ? snap.val() : "default";
+    controllaModalitaNotte(); // Ricalcola subito se serve sovrascrivere con la notte
+});
 
-
-
-// 2. Controlla l'orologio ogni 60 secondi
-// Se scoccano le 21:00 mentre l'app è aperta, il tema cambia da solo in tempo reale!
-setInterval(controllaModalitaNotte, 60000); 
+// 3. Controlla l'orologio ogni 60 secondi
+// Se scoccano le 21:00 mentre l'app è aperta, il tema passa a "notte" da solo!
+setInterval(controllaModalitaNotte, 60000);
 
 // ================= GESTIONE CLICK FUORI DAI MODALI =================
 document.addEventListener("mousedown", function(e) {
