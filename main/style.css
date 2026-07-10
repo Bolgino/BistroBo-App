@@ -2131,15 +2131,15 @@ body.tema-estate button {
 /* ================= TEMA: NOTTE (Sfondo Blu Scuro, Box Neri) ================= */
 
 /* 1. SFONDO PRINCIPALE: BLU SCURO */
-/* Colpiamo il body e tutti i possibili wrapper/contenitori principali */
-body.theme-notte,
-body.theme-notte #mainContent,
-body.theme-notte .main-container,
-body.theme-notte .tab-content,
-body.theme-notte .container,
-body.theme-notte .container-fluid,
-body.theme-notte .wrapper,
-body.theme-notte .content {
+body.tema-notte {
+    color: #E2E8F0 !important;
+}
+
+body.tema-notte,
+body.tema-notte #themeBackground,
+body.tema-notte #mainContent,
+body.tema-notte .main-container,
+body.tema-notte .tab-content {
     background: #0A1128 !important; /* Blu scuro profondo ed elegante */
     background-color: #0A1128 !important;
     border: none !important;
@@ -2147,76 +2147,111 @@ body.theme-notte .content {
 }
 
 /* 2. TUTTI I BOX E LE CARD: NERI */
-/* Colpiamo tutte le card, i piatti, i profili e gli elementi in risalto */
-body.theme-notte .utente-card,
-body.theme-notte .card,
-body.theme-notte .box,
-body.theme-notte .panel,
-body.theme-notte .piatto,
-body.theme-notte .categoria,
-body.theme-notte .comanda-card,
-body.theme-notte .colonna-comande,
-body.theme-notte .modal-content,
-body.theme-notte .settingItem,
-body.theme-notte header,
-body.theme-notte footer,
-body.theme-notte #totaleDiv,
-body.theme-notte .stat-card,
-body.theme-notte .cart-item,
-body.theme-notte .ingrediente-item {
+body.tema-notte .utente-card,
+body.tema-notte .card,
+body.tema-notte .box,
+body.tema-notte .panel,
+body.tema-notte .piatto,
+body.tema-notte .categoria,
+body.tema-notte .comanda-card,
+body.tema-notte .colonna-comande,
+body.tema-notte .modal-content,
+body.tema-notte .settingItem,
+body.tema-notte header,
+body.tema-notte footer,
+body.tema-notte #totaleDiv,
+body.tema-notte .stat-card,
+body.tema-notte .cart-item,
+body.tema-notte .ingrediente-item,
+body.tema-notte .bb-dash-card,
+body.tema-notte .bb-dash-container,
+body.tema-notte .order,
+body.tema-notte .menu-item,
+body.tema-notte #loginDiv,
+body.tema-notte #registerDiv,
+body.tema-notte #forgotPasswordDiv,
+body.tema-notte .chat-container,
+body.tema-notte .chat-input-bar,
+body.tema-notte .stickyBar {
     background: #000000 !important; /* Nero puro */
     background-color: #000000 !important;
-    border: 1px solid #1E293B !important; /* Bordo sottile blu-grigio per delineare i box neri sul fondo blu */
+    border: 1px solid #1E293B !important; 
     box-shadow: 0 4px 12px rgba(0,0,0,0.9) !important;
+    color: #E2E8F0 !important;
 }
 
-/* 3. SCRITTE: SFUMATURE DI BIANCO */
-/* Colore base per tutti i testi (escludiamo bottoni, input e icone per non rompere il design) */
-body.theme-notte *:not(button):not(input):not(select):not(.nav-btn):not(i):not(svg) {
-    color: #E2E8F0 !important; /* Bianco sporco / Grigio chiarissimo per un'ottima leggibilità */
+/* 3. COLORE TESTI: FORZIAMO LA LEGGIBILITÀ */
+/* Escludiamo i bottoni e gli input per preservare la tua grafica originale */
+body.tema-notte *:not(button):not(input):not(select):not(.nav-btn):not(i):not(svg) {
+    color: #E2E8F0 !important;
 }
 
-/* Titoli, testi in grassetto e label principali in Bianco Puro per farli risaltare */
-body.theme-notte h1,
-body.theme-notte h2,
-body.theme-notte h3,
-body.theme-notte h4,
-body.theme-notte strong,
-body.theme-notte b,
-body.theme-notte .settingLabel span,
-body.theme-notte .titolo-piatto {
-    color: #FFFFFF !important; /* Bianco puro brillante */
+body.tema-notte h1,
+body.tema-notte h2,
+body.tema-notte h3,
+body.tema-notte h4,
+body.tema-notte strong,
+body.tema-notte b,
+body.tema-notte .settingLabel span,
+body.tema-notte .titolo-piatto,
+body.tema-notte .piatto-nome {
+    color: #FFFFFF !important;
+    text-shadow: none !important;
 }
 
-/* Testi secondari, descrizioni e testi piccoli in un grigio-bianco più tenue */
-body.theme-notte small,
-body.theme-notte p,
-body.theme-notte .descrizione,
-body.theme-notte .settingLabel small {
-    color: #94A3B8 !important; /* Grigio/Bianco tenue per creare gerarchia visiva */
+body.tema-notte small,
+body.tema-notte p,
+body.tema-notte .descrizione,
+body.tema-notte .settingLabel small,
+body.tema-notte .piatto-ing {
+    color: #94A3B8 !important;
 }
 
-/* Prezzi (Manteniamo un tocco di colore pastello per evidenziarli) */
-body.theme-notte .prezzo,
-body.theme-notte .totale-testo {
-    color: #FDE047 !important; /* Giallo chiaro */
+body.tema-notte .prezzo,
+body.tema-notte .totale-testo,
+body.tema-notte .piatto-prezzo {
+    color: #FDE047 !important;
 }
 
-/* 4. CAMPI DI INPUT E SELECT */
-body.theme-notte input,
-body.theme-notte select,
-body.theme-notte textarea {
-    background-color: #121A2F !important; /* Blu-grigio scuro per i campi di inserimento */
+/* 4. BOTTONI GRIGIO-NERI IN CASSA */
+body.tema-notte .piatto-btn,
+body.tema-notte .btn-cassa-ottimizzata {
+    background: #111827 !important;
+    border: 1px solid #334155 !important;
+    color: #FFFFFF !important;
+}
+
+body.tema-notte .piatto-btn:hover {
+    background: #1E293B !important;
+}
+
+/* 5. CAMPI DI INPUT E SELECT */
+body.tema-notte input,
+body.tema-notte select,
+body.tema-notte textarea {
+    background-color: #121A2F !important;
     color: #FFFFFF !important;
     border: 1px solid #334155 !important;
 }
 
-/* 5. FIX PER I BADGE DI EMERGENZA (es. "RITARDI RILEVATI") */
-body.theme-notte div[style*="background-color: #ffebee"],
-body.theme-notte div[style*="background-color: rgb(255, 235, 238)"] {
-    background-color: #4A0000 !important; /* Rosso scurissimo */
-    color: #FFB3B3 !important; /* Bianco rosato */
-    border: 1px solid #FF8A80 !important;
+/* 6. CHAT */
+body.tema-notte .chat-message.other {
+    background: #1E293B !important;
+    color: #E2E8F0 !important;
+}
+body.tema-notte .chat-message.me {
+    background: #064E3B !important; /* Verde scurissimo per i propri messaggi */
+    color: #E2E8F0 !important;
+}
+
+/* 7. LOADER */
+body.tema-notte #loader .spinner,
+body.tema-notte #offlineLoader .spinner {
+    border-top-color: #FDE047;
+    border-right-color: #334155;
+    border-bottom-color: #334155;
+    border-left-color: #334155;
+    box-shadow: 0 0 25px rgba(253, 224, 71, 0.5);
 }
 /* ===========================================================
    TEMA CHIARO
