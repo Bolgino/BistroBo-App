@@ -63,7 +63,8 @@ window.settings = {
 	preordiniAsportoAutomatico: false,
 	annullamentoVendita: false,
 	tempoAnnullamento: 30,
-    giocoScontrino: false
+    giocoScontrino: false,
+	scorciatoieTastiera: false
 };
 
 //Ingredienti Critici
@@ -1401,6 +1402,22 @@ function initImpostazioniToggle() {
             // Il cambiamento nel DB innescherà automaticamente il listener globale creato prima,
             // quindi non serve fare altro qui!
             console.log("Modalità notte automatica impostata su:", val);
+        });
+    }
+	// ================= SCORCIATOIE DA TASTIERA =================
+    const toggleScorciatoieBtn = document.getElementById("toggleScorciatoieBtn");
+    const scorciatoieRef = db.ref("impostazioni/scorciatoieTastiera");
+    
+    if (toggleScorciatoieBtn) {
+        let isFirstLoadScorciatoie = true;
+        initToggle(toggleScorciatoieBtn, scorciatoieRef, {on: "ON", off: "OFF"}, false, val => {
+            window.settings.scorciatoieTastiera = val;
+            
+            // Se abilitato e non è il primissimo caricamento silente all'avvio, apriamo il tutorial
+            if (val && !isFirstLoadScorciatoie) {
+                apriTutorialScorciatoie();
+            }
+            isFirstLoadScorciatoie = false;
         });
     }
 }
@@ -11445,6 +11462,95 @@ document.addEventListener("mousedown", function(e) {
             } else {
                 // È un modale generato "al volo" dal JavaScript (es. chiediValoreConPopup)
                 modaleAttivo.remove();
+            }
+        }
+    }
+});
+// ================= TUTORIAL SCORCIATOIE =================
+function apriTutorialScorciatoie() {
+    const overlay = document.createElement("div");
+    overlay.className = "modal-overlay";
+    overlay.style.zIndex = "10005";
+
+    const modal = document.createElement("div");
+    modal.className = "modal-varianti"; // Usa classe che si adatta ai temi
+    modal.style.padding = "25px";
+    modal.style.textAlign = "center";
+    modal.style.maxWidth = "400px";
+
+    // Non mettiamo "color" hardcoded, così si adatta ai temi giorno/notte/autunno
+    modal.innerHTML = `
+        <h3 style="margin-top: 0;">⌨️ Tutorial Scorciatoie</h3>
+        <p style="font-size: 0.95em; margin-bottom: 15px; text-align: left;">
+            Hai attivato le scorciatoie da tastiera! Ora puoi usare queste combinazioni veloci in Cassa:
+        </p>
+        <div style="text-align: left; background: rgba(128,128,128,0.1); padding: 15px; border-radius: 8px; font-size: 0.95em; line-height: 1.8;">
+            <b>Alt + I</b> : Invia la Comanda Corrente<br>
+            <b>Alt + C</b> : Pulisci l'intero carrello in coda<br>
+            <b>Alt + R</b> : Resetta i soldi del resto inseriti<br>
+            <b>Alt + Q</b> : Focus sulla casella Quantità<br>
+            <b>Alt + S</b> : Focus sulla barra di Ricerca
+        </div>
+        <p style="font-size: 0.85em; margin-top: 15px; margin-bottom: 20px; font-style: italic; color: #888;">
+            Note: I tasti di sistema INVIO (per confermare/salvare) ed ESC (per annullare/chiudere modali) restano sempre attivi.
+        </p>
+        <div class="modal-actions">
+            <button class="btn-salva" id="btnHoCapitoScorciatoie" style="width: 100%;">Ho capito!</button>
+        </div>
+    `;
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    document.getElementById("btnHoCapitoScorciatoie").onclick = () => overlay.remove();
+}
+
+// ================= GESTIONE SCORCIATOIE DA TASTIERA (ALT + COMBINAZIONI) =================
+document.addEventListener("keydown", function(e) {
+    // Se le scorciatoie sono disabilitate da admin spegniamo la funzione qui
+    if (!window.settings.scorciatoieTastiera) return;
+
+    // Ascoltiamo solo le azioni combinate con il tasto ALT
+    if (e.altKey) {
+        const key = e.key.toLowerCase();
+        
+        // Verifica se siamo attivamente nella schermata CASSA
+        if (window.isLoggedInCassa) {
+            switch(key) {
+                case 'i': // Alt + I -> Invia Comanda
+                    e.preventDefault();
+                    const btnInvia = document.getElementById("inviaComandaBtn");
+                    if (btnInvia && !btnInvia.disabled) btnInvia.click();
+                    break;
+                    
+                case 'c': // Alt + C -> Cancella carrello
+                    e.preventDefault();
+                    if (typeof comandaCorrente !== "undefined" && comandaCorrente.length > 0) {
+                        comandaCorrente = []; // Pulisce Array
+                        if (typeof aggiornaComandaCorrente === "function") aggiornaComandaCorrente(); // Pulisce Grafica
+                        if (typeof notify === "function") notify("🛒 Carrello svuotato tramite scorciatoia", "info");
+                    }
+                    break;
+                    
+                case 'r': // Alt + R -> Reset Soldi Cassa
+                    e.preventDefault();
+                    const btnReset = document.getElementById("resetSoldiBtn");
+                    if (btnReset) btnReset.click();
+                    break;
+                    
+                case 'q': // Alt + Q -> Focus Selettore Quantità
+                    e.preventDefault();
+                    const inputQuantita = document.getElementById("quantita");
+                    if (inputQuantita && window.settings.selettoreQuantitaCassa) {
+                        inputQuantita.focus();
+                        inputQuantita.select(); // Evidenzia il numero per riscriverlo all'istante
+                    }
+                    break;
+                    
+                case 's': // Alt + S -> Focus Barra Cerca
+                    e.preventDefault();
+                    const searchBox = document.getElementById("cercaComandaCassa");
+                    if (searchBox) searchBox.focus();
+                    break;
             }
         }
     }
