@@ -2249,58 +2249,121 @@ body.tema-chiaro{
     color:#222;
 }
 
+/* Sfondo */
 body.tema-chiaro #themeBackground{
-    background:
-        linear-gradient(180deg,#ffffff,#f5f8fb,#e8eef7);
+    background:linear-gradient(180deg,#ffffff,#f5f7fb,#edf3fb);
 }
 
+/* ---------- INPUT ---------- */
+
+body.tema-chiaro input,
+body.tema-chiaro textarea,
+body.tema-chiaro select{
+
+    background:#ffffff !important;
+    color:#222 !important;
+    border:1px solid #cfd8dc !important;
+}
+
+body.tema-chiaro input:focus,
+body.tema-chiaro textarea:focus,
+body.tema-chiaro select:focus{
+
+    background:white !important;
+    border-color:#2196f3 !important;
+    box-shadow:0 0 6px rgba(33,150,243,.25);
+}
+
+/* ---------- BOX ---------- */
+
+body.tema-chiaro .order,
+body.tema-chiaro .settingItem,
+body.tema-chiaro .menu-item,
+body.tema-chiaro .bb-dash-card,
+body.tema-chiaro .bb-dash-container,
+body.tema-chiaro .popup-content,
+body.tema-chiaro .modal-varianti,
+body.tema-chiaro #loginDiv,
+body.tema-chiaro #registerDiv,
+body.tema-chiaro #forgotPasswordDiv{
+
+    background:#ffffff !important;
+    color:#222 !important;
+    border:1px solid #e3e7eb;
+}
+
+/* ---------- CHAT ---------- */
+
+body.tema-chiaro .chat-container{
+
+    background:#f8fafc !important;
+}
+
+body.tema-chiaro .chat-input-bar{
+
+    background:#ffffff !important;
+}
+
+body.tema-chiaro .chat-message.other{
+
+    background:white !important;
+    color:#222 !important;
+}
+
+body.tema-chiaro .chat-message.me{
+
+    background:#dff7d7 !important;
+    color:#222 !important;
+}
+
+/* ---------- STICKY ---------- */
+
+body.tema-chiaro .stickyBar{
+
+    background:#ffffff !important;
+    border-top:1px solid #ddd;
+}
+
+/* ---------- MENU CASSA ---------- */
+
+body.tema-chiaro .piatto-btn{
+
+    background:#fafafa !important;
+    color:#222 !important;
+    border:1px solid #d7d7d7 !important;
+}
+
+body.tema-chiaro .piatto-nome{
+
+    color:#111 !important;
+}
+
+body.tema-chiaro .piatto-prezzo{
+
+    color:#d32f2f !important;
+}
+
+body.tema-chiaro .piatto-ing{
+
+    color:#666 !important;
+}
+
+/* ---------- TESTI ---------- */
+
 body.tema-chiaro h1{
+
     color:#1565c0;
 }
 
 body.tema-chiaro h3,
 body.tema-chiaro h4{
+
     color:#1976d2;
+    text-shadow:none;
 }
-
 body.tema-chiaro button{
-    background:linear-gradient(135deg,#42a5f5,#1e88e5);
-    color:white;
-}
-body.tema-chiaro .order,
-body.tema-chiaro .settingItem,
-body.tema-chiaro .popup-content,
-body.tema-chiaro .modal-varianti,
-body.tema-chiaro .bb-dash-card,
-body.tema-chiaro .bb-dash-container,
-body.tema-chiaro .menu-item,
-body.tema-chiaro .popup-riep,
-body.tema-chiaro #loginDiv,
-body.tema-chiaro #registerDiv,
-body.tema-chiaro #forgotPasswordDiv{
 
     background:white;
-    color:#222;
-    border:1px solid #dcdcdc;
-}
-body.tema-chiaro .stickyBar{
-    background:#fafafa;
-    border-top:1px solid #ddd;
-}
-body.tema-chiaro .chat-container{
-    background:#f8f8f8;
-}
-
-body.tema-chiaro .chat-message.other{
-    background:white;
-}
-
-body.tema-chiaro .chat-message.me{
-    background:#d9fdd3;
-}
-body.tema-chiaro #loader{
-    --loader-bg:
-        radial-gradient(circle,#ffffff,#ecf5ff);
-
-    --loader-text:#1976d2;
+    color:#1565c0;
+    border:1px solid #90caf9;
 }
