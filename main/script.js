@@ -11367,6 +11367,25 @@ function chiediValoreConPopup(titolo, messaggio, valoreDefault, callback) {
         callback(val); // Ritorna il valore inserito
     };
 }
+
+// ================= MODALITA' NOTTE MANUALE (GLOBALE) =================
+window.settings = window.settings || {};
+
+function applicaModalitaNotte(isDark) {
+    if (isDark) {
+        document.body.classList.add("dark-mode");
+    } else {
+        document.body.classList.remove("dark-mode");
+    }
+}
+
+// Ascolta i cambiamenti in tempo reale dal database per TUTTE le pagine
+db.ref("impostazioni/modalitaNotte").on("value", snap => {
+    const isDark = snap.val() || false;
+    window.settings.modalitaNotte = isDark;
+    applicaModalitaNotte(isDark);
+});
+/*
 // ================= MODALITA' NOTTE AUTOMATICA (GLOBALE) =================
 window.settings = window.settings || {};
 
