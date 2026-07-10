@@ -2501,3 +2501,9 @@ body.tema-notte #offlineLoader .spinner {
     border-top-color: #3b82f6 !important;
     box-shadow: 0 0 25px rgba(59, 130, 246, 0.5) !important;
 }
+/* Fix specifico per il bottone Coperto */
+body.tema-notte #btnCopertoCassa, 
+body.tema-notte #btnCopertoCassa div {
+    background-color: #F8FAFC !important;
+    color: #000000 !important;
+}
