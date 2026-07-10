@@ -2128,11 +2128,12 @@ body.tema-estate button {
     min-width: 40px; /* Assicura che i numeri a 1 e 2 cifre siano allineati */
     text-align: center;
 }
-/* ================= MODALITA' NOTTE (SERALE) ================= */
-body.dark-mode {
+/* ================= MODALITA' NOTTE (MANUALE) ================= */
+body.dark-mode,
+body.dark-mode #mainContent {
     background-color: #121212 !important;
-    color: #e0e0e0 !important;
-    transition: background-color 0.5s ease, color 0.5s ease;
+    color: #ffffff !important;
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Sfondi contenitori e card */
@@ -2145,44 +2146,48 @@ body.dark-mode header,
 body.dark-mode footer,
 body.dark-mode #totaleDiv,
 body.dark-mode .stat-card,
-body.dark-mode .cart-item {
-    background-color: #1e1e1e !important;
-    color: #e0e0e0 !important;
-    border-color: #333 !important;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6) !important;
+body.dark-mode .cart-item,
+body.dark-mode .ingrediente-item {
+    background-color: #242424 !important;
+    border-color: #444 !important;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.8) !important;
 }
 
-/* Testi e Titoli */
+/* Forza il testo bianco su tutti gli elementi tipografici per sicurezza */
 body.dark-mode h1, 
 body.dark-mode h2, 
 body.dark-mode h3, 
 body.dark-mode h4, 
-body.dark-mode .titolo-piatto,
-body.dark-mode .comanda-header,
-body.dark-mode strong {
+body.dark-mode span, 
+body.dark-mode p, 
+body.dark-mode b, 
+body.dark-mode strong,
+body.dark-mode div {
     color: #ffffff !important;
 }
 
+/* Testi secondari in grigio chiaro */
 body.dark-mode small, 
 body.dark-mode .descrizione-piatto,
 body.dark-mode .ingredienti-list {
-    color: #aaaaaa !important;
+    color: #b0bec5 !important;
+}
+
+/* Evidenzia il titolo del piatto con un azzurrino per non renderlo noioso */
+body.dark-mode .titolo-piatto {
+    color: #64b5f6 !important; 
+}
+
+/* Evidenzia il prezzo in arancione/giallo chiaro */
+body.dark-mode .prezzo {
+    color: #ffcc80 !important;
 }
 
 /* Input, Select e Textarea */
 body.dark-mode input,
 body.dark-mode select,
 body.dark-mode textarea {
-    background-color: #2c2c2c !important;
-    color: #ffffff !important;
-    border: 1px solid #555 !important;
-}
-
-/* Adattamento bottoni secondari (i primari manterranno i loro bei colori) */
-body.dark-mode .btn-secondary {
     background-color: #333333 !important;
-    color: #dddddd !important;
-}
-body.dark-mode .btn-secondary:hover {
-    background-color: #444444 !important;
+    color: #ffffff !important;
+    border: 1px solid #777 !important;
 }
