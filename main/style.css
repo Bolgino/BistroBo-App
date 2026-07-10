@@ -2129,148 +2129,6 @@ body.tema-estate button {
     text-align: center;
 }
 /* ===========================================================
-   TEMA NOTTE (Sfondo Blu Scuro, Box Neri, Testi Chiari)
-   =========================================================== */
-
-/* 1. TESTO DI BASE E SFONDO PRINCIPALE */
-body.tema-notte {
-    color: #E2E8F0 !important;
-}
-
-body.tema-notte #themeBackground {
-    background: #0A1128 !important; /* Blu scuro profondo per lo sfondo globale */
-    background-image: none !important;
-}
-
-/* 2. FORZA IL NERO SU TUTTI I PANNELLI (Disintegra gli sfondi bianchi inline dell'HTML) */
-body.tema-notte .tabContent > div,
-body.tema-notte #aggiungiComandaTab > div > div,
-body.tema-notte .tabContent div[style*="background"], /* Colpisce le card Gamification e Gestione Profili */
-body.tema-notte .bb-dash-container,
-body.tema-notte .bb-dash-card,
-body.tema-notte #comandaCorrente,
-body.tema-notte .modal-varianti,
-body.tema-notte .popup-content,
-body.tema-notte .modal-cassa-box,
-body.tema-notte #loginDiv,
-body.tema-notte #registerDiv,
-body.tema-notte #forgotPasswordDiv,
-body.tema-notte .settingItem,
-body.tema-notte .stickyBar {
-    background: #000000 !important;
-    background-color: #000000 !important;
-    background-image: none !important;
-    border-color: #1E293B !important;
-    color: #E2E8F0 !important;
-}
-
-/* Ripristina la trasparenza ai "contenitori fantasma" (quelli che servono solo per l'impaginazione a griglia) */
-body.tema-notte #aggiungiComandaTab > div:first-child,
-body.tema-notte .tabContent,
-body.tema-notte #adminTabsContainer {
-    background: transparent !important;
-    background-color: transparent !important;
-    border: none !important;
-}
-
-/* 3. COMANDE: NERO FUORI, GRIGIO SCURO DENTRO */
-body.tema-notte .order,
-body.tema-notte .menu-item {
-    background: #000000 !important;
-    background-color: #000000 !important;
-    border: 1px solid #334155 !important;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.8) !important;
-}
-
-body.tema-notte .orderContent {
-    background: #111827 !important; /* Grigio-blu scurissimo per staccare il testo dal nero puro */
-    background-color: #111827 !important;
-    color: #E2E8F0 !important;
-}
-
-body.tema-notte .orderContentCibo, 
-body.tema-notte .orderContentBere {
-    color: #E2E8F0 !important; /* Rende ben leggibili i cibi e le bevande */
-}
-
-/* 4. GESTIONE TITOLI E TESTI */
-body.tema-notte h1,
-body.tema-notte h2,
-body.tema-notte h3,
-body.tema-notte h4,
-body.tema-notte .bb-dash-header h3,
-body.tema-notte .bb-card-title,
-body.tema-notte .order-header,
-body.tema-notte .piatto-nome {
-    color: #FFFFFF !important; /* Bianco Brillante per i Titoli */
-    text-shadow: none !important;
-}
-
-body.tema-notte small,
-body.tema-notte label,
-body.tema-notte .piatto-ing,
-body.tema-notte .piatto-ingredienti,
-body.tema-notte .settingLabel small {
-    color: #94A3B8 !important; /* Grigio morbido per i sottotitoli */
-}
-
-body.tema-notte .piatto-prezzo,
-body.tema-notte .prezzo,
-body.tema-notte .totale-testo,
-body.tema-notte .scontoTxt,
-body.tema-notte .asportoText {
-    color: #FDE047 !important; /* Giallo acceso per far spiccare prezzi e asporto */
-    text-shadow: none !important;
-}
-
-/* 5. BOTTONI MENU IN CASSA */
-body.tema-notte .piatto-btn,
-body.tema-notte .btn-cassa-ottimizzata {
-    background: #0f172a !important; 
-    border: 1px solid #334155 !important;
-    color: #E2E8F0 !important;
-}
-body.tema-notte .piatto-btn:hover {
-    background: #1e293b !important;
-}
-
-/* 6. CAMPI INPUT, SELECT, TEXTAREA */
-body.tema-notte input,
-body.tema-notte select,
-body.tema-notte textarea {
-    background: #121A2F !important;
-    color: #FFFFFF !important;
-    border: 1px solid #334155 !important;
-}
-body.tema-notte input:focus,
-body.tema-notte select:focus,
-body.tema-notte textarea:focus {
-    border-color: #3b82f6 !important;
-    box-shadow: 0 0 6px rgba(59, 130, 246, 0.5) !important;
-}
-
-/* 7. CHAT */
-body.tema-notte .chat-container,
-body.tema-notte .chat-input-bar {
-    background: #000000 !important;
-    border-color: #1E293B !important;
-}
-body.tema-notte .chat-message.other {
-    background: #1E293B !important;
-    color: #E2E8F0 !important;
-}
-body.tema-notte .chat-message.me {
-    background: #064E3B !important; /* Verde scuro per differenziare i tuoi messaggi */
-    color: #E2E8F0 !important;
-}
-
-/* 8. LOADER (Per renderlo elegante a tema notte) */
-body.tema-notte #loader .spinner,
-body.tema-notte #offlineLoader .spinner {
-    border-top-color: #3b82f6 !important;
-    box-shadow: 0 0 25px rgba(59, 130, 246, 0.5) !important;
-}
-/* ===========================================================
    TEMA CHIARO
    =========================================================== */
 
@@ -2395,4 +2253,165 @@ body.tema-chiaro button{
     background:white;
     color:#1565c0;
     border:1px solid #90caf9;
+}
+/* ===========================================================
+   TEMA NOTTE (Sfondo Blu Scuro, Box Neri, Testi Chiari)
+   =========================================================== */
+
+/* 1. TESTO DI BASE E SFONDO PRINCIPALE */
+body.tema-notte {
+    color: #F8FAFC !important; /* Testo di base quasi bianco */
+}
+
+body.tema-notte #themeBackground {
+    background: #0A1128 !important; /* Blu scuro profondo per lo sfondo globale */
+    background-image: none !important;
+}
+
+/* 2. FORZA IL NERO SU TUTTI I PANNELLI (Disintegra gli sfondi bianchi inline dell'HTML) */
+body.tema-notte .tabContent > div,
+body.tema-notte #aggiungiComandaTab > div > div,
+body.tema-notte .tabContent div[style*="background"], 
+body.tema-notte .bb-dash-container,
+body.tema-notte .bb-dash-card,
+body.tema-notte #comandaCorrente,
+body.tema-notte .modal-varianti,
+body.tema-notte .popup-content,
+body.tema-notte .modal-cassa-box,
+body.tema-notte #loginDiv,
+body.tema-notte #registerDiv,
+body.tema-notte #forgotPasswordDiv,
+body.tema-notte .settingItem,
+body.tema-notte .stickyBar {
+    background: #000000 !important;
+    background-color: #000000 !important;
+    background-image: none !important;
+    border-color: #1E293B !important;
+    color: #F8FAFC !important;
+}
+
+/* Ripristina la trasparenza ai "contenitori fantasma" (quelli che servono solo per l'impaginazione a griglia) */
+body.tema-notte #aggiungiComandaTab > div:first-child,
+body.tema-notte .tabContent,
+body.tema-notte #adminTabsContainer {
+    background: transparent !important;
+    background-color: transparent !important;
+    border: none !important;
+}
+
+/* 3. COMANDE: NERO FUORI, GRIGIO SCURO DENTRO */
+body.tema-notte .order,
+body.tema-notte .menu-item {
+    background: #000000 !important;
+    background-color: #000000 !important;
+    border: 1px solid #334155 !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.8) !important;
+}
+
+body.tema-notte .orderContent {
+    background: #111827 !important; /* Grigio-blu scurissimo */
+    background-color: #111827 !important;
+    color: #FFFFFF !important;
+}
+
+/* 4. GESTIONE TITOLI E TESTI (Schiariti per massima leggibilità) */
+body.tema-notte h1,
+body.tema-notte h2,
+body.tema-notte h3,
+body.tema-notte h4,
+body.tema-notte .bb-dash-header h3,
+body.tema-notte .bb-card-title,
+body.tema-notte .order-header,
+body.tema-notte .piatto-nome,
+body.tema-notte .bb-stat-val {
+    color: #FFFFFF !important; /* Bianco Brillante per Titoli e Valori numerici */
+    text-shadow: none !important;
+}
+
+/* Sottotitoli, ingredienti, voci delle comande e testi generici */
+body.tema-notte small,
+body.tema-notte label,
+body.tema-notte .piatto-ing,
+body.tema-notte .piatto-ingredienti,
+body.tema-notte .settingLabel small,
+body.tema-notte .order-body div,
+body.tema-notte .orderContentCibo,
+body.tema-notte .orderContentBere,
+body.tema-notte .bb-stat-row,
+body.tema-notte .chat-sender {
+    color: #E2E8F0 !important; /* Grigio chiarissimo, quasi bianco, molto leggibile sul nero */
+}
+
+/* Prezzi ed evidenze (Giallo/Arancio per spiccare) */
+body.tema-notte .piatto-prezzo,
+body.tema-notte .prezzo,
+body.tema-notte .totale-testo {
+    color: #FDE047 !important; /* Giallo acceso */
+}
+body.tema-notte .scontoTxt,
+body.tema-notte .asportoText {
+    color: #ffb74d !important;
+    text-shadow: none !important;
+}
+
+/* 5. BARRA DI CARICO CENTRO CONTROLLO */
+body.tema-notte .bb-gauge-bg {
+    background: #FFFFFF !important; /* Rende la barra di sfondo completamente bianca */
+    border: 1px solid #334155 !important; /* Aggiunge un bordino per farla staccare */
+}
+
+/* 6. BOTTONI MENU IN CASSA */
+body.tema-notte .piatto-btn,
+body.tema-notte .btn-cassa-ottimizzata {
+    background: #0f172a !important; 
+    border: 1px solid #334155 !important;
+    color: #FFFFFF !important;
+}
+body.tema-notte .piatto-btn:hover {
+    background: #1e293b !important;
+}
+
+/* 7. CAMPI INPUT, SELECT, TEXTAREA */
+body.tema-notte input,
+body.tema-notte select,
+body.tema-notte textarea {
+    background: #121A2F !important;
+    color: #FFFFFF !important;
+    border: 1px solid #334155 !important;
+}
+body.tema-notte input:focus,
+body.tema-notte select:focus,
+body.tema-notte textarea:focus {
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 6px rgba(59, 130, 246, 0.5) !important;
+}
+
+/* 8. CHAT */
+body.tema-notte .chat-container,
+body.tema-notte .chat-input-bar {
+    background: #000000 !important;
+    border-color: #1E293B !important;
+}
+body.tema-notte .chat-message.other {
+    background: #1E293B !important;
+    color: #FFFFFF !important;
+}
+body.tema-notte .chat-message.me {
+    background: #064E3B !important;
+    color: #FFFFFF !important;
+}
+
+/* 9. FIX BADGE CUCINA E RITARDI */
+body.tema-notte div[style*="background-color: #ffebee"],
+body.tema-notte div[style*="background-color: rgb(255, 235, 238)"] {
+    background-color: #4A0000 !important;
+    color: #FFFFFF !important;
+    border: 1px solid #FF8A80 !important;
+}
+
+/* 10. LOADER (Spinner azzurro scuro in tema notte) */
+body.tema-notte #loader .spinner,
+body.tema-notte #offlineLoader .spinner {
+    border-top-color: #3b82f6 !important;
+    box-shadow: 0 0 25px rgba(59, 130, 246, 0.5) !important;
 }
