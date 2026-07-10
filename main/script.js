@@ -10930,12 +10930,12 @@ function aggiornaOrologio() {
     span.innerText = `${hh}:${mm}:${ss}`;
 }
 //Tema
-const temiDisponibili = ["default", "scout", "autunno", "inverno", "primavera", "estate"];
+const temiDisponibili = ["default", "scout", "autunno", "inverno", "primavera", "estate","chiaro","notte"];
 function aggiornaTema(tema, salvaSuFirebase = false) {
   // 🔹 Rimuove tutte le classi dei temi
   document.body.classList.remove(
     "tema-default", "tema-scout", "tema-autunno",
-    "tema-inverno", "tema-primavera", "tema-estate"
+    "tema-inverno", "tema-primavera", "tema-estate",  "tema-chiaro","tema-notte"
   );
 
   // 🔹 Aggiunge il tema selezionato
