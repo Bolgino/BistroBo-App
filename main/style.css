@@ -2511,3 +2511,100 @@ body.tema-notte #btnCopertoCassa div {
 body.tema-notte #lista-totali-sommario .qta-evidenza {
     color: #000000 !important;
 }
+
+/* ===========================================================
+   TEMA ASTRONAVE (Versione Compattata)
+=========================================================== */
+body.tema-astronave, body.tema-astronave #themeBackground {
+    background-color:#02040A !important;
+    background-image:
+    radial-gradient(circle at 4% 12%, #ffffff 0 2px, transparent 3px),
+    radial-gradient(circle at 12% 40%, #dff8ff 0 2px, transparent 3px),
+    radial-gradient(circle at 18% 82%, #ffffff 0 2px, transparent 3px),
+    radial-gradient(circle at 26% 26%, #9ddcff 0 1px, transparent 2px),
+    radial-gradient(circle at 35% 65%, #ffffff 0 2px, transparent 3px),
+    radial-gradient(circle at 42% 18%, #ffffff 0 1px, transparent 2px),
+    radial-gradient(circle at 56% 33%, #9ce7ff 0 2px, transparent 3px),
+    radial-gradient(circle at 63% 79%, white 0 2px, transparent 3px),
+    radial-gradient(circle at 74% 21%, white 0 1px, transparent 2px),
+    radial-gradient(circle at 88% 48%, #b6f4ff 0 2px, transparent 3px),
+    radial-gradient(circle at 94% 87%, white 0 2px, transparent 3px),
+    radial-gradient(circle at 92% 18%, #9bdfff 0%, #5db7ff 18%, #1d73c8 42%, #103e78 58%, transparent 60%),
+    radial-gradient(circle at 92% 18%, rgba(120,220,255,.35) 0%, rgba(120,220,255,.12) 20%, transparent 38%),
+    radial-gradient(circle at 8% 88%, #fff9c4 0%, #ffe082 10%, #ffca28 18%, #ff9800 28%, transparent 30%),
+    radial-gradient(circle at 8% 88%, rgba(255,210,80,.35) 0%, rgba(255,180,50,.15) 22%, transparent 45%),
+    radial-gradient(circle at 65% 55%, rgba(0,180,255,.15), transparent 45%),
+    radial-gradient(circle at 35% 20%, rgba(120,70,255,.12), transparent 40%);
+    background-size:cover;
+    background-attachment:fixed;
+    color:#7CFBFF !important;
+    animation:spaceGlow 18s linear infinite;
+}
+@keyframes spaceGlow{ 0%{ filter:hue-rotate(0deg); } 50%{ filter:hue-rotate(10deg); } 100%{ filter:hue-rotate(0deg); } }
+body.tema-astronave .tabContent>div, body.tema-astronave #aggiungiComandaTab>div>div, body.tema-astronave .tabContent div[style*="background"], body.tema-astronave .bb-dash-container, body.tema-astronave .bb-dash-card, body.tema-astronave #comandaCorrente, body.tema-astronave .modal-content, body.tema-astronave .modal-cassa-box, body.tema-astronave .popup-content, body.tema-astronave .modal-varianti, body.tema-astronave .settingItem, body.tema-astronave .stickyBar, body.tema-astronave .sconto-item, body.tema-astronave #loginDiv, body.tema-astronave #registerDiv, body.tema-astronave #forgotPasswordDiv{
+    background:#050A13 !important; border:1px solid #00D9FF !important; box-shadow: 0 0 10px rgba(0,220,255,.25), inset 0 0 20px rgba(0,180,255,.08); backdrop-filter:blur(8px);
+}
+body.tema-astronave #aggiungiComandaTab>div:first-child, body.tema-astronave .tabContent, body.tema-astronave #adminTabsContainer{ background:transparent !important; border:none !important; }
+body.tema-astronave table{ background:#03070E !important; border:1px solid #00D9FF !important; box-shadow: 0 0 10px rgba(0,217,255,.20); }
+body.tema-astronave th{ background:#061524 !important; color:#6CF7FF !important; border:1px solid #00D9FF !important; text-shadow: 0 0 6px #00F0FF, 0 0 12px #00D9FF; }
+body.tema-astronave td{ background:#02050A !important; color:#D9FFFF !important; border-color:#12374A !important; }
+body.tema-astronave tr:hover{ background:#07131F !important; }
+body.tema-astronave .order, body.tema-astronave .menu-item{ background:#050A13 !important; border:1px solid #00D9FF !important; box-shadow: 0 0 8px rgba(0,217,255,.35), inset 0 0 18px rgba(0,217,255,.05); transition:.25s; }
+body.tema-astronave .order:hover, body.tema-astronave .menu-item:hover{ transform:translateY(-2px); box-shadow: 0 0 18px rgba(0,255,255,.55), inset 0 0 20px rgba(0,255,255,.08); }
+body.tema-astronave .orderContent{ background:#09131D !important; }
+body.tema-astronave div:not(.bb-status-badge):not(.bb-gauge-fill):not(.bb-gauge-bg), body.tema-astronave span:not(.bb-status-badge), body.tema-astronave p, body.tema-astronave small, body.tema-astronave label, body.tema-astronave li{ color:#9FFAFF !important; text-shadow: 0 0 3px #00FFFF, 0 0 8px rgba(0,255,255,.45); }
+body.tema-astronave h1, body.tema-astronave h2, body.tema-astronave h3, body.tema-astronave h4, body.tema-astronave strong, body.tema-astronave b, body.tema-astronave .bb-card-title, body.tema-astronave .bb-stat-val, body.tema-astronave .order-header, body.tema-astronave .piatto-nome, body.tema-astronave .bb-dash-header h3{ color:#E7FFFF !important; text-shadow: 0 0 4px #00FFFF, 0 0 12px #00F0FF, 0 0 22px #00C8FF; }
+body.tema-astronave small{ color:#77F5FF !important; }
+body.tema-astronave label{ color:#91FBFF !important; }
+body.tema-astronave .piatto-prezzo, body.tema-astronave .prezzo{ color:#FFE96A !important; font-weight:bold; text-shadow: 0 0 8px #FFD400, 0 0 16px #FFC400; }
+body.tema-astronave .totale-testo{ color:#FFF16E !important; text-shadow: 0 0 8px gold, 0 0 18px gold; }
+body.tema-astronave .scontoTxt{ color:#FF9A40 !important; text-shadow: 0 0 8px orange; }
+body.tema-astronave .asportoText{ color:#6CFF7D !important; text-shadow: 0 0 8px #00FF66; }
+body.tema-astronave td[style*="color:#2e7d32"]{ color:#45FF96 !important; text-shadow: 0 0 8px #00FF80, 0 0 18px #00FF80; }
+body.tema-astronave #lista-totali-sommario div{ border-bottom:1px solid rgba(0,217,255,.15); }
+body.tema-astronave .bb-dash-card{ transition:.25s; }
+body.tema-astronave .bb-dash-card:hover{ box-shadow: 0 0 25px rgba(0,255,255,.45), inset 0 0 25px rgba(0,255,255,.08); }
+body.tema-astronave .piatto-nome{ letter-spacing:.5px; }
+body.tema-astronave .piatto-ing{ color:#9ADFFF !important; }
+body.tema-astronave .qta-evidenza{ color:#6FFFF8 !important; font-weight:bold; text-shadow: 0 0 6px cyan, 0 0 16px cyan; }
+body.tema-astronave button{ background:#071521 !important; color:#7FFFFF !important; border:1px solid #00D9FF !important; border-radius:8px !important; text-shadow: 0 0 6px #00FFFF; box-shadow: 0 0 8px rgba(0,217,255,.4), inset 0 0 10px rgba(0,217,255,.12); transition:.25s; }
+body.tema-astronave button:hover{ background:#0A2638 !important; color:white !important; box-shadow: 0 0 20px #00FFFF, inset 0 0 15px rgba(0,255,255,.3); transform:translateY(-2px); }
+body.tema-astronave .tabBtn{ background:#050A13 !important; color:#67F7FF !important; border:1px solid #0088AA !important; }
+body.tema-astronave .tabBtn.active{ background:#003B55 !important; color:#FFFFFF !important; box-shadow: 0 0 18px #00E5FF, inset 0 0 15px #006B88; }
+body.tema-astronave .piatto-btn, body.tema-astronave .btn-cassa-ottimizzata{ background: linear-gradient(145deg, #071521, #02070D) !important; border: 1px solid #00D9FF !important; box-shadow: 0 0 12px rgba(0,217,255,.45), inset 0 0 15px rgba(0,217,255,.12); }
+body.tema-astronave .piatto-btn:hover, body.tema-astronave .btn-cassa-ottimizzata:hover{ box-shadow: 0 0 25px #00FFFF, inset 0 0 25px rgba(0,255,255,.2); }
+body.tema-astronave .piatto-btn *, body.tema-astronave .btn-cassa-ottimizzata *{ color:#BFFFFF !important; text-shadow: 0 0 6px cyan; }
+body.tema-astronave .piatto-btn .piatto-prezzo{ color:#FFE66D !important; text-shadow: 0 0 10px #FFD000; }
+body.tema-astronave #comandaCorrente button{ background:#06131E !important; color:#00FFFF !important; border: 1px solid #00D9FF !important; }
+body.tema-astronave #comandaCorrente{ border: 1px solid #00FFFF !important; box-shadow: 0 0 20px rgba(0,255,255,.35); }
+body.tema-astronave input, body.tema-astronave select, body.tema-astronave textarea{ background:#030912 !important; color:#BFFFFF !important; border: 1px solid #00D9FF !important; box-shadow: inset 0 0 10px rgba(0,217,255,.15), 0 0 8px rgba(0,217,255,.25); }
+body.tema-astronave input:focus, body.tema-astronave select:focus, body.tema-astronave textarea:focus{ border-color:#00FFFF !important; box-shadow: 0 0 20px #00FFFF, inset 0 0 15px rgba(0,255,255,.25); }
+body.tema-astronave .bb-status-badge{ border-radius:20px !important; font-weight:bold; letter-spacing:1px; }
+body.tema-astronave .bb-status-badge.ok{ background:#003B2A !important; color:#4DFFB2 !important; border:1px solid #00FF88 !important; box-shadow: 0 0 15px #00FF88; }
+body.tema-astronave .bb-status-badge.warn{ background:#453000 !important; color:#FFE36E !important; border:1px solid #FFD000 !important; box-shadow: 0 0 15px #FFD000; }
+body.tema-astronave .bb-status-badge.crit{ background:#420000 !important; color:#FF6B6B !important; border:1px solid red !important; box-shadow: 0 0 20px red; }
+body.tema-astronave .bb-gauge-bg{ background:#020712 !important; border: 1px solid #007A99 !important; box-shadow: inset 0 0 15px #001F33; }
+body.tema-astronave .bb-gauge-fill{ background: linear-gradient(90deg, #00FFFF, #008CFF) !important; box-shadow: 0 0 15px cyan, 0 0 35px #008CFF; }
+body.tema-astronave .chat-container, body.tema-astronave .chat-input-bar{ background:#030912 !important; border: 1px solid #00D9FF !important; box-shadow: 0 0 15px rgba(0,217,255,.3); }
+body.tema-astronave .chat-message.other{ background:#071A29 !important; color:#8FFFFF !important; border-left: 3px solid cyan; }
+body.tema-astronave .chat-message.me{ background:#003B2A !important; color:#9DFFD0 !important; border-right: 3px solid #00FF88; }
+@keyframes neonPulse{ 0%{ text-shadow: 0 0 5px #00FFFF, 0 0 10px #00FFFF; } 50%{ text-shadow: 0 0 12px #00FFFF, 0 0 25px #008CFF, 0 0 40px #008CFF; } 100%{ text-shadow: 0 0 5px #00FFFF, 0 0 10px #00FFFF; } }
+body.tema-astronave h1, body.tema-astronave h2, body.tema-astronave h3{ animation: neonPulse 3s infinite; }
+body.tema-astronave .bb-dash-card, body.tema-astronave .order, body.tema-astronave .modal-content{ position:relative; overflow:hidden; }
+body.tema-astronave .bb-dash-card::after, body.tema-astronave .order::after, body.tema-astronave .modal-content::after{ content:""; position:absolute; top:-100%; left:0; width:100%; height:20%; background: linear-gradient(transparent, rgba(0,255,255,.15), transparent); animation: scanPanel 5s linear infinite; pointer-events:none; }
+@keyframes scanPanel{ 0%{ top:-30%; } 100%{ top:130%; } }
+body.tema-astronave .modal-content, body.tema-astronave .popup-content, body.tema-astronave .bb-dash-card{ animation: borderGlow 4s infinite alternate; }
+@keyframes borderGlow{ from{ box-shadow: 0 0 8px rgba(0,217,255,.25); } to{ box-shadow: 0 0 25px rgba(0,217,255,.65); } }
+body.tema-astronave ::-webkit-scrollbar{ width:10px; }
+body.tema-astronave ::-webkit-scrollbar-track{ background:#02050A; }
+body.tema-astronave ::-webkit-scrollbar-thumb{ background: linear-gradient(#00FFFF, #0077FF); border-radius:10px; box-shadow: 0 0 10px cyan; }
+body.tema-astronave #loader{ --loader-bg: radial-gradient(circle, #06263D, #000000); --loader-text: #00FFFF; }
+body.tema-astronave #loader .spinner, body.tema-astronave #offlineLoader .spinner{ border-top-color:#00FFFF !important; box-shadow: 0 0 20px cyan, 0 0 40px #008CFF; }
+body.tema-astronave div[style*="background:#fff"], body.tema-astronave div[style*="background:white"], body.tema-astronave div[style*="background-color:white"], body.tema-astronave div[style*="background-color:#fff"]{ background:#050A13 !important; color:#9FFFFF !important; border-color:#00D9FF !important; }
+body.tema-astronave div[style*="background-color: #ffebee"], body.tema-astronave div[style*="background-color: rgb(255, 235, 238)"]{ background:#400000 !important; color:#FFAAAA !important; border: 1px solid #FF4444 !important; box-shadow: 0 0 15px red; }
+body.tema-astronave .bb-stat-val{ color:#FFFFFF !important; letter-spacing:2px; text-shadow: 0 0 10px cyan, 0 0 25px cyan; }
+body.tema-astronave hr{ border:none !important; height:1px; background: linear-gradient(90deg, transparent, cyan, transparent) !important; box-shadow: 0 0 10px cyan; }
+body.tema-astronave .bb-stat-val, body.tema-astronave .qta-evidenza{ font-family: "Orbitron", "Consolas", monospace; }
+body.tema-astronave button, body.tema-astronave .piatto-btn{ cursor:pointer; }
+body.tema-astronave{ overflow-x:hidden; }
+body.tema-astronave *{ scrollbar-color: #00FFFF #02050A; }
