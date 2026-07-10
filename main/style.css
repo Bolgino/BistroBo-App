@@ -2552,8 +2552,21 @@ body.tema-astronave tr:hover{ background:#07131F !important; }
 body.tema-astronave .order, body.tema-astronave .menu-item{ background:#050A13 !important; border:1px solid #00D9FF !important; box-shadow: 0 0 8px rgba(0,217,255,.35), inset 0 0 18px rgba(0,217,255,.05); transition:.25s; }
 body.tema-astronave .order:hover, body.tema-astronave .menu-item:hover{ transform:translateY(-2px); box-shadow: 0 0 18px rgba(0,255,255,.55), inset 0 0 20px rgba(0,255,255,.08); }
 body.tema-astronave .orderContent{ background:#09131D !important; }
-body.tema-astronave div:not(.bb-status-badge):not(.bb-gauge-fill):not(.bb-gauge-bg), body.tema-astronave span:not(.bb-status-badge), body.tema-astronave p, body.tema-astronave small, body.tema-astronave label, body.tema-astronave li{ color:#9FFAFF !important; text-shadow: 0 0 3px #00FFFF, 0 0 8px rgba(0,255,255,.45); }
-body.tema-astronave h1, body.tema-astronave h2, body.tema-astronave h3, body.tema-astronave h4, body.tema-astronave strong, body.tema-astronave b, body.tema-astronave .bb-card-title, body.tema-astronave .bb-stat-val, body.tema-astronave .order-header, body.tema-astronave .piatto-nome, body.tema-astronave .bb-dash-header h3{ color:#E7FFFF !important; text-shadow: 0 0 4px #00FFFF, 0 0 12px #00F0FF, 0 0 22px #00C8FF; }
+/* TESTI NORMALI - ASTRONAVE SOFT */
+
+body.tema-astronave p,
+body.tema-astronave small,
+body.tema-astronave label,
+body.tema-astronave li {
+
+    color:#B8E9F2 !important;
+
+    text-shadow:none !important;
+
+}
+body.tema-astronave h1, body.tema-astronave h2, body.tema-astronave h3, body.tema-astronave h4, body.tema-astronave strong, body.tema-astronave b, body.tema-astronave .bb-card-title, body.tema-astronave .bb-stat-val, body.tema-astronave .order-header, body.tema-astronave .piatto-nome, body.tema-astronave .bb-dash-header h3{ color:#E7FFFF !important;text-shadow:
+0 0 3px rgba(0,255,255,.6),
+0 0 8px rgba(0,200,255,.35);}
 body.tema-astronave small{ color:#77F5FF !important; }
 body.tema-astronave label{ color:#91FBFF !important; }
 body.tema-astronave .piatto-prezzo, body.tema-astronave .prezzo{ color:#FFE96A !important; font-weight:bold; text-shadow: 0 0 8px #FFD400, 0 0 16px #FFC400; }
@@ -2573,8 +2586,18 @@ body.tema-astronave .tabBtn{ background:#050A13 !important; color:#67F7FF !impor
 body.tema-astronave .tabBtn.active{ background:#003B55 !important; color:#FFFFFF !important; box-shadow: 0 0 18px #00E5FF, inset 0 0 15px #006B88; }
 body.tema-astronave .piatto-btn, body.tema-astronave .btn-cassa-ottimizzata{ background: linear-gradient(145deg, #071521, #02070D) !important; border: 1px solid #00D9FF !important; box-shadow: 0 0 12px rgba(0,217,255,.45), inset 0 0 15px rgba(0,217,255,.12); }
 body.tema-astronave .piatto-btn:hover, body.tema-astronave .btn-cassa-ottimizzata:hover{ box-shadow: 0 0 25px #00FFFF, inset 0 0 25px rgba(0,255,255,.2); }
-body.tema-astronave .piatto-btn *, body.tema-astronave .btn-cassa-ottimizzata *{ color:#BFFFFF !important; text-shadow: 0 0 6px cyan; }
-body.tema-astronave .piatto-btn .piatto-prezzo{ color:#FFE66D !important; text-shadow: 0 0 10px #FFD000; }
+/* MENU PIATTI - TESTO PULITO */
+
+body.tema-astronave .piatto-btn *,
+body.tema-astronave .btn-cassa-ottimizzata *{
+
+    color:#06131E !important;
+
+    text-shadow:none !important;
+
+}
+body.tema-astronave .piatto-btn .piatto-prezzo{ color:#FFE66D !important;text-shadow:
+0 0 4px rgba(255,210,0,.6);}
 body.tema-astronave #comandaCorrente button{ background:#06131E !important; color:#00FFFF !important; border: 1px solid #00D9FF !important; }
 body.tema-astronave #comandaCorrente{ border: 1px solid #00FFFF !important; box-shadow: 0 0 20px rgba(0,255,255,.35); }
 body.tema-astronave input, body.tema-astronave select, body.tema-astronave textarea{ background:#030912 !important; color:#BFFFFF !important; border: 1px solid #00D9FF !important; box-shadow: inset 0 0 10px rgba(0,217,255,.15), 0 0 8px rgba(0,217,255,.25); }
@@ -2594,7 +2617,8 @@ body.tema-astronave .bb-dash-card, body.tema-astronave .order, body.tema-astrona
 body.tema-astronave .bb-dash-card::after, body.tema-astronave .order::after, body.tema-astronave .modal-content::after{ content:""; position:absolute; top:-100%; left:0; width:100%; height:20%; background: linear-gradient(transparent, rgba(0,255,255,.15), transparent); animation: scanPanel 5s linear infinite; pointer-events:none; }
 @keyframes scanPanel{ 0%{ top:-30%; } 100%{ top:130%; } }
 body.tema-astronave .modal-content, body.tema-astronave .popup-content, body.tema-astronave .bb-dash-card{ animation: borderGlow 4s infinite alternate; }
-@keyframes borderGlow{ from{ box-shadow: 0 0 8px rgba(0,217,255,.25); } to{ box-shadow: 0 0 25px rgba(0,217,255,.65); } }
+@keyframes borderGlow{ from{ box-shadow: 0 0 8px rgba(0,217,255,.25); } to{box-shadow:
+0 0 12px rgba(0,217,255,.35);} }
 body.tema-astronave ::-webkit-scrollbar{ width:10px; }
 body.tema-astronave ::-webkit-scrollbar-track{ background:#02050A; }
 body.tema-astronave ::-webkit-scrollbar-thumb{ background: linear-gradient(#00FFFF, #0077FF); border-radius:10px; box-shadow: 0 0 10px cyan; }
