@@ -2307,7 +2307,7 @@ body.tema-notte #adminTabsContainer {
     border: none !important;
 }
 
-/* 3. POPUP CONTORNI (Combo) E VARIANTI */
+/* 3. POPUP CONTORNI E VARIANTI */
 body.tema-notte #popupCombo .modal-content {
     background: #000000 !important;
     background-color: #000000 !important;
@@ -2320,17 +2320,21 @@ body.tema-notte #popupCombo .modal-content h3 {
     color: #FFFFFF !important;
 }
 
-/* 4. TABELLE E STATISTICHE (Sfondo chiaro, scritte nere) */
+/* 4. TABELLE E STATISTICHE (Box Scuri ed Eleganti) */
 body.tema-notte .tableHeader,
 body.tema-notte .tableRow {
-    background: #E2E8F0 !important; /* Grigio chiaro per le righe */
-    background-color: #E2E8F0 !important;
-    border-bottom: 1px solid #94A3B8 !important;
+    background: #0F172A !important; /* Blu-grigio scuro */
+    background-color: #0F172A !important;
+    border-bottom: 1px solid #1E293B !important;
 }
-body.tema-notte .tableHeader *,
-body.tema-notte .tableRow * {
-    color: #000000 !important; /* Forza testo NERO sulle statistiche */
+body.tema-notte .tableHeader div,
+body.tema-notte .tableHeader span {
+    color: #FFFFFF !important; /* Titoli colonne in bianco puro */
     font-weight: bold !important;
+}
+body.tema-notte .tableRow div,
+body.tema-notte .tableRow span {
+    color: #E2E8F0 !important; /* Dati in grigio-ghiaccio */
 }
 
 /* 5. COMANDE E MENU ITEMS */
@@ -2342,7 +2346,7 @@ body.tema-notte .menu-item {
     box-shadow: 0 4px 12px rgba(0,0,0,0.8) !important;
 }
 body.tema-notte .orderContent {
-    background: #111827 !important; /* Grigio scuro per il blocco centrale comanda */
+    background: #111827 !important;
     background-color: #111827 !important;
 }
 
@@ -2371,23 +2375,28 @@ body.tema-notte b {
     text-shadow: none !important;
 }
 
-/* 7. BOTTONI (Correzione Testi Neri su Sfondi Chiari) */
+/* 7. BOTTONI (Rinomina, Contorni Cassa, Tasti Chiari) */
 body.tema-notte .tabBtn {
-    color: #000000 !important; /* Le tab inattive sono grigie chiare, serve testo nero */
+    color: #000000 !important;
 }
 body.tema-notte .tabBtn.active {
-    color: #FFFFFF !important; /* La tab attiva ha sfondo colorato, serve bianco */
+    color: #FFFFFF !important;
 }
 
-/* Bottoni generici con sfondo bianco inline (es. tasto "Rinomina") */
+/* Distrugge i bottoni con sfondo bianco JS inline (Es. "Contorni", "Rinomina") */
 body.tema-notte button[style*="background: #fff"],
 body.tema-notte button[style*="background: white"],
 body.tema-notte button[style*="background-color: #fff"],
-body.tema-notte button[style*="background-color: white"] {
-    color: #000000 !important;
+body.tema-notte button[style*="background-color: white"],
+body.tema-notte #comandaCorrente button {
+    background: #1E293B !important;
+    background-color: #1E293B !important;
+    color: #FFFFFF !important; /* Scritta Bianca */
+    border: 1px solid #3B82F6 !important; /* Bordino Blu Luminoso */
+    text-shadow: none !important;
 }
 
-/* Bottoni Menu in Cassa */
+/* Bottoni Menu in Cassa Principale */
 body.tema-notte .piatto-btn,
 body.tema-notte .btn-cassa-ottimizzata {
     background: #F8FAFC !important; 
@@ -2396,11 +2405,11 @@ body.tema-notte .btn-cassa-ottimizzata {
 }
 body.tema-notte .piatto-btn *,
 body.tema-notte .btn-cassa-ottimizzata * {
-    color: #000000 !important; /* Testo NERO sui piatti in cassa */
+    color: #000000 !important;
     text-shadow: none !important;
 }
 body.tema-notte .piatto-prezzo {
-    color: #b71c1c !important; /* Prezzo rosso per contrasto */
+    color: #b71c1c !important; 
     font-weight: bold !important;
 }
 
@@ -2414,15 +2423,25 @@ body.tema-notte .asportoText {
     color: #ffb74d !important;
 }
 
-/* 8. BARRA DI CARICO CENTRO CONTROLLO (Bianca e Blu) */
+/* 8. CENTRO CONTROLLO (Barra Neon e Badge) */
+/* Badge "Flusso Regolare" / "Attenzione" */
+body.tema-notte .bb-status-badge.ok { background: #064E3B !important; color: #34D399 !important; border: 1px solid #059669 !important; }
+body.tema-notte .bb-status-badge.warn { background: #78350F !important; color: #FBBF24 !important; border: 1px solid #D97706 !important; }
+body.tema-notte .bb-status-badge.crit { background: #7F1D1D !important; color: #F87171 !important; border: 1px solid #DC2626 !important; }
+
+/* Barra di Carico "Neon" */
 body.tema-notte .bb-gauge-bg {
-    background: #FFFFFF !important; 
-    background-color: #FFFFFF !important;
+    background: #0F172A !important; 
+    background-color: #0F172A !important;
     border: 1px solid #1E293B !important;
+    border-radius: 8px !important;
+    box-shadow: inset 0 0 5px rgba(0,0,0,0.5) !important;
 }
 body.tema-notte .bb-gauge-fill {
-    background: #3B82F6 !important; /* Blu brillante */
-    background-color: #3B82F6 !important;
+    background: #00E5FF !important; /* Ciano brillante */
+    background-color: #00E5FF !important;
+    box-shadow: 0 0 8px #00E5FF, 0 0 15px #00E5FF !important; /* Effetto NEON */
+    border-radius: 8px !important;
 }
 
 /* 9. CAMPI INPUT, SELECT E TEXTAREA */
