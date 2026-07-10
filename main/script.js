@@ -3272,10 +3272,11 @@ async function caricaMenuCassa() {
                  
                  const prezzoScontato = item.sconto ? calcolaPrezzoConSconto(item).toFixed(2) : item.prezzo.toFixed(2);
                  
-                 btn.innerHTML = `
-                    <span style="font-weight:bold; font-size:12px; white-space:normal; line-height:1.1; text-align:center;">${item.nome}</span>
-                    <small style="color:#555; font-size:11px; font-weight:bold; margin-top:2px;">€${prezzoScontato}</small>
-                 `;
+                 // Rimuovi style="color:#555" da dentro il tag <small>
+				btn.innerHTML = `
+					<span style="font-weight:bold; font-size:12px; white-space:normal; line-height:1.1; text-align:center;">${item.nome}</span>
+					<small style="font-size:11px; font-weight:bold; margin-top:2px;">€${prezzoScontato}</small>
+				`;
                  
                  const containerIdMap = {
                      cibi: { id: "menuCibi", nome: "Cibi", enabled: true, color: "#4CAF50" },
