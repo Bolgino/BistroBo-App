@@ -2392,19 +2392,24 @@ body.tema-notte button[style*="background-color: white"] {
     color: #000000 !important;
 }
 
-/* Bottoni Menu in Cassa Principale */
+/* Bottoni Menu in Cassa Principale (Fondo chiaro, Scritte nere) */
 body.tema-notte .piatto-btn,
 body.tema-notte .btn-cassa-ottimizzata {
     background: #F8FAFC !important; 
     background-color: #F8FAFC !important; 
     border: 1px solid #94A3B8 !important;
 }
+/* La regola magica: vince su qualsiasi cosa e forza il nero assoluto per titoli e ingredienti */
 body.tema-notte .piatto-btn *,
-body.tema-notte .btn-cassa-ottimizzata * {
+body.tema-notte .btn-cassa-ottimizzata *,
+body.tema-notte .piatto-btn .piatto-nome,
+body.tema-notte .btn-cassa-ottimizzata .piatto-nome,
+body.tema-notte .piatto-btn .piatto-ing {
     color: #000000 !important;
     text-shadow: none !important;
 }
-body.tema-notte .piatto-prezzo {
+body.tema-notte .piatto-prezzo,
+body.tema-notte .piatto-btn .piatto-prezzo {
     color: #b71c1c !important; 
     font-weight: bold !important;
 }
