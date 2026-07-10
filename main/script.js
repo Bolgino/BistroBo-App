@@ -11411,9 +11411,49 @@ db.ref("impostazioni/modalitaNotte").on("value", snap => {
     controllaModalitaNotte(); // Aggiorna subito l'interfaccia
 });
 
-*/
+
 
 
 // 2. Controlla l'orologio ogni 60 secondi
 // Se scoccano le 21:00 mentre l'app è aperta, il tema cambia da solo in tempo reale!
-setInterval(controllaModalitaNotte, 60000);
+setInterval(controllaModalitaNotte, 60000); 
+*/
+// ================= GESTIONE CLICK FUORI DAI MODALI =================
+document.addEventListener("mousedown", function(e) {
+    // Controlla se l'elemento cliccato è ESATTAMENTE lo sfondo scuro del popup (l'overlay)
+    if (e.target.classList.contains("modal-overlay") || 
+        e.target.classList.contains("modal") || 
+        e.target.classList.contains("modal-cassa-overlay")) {
+        
+        const modaleAttivo = e.target;
+        
+        // Evitiamo di chiudere schermate critiche come i caricamenti o l'assenza di rete
+        if (modaleAttivo.id === "loader" || modaleAttivo.id === "offlineLoader") return;
+
+        // Cerchiamo il bottone "Annulla", "Chiudi" o le loro varianti all'interno del modale
+        const btnAnnulla = modaleAttivo.querySelector(".btn-chiudi, #annullaArchiviaBtn, #btnChiudiVisibilitaPreordini") || 
+                           Array.from(modaleAttivo.querySelectorAll("button")).find(b => 
+                               b.innerText.toLowerCase().includes("annull") || 
+                               b.innerText.toLowerCase().includes("chiud")
+                           );
+                           
+        if (btnAnnulla) {
+            // Se esiste un bottone preposto, lo premiamo virtualmente 
+            // (così si occupa lui di resettare variabili, fermare timer, ecc.)
+            btnAnnulla.click();
+        } else {
+            // Se non c'è un bottone, forziamo la chiusura in base al tipo di modale
+            if (modaleAttivo.id === "popupCombo" && typeof chiudiPopupCombo === "function") {
+                chiudiPopupCombo();
+            } else if (modaleAttivo.id === "modal-sommario" && typeof chiudiVistaSommario === "function") {
+                chiudiVistaSommario();
+            } else if (modaleAttivo.id) {
+                // È un modale statico scritto dentro index.html (es. il popup combo)
+                modaleAttivo.style.display = "none";
+            } else {
+                // È un modale generato "al volo" dal JavaScript (es. chiediValoreConPopup)
+                modaleAttivo.remove();
+            }
+        }
+    }
+});
