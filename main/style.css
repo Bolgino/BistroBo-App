@@ -2358,15 +2358,19 @@ body.tema-notte h1, body.tema-notte h2, body.tema-notte h3, body.tema-notte h4,
 body.tema-notte .bb-dash-header h3,
 body.tema-notte .bb-card-title,
 body.tema-notte .order-header,
+body.tema-notte .piatto-nome,
 body.tema-notte .bb-stat-val,
 body.tema-notte strong,
 body.tema-notte b {
     color: #FFFFFF !important;
     text-shadow: none !important;
 }
-body.tema-notte .piatto-nome{
-    color: #000000 !important;
-    text-shadow: none !important;
+/* Quando il tema notte è attivo, forza il testo nero dentro i bottoni dei piatti */
+body.tema-notte .piatto-btn span,
+body.tema-notte .piatto-btn small,
+body.tema-notte .btn-cassa-ottimizzata span,
+body.tema-notte .btn-cassa-ottimizzata small {
+    color: #000000 !important; /* Forza il nero */
 }
 
 /* 6. BOTTONI CASSA E "CONTORNI" (Testo NERO su Sfondo CHIARO per massima leggibilità) */
