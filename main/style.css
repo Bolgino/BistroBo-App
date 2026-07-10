@@ -2260,17 +2260,17 @@ body.tema-chiaro input,
 body.tema-chiaro textarea,
 body.tema-chiaro select{
 
-    background:#ffffff !important;
-    color:#222 !important;
-    border:1px solid #cfd8dc !important;
+    background:#ffffff;
+    color:#222 ;
+    border:1px solid #cfd8dc ;
 }
 
 body.tema-chiaro input:focus,
 body.tema-chiaro textarea:focus,
 body.tema-chiaro select:focus{
 
-    background:white !important;
-    border-color:#2196f3 !important;
+    background:white ;
+    border-color:#2196f3 ;
     box-shadow:0 0 6px rgba(33,150,243,.25);
 }
 
@@ -2287,8 +2287,8 @@ body.tema-chiaro #loginDiv,
 body.tema-chiaro #registerDiv,
 body.tema-chiaro #forgotPasswordDiv{
 
-    background:#ffffff !important;
-    color:#222 !important;
+    background:#ffffff ;
+    color:#222 ;
     border:1px solid #e3e7eb;
 }
 
@@ -2296,31 +2296,31 @@ body.tema-chiaro #forgotPasswordDiv{
 
 body.tema-chiaro .chat-container{
 
-    background:#f8fafc !important;
+    background:#f8fafc ;
 }
 
 body.tema-chiaro .chat-input-bar{
 
-    background:#ffffff !important;
+    background:#ffffff ;
 }
 
 body.tema-chiaro .chat-message.other{
 
-    background:white !important;
-    color:#222 !important;
+    background:white ;
+    color:#222 ;
 }
 
 body.tema-chiaro .chat-message.me{
 
-    background:#dff7d7 !important;
-    color:#222 !important;
+    background:#dff7d7 ;
+    color:#222 ;
 }
 
 /* ---------- STICKY ---------- */
 
 body.tema-chiaro .stickyBar{
 
-    background:#ffffff !important;
+    background:#ffffff ;
     border-top:1px solid #ddd;
 }
 
@@ -2328,24 +2328,24 @@ body.tema-chiaro .stickyBar{
 
 body.tema-chiaro .piatto-btn{
 
-    background:#fafafa !important;
-    color:#222 !important;
-    border:1px solid #d7d7d7 !important;
+    background:#fafafa ;
+    color:#222 ;
+    border:1px solid #d7d7d7 ;
 }
 
 body.tema-chiaro .piatto-nome{
 
-    color:#111 !important;
+    color:#111 ;
 }
 
 body.tema-chiaro .piatto-prezzo{
 
-    color:#d32f2f !important;
+    color:#d32f2f ;
 }
 
 body.tema-chiaro .piatto-ing{
 
-    color:#666 !important;
+    color:#666 ;
 }
 
 /* ---------- TESTI ---------- */
