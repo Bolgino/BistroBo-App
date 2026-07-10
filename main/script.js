@@ -6911,7 +6911,6 @@ db.ref("impostazioni/scontiGlobaliAbilitati").on("value", snap => {
     const btn = document.getElementById("toggleScontiGlobaliBtn");
     if (btn) {
         btn.innerText = abilitato ? "ON" : "OFF";
-        btn.style.backgroundColor = abilitato ? "#4CAF50" : "#f44336";
     }
 
     // Mostra/Nascondi Div in Admin (RIPRISTINATO A "block" INVECE DI "flex")
