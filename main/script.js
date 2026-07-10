@@ -11367,24 +11367,6 @@ function chiediValoreConPopup(titolo, messaggio, valoreDefault, callback) {
     };
 }
 
-// ================= MODALITA' NOTTE MANUALE (GLOBALE) =================
-window.settings = window.settings || {};
-
-function applicaModalitaNotte(isDark) {
-    if (isDark) {
-        document.body.classList.add("dark-mode");
-    } else {
-        document.body.classList.remove("dark-mode");
-    }
-}
-
-// Ascolta i cambiamenti in tempo reale dal database per TUTTE le pagine
-db.ref("impostazioni/modalitaNotte").on("value", snap => {
-    const isDark = snap.val() || false;
-    window.settings.modalitaNotte = isDark;
-    applicaModalitaNotte(isDark);
-});
-/*
 // ================= MODALITA' NOTTE AUTOMATICA (GLOBALE) =================
 window.settings = window.settings || {};
 
@@ -11417,7 +11399,7 @@ db.ref("impostazioni/modalitaNotte").on("value", snap => {
 // 2. Controlla l'orologio ogni 60 secondi
 // Se scoccano le 21:00 mentre l'app è aperta, il tema cambia da solo in tempo reale!
 setInterval(controllaModalitaNotte, 60000); 
-*/
+
 // ================= GESTIONE CLICK FUORI DAI MODALI =================
 document.addEventListener("mousedown", function(e) {
     // Controlla se l'elemento cliccato è ESATTAMENTE lo sfondo scuro del popup (l'overlay)
