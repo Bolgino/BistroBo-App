@@ -2128,66 +2128,81 @@ body.tema-estate button {
     min-width: 40px; /* Assicura che i numeri a 1 e 2 cifre siano allineati */
     text-align: center;
 }
-/* ================= MODALITA' NOTTE (MANUALE) ================= */
-body.dark-mode,
-body.dark-mode #mainContent {
+/* ================= MODALITA' NOTTE (MANUALE) FIX DEFINITIVO ================= */
+body.dark-mode {
+    background: #121212 !important;
     background-color: #121212 !important;
     color: #ffffff !important;
-    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Sfondi contenitori e card */
-body.dark-mode .piatto,
-body.dark-mode .categoria,
-body.dark-mode .comanda,
-body.dark-mode .modal-content,
-body.dark-mode .settingItem,
+body.dark-mode #mainContent {
+    background: transparent !important;
+    background-color: transparent !important;
+}
+
+/* Colonne Comande Cucina, Contenitore Carrello, Header e Footer */
+body.dark-mode .colonna-comande,
+body.dark-mode #totaleDiv,
 body.dark-mode header,
 body.dark-mode footer,
-body.dark-mode #totaleDiv,
-body.dark-mode .stat-card,
-body.dark-mode .cart-item,
-body.dark-mode .ingrediente-item {
-    background-color: #242424 !important;
-    border-color: #444 !important;
+body.dark-mode .modal-content {
+    background: #1e1e1e !important;
+    background-color: #1e1e1e !important;
+    border-color: #333 !important;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.8) !important;
 }
 
-/* Forza il testo bianco su tutti gli elementi tipografici per sicurezza */
-body.dark-mode h1, 
-body.dark-mode h2, 
-body.dark-mode h3, 
-body.dark-mode h4, 
-body.dark-mode span, 
-body.dark-mode p, 
-body.dark-mode b, 
-body.dark-mode strong,
-body.dark-mode div {
-    color: #ffffff !important;
+/* Tutte le card generate da JavaScript (Comande, Piatti, Carrello, ecc.) */
+body.dark-mode .comanda-card,
+body.dark-mode .piatto,
+body.dark-mode .cart-item,
+body.dark-mode .ingrediente-item,
+body.dark-mode .utente-card,
+body.dark-mode .stat-card,
+body.dark-mode .settingItem {
+    background: #2a2a2a !important;
+    background-color: #2a2a2a !important;
+    border-color: #444 !important;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5) !important;
 }
 
-/* Testi secondari in grigio chiaro */
-body.dark-mode small, 
-body.dark-mode .descrizione-piatto,
-body.dark-mode .ingredienti-list {
-    color: #b0bec5 !important;
+/* FORZATURA TESTI: Sovrascrive il nero/grigio di default del JS (esclude i bottoni per preservare il tuo tema) */
+body.dark-mode .colonna-comande *:not(button),
+body.dark-mode .comanda-card *:not(button),
+body.dark-mode .piatto *:not(button),
+body.dark-mode .cart-item *:not(button),
+body.dark-mode .ingrediente-item *:not(button),
+body.dark-mode .utente-card *:not(button),
+body.dark-mode .stat-card *:not(button),
+body.dark-mode #totaleDiv *:not(button) {
+    color: #e0e0e0 !important;
 }
 
-/* Evidenzia il titolo del piatto con un azzurrino per non renderlo noioso */
-body.dark-mode .titolo-piatto {
-    color: #64b5f6 !important; 
+/* Vivacizziamo alcuni testi per non rendere tutto troppo grigio */
+body.dark-mode .piatto h3,
+body.dark-mode .comanda-card strong,
+body.dark-mode .ingrediente-item strong,
+body.dark-mode .utente-card strong {
+    color: #64b5f6 !important; /* Azzurrino per titoli e numeri comanda */
 }
 
-/* Evidenzia il prezzo in arancione/giallo chiaro */
-body.dark-mode .prezzo {
-    color: #ffcc80 !important;
+body.dark-mode .prezzo,
+body.dark-mode .piatto span {
+    color: #ffcc80 !important; /* Arancione per i prezzi */
 }
 
-/* Input, Select e Textarea */
+/* Colori degli input, select e text area */
 body.dark-mode input,
 body.dark-mode select,
 body.dark-mode textarea {
     background-color: #333333 !important;
     color: #ffffff !important;
     border: 1px solid #777 !important;
+}
+
+/* Sistemiamo i badge di emergenza della cucina (es. "RITARDI RILEVATI") */
+body.dark-mode div[style*="background-color: #ffebee"],
+body.dark-mode div[style*="background-color: rgb(255, 235, 238)"] {
+    background-color: #4a1c1c !important;
+    color: #ff8a80 !important;
 }
