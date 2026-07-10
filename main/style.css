@@ -1793,14 +1793,15 @@ body.tema-estate button {
     margin-bottom: 0 !important;
 }
 
-/* 5. RIGA 3: Bottone Invia Comanda "Più Snello" */
-#inviaComandaBtn {
+/* 5. RIGA 3: Bottoni Invia Comanda e Annulla "Più Snelli" e allineati */
+#inviaComandaBtn, #annullaUltimaVenditaBtn {
     grid-column: 1 / -1 !important;
     position: static !important; 
-    padding: 8px 32px !important; /* Riduce l'altezza (era 14px) per renderlo visivamente più magro */
+    padding: 8px 32px !important; 
     font-size: 1.1rem !important;
     margin-top: 4px !important;
-    width: fit-content !important; /* Il bottone si adatta al testo senza "esplodere" */
+    width: fit-content !important;
+    border: none !important; /* Previene disallineamenti in altezza */
 }
 /* ================= COMPATTAZIONE INTESTAZIONE EQUILIBRATA (TUTTI I PROFILI) ================= */
 
