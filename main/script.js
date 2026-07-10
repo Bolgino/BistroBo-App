@@ -11412,6 +11412,9 @@ db.ref("impostazioni/modalitaNotte").on("value", snap => {
     controllaModalitaNotte(); // Aggiorna subito l'interfaccia
 });
 
+*/
+
+
 // 2. Controlla l'orologio ogni 60 secondi
 // Se scoccano le 21:00 mentre l'app è aperta, il tema cambia da solo in tempo reale!
 setInterval(controllaModalitaNotte, 60000);
