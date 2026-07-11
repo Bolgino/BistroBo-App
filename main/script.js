@@ -11509,12 +11509,17 @@ function apriTutorialScorciatoie() {
         
         <div style="text-align: left; background: rgba(128,128,128,0.1); padding: 15px; border-radius: 8px; font-size: 0.9em; line-height: 1.8; margin-bottom: 15px;">
             
-            <b style="color: var(--primary-color, #4CAF50);">-- 🌐 GENERALI & RICERCA --</b><br>
-            <b>Alt + 1, 2, 3, 4</b> : Simula Ruolo (Cassa, Cucina, Bar, Display)<br>
-            <b>Alt + 5</b> : Torna ad Admin<br>
-            <b>Alt + S</b> : Seleziona la barra di Ricerca (ovunque ti trovi)<br>
-            <b>Alt + P</b> : Pulisci la barra di Ricerca<br>
-            <b>Alt + L</b> : Esci / Logout<br>
+            <b style="color: var(--primary-color, #4CAF50);">-- 🌐 PROFILI & RICERCA --</b><br>
+            <b>Alt + 1</b> : Cassa<br>
+            <b>Alt + 2</b> : Cucina<br>
+            <b>Alt + 3</b> : Bar<br>
+            <b>Alt + 4</b> : Snack<br>
+            <b>Alt + 5</b> : Extra Attivi<br>
+            <b>Alt + 6</b> : Display<br>
+            <b>Alt + 0</b> : Torna ad Admin<br>
+            <b>Alt + S</b> : Seleziona Ricerca (ovunque ti trovi)<br>
+            <b>Alt + P</b> : Pulisci Ricerca<br>
+            <b>Alt + L</b> : Logout / Esci<br>
             <b>Alt + H</b> : Mostra questo Aiuto<br>
             
             <hr style="border: 0; border-top: 1px solid rgba(128,128,128,0.2); margin: 10px 0;">
@@ -11523,9 +11528,7 @@ function apriTutorialScorciatoie() {
             <b>Alt + I</b> : Invia la Comanda (Invio)<br>
             <b>Alt + A</b> : Annulla ultima comanda inviata<br>
             <b>Alt + C</b> : Svuota il carrello<br>
-            <b>Alt + M</b> : Vai al Metodo di Pagamento<br>
-            <b>Alt + Q</b> : Vai alla Quantità<br>
-            <b>Alt + R</b> : Azzera il Resto (o reset soldi)<br>
+            <b>Alt + R</b> : Azzera il Resto<br>
         </div>
         
         <div class="modal-actions">
@@ -11563,6 +11566,13 @@ document.addEventListener("keydown", function(e) {
     if (e.altKey) {
         const key = e.key.toLowerCase();
         
+        // Trova bottoni nel DOM basandosi sull'azione onclick esatta
+        const clickElementByOnclick = (funcName) => {
+            const el = document.querySelector(`[onclick*="${funcName}"]`);
+            if (el && isVis(el)) { el.click(); return true; }
+            return false;
+        };
+        
         // ================= AZIONI UNIVERSALI =================
         switch(key) {
             case 'h': // Aiuto
@@ -11570,19 +11580,16 @@ document.addEventListener("keydown", function(e) {
                 
             case 'l': // Logout
                 e.preventDefault();
-                if (typeof logout === "function") logout();
-                else if (typeof esci === "function") esci();
-                else {
-                    const btnOut = document.getElementById("btnEsci") || document.querySelector(".logout-btn") || document.getElementById("backToLoginBtn");
-                    if (isVis(btnOut)) btnOut.click();
+                if (!clickElementByOnclick("logout")) {
+                    if (typeof logout === "function") logout();
                 }
                 break;
 
             case 's': // Ricerca Universale
                 e.preventDefault();
-                // Trova tutti gli input testuali visibili che contengono la parola "cerca" nell'id, classe o placeholder
-                const allInputs = Array.from(document.querySelectorAll('input[type="text"], input[type="search"]'));
-                const searchInput = allInputs.find(inp => isVis(inp) && (inp.id.toLowerCase().includes('cerca') || inp.className.toLowerCase().includes('cerca') || inp.placeholder.toLowerCase().includes('cerca') || inp.id.toLowerCase().includes('search')));
+                // Trova dinamicamente qualsiasi barra di ricerca presente in quella schermata
+                const allInputsS = Array.from(document.querySelectorAll('input[type="text"], input[type="search"]'));
+                const searchInput = allInputsS.find(inp => isVis(inp) && (inp.id.toLowerCase().includes('cerca') || inp.id.toLowerCase().includes('ricerca') || inp.className.toLowerCase().includes('cerca') || inp.placeholder.toLowerCase().includes('cerca')));
                 if (searchInput) {
                     searchInput.focus();
                     searchInput.select();
@@ -11591,39 +11598,40 @@ document.addEventListener("keydown", function(e) {
 
             case 'p': // Pulisci Ricerca Universale
                 e.preventDefault();
-                // Trova la ricerca attiva e la svuota
-                const activeSearch = Array.from(document.querySelectorAll('input[type="text"], input[type="search"]')).find(inp => isVis(inp) && (inp.id.toLowerCase().includes('cerca') || inp.className.toLowerCase().includes('cerca') || inp.placeholder.toLowerCase().includes('cerca') || inp.id.toLowerCase().includes('search')));
+                const allInputsP = Array.from(document.querySelectorAll('input[type="text"], input[type="search"]'));
+                const activeSearch = allInputsP.find(inp => isVis(inp) && (inp.id.toLowerCase().includes('cerca') || inp.id.toLowerCase().includes('ricerca') || inp.className.toLowerCase().includes('cerca') || inp.placeholder.toLowerCase().includes('cerca')));
+                
                 if (activeSearch) {
                     activeSearch.value = "";
-                    activeSearch.dispatchEvent(new Event('input')); // Forza l'aggiornamento della lista
+                    activeSearch.dispatchEvent(new Event('input')); 
+                    activeSearch.dispatchEvent(new Event('change'));
+                    
+                    // Se c'è un bottone grafico a forma di "X", lo clicca
+                    const btnClear = document.getElementById("clearCercaComandaCassa") || document.getElementById("clearRicercaBtn") || document.querySelector(".clear-search");
+                    if (isVis(btnClear)) btnClear.click();
+                    
                     activeSearch.focus();
                 }
                 break;
-        }
 
-        // ================= SIMULAZIONE RUOLI (DA ADMIN) =================
-        if (['1','2','3','4','5'].includes(key)) {
-            e.preventDefault();
-            const btnTornaAdmin = document.getElementById("btnTornaAdmin");
-
-            // Se stiamo già simulando un ruolo, torniamo ad admin prima di saltare di nuovo
-            if (isVis(btnTornaAdmin)) {
-                btnTornaAdmin.click();
-                if (key === '5') return; // Se ha premuto 5, voleva solo tornare ad admin, ci fermiamo.
-            }
-
-            // Richiamo le funzioni di simulazione ruolo
-            if (typeof simulaRuolo === "function") {
-                if (key === '1') setTimeout(() => simulaRuolo('cassa'), 150);
-                if (key === '2') setTimeout(() => simulaRuolo('cucina'), 150);
-                if (key === '3') setTimeout(() => simulaRuolo('bar'), 150);
-                if (key === '4') setTimeout(() => simulaRuolo('display'), 150);
-            }
+            // ================= SIMULAZIONE RUOLI (DA ADMIN) =================
+            case '1': e.preventDefault(); if(typeof simulaRuolo === "function") simulaRuolo('cassa'); else clickElementByOnclick("simulaRuolo('cassa')"); break;
+            case '2': e.preventDefault(); if(typeof simulaRuolo === "function") simulaRuolo('cucina'); else clickElementByOnclick("simulaRuolo('cucina')"); break;
+            case '3': e.preventDefault(); if(typeof simulaRuolo === "function") simulaRuolo('bar'); else clickElementByOnclick("simulaRuolo('bar')"); break;
+            case '4': e.preventDefault(); if(typeof simulaRuolo === "function") simulaRuolo('snack'); else clickElementByOnclick("simulaRuolo('snack')"); break;
+            case '5': e.preventDefault(); if(typeof simulaRuolo === "function") simulaRuolo('extra'); else { if(!clickElementByOnclick("simulaRuolo('extra')")) clickElementByOnclick("simulaRuolo('extraAttivi')"); } break;
+            case '6': e.preventDefault(); if(typeof simulaRuolo === "function") simulaRuolo('display'); else clickElementByOnclick("simulaRuolo('display')"); break;
+            
+            case '0': // Torna ad Admin
+                e.preventDefault(); 
+                if(typeof esciDaSimulazione === "function") esciDaSimulazione(); 
+                else clickElementByOnclick("esciDaSimulazione");
+                break;
         }
 
         // ================= CASSA =================
-        const btnInvia = document.getElementById("inviaComandaBtn") || document.getElementById("btnInviaComanda");
-        const areaCassa = document.getElementById("carrelloContainer") || document.getElementById("cassaPanel");
+        const btnInvia = document.getElementById("inviaComandaBtn") || document.querySelector("[onclick*='inviaComanda']");
+        const areaCassa = document.getElementById("carrelloContainer") || document.getElementById("cassaPanel") || document.querySelector(".cassa-container");
         const isInCassa = isVis(btnInvia) || isVis(areaCassa);
 
         if (isInCassa) {
@@ -11633,48 +11641,33 @@ document.addEventListener("keydown", function(e) {
                     if (isVis(btnInvia) && !btnInvia.disabled) btnInvia.click();
                     break;
 
-                case 'a': // Annulla ultima comanda
+                case 'a': // Annulla
                     e.preventDefault();
-                    const btnAnnulla = document.getElementById("annullaUltimaVenditaBtn") || document.getElementById("btnAnnullaUltima");
-                    if (isVis(btnAnnulla)) btnAnnulla.click();
+                    if(!clickElementByOnclick("annullaUltimaVendita")) {
+                        const btnAnnulla = document.getElementById("annullaUltimaVenditaBtn");
+                        if (isVis(btnAnnulla)) btnAnnulla.click();
+                    }
                     break;
 
                 case 'c': // Svuota Carrello
                     e.preventDefault();
-                    if (typeof svuotaCarrello === "function") {
-                        svuotaCarrello();
-                    } else if (typeof comandaCorrente !== "undefined" && comandaCorrente.length > 0) {
-                        comandaCorrente = [];
-                        if (typeof aggiornaComandaCorrente === "function") aggiornaComandaCorrente();
-                        if (typeof notify === "function") notify("🛒 Carrello svuotato", "info");
+                    if (!clickElementByOnclick("svuotaCarrello")) {
+                        if (typeof svuotaCarrello === "function") {
+                            svuotaCarrello();
+                        } else if (typeof comandaCorrente !== "undefined" && comandaCorrente.length > 0) {
+                            comandaCorrente = [];
+                            if (typeof aggiornaComandaCorrente === "function") aggiornaComandaCorrente();
+                            if (typeof notify === "function") notify("🛒 Carrello svuotato", "info");
+                        }
                     }
                     break;
 
-                case 'r': // Reset Resto / Soldi
+                case 'r': // Reset Resto / Azzera Soldi
                     e.preventDefault();
-                    const btnReset = document.getElementById("resetSoldiBtn") || document.getElementById("btnResetResto");
-                    if (isVis(btnReset)) btnReset.click();
-                    
-                    const inputSoldi = document.getElementById("soldiRicevuti") || document.getElementById("inputResto");
-                    if (isVis(inputSoldi)) {
-                        inputSoldi.value = "";
-                        inputSoldi.dispatchEvent(new Event('input'));
+                    if (!clickElementByOnclick("resetResto") && !clickElementByOnclick("resetSoldi")) {
+                        const btnReset = document.getElementById("resetSoldiBtn") || document.getElementById("btnResetResto");
+                        if (isVis(btnReset)) btnReset.click();
                     }
-                    break;
-
-                case 'q': // Focus Quantità
-                    e.preventDefault();
-                    const inputQuantita = document.getElementById("quantita") || document.getElementById("inputQuantita");
-                    if (isVis(inputQuantita)) {
-                        inputQuantita.focus();
-                        inputQuantita.select();
-                    }
-                    break;
-
-                case 'm': // Focus Metodo Pagamento
-                    e.preventDefault();
-                    const selectMetodo = document.getElementById("metodoPagamento") || document.getElementById("selettorePagamento");
-                    if (isVis(selectMetodo)) selectMetodo.focus();
                     break;
             }
         }
