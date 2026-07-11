@@ -3173,17 +3173,18 @@ async function caricaMenuCassa() {
             btn.dataset.menuId = id;
 
             btn.onclick = () => {
-                // SE E' UNA COMBO, ignoriamo la quantità multipla e apriamo il modale speciale!
-                if (window.settings.piattiComboAbilitati && item.isCombo) {
-                    if (typeof apriPopupCombo === "function") apriPopupCombo(id, "cassa");
-                    return;
-                }
-
+                // 1. Leggiamo e controlliamo la quantità PRIMA di fare qualsiasi cosa (anche per le Combo)
                 let quant = 1; 
                 if (window.settings.selettoreQuantitaCassa) {
                     const quantVal = document.getElementById("quantita").value;
                     quant = parseInt(quantVal);
                     if (!quant || quant <= 0) { notify("Seleziona prima la quantità!", "warn"); return; }
+                }
+
+                // 2. SE E' UNA COMBO, apriamo il modale speciale (ora bloccato se manca la quantità)
+                if (window.settings.piattiComboAbilitati && item.isCombo) {
+                    if (typeof apriPopupCombo === "function") apriPopupCombo(id, "cassa");
+                    return;
                 }
                 const esiste = comandaCorrente.find(i => i.nome === item.nome);
                 if (esiste) {
@@ -4182,6 +4183,14 @@ function renderListaPiattiCombo(piattoCombo) {
             });
 
             if (statoComboCorrente.contesto === "cassa") {
+                // --- LEGGI LA QUANTITÀ DEL SELETTORE CASSA PER IL PIATTO PRINCIPALE ---
+                let qtyPrincipale = 1;
+                if (window.settings.selettoreQuantitaCassa) {
+                    const quantVal = document.getElementById("quantita").value;
+                    qtyPrincipale = parseInt(quantVal);
+                    if (!qtyPrincipale || qtyPrincipale <= 0) qtyPrincipale = 1; // Sicurezza fallback
+                }
+                
                 // Raggruppa nel carrello se è identico!
                 let comboEsistente = comandaCorrente.find(x => 
                     x.nome === piattoCombo.nome && 
@@ -4190,7 +4199,7 @@ function renderListaPiattiCombo(piattoCombo) {
                 );
 
                 if (comboEsistente) {
-                    comboEsistente.quantita += 1;
+                    comboEsistente.quantita += qtyPrincipale; // Usa la quantità invece di +1
                 } else {
                     comandaCorrente.push({
                         nome: piattoCombo.nome, 
@@ -4199,7 +4208,7 @@ function renderListaPiattiCombo(piattoCombo) {
                         ingredienti: piattoCombo.ingredienti ? JSON.parse(JSON.stringify(piattoCombo.ingredienti)) : [],
                         varianti: [], 
                         extraPrezzo: totaleExtra, 
-                        quantita: 1, 
+                        quantita: qtyPrincipale,  // Usa la quantità invece di 1
                         contorniScelti: contorniDaSalvare,
                         sconto: piattoCombo.sconto || null 
                     });
@@ -11587,6 +11596,7 @@ function saltaA(ruolo) {
 
 // 6. EVENTO PRINCIPALE TASTIERA
 document.addEventListener("keydown", function(e) {
+	if (!window.settings.scorciatoieTastiera) return;
     if (e.altKey) {
         const key = e.key.toLowerCase();
         
