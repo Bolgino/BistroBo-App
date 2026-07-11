@@ -2535,6 +2535,8 @@ body.tema-astronave, body.tema-astronave #themeBackground {
     radial-gradient(circle at 65% 55%, rgba(0,180,255,.08), transparent 45%),
     radial-gradient(circle at 35% 20%, rgba(120,70,255,.06), transparent 40%);
     background-size:cover; background-attachment:fixed; color:#7CFBFF !important;
+}
+body.tema-astronave #themeBackground {
     animation:spaceGlow 25s linear infinite;
 }
 @keyframes spaceGlow{ 0%{ filter:hue-rotate(0deg); } 50%{ filter:hue-rotate(6deg); } 100%{ filter:hue-rotate(0deg); } }
