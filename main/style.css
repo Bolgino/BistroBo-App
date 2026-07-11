@@ -2682,23 +2682,10 @@ body.tema-notte #themeBackground {
     to { background-position: 300px 300px; } /* Looping continuo sulle stelle */
 }
 
-/* ===========================================================
-   FIX DEFINITIVO: NOMI PIATTI NERI IN CASSA (TEMA ASTRONAVE)
-=========================================================== */
-body.tema-astronave .piatto-btn span,
-body.tema-astronave .btn-cassa-ottimizzata span,
-body.tema-astronave .piatto-btn div,
-body.tema-astronave .btn-cassa-ottimizzata div,
-body.tema-astronave .piatto-btn .piatto-nome,
-body.tema-astronave .btn-cassa-ottimizzata .piatto-nome {
-    color: #000000 !important;
-    text-shadow: none !important;
-}
-
-/* Manteniamo il prezzo in rosso scuro per farlo risaltare bene */
-body.tema-astronave .piatto-btn .piatto-prezzo,
-body.tema-astronave .btn-cassa-ottimizzata .piatto-prezzo {
-    color: #b71c1c !important;
-    font-weight: bold !important;
-    text-shadow: none !important;
+/* Bottoni Menu in Cassa Principale (Fondo chiaro, Scritte nere) */
+body.tema-astronave .piatto-btn,
+body.tema-astronave .btn-cassa-ottimizzata {
+    background: #F8FAFC !important; 
+    background-color: #F8FAFC !important; 
+    border: 1px solid #94A3B8 !important;
 }
