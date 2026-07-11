@@ -11513,9 +11513,9 @@ function apriTutorialScorciatoie() {
             <hr style="border: 0; border-top: 1px solid rgba(128,128,128,0.2); margin: 10px 0;">
 
             <b style="color: var(--primary-color, #4CAF50);">-- 👑 SIMULAZIONE (Solo Admin) --</b><br>
-            <b>Alt + 1</b> : Cassa<br>
-            <b>Alt + 2</b> : Bar / Bere<br>
-            <b>Alt + 3</b> : Cucina<br>
+            <b>Alt + 1</b> : Cassa &nbsp;|&nbsp; <b>Alt + 2</b> : Bere<br>
+            <b>Alt + 3</b> : Cucina &nbsp;|&nbsp; <b>Alt + 4</b> : Snack<br>
+            <b>Alt + 5, 6, 7</b> : Extra 1, 2, 3<br>
             <b>Alt + 0</b> : Torna ad Admin<br>
             
             <hr style="border: 0; border-top: 1px solid rgba(128,128,128,0.2); margin: 10px 0;">
@@ -11542,54 +11542,51 @@ function apriTutorialScorciatoie() {
     });
 }
 
-// 2. Helper per visibilità elementi HTML
+// 2. Helper per visibilità elementi HTML (usato solo per azioni contestuali in cassa)
 function isVis(elem) {
     return elem && elem.offsetParent !== null;
 }
 
-// 3. Motore di Logout Forzato
+// 3. Verifica se l'utente è Admin analizzando la presenza degli elementi nel DOM (non la visibilità)
+function isUtenteAdmin() {
+    // Se c'è un bottone con onclick="simulaRuolo" da qualche parte nell'HTML, sei Admin
+    if (document.querySelector("[onclick*='simulaRuolo']")) return true;
+    // Se c'è il bottone di ritorno (anche se in display:none), sei un Admin in simulazione
+    if (document.getElementById("passaACassaBtn")) return true;
+    return false;
+}
+
+// 4. Motore Logout Esatto
 function forzaLogout() {
-    // Prova prima con le funzioni native se esistono
-    if (typeof logout === "function") { logout(); return; }
-    if (typeof esci === "function") { esci(); return; }
-    
-    // Altrimenti simula il click sul bottone visivo
-    const btnOut = document.getElementById("btnEsci") || 
-                   document.querySelector("[onclick*='logout']") || 
-                   document.querySelector("[onclick*='esci']");
-    if (btnOut) btnOut.click();
+    const btnOut = document.getElementById("logoutBtn");
+    if (btnOut) {
+        btnOut.click();
+    } else if (typeof logout === "function") {
+        logout();
+    }
 }
 
-// 4. Motore Salto Ruoli (Infallibile)
+// 5. Motore Salto Ruoli (Funziona da QUALSIASI tab per l'Admin)
 function saltaA(ruolo) {
-    const btnTorna = document.getElementById("btnTornaAdmin") || document.querySelector("[onclick*='esciDaSimulazione']");
+    if (!isUtenteAdmin()) return;
+
+    const btnTorna = document.getElementById("passaACassaBtn");
     
+    // Se il bottone "Torna ad Admin" è visibile, significa che stiamo GIA' simulando un ruolo.
+    // Dobbiamo prima uscire per pulire l'interfaccia.
     if (isVis(btnTorna)) {
-        // Se sta già simulando un ruolo, prima clicca su Torna ad Admin
         btnTorna.click();
-        // Lancia il nuovo ruolo dopo una frazione di secondo per far aggiornare l'HTML
-        setTimeout(() => lanciaRuolo(ruolo), 400);
+        setTimeout(() => {
+            if (typeof simulaRuolo === "function") simulaRuolo(ruolo);
+        }, 300);
     } else {
-        // Se è già Admin Dashboard pulita, lancia diretto
-        lanciaRuolo(ruolo);
+        // Se non stiamo simulando (siamo nella dashboard Admin in qualsiasi tab), lancia diretto
+        if (typeof simulaRuolo === "function") simulaRuolo(ruolo);
     }
 }
 
-function lanciaRuolo(ruolo) {
-    if (typeof simulaRuolo === "function") {
-        simulaRuolo(ruolo);
-    } else {
-        // Ricerca brutale del bottone nell'HTML che contiene la parola (es. "Cassa") e cliccalo
-        const bottoni = Array.from(document.querySelectorAll("button, .card, [onclick]"));
-        const target = bottoni.find(b => isVis(b) && b.textContent.toLowerCase().includes(ruolo.toLowerCase()));
-        if (target) target.click();
-    }
-}
-
-// 5. EVENTO PRINCIPALE TASTIERA
+// 6. EVENTO PRINCIPALE TASTIERA
 document.addEventListener("keydown", function(e) {
-    // RIMOSSO IL BLOCCO FIREBASE: Ora le scorciatoie agiscono sempre se intercettano la combinazione giusta
-
     if (e.altKey) {
         const key = e.key.toLowerCase();
         
@@ -11618,31 +11615,29 @@ document.addEventListener("keydown", function(e) {
                 return;
         }
 
-        // ================= SIMULAZIONE RUOLI (Solo se sei in area Admin) =================
-        // Seleziona i controlli admin visibili sullo schermo
-        const btnTorna = document.getElementById("btnTornaAdmin") || document.querySelector("[onclick*='esciDaSimulazione']");
-        const hasAdminControls = document.getElementById("gestioneProfili") || document.getElementById("adminPanel") || document.querySelector("[onclick*='simulaRuolo']");
-        
-        // Se sei nel pannello profili o sei già in simulazione (quindi sei Admin):
-        if (isVis(btnTorna) || isVis(hasAdminControls)) {
+        // ================= SIMULAZIONE RUOLI (Solo Admin, da qualsiasi tab) =================
+        if (isUtenteAdmin()) {
             switch(key) {
                 case '1': e.preventDefault(); saltaA('cassa'); return;
-                case '2': e.preventDefault(); saltaA('bar'); return; // o 'bere'
+                case '2': e.preventDefault(); saltaA('bere'); return;
                 case '3': e.preventDefault(); saltaA('cucina'); return;
+                case '4': e.preventDefault(); saltaA('snack'); return;
+                case '5': e.preventDefault(); saltaA('extra1'); return;
+                case '6': e.preventDefault(); saltaA('extra2'); return;
+                case '7': e.preventDefault(); saltaA('extra3'); return;
                 case '0': 
                     e.preventDefault(); 
-                    if (isVis(btnTorna)) btnTorna.click();
-                    else if (typeof esciDaSimulazione === "function") esciDaSimulazione();
+                    const btnTorna = document.getElementById("passaACassaBtn");
+                    if (btnTorna) btnTorna.click();
                     return;
             }
         }
 
         // ================= AZIONI IN CASSA =================
+        // Queste devono attivarsi SOLO se l'interfaccia della cassa è aperta davanti agli occhi
         const areaCassa = document.getElementById("carrelloContainer") || document.querySelector(".cassa-container");
-        // Verifica se sei fisicamente nella cassa
-        const isInCassa = isVis(areaCassa);
-
-        if (isInCassa) {
+        
+        if (isVis(areaCassa) || isVis(document.getElementById("inviaComandaBtn"))) {
             switch(key) {
                 case 'i': 
                     e.preventDefault();
