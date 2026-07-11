@@ -8939,7 +8939,16 @@ async function generaExcel() {
   const datiFasce = window[`datiFasce_${s.tipoEsportazione}`];
   if (datiFasce) {
       const sheet4 = workbook.addWorksheet("Fasce Orarie");
-      sheet4.addRow(['Fascia Oraria', 'Cucina (pz)', 'Bere (pz)', 'Snack/Fritti (pz)', 'Totale Piatti', 'Prodotto più venduto']);
+      
+      // Costruisci le intestazioni dinamicamente in base alle impostazioni
+      const intestazioni = ['Fascia Oraria', 'Cucina (pz)', 'Bere (pz)'];
+      if (window.settings && window.settings.snackAbilitato) intestazioni.push('Snack (pz)');
+      if (window.settings && window.settings.extra1Abilitato) intestazioni.push(`${window.nomiRepartiExtra?.extra1 || 'Extra 1'} (pz)`);
+      if (window.settings && window.settings.extra2Abilitato) intestazioni.push(`${window.nomiRepartiExtra?.extra2 || 'Extra 2'} (pz)`);
+      if (window.settings && window.settings.extra3Abilitato) intestazioni.push(`${window.nomiRepartiExtra?.extra3 || 'Extra 3'} (pz)`);
+      intestazioni.push('Totale Piatti', 'Prodotto più venduto');
+
+      sheet4.addRow(intestazioni);
       
       sheet4.getRow(1).eachCell(cell => {
           cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFF00' } };
@@ -8951,9 +8960,18 @@ async function generaExcel() {
           const d = datiFasce[ora];
           const topPiatto = Object.keys(d.prodotti).reduce((a, b) => d.prodotti[a] > d.prodotti[b] ? a : b, "");
           const nomeVincitore = topPiatto ? `${topPiatto} (${d.prodotti[topPiatto]})` : '';
-          sheet4.addRow([ora, d.cibo, d.bere, d.snack, d.totale, nomeVincitore]);
+          
+          // Costruisci la riga dati dinamicamente
+          const rigaDati = [ora, d.cibo, d.bere];
+          if (window.settings && window.settings.snackAbilitato) rigaDati.push(d.snack);
+          if (window.settings && window.settings.extra1Abilitato) rigaDati.push(d.extra1);
+          if (window.settings && window.settings.extra2Abilitato) rigaDati.push(d.extra2);
+          if (window.settings && window.settings.extra3Abilitato) rigaDati.push(d.extra3);
+          rigaDati.push(d.totale, nomeVincitore);
+
+          sheet4.addRow(rigaDati);
       });
-      sheet4.columns.forEach(column => { column.width = 20; });
+      sheet4.columns.forEach(column => { column.width = 18; });
   }
 
   // ----------------- Salva file -----------------
@@ -9146,15 +9164,22 @@ function generaPdf() {
       if (y > 260) { doc.addPage(); y = 20; }
       doc.setFontSize(13);
       doc.setFont(undefined, 'bold');
-      doc.setTextColor(0, 100, 0); // verde
+      doc.setTextColor(0, 100, 0);
       doc.text("Flusso Vendite per Fascia Oraria", xLeft, y);
       y += 6;
 
-      doc.setFontSize(11);
+      // Generazione dinamica della stringa delle intestazioni reparti
+      let repStr = "Cucina | Bere";
+      if (window.settings && window.settings.snackAbilitato) repStr += " | Snack";
+      if (window.settings && window.settings.extra1Abilitato) repStr += ` | ${window.nomiRepartiExtra?.extra1 || 'Ex1'}`;
+      if (window.settings && window.settings.extra2Abilitato) repStr += ` | ${window.nomiRepartiExtra?.extra2 || 'Ex2'}`;
+      if (window.settings && window.settings.extra3Abilitato) repStr += ` | ${window.nomiRepartiExtra?.extra3 || 'Ex3'}`;
+
+      doc.setFontSize(10); // Più piccolo perché la stringa può essere lunga
       doc.setFont(undefined, 'normal');
-      doc.setTextColor(0, 0, 0); // nero
+      doc.setTextColor(0, 0, 0);
       doc.text("Fascia", xLeft, y);
-      doc.text("Cucina | Bere | Snack", xCenter, y, { align: "center" });
+      doc.text(repStr, xCenter, y, { align: "center" });
       doc.text("Top Prodotto", xRight, y, { align: "right" });
       y += 6;
 
@@ -9163,10 +9188,16 @@ function generaPdf() {
           if (y > 275) { doc.addPage(); y = 20; }
           const d = datiFasce[ora];
           const topPiatto = Object.keys(d.prodotti).reduce((a, b) => d.prodotti[a] > d.prodotti[b] ? a : b, "");
-          const pzTxt = `${d.cibo} | ${d.bere} | ${d.snack}`;
+          
+          // Generazione dinamica dei valori dei reparti
+          let pzStr = `${d.cibo} | ${d.bere}`;
+          if (window.settings && window.settings.snackAbilitato) pzStr += ` | ${d.snack}`;
+          if (window.settings && window.settings.extra1Abilitato) pzStr += ` | ${d.extra1}`;
+          if (window.settings && window.settings.extra2Abilitato) pzStr += ` | ${d.extra2}`;
+          if (window.settings && window.settings.extra3Abilitato) pzStr += ` | ${d.extra3}`;
           
           doc.text(String(ora), xLeft, y);
-          doc.text(pzTxt, xCenter, y, { align: "center" });
+          doc.text(pzStr, xCenter, y, { align: "center" });
           doc.text(String(topPiatto ? `${topPiatto} (${d.prodotti[topPiatto]})` : "—"), xRight, y, { align: "right" });
           y += 6;
       });
@@ -9184,7 +9215,6 @@ window.generaGraficoFasceOrarie = function(comandeArray, tipo) {
     const fasce = {};
 
     comandeArray.forEach(c => {
-        // Usa il timestamp per l'orario (assicurati che sia valido)
         const ts = c.timestamp || c.data || c.ora;
         if (!ts) return;
 
@@ -9192,17 +9222,33 @@ window.generaGraficoFasceOrarie = function(comandeArray, tipo) {
         const labelFascia = `${ora}:00 - ${ora + 1}:00`;
 
         if (!fasce[labelFascia]) {
-            fasce[labelFascia] = { cibo: 0, bere: 0, snack: 0, prodotti: {}, totale: 0 };
+            fasce[labelFascia] = { 
+                cibo: 0, bere: 0, snack: 0, 
+                extra1: 0, extra2: 0, extra3: 0, 
+                prodotti: {}, totale: 0 
+            };
         }
 
         if (c.piatti) {
             c.piatti.forEach(p => {
                 const qty = p.quantita || 1;
-                const cat = (p.categoria || "").toLowerCase();
+                let cat = (p.categoria || "cibi").toLowerCase().trim();
                 
-                // Smistamento logico (puoi adattarlo se usi extra1, extra2, ecc.)
+                // Normalizza le categorie per leggere Risto o nomi personalizzati
+                const lE1 = (window.nomiRepartiExtra?.extra1 || "").toLowerCase().trim();
+                const lE2 = (window.nomiRepartiExtra?.extra2 || "").toLowerCase().trim();
+                const lE3 = (window.nomiRepartiExtra?.extra3 || "").toLowerCase().trim();
+                
+                if (cat === "extra1" || cat === "risto" || (lE1 && cat === lE1)) cat = "extra1";
+                else if (cat === "extra2" || (lE2 && cat === lE2)) cat = "extra2";
+                else if (cat === "extra3" || (lE3 && cat === lE3)) cat = "extra3";
+
+                // Smistamento per tutti i profili
                 if (cat === "bevande") fasce[labelFascia].bere += qty;
                 else if (cat === "snack" || cat.includes("fritti")) fasce[labelFascia].snack += qty;
+                else if (cat === "extra1") fasce[labelFascia].extra1 += qty;
+                else if (cat === "extra2") fasce[labelFascia].extra2 += qty;
+                else if (cat === "extra3") fasce[labelFascia].extra3 += qty;
                 else fasce[labelFascia].cibo += qty; 
 
                 fasce[labelFascia].totale += qty;
@@ -9215,9 +9261,8 @@ window.generaGraficoFasceOrarie = function(comandeArray, tipo) {
     });
 
     const labelsOrdinate = Object.keys(fasce).sort((a, b) => parseInt(a) - parseInt(b));
-    const datiCibo = [];
-    const datiBere = [];
-    const datiSnack = [];
+    const datiCibo = []; const datiBere = []; const datiSnack = [];
+    const datiExtra1 = []; const datiExtra2 = []; const datiExtra3 = [];
     let testoTopProdotti = "<b>🔥 Top Prodotto per Fascia Oraria:</b><br>";
 
     labelsOrdinate.forEach(label => {
@@ -9225,18 +9270,42 @@ window.generaGraficoFasceOrarie = function(comandeArray, tipo) {
         datiCibo.push(d.cibo);
         datiBere.push(d.bere);
         datiSnack.push(d.snack);
+        datiExtra1.push(d.extra1);
+        datiExtra2.push(d.extra2);
+        datiExtra3.push(d.extra3);
 
-        // Trova il piatto top
         const topPiatto = Object.keys(d.prodotti).reduce((a, b) => d.prodotti[a] > d.prodotti[b] ? a : b, "");
         if (topPiatto) {
-            testoTopProdotti += `<span style="display:inline-block; margin: 2px 10px; background: #e3f2fd; padding: 2px 8px; border-radius: 4px; border: 1px solid #bbdefb;"><b>${label}</b>: ${topPiatto} (${d.prodotti[topPiatto]} pz)</span>`;
+            testoTopProdotti += `<span style="display:inline-block; margin: 2px 10px; background: rgba(33, 150, 243, 0.1); padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(33, 150, 243, 0.3);"><b>${label}</b>: ${topPiatto} (${d.prodotti[topPiatto]} pz)</span>`;
         }
     });
 
     const divTopProdotti = document.getElementById(tipo === 'turno' ? 'topProdottiTurno' : 'topProdottiGlobale');
     if (divTopProdotti) divTopProdotti.innerHTML = testoTopProdotti;
 
-    // Crea e Inietta l'Istogramma
+    // --- COSTRUZIONE DINAMICA DEI REPARTI SUL GRAFICO ---
+    const datasetsToUse = [
+        { label: 'Cucina', data: datiCibo, backgroundColor: '#FF9800' },
+        { label: 'Bere', data: datiBere, backgroundColor: '#2196F3' }
+    ];
+    if (window.settings && window.settings.snackAbilitato) {
+        datasetsToUse.push({ label: 'Snack/Fritti', data: datiSnack, backgroundColor: '#FFC107' });
+    }
+    if (window.settings && window.settings.extra1Abilitato) {
+        datasetsToUse.push({ label: window.nomiRepartiExtra?.extra1 || 'Extra 1', data: datiExtra1, backgroundColor: '#9C27B0' });
+    }
+    if (window.settings && window.settings.extra2Abilitato) {
+        datasetsToUse.push({ label: window.nomiRepartiExtra?.extra2 || 'Extra 2', data: datiExtra2, backgroundColor: '#4CAF50' });
+    }
+    if (window.settings && window.settings.extra3Abilitato) {
+        datasetsToUse.push({ label: window.nomiRepartiExtra?.extra3 || 'Extra 3', data: datiExtra3, backgroundColor: '#F44336' });
+    }
+
+    // --- RICONOSCIMENTO TEMA PER TESTI E GRIGLIA ---
+    const isDarkTheme = document.body.classList.contains('tema-notte') || document.body.classList.contains('tema-astronave');
+    const chartTextColor = isDarkTheme ? '#E2E8F0' : '#666666';
+    const chartGridColor = isDarkTheme ? '#334155' : '#E0E0E0';
+
     const canvasId = tipo === 'turno' ? 'graficoTurnoCanvas' : 'graficoGlobaleCanvas';
     const canvasEl = document.getElementById(canvasId);
     if (!canvasEl) return;
@@ -9249,27 +9318,37 @@ window.generaGraficoFasceOrarie = function(comandeArray, tipo) {
         type: 'bar',
         data: {
             labels: labelsOrdinate,
-            datasets: [
-                { label: 'Cucina', data: datiCibo, backgroundColor: '#FF9800' },
-                { label: 'Bere', data: datiBere, backgroundColor: '#2196F3' },
-                { label: 'Snack/Fritti', data: datiSnack, backgroundColor: '#FFC107' }
-            ]
+            datasets: datasetsToUse
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            color: chartTextColor, // Colore testo legenda
             scales: {
-                x: { stacked: true },
-                y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } } // Solo numeri interi
+                x: { 
+                    stacked: true,
+                    ticks: { color: chartTextColor },
+                    grid: { color: chartGridColor }
+                },
+                y: { 
+                    stacked: true, 
+                    beginAtZero: true, 
+                    ticks: { precision: 0, color: chartTextColor },
+                    grid: { color: chartGridColor }
+                }
             },
-            plugins: { legend: { position: 'bottom' } }
+            plugins: { 
+                legend: { 
+                    position: 'bottom',
+                    labels: { color: chartTextColor }
+                } 
+            }
         }
     };
 
     if (tipo === 'turno') istanzaGraficoTurno = new Chart(ctx, chartConfig);
     else istanzaGraficoGlobale = new Chart(ctx, chartConfig);
 
-    // Salva globalmente per l'esportazione
     window[`datiFasce_${tipo}`] = fasce;
 };
 // -------------------- SCONTI ADMIN --------------------
