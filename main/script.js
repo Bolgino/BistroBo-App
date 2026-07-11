@@ -9231,6 +9231,7 @@ window.generaGraficoFasceOrarie = function(comandeArray, tipo) {
 
         if (c.piatti) {
             c.piatti.forEach(p => {
+				if ((p.categoria || "").toLowerCase().trim() === "servizio" || p.nome === "Costo Asporto" || p.nome === "Coperto") return;
                 const qty = p.quantita || 1;
                 let cat = (p.categoria || "cibi").toLowerCase().trim();
                 
