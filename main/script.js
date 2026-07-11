@@ -11470,14 +11470,13 @@ document.addEventListener("mousedown", function(e) {
 });
 // ================= TUTORIAL SCORCIATOIE =================
 function apriTutorialScorciatoie() {
-    // Rimuove eventuali tutorial già aperti
     const vecchiTutorial = document.querySelectorAll(".modal-scorciatoie-overlay");
     vecchiTutorial.forEach(t => t.remove());
 
     const overlay = document.createElement("div");
     overlay.className = "modal-overlay modal-scorciatoie-overlay";
     
-    // FIX CENTRATURA SCHERMO: Forziamo la posizione fissa sullo schermo (Viewport)
+    // Forziamo la posizione fissa al centro dello schermo
     overlay.style.position = "fixed";
     overlay.style.top = "0";
     overlay.style.left = "0";
@@ -11487,13 +11486,12 @@ function apriTutorialScorciatoie() {
     overlay.style.alignItems = "center";
     overlay.style.justifyContent = "center";
     overlay.style.zIndex = "10005";
-    // Assicuriamoci che abbia uno sfondo scuro se la classe CSS dovesse mancare
     if(!getComputedStyle(overlay).backgroundColor || getComputedStyle(overlay).backgroundColor === 'rgba(0, 0, 0, 0)') {
         overlay.style.backgroundColor = "rgba(0, 0, 0, 0.6)"; 
     }
 
     const modal = document.createElement("div");
-    modal.className = "modal-varianti"; // Si adatta ai temi
+    modal.className = "modal-varianti"; 
     modal.style.padding = "25px";
     modal.style.textAlign = "center";
     modal.style.maxWidth = "480px";
@@ -11519,15 +11517,15 @@ function apriTutorialScorciatoie() {
             <hr style="border: 0; border-top: 1px solid rgba(128,128,128,0.2); margin: 10px 0;">
             
             <b style="color: var(--primary-color, #4CAF50);">-- 💶 IN CASSA --</b><br>
-            <b>Alt + I</b> : Invia la Comanda (Invio)<br>
+            <b>Alt + I</b> : Invia la Comanda<br>
             <b>Alt + A</b> : Annulla ultima comanda inviata<br>
             <b>Alt + M</b> : Vai al Metodo di pagamento (Contanti/POS)<br>
             <b>Alt + C</b> : Svuota l'intero carrello<br>
             <b>Alt + R</b> : Azzera il resto (Reset)<br>
             <b>Alt + Q</b> : Seleziona Quantità<br>
             <b>Alt + S</b> : Cerca un prodotto (Search)<br>
-            <b>Alt + P</b> : Pulisci barra di ricerca e torna alla lista<br>
-            <b>Alt + D</b> : Apri Sommario di fine giornata (Dettagli)<br>
+            <b>Alt + P</b> : Pulisci barra di ricerca (X)<br>
+            <b>Alt + D</b> : Apri Sommario (Dettagli)<br>
         </div>
         
         <div class="modal-actions">
@@ -11537,7 +11535,6 @@ function apriTutorialScorciatoie() {
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
 
-    // FIX BOTTONE: Evita conflitti e chiude correttamente
     const btnChiudi = modal.querySelector("#btnHoCapitoScorciatoie");
     btnChiudi.addEventListener("click", function(e) {
         e.preventDefault();
@@ -11546,15 +11543,27 @@ function apriTutorialScorciatoie() {
     });
 }
 
-// ================= GESTIONE SCORCIATOIE DA TASTIERA (ALT + COMBINAZIONI) =================
+// ================= GESTIONE SCORCIATOIE DA TASTIERA =================
+
+// 1. Ascoltatore globale: Mantiene aggiornata la variabile leggendo da Firebase
+db.ref("impostazioni/scorciatoieTastiera").on("value", snap => {
+    window.settings = window.settings || {};
+    window.settings.scorciatoieTastiera = snap.val() || false;
+});
+
+// 2. Funzione Helper: Verifica se un elemento esiste ed è attualmente visibile sullo schermo
+function isElementVisible(elem) {
+    return elem && elem.offsetParent !== null;
+}
+
 document.addEventListener("keydown", function(e) {
-    // Se disabilitate da admin, esci.
+    // Se disabilitate da admin o i settings non sono ancora caricati, non fare nulla
     if (!window.settings || !window.settings.scorciatoieTastiera) return;
 
     if (e.altKey) {
         const key = e.key.toLowerCase();
         
-        // --- 1. SCORCIATOIE GLOBALI ---
+        // --- SCORCIATOIE GLOBALI (Funzionano ovunque) ---
         switch(key) {
             case 'h': // Alt + H -> Aiuto
                 e.preventDefault();
@@ -11562,49 +11571,53 @@ document.addEventListener("keydown", function(e) {
                 break;
             case '1': // Alt + 1 -> Cassa
                 e.preventDefault();
-                if(document.getElementById("btnLoginCassa")) document.getElementById("btnLoginCassa").click();
+                if(isElementVisible(document.getElementById("btnLoginCassa"))) document.getElementById("btnLoginCassa").click();
                 break;
             case '2': // Alt + 2 -> Cucina
                 e.preventDefault();
-                if(document.getElementById("btnLoginCucina")) document.getElementById("btnLoginCucina").click();
+                if(isElementVisible(document.getElementById("btnLoginCucina"))) document.getElementById("btnLoginCucina").click();
                 break;
             case '3': // Alt + 3 -> Bar
                 e.preventDefault();
-                if(document.getElementById("btnLoginBar")) document.getElementById("btnLoginBar").click();
+                if(isElementVisible(document.getElementById("btnLoginBar"))) document.getElementById("btnLoginBar").click();
                 break;
             case '4': // Alt + 4 -> Display
                 e.preventDefault();
-                if(document.getElementById("btnLoginDisplay")) document.getElementById("btnLoginDisplay").click();
+                if(isElementVisible(document.getElementById("btnLoginDisplay"))) document.getElementById("btnLoginDisplay").click();
                 break;
             case '5': // Alt + 5 -> Admin
                 e.preventDefault();
-                if(document.getElementById("btnLoginAdmin")) document.getElementById("btnLoginAdmin").click();
+                if(isElementVisible(document.getElementById("btnLoginAdmin"))) document.getElementById("btnLoginAdmin").click();
                 break;
             case 'l': // Alt + L -> Logout
                 e.preventDefault();
                 const btnLogout = document.getElementById("backToLoginBtn") || document.querySelector(".back-btn");
-                if(btnLogout) btnLogout.click();
+                if(isElementVisible(btnLogout)) btnLogout.click();
                 else if (typeof logout === "function") logout();
                 break;
         }
         
-        // --- 2. SCORCIATOIE SPECIFICHE IN CASSA ---
-        if (window.isLoggedInCassa) {
+        // --- SCORCIATOIE SPECIFICHE IN CASSA ---
+        // Verifichiamo di essere in Cassa controllando se la ricerca o il tasto invia sono visibili
+        const searchBox = document.getElementById("cercaComandaCassa");
+        const btnInvia = document.getElementById("inviaComandaBtn");
+        const isInCassa = isElementVisible(searchBox) || isElementVisible(btnInvia);
+
+        if (isInCassa) {
             switch(key) {
                 case 'i': // Alt + I -> Invia
                     e.preventDefault();
-                    const btnInvia = document.getElementById("inviaComandaBtn");
-                    if (btnInvia && !btnInvia.disabled) btnInvia.click();
+                    if (isElementVisible(btnInvia) && !btnInvia.disabled) btnInvia.click();
                     break;
                 case 'a': // Alt + A -> Annulla ultima comanda
                     e.preventDefault();
                     const btnAnnulla = document.getElementById("annullaUltimaVenditaBtn");
-                    if (btnAnnulla && btnAnnulla.style.display !== "none") btnAnnulla.click();
+                    if (isElementVisible(btnAnnulla)) btnAnnulla.click();
                     break;
                 case 'm': // Alt + M -> Focus Metodo Pagamento
                     e.preventDefault();
                     const tendinaPagamento = document.getElementById("metodoPagamento");
-                    if (tendinaPagamento) tendinaPagamento.focus();
+                    if (isElementVisible(tendinaPagamento)) tendinaPagamento.focus();
                     break;
                 case 'c': // Alt + C -> Pulisci carrello
                     e.preventDefault();
@@ -11617,33 +11630,32 @@ document.addEventListener("keydown", function(e) {
                 case 'r': // Alt + R -> Reset Soldi
                     e.preventDefault();
                     const btnReset = document.getElementById("resetSoldiBtn");
-                    if (btnReset) btnReset.click();
+                    if (isElementVisible(btnReset)) btnReset.click();
                     break;
                 case 'q': // Alt + Q -> Focus Quantità
                     e.preventDefault();
                     const inputQuantita = document.getElementById("quantita");
-                    if (inputQuantita && window.settings.selettoreQuantitaCassa) {
+                    if (isElementVisible(inputQuantita)) {
                         inputQuantita.focus();
                         inputQuantita.select();
                     }
                     break;
                 case 's': // Alt + S -> Focus Ricerca
                     e.preventDefault();
-                    const searchBox = document.getElementById("cercaComandaCassa");
-                    if (searchBox) {
+                    if (isElementVisible(searchBox)) {
                         searchBox.focus();
                         searchBox.select();
                     }
                     break;
                 case 'p': // Alt + P -> Pulisci Ricerca (X)
                     e.preventDefault();
-                    const clearSearch = document.getElementById("clearCercaComandaCassa");
-                    if (clearSearch && clearSearch.style.display !== "none") clearSearch.click();
+                    const clearSearch = document.getElementById("clearCercaComandaCassa") || document.getElementById("clearRicercaBtn");
+                    if (isElementVisible(clearSearch)) clearSearch.click();
                     break;
                 case 'd': // Alt + D -> Sommario (Dettagli)
                     e.preventDefault();
                     const btnSommario = document.getElementById("btnSommario");
-                    if (btnSommario) btnSommario.click();
+                    if (isElementVisible(btnSommario)) btnSommario.click();
                     break;
             }
         }
