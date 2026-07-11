@@ -11475,7 +11475,6 @@ function apriTutorialScorciatoie() {
 
     const overlay = document.createElement("div");
     overlay.className = "modal-overlay modal-scorciatoie-overlay";
-    
     overlay.style.position = "fixed";
     overlay.style.top = "0";
     overlay.style.left = "0";
@@ -11485,9 +11484,7 @@ function apriTutorialScorciatoie() {
     overlay.style.alignItems = "center";
     overlay.style.justifyContent = "center";
     overlay.style.zIndex = "10005";
-    if(!getComputedStyle(overlay).backgroundColor || getComputedStyle(overlay).backgroundColor === 'rgba(0, 0, 0, 0)') {
-        overlay.style.backgroundColor = "rgba(0, 0, 0, 0.6)"; 
-    }
+    overlay.style.backgroundColor = "rgba(0, 0, 0, 0.6)"; 
 
     const modal = document.createElement("div");
     modal.className = "modal-varianti"; 
@@ -11507,9 +11504,8 @@ function apriTutorialScorciatoie() {
         </p>
         
         <div style="text-align: left; background: rgba(128,128,128,0.1); padding: 15px; border-radius: 8px; font-size: 0.9em; line-height: 1.8; margin-bottom: 15px;">
-            
             <b style="color: var(--primary-color, #4CAF50);">-- 🌐 GLOBALI & RICERCA --</b><br>
-            <b>Alt + S</b> : Seleziona barra di Ricerca (ovunque ti trovi)<br>
+            <b>Alt + S</b> : Seleziona barra di Ricerca<br>
             <b>Alt + P</b> : Pulisci barra di Ricerca<br>
             <b>Alt + L</b> : Logout / Esci<br>
             <b>Alt + H</b> : Mostra questo Aiuto<br>
@@ -11517,10 +11513,9 @@ function apriTutorialScorciatoie() {
             <hr style="border: 0; border-top: 1px solid rgba(128,128,128,0.2); margin: 10px 0;">
 
             <b style="color: var(--primary-color, #4CAF50);">-- 👑 SIMULAZIONE (Solo Admin) --</b><br>
-            <b>Alt + 1</b> : Cassa &nbsp;|&nbsp; <b>Alt + 2</b> : Bere (Bar)<br>
-            <b>Alt + 3</b> : Cucina &nbsp;|&nbsp; <b>Alt + 4</b> : Snack<br>
-            <b>Alt + 5</b> : Extra &nbsp;&nbsp;|&nbsp; <b>Alt + 6</b> : Pizzeria<br>
-            <b>Alt + 7</b> : Griglia<br>
+            <b>Alt + 1</b> : Cassa<br>
+            <b>Alt + 2</b> : Bar / Bere<br>
+            <b>Alt + 3</b> : Cucina<br>
             <b>Alt + 0</b> : Torna ad Admin<br>
             
             <hr style="border: 0; border-top: 1px solid rgba(128,128,128,0.2); margin: 10px 0;">
@@ -11547,97 +11542,71 @@ function apriTutorialScorciatoie() {
     });
 }
 
-// ================= GESTIONE SCORCIATOIE DA TASTIERA =================
-
-// 1. Ascoltatore globale stato scorciatoie
-db.ref("impostazioni/scorciatoieTastiera").on("value", snap => {
-    window.settings = window.settings || {};
-    window.settings.scorciatoieTastiera = snap.val() || false;
-});
-
-// 2. Helper per visibilità elementi
+// 2. Helper per visibilità elementi HTML
 function isVis(elem) {
     return elem && elem.offsetParent !== null;
 }
 
-// 3. Verifica assoluta identità Admin (Invisibile per cuochi/cassieri)
-function isUtenteAdmin() {
-    // Sei admin se esiste il tasto "Torna ad Admin" nel codice HTML (vuol dire che stai simulando)
-    if (document.getElementById("btnTornaAdmin")) return true;
-    
-    // Sei admin se esiste il pannello gestione profili o admin nel codice HTML
-    if (document.getElementById("gestioneProfili") || document.getElementById("adminPanel")) return true;
-    
-    // Sei admin se esiste la variabile globale (fallback)
-    if (typeof ruoloCorrente !== "undefined" && ruoloCorrente === "admin") return true;
-
-    return false;
-}
-
-// 4. Motore salto ruoli: Torna ad admin in background e poi lancia il nuovo ruolo
-function eseguiSimulazione(ruolo) {
-    if (!isUtenteAdmin()) return; // Blocca subito se non è admin
-
-    // Uscita forzata dalla simulazione attuale
-    if (typeof esciDaSimulazione === "function") {
-        esciDaSimulazione();
-    } else {
-        const btnTorna = document.getElementById("btnTornaAdmin");
-        if (btnTorna) btnTorna.click();
-    }
-
-    // Piccola pausa per permettere il reset dell'interfaccia, poi lancia il ruolo
-    setTimeout(() => {
-        if (typeof simulaRuolo === "function") {
-            simulaRuolo(ruolo);
-        } else {
-            // Fallback estremo se la funzione non è direttamente accessibile
-            const btnSimula = document.querySelector(`[onclick*="simulaRuolo('${ruolo}')"]`);
-            if (btnSimula) btnSimula.click();
-        }
-    }, 250); 
-}
-
-// 5. Motore Logout Blindato
+// 3. Motore di Logout Forzato
 function forzaLogout() {
+    // Prova prima con le funzioni native se esistono
     if (typeof logout === "function") { logout(); return; }
     if (typeof esci === "function") { esci(); return; }
     
+    // Altrimenti simula il click sul bottone visivo
     const btnOut = document.getElementById("btnEsci") || 
                    document.querySelector("[onclick*='logout']") || 
                    document.querySelector("[onclick*='esci']");
     if (btnOut) btnOut.click();
 }
 
-// 6. EVENTO PRINCIPALE TASTIERA
+// 4. Motore Salto Ruoli (Infallibile)
+function saltaA(ruolo) {
+    const btnTorna = document.getElementById("btnTornaAdmin") || document.querySelector("[onclick*='esciDaSimulazione']");
+    
+    if (isVis(btnTorna)) {
+        // Se sta già simulando un ruolo, prima clicca su Torna ad Admin
+        btnTorna.click();
+        // Lancia il nuovo ruolo dopo una frazione di secondo per far aggiornare l'HTML
+        setTimeout(() => lanciaRuolo(ruolo), 400);
+    } else {
+        // Se è già Admin Dashboard pulita, lancia diretto
+        lanciaRuolo(ruolo);
+    }
+}
+
+function lanciaRuolo(ruolo) {
+    if (typeof simulaRuolo === "function") {
+        simulaRuolo(ruolo);
+    } else {
+        // Ricerca brutale del bottone nell'HTML che contiene la parola (es. "Cassa") e cliccalo
+        const bottoni = Array.from(document.querySelectorAll("button, .card, [onclick]"));
+        const target = bottoni.find(b => isVis(b) && b.textContent.toLowerCase().includes(ruolo.toLowerCase()));
+        if (target) target.click();
+    }
+}
+
+// 5. EVENTO PRINCIPALE TASTIERA
 document.addEventListener("keydown", function(e) {
-    if (!window.settings || !window.settings.scorciatoieTastiera) return;
+    // RIMOSSO IL BLOCCO FIREBASE: Ora le scorciatoie agiscono sempre se intercettano la combinazione giusta
 
     if (e.altKey) {
         const key = e.key.toLowerCase();
         
-        // ================= AZIONI UNIVERSALI (Valide Ovunque) =================
+        // ================= AZIONI UNIVERSALI =================
         switch(key) {
-            case 'h': 
-                e.preventDefault(); apriTutorialScorciatoie(); break;
-                
-            case 'l': // Logout Infallibile
-                e.preventDefault(); forzaLogout(); break;
-
-            case 's': // Ricerca Universale
+            case 'h': e.preventDefault(); apriTutorialScorciatoie(); return;
+            case 'l': e.preventDefault(); forzaLogout(); return;
+            case 's': 
                 e.preventDefault();
                 const allInputsS = Array.from(document.querySelectorAll('input[type="text"], input[type="search"]'));
-                const searchInput = allInputsS.find(inp => isVis(inp) && (inp.id.toLowerCase().includes('cerca') || inp.id.toLowerCase().includes('ricerca') || inp.className.toLowerCase().includes('cerca') || inp.placeholder.toLowerCase().includes('cerca')));
-                if (searchInput) {
-                    searchInput.focus();
-                    searchInput.select();
-                }
-                break;
-
-            case 'p': // Pulisci Ricerca Universale
+                const searchInput = allInputsS.find(inp => isVis(inp) && (inp.id.toLowerCase().includes('cerca') || inp.className.toLowerCase().includes('cerca') || inp.placeholder.toLowerCase().includes('cerca')));
+                if (searchInput) { searchInput.focus(); searchInput.select(); }
+                return;
+            case 'p': 
                 e.preventDefault();
                 const allInputsP = Array.from(document.querySelectorAll('input[type="text"], input[type="search"]'));
-                const activeSearch = allInputsP.find(inp => isVis(inp) && (inp.id.toLowerCase().includes('cerca') || inp.id.toLowerCase().includes('ricerca') || inp.className.toLowerCase().includes('cerca') || inp.placeholder.toLowerCase().includes('cerca')));
+                const activeSearch = allInputsP.find(inp => isVis(inp) && (inp.id.toLowerCase().includes('cerca') || inp.className.toLowerCase().includes('cerca') || inp.placeholder.toLowerCase().includes('cerca')));
                 if (activeSearch) {
                     activeSearch.value = "";
                     activeSearch.dispatchEvent(new Event('input')); 
@@ -11646,62 +11615,54 @@ document.addEventListener("keydown", function(e) {
                     if (isVis(btnClear)) btnClear.click();
                     activeSearch.focus();
                 }
-                break;
-
-            // ================= SIMULAZIONE RUOLI (SOLO ADMIN) =================
-            case '1': e.preventDefault(); eseguiSimulazione('cassa'); break;
-            case '2': e.preventDefault(); eseguiSimulazione('bere'); break; // Se 'bere' non funziona nell'app, cambialo in 'bar'
-            case '3': e.preventDefault(); eseguiSimulazione('cucina'); break;
-            case '4': e.preventDefault(); eseguiSimulazione('snack'); break;
-            case '5': e.preventDefault(); eseguiSimulazione('extra'); break;
-            case '6': e.preventDefault(); eseguiSimulazione('pizzeria'); break; 
-            case '7': e.preventDefault(); eseguiSimulazione('griglia'); break;  
-            
-            case '0': // Torna ad Admin Infallibile
-                e.preventDefault(); 
-                if (isUtenteAdmin()) {
-                    if (typeof esciDaSimulazione === "function") esciDaSimulazione(); 
-                    else {
-                        const btnTorna = document.getElementById("btnTornaAdmin");
-                        if (btnTorna) btnTorna.click();
-                    }
-                }
-                break;
+                return;
         }
 
-        // ================= AZIONI DEDICATE SOLO ALLA CASSA =================
-        // Verifica se siamo in Cassa controllando la presenza del carrello
-        const areaCassa = document.getElementById("carrelloContainer") || document.querySelector(".cassa-container") || document.getElementById("cassaPanel");
+        // ================= SIMULAZIONE RUOLI (Solo se sei in area Admin) =================
+        // Seleziona i controlli admin visibili sullo schermo
+        const btnTorna = document.getElementById("btnTornaAdmin") || document.querySelector("[onclick*='esciDaSimulazione']");
+        const hasAdminControls = document.getElementById("gestioneProfili") || document.getElementById("adminPanel") || document.querySelector("[onclick*='simulaRuolo']");
+        
+        // Se sei nel pannello profili o sei già in simulazione (quindi sei Admin):
+        if (isVis(btnTorna) || isVis(hasAdminControls)) {
+            switch(key) {
+                case '1': e.preventDefault(); saltaA('cassa'); return;
+                case '2': e.preventDefault(); saltaA('bar'); return; // o 'bere'
+                case '3': e.preventDefault(); saltaA('cucina'); return;
+                case '0': 
+                    e.preventDefault(); 
+                    if (isVis(btnTorna)) btnTorna.click();
+                    else if (typeof esciDaSimulazione === "function") esciDaSimulazione();
+                    return;
+            }
+        }
+
+        // ================= AZIONI IN CASSA =================
+        const areaCassa = document.getElementById("carrelloContainer") || document.querySelector(".cassa-container");
+        // Verifica se sei fisicamente nella cassa
         const isInCassa = isVis(areaCassa);
 
         if (isInCassa) {
             switch(key) {
-                case 'i': // Invia Comanda
+                case 'i': 
                     e.preventDefault();
                     const btnInvia = document.getElementById("inviaComandaBtn") || document.querySelector("[onclick*='inviaComanda']");
                     if (isVis(btnInvia) && !btnInvia.disabled) btnInvia.click();
-                    break;
-
-                case 'a': // Annulla Ultima
+                    return;
+                case 'a': 
                     e.preventDefault();
                     const btnAnnulla = document.getElementById("annullaUltimaVenditaBtn") || document.querySelector("[onclick*='annullaUltima']");
                     if (isVis(btnAnnulla)) btnAnnulla.click();
-                    break;
-
-                case 'c': // Svuota Carrello
+                    return;
+                case 'c': 
                     e.preventDefault();
                     if (typeof svuotaCarrello === "function") svuotaCarrello();
                     else {
                         const btnSvuota = document.querySelector("[onclick*='svuotaCarrello']");
                         if (isVis(btnSvuota)) btnSvuota.click();
-                        else if (typeof comandaCorrente !== "undefined" && comandaCorrente.length > 0) {
-                            comandaCorrente = [];
-                            if (typeof aggiornaComandaCorrente === "function") aggiornaComandaCorrente();
-                        }
                     }
-                    break;
-
-                case 'r': // Azzera Resto/Soldi
+                    return;
+                case 'r': 
                     e.preventDefault();
                     const btnReset = document.getElementById("resetSoldiBtn") || document.getElementById("btnResetResto") || document.querySelector("[onclick*='resetResto']");
                     if (isVis(btnReset)) btnReset.click();
@@ -11711,7 +11672,7 @@ document.addEventListener("keydown", function(e) {
                         inputSoldi.value = "";
                         inputSoldi.dispatchEvent(new Event('input'));
                     }
-                    break;
+                    return;
             }
         }
     }
