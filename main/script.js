@@ -11515,7 +11515,6 @@ function apriTutorialScorciatoie() {
             <b>Alt + 3</b> : Bar<br>
             <b>Alt + 4</b> : Snack<br>
             <b>Alt + 5</b> : Extra Attivi<br>
-            <b>Alt + 6</b> : Display<br>
             <b>Alt + 0</b> : Torna ad Admin<br>
             <b>Alt + S</b> : Seleziona Ricerca (ovunque ti trovi)<br>
             <b>Alt + P</b> : Pulisci Ricerca<br>
@@ -11554,9 +11553,31 @@ db.ref("impostazioni/scorciatoieTastiera").on("value", snap => {
     window.settings.scorciatoieTastiera = snap.val() || false;
 });
 
-// 2. Funzione per verificare se un elemento è visibile sullo schermo
+// 2. Funzioni Helper
 function isVis(elem) {
     return elem && elem.offsetParent !== null;
+}
+
+// Questa funzione analizza il codice dell'app e cerca i bottoni in base a cosa fanno, non a come si chiamano!
+function clickByOnclickContains(testoDaCercare) {
+    const els = Array.from(document.querySelectorAll('[onclick]'));
+    for (let el of els) {
+        const oc = el.getAttribute('onclick').toLowerCase();
+        if (isVis(el)) {
+            if (Array.isArray(testoDaCercare)) {
+                if (testoDaCercare.some(testo => oc.includes(testo.toLowerCase()))) {
+                    el.click();
+                    return true;
+                }
+            } else {
+                if (oc.includes(testoDaCercare.toLowerCase())) {
+                    el.click();
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
 }
 
 // 3. EVENTO PRINCIPALE
@@ -11566,28 +11587,22 @@ document.addEventListener("keydown", function(e) {
     if (e.altKey) {
         const key = e.key.toLowerCase();
         
-        // Trova bottoni nel DOM basandosi sull'azione onclick esatta
-        const clickElementByOnclick = (funcName) => {
-            const el = document.querySelector(`[onclick*="${funcName}"]`);
-            if (el && isVis(el)) { el.click(); return true; }
-            return false;
-        };
-        
         // ================= AZIONI UNIVERSALI =================
         switch(key) {
             case 'h': // Aiuto
                 e.preventDefault(); apriTutorialScorciatoie(); break;
                 
-            case 'l': // Logout
+            case 'l': // Logout / Esci
                 e.preventDefault();
-                if (!clickElementByOnclick("logout")) {
-                    if (typeof logout === "function") logout();
+                if (!clickByOnclickContains(['logout', 'esci'])) {
+                    // Fallback se il bottone non usa un semplice onclick
+                    const btnOut = document.getElementById("btnEsci") || document.getElementById("backToLoginBtn") || document.querySelector(".logout-btn");
+                    if (isVis(btnOut)) btnOut.click();
                 }
                 break;
 
             case 's': // Ricerca Universale
                 e.preventDefault();
-                // Trova dinamicamente qualsiasi barra di ricerca presente in quella schermata
                 const allInputsS = Array.from(document.querySelectorAll('input[type="text"], input[type="search"]'));
                 const searchInput = allInputsS.find(inp => isVis(inp) && (inp.id.toLowerCase().includes('cerca') || inp.id.toLowerCase().includes('ricerca') || inp.className.toLowerCase().includes('cerca') || inp.placeholder.toLowerCase().includes('cerca')));
                 if (searchInput) {
@@ -11606,26 +11621,26 @@ document.addEventListener("keydown", function(e) {
                     activeSearch.dispatchEvent(new Event('input')); 
                     activeSearch.dispatchEvent(new Event('change'));
                     
-                    // Se c'è un bottone grafico a forma di "X", lo clicca
                     const btnClear = document.getElementById("clearCercaComandaCassa") || document.getElementById("clearRicercaBtn") || document.querySelector(".clear-search");
                     if (isVis(btnClear)) btnClear.click();
-                    
                     activeSearch.focus();
                 }
                 break;
 
-            // ================= SIMULAZIONE RUOLI (DA ADMIN) =================
-            case '1': e.preventDefault(); if(typeof simulaRuolo === "function") simulaRuolo('cassa'); else clickElementByOnclick("simulaRuolo('cassa')"); break;
-            case '2': e.preventDefault(); if(typeof simulaRuolo === "function") simulaRuolo('cucina'); else clickElementByOnclick("simulaRuolo('cucina')"); break;
-            case '3': e.preventDefault(); if(typeof simulaRuolo === "function") simulaRuolo('bar'); else clickElementByOnclick("simulaRuolo('bar')"); break;
-            case '4': e.preventDefault(); if(typeof simulaRuolo === "function") simulaRuolo('snack'); else clickElementByOnclick("simulaRuolo('snack')"); break;
-            case '5': e.preventDefault(); if(typeof simulaRuolo === "function") simulaRuolo('extra'); else { if(!clickElementByOnclick("simulaRuolo('extra')")) clickElementByOnclick("simulaRuolo('extraAttivi')"); } break;
-            case '6': e.preventDefault(); if(typeof simulaRuolo === "function") simulaRuolo('display'); else clickElementByOnclick("simulaRuolo('display')"); break;
+            // ================= SIMULAZIONE RUOLI =================
+            // Il sistema "clickByOnclickContains" scatterà SOLO se sei in una schermata in cui quel bottone è visibile!
+            case '1': e.preventDefault(); clickByOnclickContains(["'cassa'", '"cassa"']); break;
+            case '2': e.preventDefault(); clickByOnclickContains(["'cucina'", '"cucina"']); break;
+            case '3': e.preventDefault(); clickByOnclickContains(["'bar'", '"bar"']); break;
+            case '4': e.preventDefault(); clickByOnclickContains(["'snack'", '"snack"']); break;
+            case '5': e.preventDefault(); clickByOnclickContains(["'extra'", '"extra"']); break;
             
             case '0': // Torna ad Admin
                 e.preventDefault(); 
-                if(typeof esciDaSimulazione === "function") esciDaSimulazione(); 
-                else clickElementByOnclick("esciDaSimulazione");
+                if(!clickByOnclickContains(['escidasimulazione', 'tornaadmin'])) {
+                    const btnTorna = document.getElementById("btnTornaAdmin");
+                    if (isVis(btnTorna)) btnTorna.click();
+                }
                 break;
         }
 
@@ -11638,12 +11653,14 @@ document.addEventListener("keydown", function(e) {
             switch(key) {
                 case 'i': // Invia
                     e.preventDefault();
-                    if (isVis(btnInvia) && !btnInvia.disabled) btnInvia.click();
+                    if (!clickByOnclickContains(['inviacomanda', 'salvacomanda'])) {
+                        if (isVis(btnInvia) && !btnInvia.disabled) btnInvia.click();
+                    }
                     break;
 
                 case 'a': // Annulla
                     e.preventDefault();
-                    if(!clickElementByOnclick("annullaUltimaVendita")) {
+                    if(!clickByOnclickContains(['annullaultimavendita', 'annullacomanda'])) {
                         const btnAnnulla = document.getElementById("annullaUltimaVenditaBtn");
                         if (isVis(btnAnnulla)) btnAnnulla.click();
                     }
@@ -11651,10 +11668,8 @@ document.addEventListener("keydown", function(e) {
 
                 case 'c': // Svuota Carrello
                     e.preventDefault();
-                    if (!clickElementByOnclick("svuotaCarrello")) {
-                        if (typeof svuotaCarrello === "function") {
-                            svuotaCarrello();
-                        } else if (typeof comandaCorrente !== "undefined" && comandaCorrente.length > 0) {
+                    if (!clickByOnclickContains(['svuotacarrello', 'annullatutto'])) {
+                        if (typeof comandaCorrente !== "undefined" && comandaCorrente.length > 0) {
                             comandaCorrente = [];
                             if (typeof aggiornaComandaCorrente === "function") aggiornaComandaCorrente();
                             if (typeof notify === "function") notify("🛒 Carrello svuotato", "info");
@@ -11664,9 +11679,14 @@ document.addEventListener("keydown", function(e) {
 
                 case 'r': // Reset Resto / Azzera Soldi
                     e.preventDefault();
-                    if (!clickElementByOnclick("resetResto") && !clickElementByOnclick("resetSoldi")) {
+                    if (!clickByOnclickContains(['resetresto', 'resetsoldi'])) {
                         const btnReset = document.getElementById("resetSoldiBtn") || document.getElementById("btnResetResto");
                         if (isVis(btnReset)) btnReset.click();
+                    }
+                    const inputSoldi = document.getElementById("soldiRicevuti") || document.getElementById("inputResto");
+                    if (isVis(inputSoldi)) {
+                        inputSoldi.value = "";
+                        inputSoldi.dispatchEvent(new Event('input'));
                     }
                     break;
             }
