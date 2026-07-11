@@ -11476,7 +11476,6 @@ function apriTutorialScorciatoie() {
     const overlay = document.createElement("div");
     overlay.className = "modal-overlay modal-scorciatoie-overlay";
     
-    // Posizione fissa al centro dello schermo
     overlay.style.position = "fixed";
     overlay.style.top = "0";
     overlay.style.left = "0";
@@ -11509,17 +11508,19 @@ function apriTutorialScorciatoie() {
         
         <div style="text-align: left; background: rgba(128,128,128,0.1); padding: 15px; border-radius: 8px; font-size: 0.9em; line-height: 1.8; margin-bottom: 15px;">
             
-            <b style="color: var(--primary-color, #4CAF50);">-- 🌐 PROFILI & RICERCA --</b><br>
-            <b>Alt + 1</b> : Cassa<br>
-            <b>Alt + 2</b> : Cucina<br>
-            <b>Alt + 3</b> : Bar<br>
-            <b>Alt + 4</b> : Snack<br>
-            <b>Alt + 5</b> : Extra Attivi<br>
-            <b>Alt + 0</b> : Torna ad Admin<br>
-            <b>Alt + S</b> : Seleziona Ricerca (ovunque ti trovi)<br>
-            <b>Alt + P</b> : Pulisci Ricerca<br>
+            <b style="color: var(--primary-color, #4CAF50);">-- 🌐 GLOBALI & RICERCA --</b><br>
+            <b>Alt + S</b> : Seleziona barra di Ricerca (ovunque ti trovi)<br>
+            <b>Alt + P</b> : Pulisci barra di Ricerca<br>
             <b>Alt + L</b> : Logout / Esci<br>
             <b>Alt + H</b> : Mostra questo Aiuto<br>
+
+            <hr style="border: 0; border-top: 1px solid rgba(128,128,128,0.2); margin: 10px 0;">
+
+            <b style="color: var(--primary-color, #4CAF50);">-- 👑 SIMULAZIONE (Solo Admin) --</b><br>
+            <b>Alt + 1</b> : Cassa &nbsp;|&nbsp; <b>Alt + 2</b> : Cucina<br>
+            <b>Alt + 3</b> : Bar &nbsp;&nbsp;&nbsp;&nbsp;|&nbsp; <b>Alt + 4</b> : Snack<br>
+            <b>Alt + 5</b> : Extra &nbsp;&nbsp;|&nbsp; <b>Alt + 6 e 7</b> : Altri (Pizzeria, ecc)<br>
+            <b>Alt + 0</b> : Torna ad Admin<br>
             
             <hr style="border: 0; border-top: 1px solid rgba(128,128,128,0.2); margin: 10px 0;">
             
@@ -11558,45 +11559,61 @@ function isVis(elem) {
     return elem && elem.offsetParent !== null;
 }
 
-// Questa funzione analizza il codice dell'app e cerca i bottoni in base a cosa fanno, non a come si chiamano!
-function clickByOnclickContains(testoDaCercare) {
-    const els = Array.from(document.querySelectorAll('[onclick]'));
-    for (let el of els) {
-        const oc = el.getAttribute('onclick').toLowerCase();
-        if (isVis(el)) {
-            if (Array.isArray(testoDaCercare)) {
-                if (testoDaCercare.some(testo => oc.includes(testo.toLowerCase()))) {
-                    el.click();
-                    return true;
-                }
-            } else {
-                if (oc.includes(testoDaCercare.toLowerCase())) {
-                    el.click();
-                    return true;
-                }
-            }
-        }
-    }
+// 3. SICUREZZA: Controlla visivamente se l'utente è un Admin autorizzato a simulare
+function isAdminAuthorized() {
+    // È admin se vede il tasto "Torna ad Admin" (è un admin in simulazione)
+    if (isVis(document.getElementById("btnTornaAdmin")) || isVis(document.querySelector("[onclick*='esciDaSimulazione']"))) return true;
+    
+    // È admin se vede fisicamente i bottoni per avviare la simulazione (è nella dashboard)
+    if (isVis(document.querySelector("[onclick*='simulaRuolo']"))) return true;
+    
     return false;
 }
 
-// 3. EVENTO PRINCIPALE
+// 4. Motore per saltare da un ruolo all'altro in modo pulito
+function cambiaRuoloSicuro(ruolo) {
+    if (!isAdminAuthorized()) {
+        if (typeof notify === "function") notify("⚠️ Solo l'Admin può cambiare profilo", "error");
+        return;
+    }
+
+    const btnTorna = document.getElementById("btnTornaAdmin") || document.querySelector("[onclick*='esciDaSimulazione']");
+    
+    if (isVis(btnTorna)) {
+        // Se sta già simulando un ruolo, prima lo fa uscire
+        if (typeof esciDaSimulazione === "function") esciDaSimulazione();
+        else btnTorna.click();
+        
+        // Attende un attimo la transizione e poi lancia il nuovo ruolo
+        setTimeout(() => {
+            if (typeof simulaRuolo === "function") simulaRuolo(ruolo);
+        }, 400); 
+    } else {
+        // Se è nella dashboard pulita, entra diretto
+        if (typeof simulaRuolo === "function") simulaRuolo(ruolo);
+    }
+}
+
+// 5. EVENTO PRINCIPALE
 document.addEventListener("keydown", function(e) {
+    // Disattivato? Esci.
     if (!window.settings || !window.settings.scorciatoieTastiera) return;
 
     if (e.altKey) {
         const key = e.key.toLowerCase();
         
-        // ================= AZIONI UNIVERSALI =================
+        // ================= AZIONI UNIVERSALI (Valide Ovunque) =================
         switch(key) {
             case 'h': // Aiuto
                 e.preventDefault(); apriTutorialScorciatoie(); break;
                 
-            case 'l': // Logout / Esci
+            case 'l': // Logout Infallibile
                 e.preventDefault();
-                if (!clickByOnclickContains(['logout', 'esci'])) {
-                    // Fallback se il bottone non usa un semplice onclick
-                    const btnOut = document.getElementById("btnEsci") || document.getElementById("backToLoginBtn") || document.querySelector(".logout-btn");
+                if (typeof logout === "function") logout();
+                else if (typeof esci === "function") esci();
+                else if (typeof esciApp === "function") esciApp();
+                else {
+                    const btnOut = document.querySelector("[onclick*='logout']") || document.querySelector("[onclick*='esci']") || document.getElementById("btnEsci");
                     if (isVis(btnOut)) btnOut.click();
                 }
                 break;
@@ -11615,61 +11632,66 @@ document.addEventListener("keydown", function(e) {
                 e.preventDefault();
                 const allInputsP = Array.from(document.querySelectorAll('input[type="text"], input[type="search"]'));
                 const activeSearch = allInputsP.find(inp => isVis(inp) && (inp.id.toLowerCase().includes('cerca') || inp.id.toLowerCase().includes('ricerca') || inp.className.toLowerCase().includes('cerca') || inp.placeholder.toLowerCase().includes('cerca')));
-                
                 if (activeSearch) {
                     activeSearch.value = "";
                     activeSearch.dispatchEvent(new Event('input')); 
                     activeSearch.dispatchEvent(new Event('change'));
-                    
-                    const btnClear = document.getElementById("clearCercaComandaCassa") || document.getElementById("clearRicercaBtn") || document.querySelector(".clear-search");
+                    const btnClear = document.querySelector("[onclick*='pulisci']") || document.getElementById("clearCercaComandaCassa") || document.getElementById("clearRicercaBtn") || document.querySelector(".clear-search");
                     if (isVis(btnClear)) btnClear.click();
                     activeSearch.focus();
                 }
                 break;
 
-            // ================= SIMULAZIONE RUOLI =================
-            // Il sistema "clickByOnclickContains" scatterà SOLO se sei in una schermata in cui quel bottone è visibile!
-            case '1': e.preventDefault(); clickByOnclickContains(["'cassa'", '"cassa"']); break;
-            case '2': e.preventDefault(); clickByOnclickContains(["'cucina'", '"cucina"']); break;
-            case '3': e.preventDefault(); clickByOnclickContains(["'bar'", '"bar"']); break;
-            case '4': e.preventDefault(); clickByOnclickContains(["'snack'", '"snack"']); break;
-            case '5': e.preventDefault(); clickByOnclickContains(["'extra'", '"extra"']); break;
+            // ================= SIMULAZIONE RUOLI (BLINDATI PER ADMIN) =================
+            case '1': e.preventDefault(); cambiaRuoloSicuro('cassa'); break;
+            case '2': e.preventDefault(); cambiaRuoloSicuro('cucina'); break;
+            case '3': e.preventDefault(); cambiaRuoloSicuro('bar'); break;
+            case '4': e.preventDefault(); cambiaRuoloSicuro('snack'); break;
+            case '5': e.preventDefault(); cambiaRuoloSicuro('extra'); break;
+            case '6': e.preventDefault(); cambiaRuoloSicuro('pizzeria'); break; 
+            case '7': e.preventDefault(); cambiaRuoloSicuro('griglia'); break;  
             
             case '0': // Torna ad Admin
                 e.preventDefault(); 
-                if(!clickByOnclickContains(['escidasimulazione', 'tornaadmin'])) {
-                    const btnTorna = document.getElementById("btnTornaAdmin");
-                    if (isVis(btnTorna)) btnTorna.click();
+                if (isAdminAuthorized()) {
+                    if (typeof esciDaSimulazione === "function") esciDaSimulazione(); 
+                    else {
+                        const btnTorna = document.getElementById("btnTornaAdmin") || document.querySelector("[onclick*='esciDaSimulazione']");
+                        if (isVis(btnTorna)) btnTorna.click();
+                    }
                 }
                 break;
         }
 
-        // ================= CASSA =================
+        // ================= AZIONI DEDICATE SOLO ALLA CASSA =================
         const btnInvia = document.getElementById("inviaComandaBtn") || document.querySelector("[onclick*='inviaComanda']");
-        const areaCassa = document.getElementById("carrelloContainer") || document.getElementById("cassaPanel") || document.querySelector(".cassa-container");
+        const areaCassa = document.getElementById("carrelloContainer") || document.querySelector(".cassa-container");
         const isInCassa = isVis(btnInvia) || isVis(areaCassa);
 
         if (isInCassa) {
             switch(key) {
-                case 'i': // Invia
+                case 'i': // Invia Comanda
                     e.preventDefault();
-                    if (!clickByOnclickContains(['inviacomanda', 'salvacomanda'])) {
-                        if (isVis(btnInvia) && !btnInvia.disabled) btnInvia.click();
+                    if (isVis(btnInvia) && !btnInvia.disabled) btnInvia.click();
+                    else {
+                        const btnSalva = document.querySelector("[onclick*='salvaComanda']");
+                        if (isVis(btnSalva)) btnSalva.click();
                     }
                     break;
 
-                case 'a': // Annulla
+                case 'a': // Annulla Ultima
                     e.preventDefault();
-                    if(!clickByOnclickContains(['annullaultimavendita', 'annullacomanda'])) {
-                        const btnAnnulla = document.getElementById("annullaUltimaVenditaBtn");
-                        if (isVis(btnAnnulla)) btnAnnulla.click();
-                    }
+                    const btnAnnulla = document.getElementById("annullaUltimaVenditaBtn") || document.querySelector("[onclick*='annullaUltima']");
+                    if (isVis(btnAnnulla)) btnAnnulla.click();
                     break;
 
                 case 'c': // Svuota Carrello
                     e.preventDefault();
-                    if (!clickByOnclickContains(['svuotacarrello', 'annullatutto'])) {
-                        if (typeof comandaCorrente !== "undefined" && comandaCorrente.length > 0) {
+                    if (typeof svuotaCarrello === "function") svuotaCarrello();
+                    else {
+                        const btnSvuota = document.querySelector("[onclick*='svuotaCarrello']");
+                        if (isVis(btnSvuota)) btnSvuota.click();
+                        else if (typeof comandaCorrente !== "undefined" && comandaCorrente.length > 0) {
                             comandaCorrente = [];
                             if (typeof aggiornaComandaCorrente === "function") aggiornaComandaCorrente();
                             if (typeof notify === "function") notify("🛒 Carrello svuotato", "info");
@@ -11677,12 +11699,11 @@ document.addEventListener("keydown", function(e) {
                     }
                     break;
 
-                case 'r': // Reset Resto / Azzera Soldi
+                case 'r': // Azzera Resto/Soldi
                     e.preventDefault();
-                    if (!clickByOnclickContains(['resetresto', 'resetsoldi'])) {
-                        const btnReset = document.getElementById("resetSoldiBtn") || document.getElementById("btnResetResto");
-                        if (isVis(btnReset)) btnReset.click();
-                    }
+                    const btnReset = document.getElementById("resetSoldiBtn") || document.getElementById("btnResetResto") || document.querySelector("[onclick*='resetResto']");
+                    if (isVis(btnReset)) btnReset.click();
+                    
                     const inputSoldi = document.getElementById("soldiRicevuti") || document.getElementById("inputResto");
                     if (isVis(inputSoldi)) {
                         inputSoldi.value = "";
