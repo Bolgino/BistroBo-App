@@ -2693,4 +2693,10 @@ body.tema-astronave .menu-grid button span {
     color: #000000 !important;
     text-shadow: none !important;
 }
-
+/* Forza il ROSSO SCURO (o nero se preferisci) sui prezzi (il tag <small>) */
+body.tema-astronave #aggiungiComandaTab button small,
+body.tema-astronave .menu-grid button small {
+    color: #b71c1c !important; /* Rosso scuro per far risaltare il prezzo */
+    text-shadow: none !important;
+    font-weight: bold !important;
+}
