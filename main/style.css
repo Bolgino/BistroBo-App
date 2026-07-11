@@ -2695,8 +2695,18 @@ body.tema-astronave .menu-grid button span {
 }
 /* Forza il ROSSO SCURO (o nero se preferisci) sui prezzi (il tag <small>) */
 body.tema-astronave #aggiungiComandaTab button small,
-body.tema-astronave .menu-grid button small {
+body.tema-astronave .menu-grid button small,
+body.tema-notte #aggiungiComandaTab button small,
+body.tema-notte .menu-grid button small {
     color: #b71c1c !important; /* Rosso scuro per far risaltare il prezzo */
     text-shadow: none !important;
     font-weight: bold !important;
+}
+/* Titoli categoria (Cibi, Bevande, Snack) - Tema Notte */
+body.tema-notte h5,
+body.tema-notte h5[style*="color"] {
+    color: #FFFFFF !important;
+    text-shadow: none !important;
+    border-bottom-color: #334155 !important;
+    font-size: 1.1em !important;
 }
