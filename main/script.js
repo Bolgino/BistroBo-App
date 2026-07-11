@@ -8767,6 +8767,9 @@ async function caricaStatistiche() {
         window.statisticheGlobale = analizzaComande(comandeGlobale, fondoGlobale);
         window.statisticheGlobale.titoloReport = "Totale Globale Sagra";
         renderHtmlStatistiche("contenutoStatisticheGlobale", window.statisticheGlobale);
+        
+        // AGGIUNTA GRAFICO GLOBALE
+        window.generaGraficoFasceOrarie(Object.values(comandeGlobale), 'globale');
 
         // 4. CALCOLA TURNO SPECIFICO (Solo se il sistema a giornate è attivo)
         if (sistemaGiornateAttivo) {
@@ -8792,6 +8795,7 @@ async function caricaStatistiche() {
             window.statisticheTurno = analizzaComande(comandeTurno, fondoTurno);
             window.statisticheTurno.titoloReport = nomeReportTurno;
             renderHtmlStatistiche("contenutoStatisticheTurno", window.statisticheTurno);
+			window.generaGraficoFasceOrarie(Object.values(comandeTurno), 'turno');
         }
 
     } catch (error) {
@@ -8806,10 +8810,11 @@ async function caricaStatistiche() {
 window.esportaStatistiche = function(tipo, formato) {
     if (tipo === 'globale') {
         window.statistiche = window.statisticheGlobale;
+        window.statistiche.tipoEsportazione = 'globale'; // SALVIAMO IL TIPO PER EXCEL E PDF
     } else {
         window.statistiche = window.statisticheTurno;
+        window.statistiche.tipoEsportazione = 'turno'; // SALVIAMO IL TIPO PER EXCEL E PDF
     }
-
     if (formato === 'excel' && typeof generaExcel === 'function') generaExcel();
     else if (formato === 'pdf' && typeof generaPdf === 'function') generaPdf();
 };
@@ -8929,6 +8934,27 @@ async function generaExcel() {
   });
 
   ingrByQuantita.forEach(p => sheet3.addRow({ nome: p[0], quantita: p[1] }));
+
+  // ----------------- Scheda 4: Fasce Orarie -----------------
+  const datiFasce = window[`datiFasce_${s.tipoEsportazione}`];
+  if (datiFasce) {
+      const sheet4 = workbook.addWorksheet("Fasce Orarie");
+      sheet4.addRow(['Fascia Oraria', 'Cucina (pz)', 'Bere (pz)', 'Snack/Fritti (pz)', 'Totale Piatti', 'Prodotto più venduto']);
+      
+      sheet4.getRow(1).eachCell(cell => {
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFF00' } };
+          cell.font = { bold: true };
+      });
+
+      const orari = Object.keys(datiFasce).sort((a, b) => parseInt(a) - parseInt(b));
+      orari.forEach(ora => {
+          const d = datiFasce[ora];
+          const topPiatto = Object.keys(d.prodotti).reduce((a, b) => d.prodotti[a] > d.prodotti[b] ? a : b, "");
+          const nomeVincitore = topPiatto ? `${topPiatto} (${d.prodotti[topPiatto]})` : '';
+          sheet4.addRow([ora, d.cibo, d.bere, d.snack, d.totale, nomeVincitore]);
+      });
+      sheet4.columns.forEach(column => { column.width = 20; });
+  }
 
   // ----------------- Salva file -----------------
   const buf = await workbook.xlsx.writeBuffer();
@@ -9113,8 +9139,139 @@ function generaPdf() {
     y += 6;
   });
 
+  // Aggiunta Fasce Orarie al PDF
+  const datiFasce = window[`datiFasce_${s.tipoEsportazione}`];
+  if (datiFasce) {
+      y += 8;
+      if (y > 260) { doc.addPage(); y = 20; }
+      doc.setFontSize(13);
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(0, 100, 0); // verde
+      doc.text("Flusso Vendite per Fascia Oraria", xLeft, y);
+      y += 6;
+
+      doc.setFontSize(11);
+      doc.setFont(undefined, 'normal');
+      doc.setTextColor(0, 0, 0); // nero
+      doc.text("Fascia", xLeft, y);
+      doc.text("Cucina | Bere | Snack", xCenter, y, { align: "center" });
+      doc.text("Top Prodotto", xRight, y, { align: "right" });
+      y += 6;
+
+      const orari = Object.keys(datiFasce).sort((a, b) => parseInt(a) - parseInt(b));
+      orari.forEach(ora => {
+          if (y > 275) { doc.addPage(); y = 20; }
+          const d = datiFasce[ora];
+          const topPiatto = Object.keys(d.prodotti).reduce((a, b) => d.prodotti[a] > d.prodotti[b] ? a : b, "");
+          const pzTxt = `${d.cibo} | ${d.bere} | ${d.snack}`;
+          
+          doc.text(String(ora), xLeft, y);
+          doc.text(pzTxt, xCenter, y, { align: "center" });
+          doc.text(String(topPiatto ? `${topPiatto} (${d.prodotti[topPiatto]})` : "—"), xRight, y, { align: "right" });
+          y += 6;
+      });
+  }
+
   doc.save(`Statistiche_Incassi_${titoloReport.replace(/[^a-z0-9]/gi, '_')}.pdf`);
 }
+// ================= GRAFICI FASCE ORARIE (CHART.JS) =================
+let istanzaGraficoTurno = null;
+let istanzaGraficoGlobale = null;
+
+window.generaGraficoFasceOrarie = function(comandeArray, tipo) {
+    if (!comandeArray || comandeArray.length === 0) return;
+
+    const fasce = {};
+
+    comandeArray.forEach(c => {
+        // Usa il timestamp per l'orario (assicurati che sia valido)
+        const ts = c.timestamp || c.data || c.ora;
+        if (!ts) return;
+
+        const ora = new Date(ts).getHours();
+        const labelFascia = `${ora}:00 - ${ora + 1}:00`;
+
+        if (!fasce[labelFascia]) {
+            fasce[labelFascia] = { cibo: 0, bere: 0, snack: 0, prodotti: {}, totale: 0 };
+        }
+
+        if (c.piatti) {
+            c.piatti.forEach(p => {
+                const qty = p.quantita || 1;
+                const cat = (p.categoria || "").toLowerCase();
+                
+                // Smistamento logico (puoi adattarlo se usi extra1, extra2, ecc.)
+                if (cat === "bevande") fasce[labelFascia].bere += qty;
+                else if (cat === "snack" || cat.includes("fritti")) fasce[labelFascia].snack += qty;
+                else fasce[labelFascia].cibo += qty; 
+
+                fasce[labelFascia].totale += qty;
+
+                // Contatore top prodotti
+                if (!fasce[labelFascia].prodotti[p.nome]) fasce[labelFascia].prodotti[p.nome] = 0;
+                fasce[labelFascia].prodotti[p.nome] += qty;
+            });
+        }
+    });
+
+    const labelsOrdinate = Object.keys(fasce).sort((a, b) => parseInt(a) - parseInt(b));
+    const datiCibo = [];
+    const datiBere = [];
+    const datiSnack = [];
+    let testoTopProdotti = "<b>🔥 Top Prodotto per Fascia Oraria:</b><br>";
+
+    labelsOrdinate.forEach(label => {
+        const d = fasce[label];
+        datiCibo.push(d.cibo);
+        datiBere.push(d.bere);
+        datiSnack.push(d.snack);
+
+        // Trova il piatto top
+        const topPiatto = Object.keys(d.prodotti).reduce((a, b) => d.prodotti[a] > d.prodotti[b] ? a : b, "");
+        if (topPiatto) {
+            testoTopProdotti += `<span style="display:inline-block; margin: 2px 10px; background: #e3f2fd; padding: 2px 8px; border-radius: 4px; border: 1px solid #bbdefb;"><b>${label}</b>: ${topPiatto} (${d.prodotti[topPiatto]} pz)</span>`;
+        }
+    });
+
+    const divTopProdotti = document.getElementById(tipo === 'turno' ? 'topProdottiTurno' : 'topProdottiGlobale');
+    if (divTopProdotti) divTopProdotti.innerHTML = testoTopProdotti;
+
+    // Crea e Inietta l'Istogramma
+    const canvasId = tipo === 'turno' ? 'graficoTurnoCanvas' : 'graficoGlobaleCanvas';
+    const canvasEl = document.getElementById(canvasId);
+    if (!canvasEl) return;
+    const ctx = canvasEl.getContext('2d');
+
+    if (tipo === 'turno' && istanzaGraficoTurno) istanzaGraficoTurno.destroy();
+    if (tipo === 'globale' && istanzaGraficoGlobale) istanzaGraficoGlobale.destroy();
+
+    const chartConfig = {
+        type: 'bar',
+        data: {
+            labels: labelsOrdinate,
+            datasets: [
+                { label: 'Cucina', data: datiCibo, backgroundColor: '#FF9800' },
+                { label: 'Bere', data: datiBere, backgroundColor: '#2196F3' },
+                { label: 'Snack/Fritti', data: datiSnack, backgroundColor: '#FFC107' }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: { stacked: true },
+                y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } } // Solo numeri interi
+            },
+            plugins: { legend: { position: 'bottom' } }
+        }
+    };
+
+    if (tipo === 'turno') istanzaGraficoTurno = new Chart(ctx, chartConfig);
+    else istanzaGraficoGlobale = new Chart(ctx, chartConfig);
+
+    // Salva globalmente per l'esportazione
+    window[`datiFasce_${tipo}`] = fasce;
+};
 // -------------------- SCONTI ADMIN --------------------
 function caricaScontiAdmin() {
     if (!checkOnline(true)) return;
