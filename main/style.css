@@ -2511,9 +2511,8 @@ body.tema-notte #btnCopertoCassa div {
 body.tema-notte #lista-totali-sommario .qta-evidenza {
     color: #000000 !important;
 }
-
 /* ===========================================================
-   TEMA ASTRONAVE (Versione Compattata)
+   TEMA ASTRONAVE (Versione Ottimizzata e Bilanciata)
 =========================================================== */
 body.tema-astronave, body.tema-astronave #themeBackground {
     background-color:#02040A !important;
@@ -2530,109 +2529,212 @@ body.tema-astronave, body.tema-astronave #themeBackground {
     radial-gradient(circle at 88% 48%, #b6f4ff 0 2px, transparent 3px),
     radial-gradient(circle at 94% 87%, white 0 2px, transparent 3px),
     radial-gradient(circle at 92% 18%, #9bdfff 0%, #5db7ff 18%, #1d73c8 42%, #103e78 58%, transparent 60%),
-    radial-gradient(circle at 92% 18%, rgba(120,220,255,.35) 0%, rgba(120,220,255,.12) 20%, transparent 38%),
+    radial-gradient(circle at 92% 18%, rgba(120,220,255,.2) 0%, rgba(120,220,255,.05) 20%, transparent 38%),
     radial-gradient(circle at 8% 88%, #fff9c4 0%, #ffe082 10%, #ffca28 18%, #ff9800 28%, transparent 30%),
-    radial-gradient(circle at 8% 88%, rgba(255,210,80,.35) 0%, rgba(255,180,50,.15) 22%, transparent 45%),
-    radial-gradient(circle at 65% 55%, rgba(0,180,255,.15), transparent 45%),
-    radial-gradient(circle at 35% 20%, rgba(120,70,255,.12), transparent 40%);
-    background-size:cover;
-    background-attachment:fixed;
-    color:#7CFBFF !important;
-    animation:spaceGlow 18s linear infinite;
+    radial-gradient(circle at 8% 88%, rgba(255,210,80,.2) 0%, rgba(255,180,50,.08) 22%, transparent 45%),
+    radial-gradient(circle at 65% 55%, rgba(0,180,255,.08), transparent 45%),
+    radial-gradient(circle at 35% 20%, rgba(120,70,255,.06), transparent 40%);
+    background-size:cover; background-attachment:fixed; color:#7CFBFF !important;
+    animation:spaceGlow 25s linear infinite; /* Rallentato per meno fastidio */
 }
-@keyframes spaceGlow{ 0%{ filter:hue-rotate(0deg); } 50%{ filter:hue-rotate(10deg); } 100%{ filter:hue-rotate(0deg); } }
+@keyframes spaceGlow{ 0%{ filter:hue-rotate(0deg); } 50%{ filter:hue-rotate(6deg); } 100%{ filter:hue-rotate(0deg); } }
+
 body.tema-astronave .tabContent>div, body.tema-astronave #aggiungiComandaTab>div>div, body.tema-astronave .tabContent div[style*="background"], body.tema-astronave .bb-dash-container, body.tema-astronave .bb-dash-card, body.tema-astronave #comandaCorrente, body.tema-astronave .modal-content, body.tema-astronave .modal-cassa-box, body.tema-astronave .popup-content, body.tema-astronave .modal-varianti, body.tema-astronave .settingItem, body.tema-astronave .stickyBar, body.tema-astronave .sconto-item, body.tema-astronave #loginDiv, body.tema-astronave #registerDiv, body.tema-astronave #forgotPasswordDiv{
-    background:#050A13 !important; border:1px solid #00D9FF !important; box-shadow: 0 0 10px rgba(0,220,255,.25), inset 0 0 20px rgba(0,180,255,.08); backdrop-filter:blur(8px);
+    background:#050A13 !important; border:1px solid #00A6CC !important; box-shadow: 0 0 5px rgba(0,220,255,.15), inset 0 0 8px rgba(0,180,255,.05); backdrop-filter:blur(5px);
 }
 body.tema-astronave #aggiungiComandaTab>div:first-child, body.tema-astronave .tabContent, body.tema-astronave #adminTabsContainer{ background:transparent !important; border:none !important; }
-body.tema-astronave table{ background:#03070E !important; border:1px solid #00D9FF !important; box-shadow: 0 0 10px rgba(0,217,255,.20); }
-body.tema-astronave th{ background:#061524 !important; color:#6CF7FF !important; border:1px solid #00D9FF !important; text-shadow: 0 0 6px #00F0FF, 0 0 12px #00D9FF; }
+body.tema-astronave table{ background:#03070E !important; border:1px solid #00A6CC !important; box-shadow: 0 0 5px rgba(0,217,255,.1); }
+body.tema-astronave th{ background:#061524 !important; color:#E7FFFF !important; border:1px solid #00A6CC !important; text-shadow: 0 0 3px #00D9FF; }
 body.tema-astronave td{ background:#02050A !important; color:#D9FFFF !important; border-color:#12374A !important; }
 body.tema-astronave tr:hover{ background:#07131F !important; }
-body.tema-astronave .order, body.tema-astronave .menu-item{ background:#050A13 !important; border:1px solid #00D9FF !important; box-shadow: 0 0 8px rgba(0,217,255,.35), inset 0 0 18px rgba(0,217,255,.05); transition:.25s; }
-body.tema-astronave .order:hover, body.tema-astronave .menu-item:hover{ transform:translateY(-2px); box-shadow: 0 0 18px rgba(0,255,255,.55), inset 0 0 20px rgba(0,255,255,.08); }
+body.tema-astronave .order, body.tema-astronave .menu-item{ background:#050A13 !important; border:1px solid #00A6CC !important; box-shadow: 0 0 4px rgba(0,217,255,.2); transition:.2s; }
+body.tema-astronave .order:hover, body.tema-astronave .menu-item:hover{ transform:translateY(-1px); box-shadow: 0 0 8px rgba(0,255,255,.3); }
 body.tema-astronave .orderContent{ background:#09131D !important; }
-/* TESTI NORMALI - ASTRONAVE SOFT */
 
-body.tema-astronave p,
-body.tema-astronave small,
-body.tema-astronave label,
-body.tema-astronave li {
+/* Testi e Titoli Generici */
+body.tema-astronave div:not(.bb-status-badge):not(.bb-gauge-fill):not(.bb-gauge-bg), body.tema-astronave span:not(.bb-status-badge), body.tema-astronave p, body.tema-astronave small, body.tema-astronave label, body.tema-astronave li{ color:#D0FFFF !important; text-shadow: 0 0 2px rgba(0,255,255,.3); }
+body.tema-astronave h1, body.tema-astronave h2, body.tema-astronave h3, body.tema-astronave h4, body.tema-astronave strong, body.tema-astronave b, body.tema-astronave .bb-card-title, body.tema-astronave .bb-stat-val, body.tema-astronave .order-header, body.tema-astronave .piatto-nome, body.tema-astronave .bb-dash-header h3{ color:#FFFFFF !important; text-shadow: 0 0 3px #00D9FF, 0 0 6px rgba(0,200,255,.4) !important; }
 
-    color:#B8E9F2 !important;
-
-    text-shadow:none !important;
-
+/* FIX SPECIFICO PER I TITOLI CATEGORIA CASSA (Cibi, Bevande, Snack) */
+body.tema-astronave fieldset legend,
+body.tema-astronave fieldset legend span,
+body.tema-astronave fieldset legend b {
+    color: #00FFFF !important;
+    text-shadow: 0 0 4px rgba(0, 255, 255, 0.8) !important;
+    font-size: 1.1em;
 }
-body.tema-astronave h1, body.tema-astronave h2, body.tema-astronave h3, body.tema-astronave h4, body.tema-astronave strong, body.tema-astronave b, body.tema-astronave .bb-card-title, body.tema-astronave .bb-stat-val, body.tema-astronave .order-header, body.tema-astronave .piatto-nome, body.tema-astronave .bb-dash-header h3{ color:#E7FFFF !important;text-shadow:
-0 0 3px rgba(0,255,255,.6),
-0 0 8px rgba(0,200,255,.35);}
-body.tema-astronave small{ color:#77F5FF !important; }
-body.tema-astronave label{ color:#91FBFF !important; }
-body.tema-astronave .piatto-prezzo, body.tema-astronave .prezzo{ color:#FFE96A !important; font-weight:bold; text-shadow: 0 0 8px #FFD400, 0 0 16px #FFC400; }
-body.tema-astronave .totale-testo{ color:#FFF16E !important; text-shadow: 0 0 8px gold, 0 0 18px gold; }
-body.tema-astronave .scontoTxt{ color:#FF9A40 !important; text-shadow: 0 0 8px orange; }
-body.tema-astronave .asportoText{ color:#6CFF7D !important; text-shadow: 0 0 8px #00FF66; }
-body.tema-astronave td[style*="color:#2e7d32"]{ color:#45FF96 !important; text-shadow: 0 0 8px #00FF80, 0 0 18px #00FF80; }
-body.tema-astronave #lista-totali-sommario div{ border-bottom:1px solid rgba(0,217,255,.15); }
-body.tema-astronave .bb-dash-card{ transition:.25s; }
-body.tema-astronave .bb-dash-card:hover{ box-shadow: 0 0 25px rgba(0,255,255,.45), inset 0 0 25px rgba(0,255,255,.08); }
+
+body.tema-astronave small{ color:#A5F6FF !important; }
+body.tema-astronave label{ color:#B1FBFF !important; }
+body.tema-astronave .piatto-prezzo, body.tema-astronave .prezzo{ color:#FFE96A !important; font-weight:bold; text-shadow: 0 0 4px rgba(255,212,0,.6); }
+body.tema-astronave .totale-testo{ color:#FFF16E !important; text-shadow: 0 0 5px rgba(255,215,0,.6); }
+body.tema-astronave .scontoTxt{ color:#FF9A40 !important; text-shadow: 0 0 4px rgba(255,165,0,.5); }
+body.tema-astronave .asportoText{ color:#6CFF7D !important; text-shadow: 0 0 4px rgba(0,255,102,.5); }
+body.tema-astronave td[style*="color:#2e7d32"]{ color:#45FF96 !important; text-shadow: 0 0 4px rgba(0,255,128,.5); }
+body.tema-astronave #lista-totali-sommario div{ border-bottom:1px solid rgba(0,217,255,.1); }
+
+/* Dashboard Cards ridotte */
+body.tema-astronave .bb-dash-card{ transition:.2s; }
+body.tema-astronave .bb-dash-card:hover{ box-shadow: 0 0 10px rgba(0,255,255,.25), inset 0 0 10px rgba(0,255,255,.05); }
 body.tema-astronave .piatto-nome{ letter-spacing:.5px; }
-body.tema-astronave .piatto-ing{ color:#9ADFFF !important; }
-body.tema-astronave .qta-evidenza{ color:#6FFFF8 !important; font-weight:bold; text-shadow: 0 0 6px cyan, 0 0 16px cyan; }
-body.tema-astronave button{ background:#071521 !important; color:#7FFFFF !important; border:1px solid #00D9FF !important; border-radius:8px !important; text-shadow: 0 0 6px #00FFFF; box-shadow: 0 0 8px rgba(0,217,255,.4), inset 0 0 10px rgba(0,217,255,.12); transition:.25s; }
-body.tema-astronave button:hover{ background:#0A2638 !important; color:white !important; box-shadow: 0 0 20px #00FFFF, inset 0 0 15px rgba(0,255,255,.3); transform:translateY(-2px); }
-body.tema-astronave .tabBtn{ background:#050A13 !important; color:#67F7FF !important; border:1px solid #0088AA !important; }
-body.tema-astronave .tabBtn.active{ background:#003B55 !important; color:#FFFFFF !important; box-shadow: 0 0 18px #00E5FF, inset 0 0 15px #006B88; }
-body.tema-astronave .piatto-btn, body.tema-astronave .btn-cassa-ottimizzata{ background: linear-gradient(145deg, #071521, #02070D) !important; border: 1px solid #00D9FF !important; box-shadow: 0 0 12px rgba(0,217,255,.45), inset 0 0 15px rgba(0,217,255,.12); }
-body.tema-astronave .piatto-btn:hover, body.tema-astronave .btn-cassa-ottimizzata:hover{ box-shadow: 0 0 25px #00FFFF, inset 0 0 25px rgba(0,255,255,.2); }
-/* MENU PIATTI - TESTO PULITO */
+body.tema-astronave .piatto-ing{ color:#AEE5FF !important; }
+body.tema-astronave .qta-evidenza{ color:#FFFFFF !important; font-weight:bold; text-shadow: 0 0 4px cyan; background-color: #005F73 !important; padding: 2px 6px !important; border-radius: 4px !important; border: 1px solid #00D9FF !important; }
 
-body.tema-astronave .piatto-btn *,
-body.tema-astronave .btn-cassa-ottimizzata *{
+/* Bottoni - FORZATI A SFONDO SCURO per evitare bianchi anomali */
+body.tema-astronave button, body.tema-astronave button[style*="background"], body.tema-astronave .piatto-btn, body.tema-astronave .btn-cassa-ottimizzata { background:#071521 !important; background-color:#071521 !important; color:#AFFFFF !important; border:1px solid #00A6CC !important; border-radius:6px !important; text-shadow: 0 0 2px rgba(0,255,255,.5) !important; box-shadow: 0 0 4px rgba(0,217,255,.15), inset 0 0 5px rgba(0,217,255,.05) !important; transition:.2s; }
+body.tema-astronave button:hover, body.tema-astronave .piatto-btn:hover, body.tema-astronave .btn-cassa-ottimizzata:hover { background:#0A2638 !important; color:#FFFFFF !important; box-shadow: 0 0 8px rgba(0,255,255,.4), inset 0 0 8px rgba(0,255,255,.1) !important; transform:translateY(-1px); }
+body.tema-astronave .tabBtn{ background:#050A13 !important; color:#87F7FF !important; border:1px solid #006B88 !important; }
+body.tema-astronave .tabBtn.active{ background:#003B55 !important; color:#FFFFFF !important; box-shadow: 0 0 8px rgba(0,229,255,.4); }
+body.tema-astronave .piatto-btn *, body.tema-astronave .btn-cassa-ottimizzata *{ color:#E7FFFF !important; text-shadow: 0 0 3px rgba(0,255,255,.5) !important; }
+body.tema-astronave .piatto-btn .piatto-prezzo{ color:#FFE66D !important; text-shadow: 0 0 4px rgba(255,208,0,.5) !important; }
+body.tema-astronave #comandaCorrente button{ background:#06131E !important; color:#00FFFF !important; border: 1px solid #00A6CC !important; }
+body.tema-astronave #comandaCorrente{ border: 1px solid #00A6CC !important; box-shadow: 0 0 6px rgba(0,255,255,.15); }
 
-    color:#06131E !important;
+/* Input */
+body.tema-astronave input, body.tema-astronave select, body.tema-astronave textarea{ background:#030912 !important; color:#EFFFFF !important; border: 1px solid #0088AA !important; box-shadow: inset 0 0 5px rgba(0,217,255,.08); }
+body.tema-astronave input:focus, body.tema-astronave select:focus, body.tema-astronave textarea:focus{ border-color:#00D9FF !important; box-shadow: 0 0 6px rgba(0,255,255,.3); }
 
-    text-shadow:none !important;
+/* Badge HUD */
+body.tema-astronave .bb-status-badge{ border-radius:12px !important; font-weight:bold; letter-spacing:0.5px; }
+body.tema-astronave .bb-status-badge.ok{ background:#003B2A !important; color:#4DFFB2 !important; border:1px solid #00B35F !important; box-shadow: 0 0 5px rgba(0,255,136,.3); }
+body.tema-astronave .bb-status-badge.warn{ background:#453000 !important; color:#FFE36E !important; border:1px solid #CC9900 !important; box-shadow: 0 0 5px rgba(255,208,0,.3); }
+body.tema-astronave .bb-status-badge.crit{ background:#420000 !important; color:#FF8A8A !important; border:1px solid #CC0000 !important; box-shadow: 0 0 6px rgba(255,0,0,.4); }
 
-}
-body.tema-astronave .piatto-btn .piatto-prezzo{ color:#FFE66D !important;text-shadow:
-0 0 4px rgba(255,210,0,.6);}
-body.tema-astronave #comandaCorrente button{ background:#06131E !important; color:#00FFFF !important; border: 1px solid #00D9FF !important; }
-body.tema-astronave #comandaCorrente{ border: 1px solid #00FFFF !important; box-shadow: 0 0 20px rgba(0,255,255,.35); }
-body.tema-astronave input, body.tema-astronave select, body.tema-astronave textarea{ background:#030912 !important; color:#BFFFFF !important; border: 1px solid #00D9FF !important; box-shadow: inset 0 0 10px rgba(0,217,255,.15), 0 0 8px rgba(0,217,255,.25); }
-body.tema-astronave input:focus, body.tema-astronave select:focus, body.tema-astronave textarea:focus{ border-color:#00FFFF !important; box-shadow: 0 0 20px #00FFFF, inset 0 0 15px rgba(0,255,255,.25); }
-body.tema-astronave .bb-status-badge{ border-radius:20px !important; font-weight:bold; letter-spacing:1px; }
-body.tema-astronave .bb-status-badge.ok{ background:#003B2A !important; color:#4DFFB2 !important; border:1px solid #00FF88 !important; box-shadow: 0 0 15px #00FF88; }
-body.tema-astronave .bb-status-badge.warn{ background:#453000 !important; color:#FFE36E !important; border:1px solid #FFD000 !important; box-shadow: 0 0 15px #FFD000; }
-body.tema-astronave .bb-status-badge.crit{ background:#420000 !important; color:#FF6B6B !important; border:1px solid red !important; box-shadow: 0 0 20px red; }
-body.tema-astronave .bb-gauge-bg{ background:#020712 !important; border: 1px solid #007A99 !important; box-shadow: inset 0 0 15px #001F33; }
-body.tema-astronave .bb-gauge-fill{ background: linear-gradient(90deg, #00FFFF, #008CFF) !important; box-shadow: 0 0 15px cyan, 0 0 35px #008CFF; }
-body.tema-astronave .chat-container, body.tema-astronave .chat-input-bar{ background:#030912 !important; border: 1px solid #00D9FF !important; box-shadow: 0 0 15px rgba(0,217,255,.3); }
-body.tema-astronave .chat-message.other{ background:#071A29 !important; color:#8FFFFF !important; border-left: 3px solid cyan; }
-body.tema-astronave .chat-message.me{ background:#003B2A !important; color:#9DFFD0 !important; border-right: 3px solid #00FF88; }
-@keyframes neonPulse{ 0%{ text-shadow: 0 0 5px #00FFFF, 0 0 10px #00FFFF; } 50%{ text-shadow: 0 0 12px #00FFFF, 0 0 25px #008CFF, 0 0 40px #008CFF; } 100%{ text-shadow: 0 0 5px #00FFFF, 0 0 10px #00FFFF; } }
-body.tema-astronave h1, body.tema-astronave h2, body.tema-astronave h3{ animation: neonPulse 3s infinite; }
+/* Barra Energia */
+body.tema-astronave .bb-gauge-bg{ background:#020712 !important; border: 1px solid #005A7A !important; box-shadow: inset 0 0 6px #001F33; }
+body.tema-astronave .bb-gauge-fill{ background: linear-gradient(90deg, #00BFFF, #0066CC) !important; box-shadow: 0 0 6px rgba(0,255,255,.4); }
+
+/* Chat */
+body.tema-astronave .chat-container, body.tema-astronave .chat-input-bar{ background:#030912 !important; border: 1px solid #00A6CC !important; }
+body.tema-astronave .chat-message.other{ background:#071A29 !important; color:#AFFFFF !important; border-left: 3px solid #00A6CC; }
+body.tema-astronave .chat-message.me{ background:#003B2A !important; color:#B3FFD9 !important; border-right: 3px solid #00B35F; }
+
+/* Animazioni Leggere */
+@keyframes neonPulse{ 0%{ text-shadow: 0 0 2px #00FFFF, 0 0 4px rgba(0,255,255,.3); } 50%{ text-shadow: 0 0 4px #00FFFF, 0 0 8px rgba(0,140,255,.5); } 100%{ text-shadow: 0 0 2px #00FFFF, 0 0 4px rgba(0,255,255,.3); } }
+body.tema-astronave h1, body.tema-astronave h2, body.tema-astronave h3{ animation: neonPulse 4s infinite; }
 body.tema-astronave .bb-dash-card, body.tema-astronave .order, body.tema-astronave .modal-content{ position:relative; overflow:hidden; }
-body.tema-astronave .bb-dash-card::after, body.tema-astronave .order::after, body.tema-astronave .modal-content::after{ content:""; position:absolute; top:-100%; left:0; width:100%; height:20%; background: linear-gradient(transparent, rgba(0,255,255,.15), transparent); animation: scanPanel 5s linear infinite; pointer-events:none; }
+body.tema-astronave .bb-dash-card::after, body.tema-astronave .order::after, body.tema-astronave .modal-content::after{ content:""; position:absolute; top:-100%; left:0; width:100%; height:20%; background: linear-gradient(transparent, rgba(0,255,255,.05), transparent); animation: scanPanel 8s linear infinite; pointer-events:none; }
 @keyframes scanPanel{ 0%{ top:-30%; } 100%{ top:130%; } }
-body.tema-astronave .modal-content, body.tema-astronave .popup-content, body.tema-astronave .bb-dash-card{ animation: borderGlow 4s infinite alternate; }
-@keyframes borderGlow{ from{ box-shadow: 0 0 8px rgba(0,217,255,.25); } to{box-shadow:
-0 0 12px rgba(0,217,255,.35);} }
-body.tema-astronave ::-webkit-scrollbar{ width:10px; }
+body.tema-astronave .modal-content, body.tema-astronave .popup-content, body.tema-astronave .bb-dash-card{ animation: borderGlow 6s infinite alternate; }
+@keyframes borderGlow{ from{ box-shadow: 0 0 3px rgba(0,217,255,.1); } to{ box-shadow: 0 0 10px rgba(0,217,255,.25); } }
+
+/* Scrollbar e Dettagli */
+body.tema-astronave ::-webkit-scrollbar{ width:8px; }
 body.tema-astronave ::-webkit-scrollbar-track{ background:#02050A; }
-body.tema-astronave ::-webkit-scrollbar-thumb{ background: linear-gradient(#00FFFF, #0077FF); border-radius:10px; box-shadow: 0 0 10px cyan; }
-body.tema-astronave #loader{ --loader-bg: radial-gradient(circle, #06263D, #000000); --loader-text: #00FFFF; }
-body.tema-astronave #loader .spinner, body.tema-astronave #offlineLoader .spinner{ border-top-color:#00FFFF !important; box-shadow: 0 0 20px cyan, 0 0 40px #008CFF; }
-body.tema-astronave div[style*="background:#fff"], body.tema-astronave div[style*="background:white"], body.tema-astronave div[style*="background-color:white"], body.tema-astronave div[style*="background-color:#fff"]{ background:#050A13 !important; color:#9FFFFF !important; border-color:#00D9FF !important; }
-body.tema-astronave div[style*="background-color: #ffebee"], body.tema-astronave div[style*="background-color: rgb(255, 235, 238)"]{ background:#400000 !important; color:#FFAAAA !important; border: 1px solid #FF4444 !important; box-shadow: 0 0 15px red; }
-body.tema-astronave .bb-stat-val{ color:#FFFFFF !important; letter-spacing:2px; text-shadow: 0 0 10px cyan, 0 0 25px cyan; }
-body.tema-astronave hr{ border:none !important; height:1px; background: linear-gradient(90deg, transparent, cyan, transparent) !important; box-shadow: 0 0 10px cyan; }
-body.tema-astronave .bb-stat-val, body.tema-astronave .qta-evidenza{ font-family: "Orbitron", "Consolas", monospace; }
+body.tema-astronave ::-webkit-scrollbar-thumb{ background: linear-gradient(#00A6CC, #0055CC); border-radius:8px; }
+body.tema-astronave #loader{ --loader-bg: radial-gradient(circle, #041B2D, #000000); --loader-text: #00D9FF; }
+body.tema-astronave #loader .spinner, body.tema-astronave #offlineLoader .spinner{ border-top-color:#00D9FF !important; box-shadow: 0 0 10px rgba(0,255,255,.4); }
+body.tema-astronave div[style*="background:#fff"], body.tema-astronave div[style*="background:white"], body.tema-astronave div[style*="background-color:white"], body.tema-astronave div[style*="background-color:#fff"]{ background:#050A13 !important; color:#BFFFFF !important; border-color:#00A6CC !important; }
+body.tema-astronave div[style*="background-color: #ffebee"], body.tema-astronave div[style*="background-color: rgb(255, 235, 238)"]{ background:#330000 !important; color:#FFB3B3 !important; border: 1px solid #CC0000 !important; box-shadow: 0 0 5px rgba(255,0,0,.3); }
+body.tema-astronave .bb-stat-val{ color:#FFFFFF !important; letter-spacing:1px; text-shadow: 0 0 5px rgba(0,255,255,.5); font-family: "Orbitron", "Consolas", monospace; }
+body.tema-astronave hr{ border:none !important; height:1px; background: linear-gradient(90deg, transparent, rgba(0,255,255,.5), transparent) !important; box-shadow: 0 0 4px rgba(0,255,255,.3); }
 body.tema-astronave button, body.tema-astronave .piatto-btn{ cursor:pointer; }
 body.tema-astronave{ overflow-x:hidden; }
-body.tema-astronave *{ scrollbar-color: #00FFFF #02050A; }
+body.tema-astronave *{ scrollbar-color: #00D9FF #02050A; }
 /* Selettore ancora più specifico per le liste delle statistiche */
 body.tema-astronave #lista-totali-sommario .qta-evidenza {
     color: #000000 !important;
+}
+/* ===========================================================
+   ANIMAZIONI DI SFONDO (Autunno, Notte, Default)
+   Effetti lenti e non invasivi per migliorare l'esperienza
+=========================================================== */
+
+/* --- TEMA NOTTE: Stelle che fluttuano dolcemente --- */
+body.tema-notte #themeBackground {
+    background-size: 300px 300px !important;
+    animation: starPan 100s linear infinite !important; /* Molto lento */
+}
+@keyframes starPan {
+    from { background-position: 0px 0px; }
+    to { background-position: 300px 300px; } /* Looping continuo sulle stelle */
+}
+
+
+/* --- TEMA AUTUNNO: Vento leggero e caduta foglie sfocate --- */
+body.tema-autunno #themeBackground {
+    /* Aggiunge un effetto 'bokeh' caldo sopra il colore autunnale esistente */
+    background-image: 
+        radial-gradient(circle at 10% 20%, rgba(200, 100, 0, 0.04) 0%, transparent 40%),
+        radial-gradient(circle at 80% 60%, rgba(200, 50, 0, 0.04) 0%, transparent 40%),
+        radial-gradient(circle at 40% 80%, rgba(250, 150, 0, 0.04) 0%, transparent 40%) !important;
+    background-size: 200% 200% !important;
+    animation: autumnBreeze 25s ease-in-out infinite alternate !important; /* Su e giù morbido */
+}
+@keyframes autumnBreeze {
+    0% { background-position: 0% 0%; }
+    100% { background-position: 100% 30%; }
+}
+
+
+/* --- TEMA BASE / DEFAULT: Respiro morbido del gradiente --- */
+body:not(.tema-astronave):not(.tema-notte):not(.tema-autunno) #themeBackground {
+    background-size: 150% 150% !important;
+    animation: softBreathe 20s ease-in-out infinite alternate !important;
+}
+@keyframes softBreathe {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 100% 50%; }
+}
+/* --- TEMA ESTATE: Effetto "Riflesso del Sole" e calore --- */
+/* Aggiunge dei bagliori gialli/dorati molto leggeri che si muovono lentamente */
+body.tema-estate #themeBackground {
+    background-image: 
+        radial-gradient(circle at 20% 30%, rgba(255, 220, 100, 0.05) 0%, transparent 50%),
+        radial-gradient(circle at 70% 80%, rgba(255, 250, 200, 0.06) 0%, transparent 40%),
+        radial-gradient(circle at 50% 20%, rgba(255, 200, 50, 0.04) 0%, transparent 60%) !important;
+    background-size: 200% 200% !important;
+    animation: summerHaze 30s ease-in-out infinite alternate !important;
+}
+@keyframes summerHaze {
+    0% { background-position: 0% 0%; }
+    100% { background-position: 50% 100%; } /* Movimento diagonale tipo brezza marina */
+}
+
+
+/* --- TEMA INVERNO: Fiocchi di neve sfocati in lontananza --- */
+/* Punti bianchi a bassissima opacità che cadono lentamente verso il basso */
+body.tema-inverno #themeBackground {
+    background-image: 
+        radial-gradient(circle at 15% 10%, rgba(255, 255, 255, 0.08) 0%, transparent 10%),
+        radial-gradient(circle at 85% 30%, rgba(255, 255, 255, 0.06) 0%, transparent 15%),
+        radial-gradient(circle at 45% 70%, rgba(220, 240, 255, 0.05) 0%, transparent 20%) !important;
+    background-size: 150px 150px !important; /* Misura fissa per creare il loop di caduta */
+    animation: snowFall 40s linear infinite !important; /* Caduta continua e lentissima */
+}
+@keyframes snowFall {
+    from { background-position: 0px -150px; }
+    to { background-position: 50px 150px; } /* Scende verso il basso e leggermente di lato */
+}
+
+
+/* --- TEMA PRIMAVERA: Polline e Petali portati dal vento --- */
+/* Sfumature tenui rosate e verdoline che fluttuano verso l'alto */
+body.tema-primavera #themeBackground {
+    background-image: 
+        radial-gradient(circle at 30% 60%, rgba(255, 180, 200, 0.05) 0%, transparent 40%),
+        radial-gradient(circle at 80% 20%, rgba(180, 255, 180, 0.05) 0%, transparent 50%),
+        radial-gradient(circle at 50% 50%, rgba(255, 255, 200, 0.04) 0%, transparent 35%) !important;
+    background-size: 250% 250% !important;
+    animation: springBreeze 35s ease-in-out infinite alternate !important;
+}
+@keyframes springBreeze {
+    0% { background-position: 100% 100%; }
+    100% { background-position: 0% 0%; } /* Fluttua verso l'alto e a sinistra */
+}
+
+
+/* --- TEMA SCOUT: Ombre della foresta e scintille del fuoco --- */
+/* Tonalità boschive dall'alto e lievi bagliori aranciati (falò) dal basso */
+body.tema-scout #themeBackground {
+    background-image: 
+        radial-gradient(circle at 10% 90%, rgba(255, 100, 0, 0.05) 0%, transparent 30%), /* Scintilla 1 */
+        radial-gradient(circle at 90% 80%, rgba(255, 150, 0, 0.03) 0%, transparent 40%), /* Scintilla 2 */
+        radial-gradient(circle at 50% 10%, rgba(30, 100, 50, 0.06) 0%, transparent 60%) !important; /* Chioma degli alberi */
+    background-size: 200% 200% !important;
+    animation: scoutCamp 28s ease-in-out infinite alternate !important;
+}
+@keyframes scoutCamp {
+    0% { background-position: 0% 100%; }
+    100% { background-position: 20% 0%; } /* Le "scintille" fluttuano pigramente verso l'alto */
 }
