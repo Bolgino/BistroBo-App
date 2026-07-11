@@ -2553,7 +2553,7 @@ body.tema-astronave .orderContent{ background:#09131D !important; }
 
 /* Testi Generici */
 body.tema-astronave div:not(.bb-status-badge):not(.bb-gauge-fill):not(.bb-gauge-bg):not(.piatto-btn):not(.btn-cassa-ottimizzata),
-body.tema-astronave span:not(.bb-status-badge):not(.piatto-nome),
+body.tema-astronave span:not(.bb-status-badge),
 body.tema-astronave p, body.tema-astronave small:not(.piatto-prezzo), body.tema-astronave label, body.tema-astronave li{ color:#D0FFFF !important; text-shadow: 0 0 2px rgba(0,255,255,.3); }
 
 /* Titoli Generici */
