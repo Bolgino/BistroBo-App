@@ -11470,78 +11470,96 @@ document.addEventListener("mousedown", function(e) {
 });
 // ================= TUTORIAL SCORCIATOIE =================
 function apriTutorialScorciatoie() {
-    // 1. Rimuove eventuali tutorial già aperti per evitare fastidiosi doppioni
+    // Rimuove eventuali tutorial già aperti
     const vecchiTutorial = document.querySelectorAll(".modal-scorciatoie-overlay");
     vecchiTutorial.forEach(t => t.remove());
 
     const overlay = document.createElement("div");
-    overlay.className = "modal-overlay modal-scorciatoie-overlay"; // Doppia classe per gestirlo meglio
+    overlay.className = "modal-overlay modal-scorciatoie-overlay";
+    
+    // FIX CENTRATURA SCHERMO: Forziamo la posizione fissa sullo schermo (Viewport)
+    overlay.style.position = "fixed";
+    overlay.style.top = "0";
+    overlay.style.left = "0";
+    overlay.style.width = "100vw";
+    overlay.style.height = "100vh";
+    overlay.style.display = "flex";
+    overlay.style.alignItems = "center";
+    overlay.style.justifyContent = "center";
     overlay.style.zIndex = "10005";
+    // Assicuriamoci che abbia uno sfondo scuro se la classe CSS dovesse mancare
+    if(!getComputedStyle(overlay).backgroundColor || getComputedStyle(overlay).backgroundColor === 'rgba(0, 0, 0, 0)') {
+        overlay.style.backgroundColor = "rgba(0, 0, 0, 0.6)"; 
+    }
 
     const modal = document.createElement("div");
-    modal.className = "modal-varianti"; // Classe tematica
+    modal.className = "modal-varianti"; // Si adatta ai temi
     modal.style.padding = "25px";
     modal.style.textAlign = "center";
-    modal.style.maxWidth = "450px";
-    modal.style.maxHeight = "85vh"; // Scrollabile se lo schermo è piccolo
+    modal.style.maxWidth = "480px";
+    modal.style.width = "90%";
+    modal.style.maxHeight = "85vh"; 
     modal.style.overflowY = "auto";
+    modal.style.borderRadius = "12px";
+    modal.style.boxShadow = "0 10px 30px rgba(0,0,0,0.5)";
 
     modal.innerHTML = `
-        <h3 style="margin-top: 0;">⌨️ Tutorial Scorciatoie</h3>
+        <h3 style="margin-top: 0; font-size: 1.4em;">⌨️ Scorciatoie da Tastiera</h3>
         <p style="font-size: 0.95em; margin-bottom: 15px; text-align: left;">
-            Mantieni premuto <b>ALT + Tasto</b> per sfrecciare tra le schermate:
+            Mantieni premuto <b>ALT + Tasto</b> per navigare e comandare rapidamente:
         </p>
         
         <div style="text-align: left; background: rgba(128,128,128,0.1); padding: 15px; border-radius: 8px; font-size: 0.9em; line-height: 1.8; margin-bottom: 15px;">
             
-            <b style="color: var(--primary-color, #4CAF50);">-- 👤 PROFILI E NAVIGAZIONE --</b><br>
-            <b>Alt + 1</b> : Entra in Cassa<br>
-            <b>Alt + 2</b> : Entra in Cucina<br>
-            <b>Alt + 3</b> : Entra al Bar<br>
-            <b>Alt + 4</b> : Entra nel Display<br>
-            <b>Alt + 5</b> : Entra in Admin<br>
-            <b>Alt + L</b> : Logout (Torna alla Home)<br>
+            <b style="color: var(--primary-color, #4CAF50);">-- 🌐 GENERALI --</b><br>
+            <b>Alt + 1, 2, 3, 4, 5</b> : Salta tra Cassa, Cucina, Bar, Display, Admin<br>
+            <b>Alt + L</b> : Logout rapido<br>
+            <b>Alt + H</b> : Mostra questo pannello di Aiuto (Help)<br>
             
             <hr style="border: 0; border-top: 1px solid rgba(128,128,128,0.2); margin: 10px 0;">
             
-            <b style="color: var(--primary-color, #4CAF50);">-- 💶 AZIONI IN CASSA --</b><br>
-            <b>Alt + I</b> : Invia la Comanda<br>
-            <b>Alt + C</b> : Svuota il carrello<br>
-            <b>Alt + R</b> : Azzera il resto<br>
-            <b>Alt + Q</b> : Seleziona casella Quantità<br>
-            <b>Alt + S</b> : Cerca un prodotto<br>
+            <b style="color: var(--primary-color, #4CAF50);">-- 💶 IN CASSA --</b><br>
+            <b>Alt + I</b> : Invia la Comanda (Invio)<br>
+            <b>Alt + A</b> : Annulla ultima comanda inviata<br>
+            <b>Alt + M</b> : Vai al Metodo di pagamento (Contanti/POS)<br>
+            <b>Alt + C</b> : Svuota l'intero carrello<br>
+            <b>Alt + R</b> : Azzera il resto (Reset)<br>
+            <b>Alt + Q</b> : Seleziona Quantità<br>
+            <b>Alt + S</b> : Cerca un prodotto (Search)<br>
+            <b>Alt + P</b> : Pulisci barra di ricerca e torna alla lista<br>
+            <b>Alt + D</b> : Apri Sommario di fine giornata (Dettagli)<br>
         </div>
         
-        <p style="font-size: 0.85em; margin-bottom: 20px; font-style: italic; color: #888;">
-            I tasti INVIO (conferma) ed ESC (annulla) sono sempre attivi di default.
-        </p>
-        
         <div class="modal-actions">
-            <button class="btn-salva" id="btnHoCapitoScorciatoie" style="width: 100%; cursor: pointer;">Ho capito!</button>
+            <button class="btn-salva" id="btnHoCapitoScorciatoie" style="width: 100%; cursor: pointer;">Ottimo, ho capito!</button>
         </div>
     `;
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
 
-    // 2. FIX BOTTONE: Usiamo addEventListener con le protezioni contro i click esterni
+    // FIX BOTTONE: Evita conflitti e chiude correttamente
     const btnChiudi = modal.querySelector("#btnHoCapitoScorciatoie");
     btnChiudi.addEventListener("click", function(e) {
         e.preventDefault();
-        e.stopPropagation(); // Impedisce conflitti con il listener "click fuori dal modale"
+        e.stopPropagation();
         overlay.remove();
     });
 }
 
 // ================= GESTIONE SCORCIATOIE DA TASTIERA (ALT + COMBINAZIONI) =================
 document.addEventListener("keydown", function(e) {
-    // Controlliamo che la funzione sia attiva da impostazioni admin
+    // Se disabilitate da admin, esci.
     if (!window.settings || !window.settings.scorciatoieTastiera) return;
 
     if (e.altKey) {
         const key = e.key.toLowerCase();
         
-        // --- 1. SCORCIATOIE GLOBALI (Accesso rapido ai profili e Logout) ---
+        // --- 1. SCORCIATOIE GLOBALI ---
         switch(key) {
+            case 'h': // Alt + H -> Aiuto
+                e.preventDefault();
+                apriTutorialScorciatoie();
+                break;
             case '1': // Alt + 1 -> Cassa
                 e.preventDefault();
                 if(document.getElementById("btnLoginCassa")) document.getElementById("btnLoginCassa").click();
@@ -11570,7 +11588,7 @@ document.addEventListener("keydown", function(e) {
                 break;
         }
         
-        // --- 2. SCORCIATOIE SPECIFICHE SOLO PER LA CASSA ---
+        // --- 2. SCORCIATOIE SPECIFICHE IN CASSA ---
         if (window.isLoggedInCassa) {
             switch(key) {
                 case 'i': // Alt + I -> Invia
@@ -11578,7 +11596,17 @@ document.addEventListener("keydown", function(e) {
                     const btnInvia = document.getElementById("inviaComandaBtn");
                     if (btnInvia && !btnInvia.disabled) btnInvia.click();
                     break;
-                case 'c': // Alt + C -> Pulisci
+                case 'a': // Alt + A -> Annulla ultima comanda
+                    e.preventDefault();
+                    const btnAnnulla = document.getElementById("annullaUltimaVenditaBtn");
+                    if (btnAnnulla && btnAnnulla.style.display !== "none") btnAnnulla.click();
+                    break;
+                case 'm': // Alt + M -> Focus Metodo Pagamento
+                    e.preventDefault();
+                    const tendinaPagamento = document.getElementById("metodoPagamento");
+                    if (tendinaPagamento) tendinaPagamento.focus();
+                    break;
+                case 'c': // Alt + C -> Pulisci carrello
                     e.preventDefault();
                     if (typeof comandaCorrente !== "undefined" && comandaCorrente.length > 0) {
                         comandaCorrente = []; 
@@ -11596,7 +11624,7 @@ document.addEventListener("keydown", function(e) {
                     const inputQuantita = document.getElementById("quantita");
                     if (inputQuantita && window.settings.selettoreQuantitaCassa) {
                         inputQuantita.focus();
-                        inputQuantita.select(); // Seleziona il testo per sovrascriverlo al volo
+                        inputQuantita.select();
                     }
                     break;
                 case 's': // Alt + S -> Focus Ricerca
@@ -11606,6 +11634,16 @@ document.addEventListener("keydown", function(e) {
                         searchBox.focus();
                         searchBox.select();
                     }
+                    break;
+                case 'p': // Alt + P -> Pulisci Ricerca (X)
+                    e.preventDefault();
+                    const clearSearch = document.getElementById("clearCercaComandaCassa");
+                    if (clearSearch && clearSearch.style.display !== "none") clearSearch.click();
+                    break;
+                case 'd': // Alt + D -> Sommario (Dettagli)
+                    e.preventDefault();
+                    const btnSommario = document.getElementById("btnSommario");
+                    if (btnSommario) btnSommario.click();
                     break;
             }
         }
