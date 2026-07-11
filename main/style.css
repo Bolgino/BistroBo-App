@@ -2699,3 +2699,12 @@ body.tema-notte h5[style*="color"] {
     border-bottom-color: #334155 !important;
     font-size: 1.1em !important;
 }
+body.tema-astronave #btnCopertoCassa div {
+    color: #000000 !important;
+    text-shadow: none !important;
+}
+
+body.tema-astronave #orologio {
+    color: #6FA8B8 !important;
+    text-shadow: none !important;
+}
