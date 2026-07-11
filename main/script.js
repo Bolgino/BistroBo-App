@@ -11476,7 +11476,7 @@ function apriTutorialScorciatoie() {
     const overlay = document.createElement("div");
     overlay.className = "modal-overlay modal-scorciatoie-overlay";
     
-    // Forziamo la posizione fissa al centro dello schermo
+    // Posizione fissa al centro dello schermo
     overlay.style.position = "fixed";
     overlay.style.top = "0";
     overlay.style.left = "0";
@@ -11494,7 +11494,7 @@ function apriTutorialScorciatoie() {
     modal.className = "modal-varianti"; 
     modal.style.padding = "25px";
     modal.style.textAlign = "center";
-    modal.style.maxWidth = "480px";
+    modal.style.maxWidth = "500px";
     modal.style.width = "90%";
     modal.style.maxHeight = "85vh"; 
     modal.style.overflowY = "auto";
@@ -11504,28 +11504,28 @@ function apriTutorialScorciatoie() {
     modal.innerHTML = `
         <h3 style="margin-top: 0; font-size: 1.4em;">⌨️ Scorciatoie da Tastiera</h3>
         <p style="font-size: 0.95em; margin-bottom: 15px; text-align: left;">
-            Mantieni premuto <b>ALT + Tasto</b> per navigare e comandare rapidamente:
+            Mantieni premuto <b>ALT + Tasto</b> per navigare rapidamente:
         </p>
         
         <div style="text-align: left; background: rgba(128,128,128,0.1); padding: 15px; border-radius: 8px; font-size: 0.9em; line-height: 1.8; margin-bottom: 15px;">
             
-            <b style="color: var(--primary-color, #4CAF50);">-- 🌐 GENERALI --</b><br>
-            <b>Alt + 1, 2, 3, 4, 5</b> : Salta tra Cassa, Cucina, Bar, Display, Admin<br>
-            <b>Alt + L</b> : Logout rapido<br>
-            <b>Alt + H</b> : Mostra questo pannello di Aiuto (Help)<br>
+            <b style="color: var(--primary-color, #4CAF50);">-- 🌐 GENERALI & RICERCA --</b><br>
+            <b>Alt + 1, 2, 3, 4</b> : Simula Ruolo (Cassa, Cucina, Bar, Display)<br>
+            <b>Alt + 5</b> : Torna ad Admin<br>
+            <b>Alt + S</b> : Seleziona la barra di Ricerca (ovunque ti trovi)<br>
+            <b>Alt + P</b> : Pulisci la barra di Ricerca<br>
+            <b>Alt + L</b> : Esci / Logout<br>
+            <b>Alt + H</b> : Mostra questo Aiuto<br>
             
             <hr style="border: 0; border-top: 1px solid rgba(128,128,128,0.2); margin: 10px 0;">
             
             <b style="color: var(--primary-color, #4CAF50);">-- 💶 IN CASSA --</b><br>
-            <b>Alt + I</b> : Invia la Comanda<br>
+            <b>Alt + I</b> : Invia la Comanda (Invio)<br>
             <b>Alt + A</b> : Annulla ultima comanda inviata<br>
-            <b>Alt + M</b> : Vai al Metodo di pagamento (Contanti/POS)<br>
-            <b>Alt + C</b> : Svuota l'intero carrello<br>
-            <b>Alt + R</b> : Azzera il resto (Reset)<br>
-            <b>Alt + Q</b> : Seleziona Quantità<br>
-            <b>Alt + S</b> : Cerca un prodotto (Search)<br>
-            <b>Alt + P</b> : Pulisci barra di ricerca (X)<br>
-            <b>Alt + D</b> : Apri Sommario (Dettagli)<br>
+            <b>Alt + C</b> : Svuota il carrello<br>
+            <b>Alt + M</b> : Vai al Metodo di Pagamento<br>
+            <b>Alt + Q</b> : Vai alla Quantità<br>
+            <b>Alt + R</b> : Azzera il Resto (o reset soldi)<br>
         </div>
         
         <div class="modal-actions">
@@ -11545,117 +11545,136 @@ function apriTutorialScorciatoie() {
 
 // ================= GESTIONE SCORCIATOIE DA TASTIERA =================
 
-// 1. Ascoltatore globale: Mantiene aggiornata la variabile leggendo da Firebase
+// 1. Ascoltatore globale stato scorciatoie
 db.ref("impostazioni/scorciatoieTastiera").on("value", snap => {
     window.settings = window.settings || {};
     window.settings.scorciatoieTastiera = snap.val() || false;
 });
 
-// 2. Funzione Helper: Verifica se un elemento esiste ed è attualmente visibile sullo schermo
-function isElementVisible(elem) {
+// 2. Funzione per verificare se un elemento è visibile sullo schermo
+function isVis(elem) {
     return elem && elem.offsetParent !== null;
 }
 
+// 3. EVENTO PRINCIPALE
 document.addEventListener("keydown", function(e) {
-    // Se disabilitate da admin o i settings non sono ancora caricati, non fare nulla
     if (!window.settings || !window.settings.scorciatoieTastiera) return;
 
     if (e.altKey) {
         const key = e.key.toLowerCase();
         
-        // --- SCORCIATOIE GLOBALI (Funzionano ovunque) ---
+        // ================= AZIONI UNIVERSALI =================
         switch(key) {
-            case 'h': // Alt + H -> Aiuto
+            case 'h': // Aiuto
+                e.preventDefault(); apriTutorialScorciatoie(); break;
+                
+            case 'l': // Logout
                 e.preventDefault();
-                apriTutorialScorciatoie();
+                if (typeof logout === "function") logout();
+                else if (typeof esci === "function") esci();
+                else {
+                    const btnOut = document.getElementById("btnEsci") || document.querySelector(".logout-btn") || document.getElementById("backToLoginBtn");
+                    if (isVis(btnOut)) btnOut.click();
+                }
                 break;
-            case '1': // Alt + 1 -> Cassa
+
+            case 's': // Ricerca Universale
                 e.preventDefault();
-                if(isElementVisible(document.getElementById("btnLoginCassa"))) document.getElementById("btnLoginCassa").click();
+                // Trova tutti gli input testuali visibili che contengono la parola "cerca" nell'id, classe o placeholder
+                const allInputs = Array.from(document.querySelectorAll('input[type="text"], input[type="search"]'));
+                const searchInput = allInputs.find(inp => isVis(inp) && (inp.id.toLowerCase().includes('cerca') || inp.className.toLowerCase().includes('cerca') || inp.placeholder.toLowerCase().includes('cerca') || inp.id.toLowerCase().includes('search')));
+                if (searchInput) {
+                    searchInput.focus();
+                    searchInput.select();
+                }
                 break;
-            case '2': // Alt + 2 -> Cucina
+
+            case 'p': // Pulisci Ricerca Universale
                 e.preventDefault();
-                if(isElementVisible(document.getElementById("btnLoginCucina"))) document.getElementById("btnLoginCucina").click();
-                break;
-            case '3': // Alt + 3 -> Bar
-                e.preventDefault();
-                if(isElementVisible(document.getElementById("btnLoginBar"))) document.getElementById("btnLoginBar").click();
-                break;
-            case '4': // Alt + 4 -> Display
-                e.preventDefault();
-                if(isElementVisible(document.getElementById("btnLoginDisplay"))) document.getElementById("btnLoginDisplay").click();
-                break;
-            case '5': // Alt + 5 -> Admin
-                e.preventDefault();
-                if(isElementVisible(document.getElementById("btnLoginAdmin"))) document.getElementById("btnLoginAdmin").click();
-                break;
-            case 'l': // Alt + L -> Logout
-                e.preventDefault();
-                const btnLogout = document.getElementById("backToLoginBtn") || document.querySelector(".back-btn");
-                if(isElementVisible(btnLogout)) btnLogout.click();
-                else if (typeof logout === "function") logout();
+                // Trova la ricerca attiva e la svuota
+                const activeSearch = Array.from(document.querySelectorAll('input[type="text"], input[type="search"]')).find(inp => isVis(inp) && (inp.id.toLowerCase().includes('cerca') || inp.className.toLowerCase().includes('cerca') || inp.placeholder.toLowerCase().includes('cerca') || inp.id.toLowerCase().includes('search')));
+                if (activeSearch) {
+                    activeSearch.value = "";
+                    activeSearch.dispatchEvent(new Event('input')); // Forza l'aggiornamento della lista
+                    activeSearch.focus();
+                }
                 break;
         }
-        
-        // --- SCORCIATOIE SPECIFICHE IN CASSA ---
-        // Verifichiamo di essere in Cassa controllando se la ricerca o il tasto invia sono visibili
-        const searchBox = document.getElementById("cercaComandaCassa");
-        const btnInvia = document.getElementById("inviaComandaBtn");
-        const isInCassa = isElementVisible(searchBox) || isElementVisible(btnInvia);
+
+        // ================= SIMULAZIONE RUOLI (DA ADMIN) =================
+        if (['1','2','3','4','5'].includes(key)) {
+            e.preventDefault();
+            const btnTornaAdmin = document.getElementById("btnTornaAdmin");
+
+            // Se stiamo già simulando un ruolo, torniamo ad admin prima di saltare di nuovo
+            if (isVis(btnTornaAdmin)) {
+                btnTornaAdmin.click();
+                if (key === '5') return; // Se ha premuto 5, voleva solo tornare ad admin, ci fermiamo.
+            }
+
+            // Richiamo le funzioni di simulazione ruolo
+            if (typeof simulaRuolo === "function") {
+                if (key === '1') setTimeout(() => simulaRuolo('cassa'), 150);
+                if (key === '2') setTimeout(() => simulaRuolo('cucina'), 150);
+                if (key === '3') setTimeout(() => simulaRuolo('bar'), 150);
+                if (key === '4') setTimeout(() => simulaRuolo('display'), 150);
+            }
+        }
+
+        // ================= CASSA =================
+        const btnInvia = document.getElementById("inviaComandaBtn") || document.getElementById("btnInviaComanda");
+        const areaCassa = document.getElementById("carrelloContainer") || document.getElementById("cassaPanel");
+        const isInCassa = isVis(btnInvia) || isVis(areaCassa);
 
         if (isInCassa) {
             switch(key) {
-                case 'i': // Alt + I -> Invia
+                case 'i': // Invia
                     e.preventDefault();
-                    if (isElementVisible(btnInvia) && !btnInvia.disabled) btnInvia.click();
+                    if (isVis(btnInvia) && !btnInvia.disabled) btnInvia.click();
                     break;
-                case 'a': // Alt + A -> Annulla ultima comanda
+
+                case 'a': // Annulla ultima comanda
                     e.preventDefault();
-                    const btnAnnulla = document.getElementById("annullaUltimaVenditaBtn");
-                    if (isElementVisible(btnAnnulla)) btnAnnulla.click();
+                    const btnAnnulla = document.getElementById("annullaUltimaVenditaBtn") || document.getElementById("btnAnnullaUltima");
+                    if (isVis(btnAnnulla)) btnAnnulla.click();
                     break;
-                case 'm': // Alt + M -> Focus Metodo Pagamento
+
+                case 'c': // Svuota Carrello
                     e.preventDefault();
-                    const tendinaPagamento = document.getElementById("metodoPagamento");
-                    if (isElementVisible(tendinaPagamento)) tendinaPagamento.focus();
-                    break;
-                case 'c': // Alt + C -> Pulisci carrello
-                    e.preventDefault();
-                    if (typeof comandaCorrente !== "undefined" && comandaCorrente.length > 0) {
-                        comandaCorrente = []; 
-                        if (typeof aggiornaComandaCorrente === "function") aggiornaComandaCorrente(); 
+                    if (typeof svuotaCarrello === "function") {
+                        svuotaCarrello();
+                    } else if (typeof comandaCorrente !== "undefined" && comandaCorrente.length > 0) {
+                        comandaCorrente = [];
+                        if (typeof aggiornaComandaCorrente === "function") aggiornaComandaCorrente();
                         if (typeof notify === "function") notify("🛒 Carrello svuotato", "info");
                     }
                     break;
-                case 'r': // Alt + R -> Reset Soldi
+
+                case 'r': // Reset Resto / Soldi
                     e.preventDefault();
-                    const btnReset = document.getElementById("resetSoldiBtn");
-                    if (isElementVisible(btnReset)) btnReset.click();
+                    const btnReset = document.getElementById("resetSoldiBtn") || document.getElementById("btnResetResto");
+                    if (isVis(btnReset)) btnReset.click();
+                    
+                    const inputSoldi = document.getElementById("soldiRicevuti") || document.getElementById("inputResto");
+                    if (isVis(inputSoldi)) {
+                        inputSoldi.value = "";
+                        inputSoldi.dispatchEvent(new Event('input'));
+                    }
                     break;
-                case 'q': // Alt + Q -> Focus Quantità
+
+                case 'q': // Focus Quantità
                     e.preventDefault();
-                    const inputQuantita = document.getElementById("quantita");
-                    if (isElementVisible(inputQuantita)) {
+                    const inputQuantita = document.getElementById("quantita") || document.getElementById("inputQuantita");
+                    if (isVis(inputQuantita)) {
                         inputQuantita.focus();
                         inputQuantita.select();
                     }
                     break;
-                case 's': // Alt + S -> Focus Ricerca
+
+                case 'm': // Focus Metodo Pagamento
                     e.preventDefault();
-                    if (isElementVisible(searchBox)) {
-                        searchBox.focus();
-                        searchBox.select();
-                    }
-                    break;
-                case 'p': // Alt + P -> Pulisci Ricerca (X)
-                    e.preventDefault();
-                    const clearSearch = document.getElementById("clearCercaComandaCassa") || document.getElementById("clearRicercaBtn");
-                    if (isElementVisible(clearSearch)) clearSearch.click();
-                    break;
-                case 'd': // Alt + D -> Sommario (Dettagli)
-                    e.preventDefault();
-                    const btnSommario = document.getElementById("btnSommario");
-                    if (isElementVisible(btnSommario)) btnSommario.click();
+                    const selectMetodo = document.getElementById("metodoPagamento") || document.getElementById("selettorePagamento");
+                    if (isVis(selectMetodo)) selectMetodo.focus();
                     break;
             }
         }
