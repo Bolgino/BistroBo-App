@@ -2682,10 +2682,15 @@ body.tema-notte #themeBackground {
     to { background-position: 300px 300px; } /* Looping continuo sulle stelle */
 }
 
-/* Bottoni Menu in Cassa Principale (Fondo chiaro, Scritte nere) */
-body.tema-astronave .piatto-btn,
-body.tema-astronave .btn-cassa-ottimizzata {
-    background: #F8FAFC !important; 
-    background-color: #F8FAFC !important; 
-    border: 1px solid #94A3B8 !important;
+/* ===========================================================
+   FIX DEFINITIVO TESTI BOTTONI CASSA (TEMA ASTRONAVE E NOTTE)
+   Forza il testo nero nei tag <span> e <small> generati dallo script
+=========================================================== */
+
+/* Forza il NERO sui nomi dei piatti (il tag <span>) */
+body.tema-astronave #aggiungiComandaTab button span,
+body.tema-astronave .menu-grid button span {
+    color: #000000 !important;
+    text-shadow: none !important;
 }
+
