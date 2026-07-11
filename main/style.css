@@ -2512,7 +2512,7 @@ body.tema-notte #lista-totali-sommario .qta-evidenza {
     color: #000000 !important;
 }
 /* ===========================================================
-   TEMA ASTRONAVE (Versione Ottimizzata e Bilanciata)
+   TEMA ASTRONAVE (Versione Ottimizzata e Leggibilità Massima)
 =========================================================== */
 body.tema-astronave, body.tema-astronave #themeBackground {
     background-color:#02040A !important;
@@ -2535,7 +2535,7 @@ body.tema-astronave, body.tema-astronave #themeBackground {
     radial-gradient(circle at 65% 55%, rgba(0,180,255,.08), transparent 45%),
     radial-gradient(circle at 35% 20%, rgba(120,70,255,.06), transparent 40%);
     background-size:cover; background-attachment:fixed; color:#7CFBFF !important;
-    animation:spaceGlow 25s linear infinite; /* Rallentato per meno fastidio */
+    animation:spaceGlow 25s linear infinite;
 }
 @keyframes spaceGlow{ 0%{ filter:hue-rotate(0deg); } 50%{ filter:hue-rotate(6deg); } 100%{ filter:hue-rotate(0deg); } }
 
@@ -2559,23 +2559,19 @@ body.tema-astronave p, body.tema-astronave small:not(.piatto-prezzo), body.tema-
 /* Titoli Generici */
 body.tema-astronave h1, body.tema-astronave h2, body.tema-astronave h3, body.tema-astronave h4, body.tema-astronave strong, body.tema-astronave b, body.tema-astronave .bb-card-title, body.tema-astronave .bb-stat-val, body.tema-astronave .order-header, body.tema-astronave .bb-dash-header h3 { color:#FFFFFF !important; text-shadow: 0 0 3px #00D9FF, 0 0 6px rgba(0,200,255,.4) !important; }
 
-/* TITOLI CATEGORIA CASSA (Cibi, Bevande, Snack) -> Resi Ciano Luminoso invece che neri */
-body.tema-astronave legend,
-body.tema-astronave fieldset legend,
-body.tema-astronave fieldset legend span,
-body.tema-astronave fieldset legend b,
-body.tema-astronave .categoria-titolo {
+/* 🌟 TITOLI CATEGORIA CASSA (Cibi, Bevande, Snack) in tag H5 🌟 */
+body.tema-astronave h5,
+body.tema-astronave h5[style*="color"] {
     color: #00FFFF !important;
     text-shadow: 0 0 5px rgba(0, 255, 255, 0.8) !important;
-    font-size: 1.1em;
-    font-weight: bold !important;
+    border-bottom-color: #00A6CC !important;
+    font-size: 1.1em !important;
 }
 
-/* BOTTONI PIATTI E COPERTO (Sfondo chiaro con testo NERO) */
+/* 🌟 BOTTONI PIATTI E COPERTO (Sfondo chiaro con testo NERO) 🌟 */
 body.tema-astronave .piatto-btn,
 body.tema-astronave .btn-cassa-ottimizzata,
-body.tema-astronave #btnCopertoCassa,
-body.tema-astronave #btnCopertoCassa div {
+body.tema-astronave #btnCopertoCassa {
     background: #F8FAFC !important;
     background-color: #F8FAFC !important;
     border: 1px solid #00A6CC !important;
@@ -2589,10 +2585,12 @@ body.tema-astronave #btnCopertoCassa:hover {
     background: #FFFFFF !important;
     background-color: #FFFFFF !important;
     box-shadow: 0 0 8px #00D9FF !important;
+    transform: translateY(-1px);
 }
 /* Forza il nero assoluto per tutti gli elementi figli dei bottoni piatti */
 body.tema-astronave .piatto-btn *,
-body.tema-astronave .btn-cassa-ottimizzata * {
+body.tema-astronave .btn-cassa-ottimizzata *,
+body.tema-astronave #btnCopertoCassa div {
     color: #000000 !important;
     text-shadow: none !important;
 }
@@ -2616,7 +2614,9 @@ body.tema-astronave .bb-dash-card{ transition:.2s; }
 body.tema-astronave .bb-dash-card:hover{ box-shadow: 0 0 10px rgba(0,255,255,.25), inset 0 0 10px rgba(0,255,255,.05); }
 body.tema-astronave .qta-evidenza{ color:#FFFFFF !important; font-weight:bold; text-shadow: 0 0 4px cyan; background-color: #005F73 !important; padding: 2px 6px !important; border-radius: 4px !important; border: 1px solid #00D9FF !important; }
 
-/* Bottoni Tab */
+/* Bottoni Menu/Generici (es. Invia Comanda) */
+body.tema-astronave button{ background:#071521 !important; color:#AFFFFF !important; border:1px solid #00A6CC !important; border-radius:6px !important; text-shadow: 0 0 2px rgba(0,255,255,.5) !important; box-shadow: 0 0 4px rgba(0,217,255,.15), inset 0 0 5px rgba(0,217,255,.05) !important; transition:.2s; }
+body.tema-astronave button:hover{ background:#0A2638 !important; color:#FFFFFF !important; box-shadow: 0 0 8px rgba(0,255,255,.4), inset 0 0 8px rgba(0,255,255,.1) !important; transform:translateY(-1px); }
 body.tema-astronave .tabBtn{ background:#050A13 !important; color:#87F7FF !important; border:1px solid #006B88 !important; }
 body.tema-astronave .tabBtn.active{ background:#003B55 !important; color:#FFFFFF !important; box-shadow: 0 0 8px rgba(0,229,255,.4); }
 
@@ -2658,6 +2658,7 @@ body.tema-astronave ::-webkit-scrollbar-track{ background:#02050A; }
 body.tema-astronave ::-webkit-scrollbar-thumb{ background: linear-gradient(#00A6CC, #0055CC); border-radius:8px; }
 body.tema-astronave #loader{ --loader-bg: radial-gradient(circle, #041B2D, #000000); --loader-text: #00D9FF; }
 body.tema-astronave #loader .spinner, body.tema-astronave #offlineLoader .spinner{ border-top-color:#00D9FF !important; box-shadow: 0 0 10px rgba(0,255,255,.4); }
+body.tema-astronave div[style*="background:#fff"], body.tema-astronave div[style*="background:white"], body.tema-astronave div[style*="background-color:white"], body.tema-astronave div[style*="background-color:#fff"]{ background:#050A13 !important; color:#BFFFFF !important; border-color:#00A6CC !important; }
 body.tema-astronave div[style*="background-color: #ffebee"], body.tema-astronave div[style*="background-color: rgb(255, 235, 238)"]{ background:#330000 !important; color:#FFB3B3 !important; border: 1px solid #CC0000 !important; box-shadow: 0 0 5px rgba(255,0,0,.3); }
 body.tema-astronave .bb-stat-val{ color:#FFFFFF !important; letter-spacing:1px; text-shadow: 0 0 5px rgba(0,255,255,.5); font-family: "Orbitron", "Consolas", monospace; }
 body.tema-astronave hr{ border:none !important; height:1px; background: linear-gradient(90deg, transparent, rgba(0,255,255,.5), transparent) !important; box-shadow: 0 0 4px rgba(0,255,255,.3); }
