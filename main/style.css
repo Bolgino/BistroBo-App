@@ -2587,19 +2587,6 @@ body.tema-astronave #btnCopertoCassa:hover {
     box-shadow: 0 0 8px #00D9FF !important;
     transform: translateY(-1px);
 }
-/* Forza il nero assoluto per tutti gli elementi figli dei bottoni piatti */
-body.tema-astronave .piatto-btn *,
-body.tema-astronave .btn-cassa-ottimizzata *,
-body.tema-astronave #btnCopertoCassa div {
-    color: #000000 !important;
-    text-shadow: none !important;
-}
-/* Eccezione: il prezzo resta rosso/scuro per leggibilità */
-body.tema-astronave .piatto-btn .piatto-prezzo,
-body.tema-astronave .btn-cassa-ottimizzata .piatto-prezzo {
-    color: #b71c1c !important;
-    font-weight: bold !important;
-}
 
 /* Altri Testi */
 body.tema-astronave .prezzo{ color:#FFE96A !important; font-weight:bold; text-shadow: 0 0 4px rgba(255,212,0,.6); }
