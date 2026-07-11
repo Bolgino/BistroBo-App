@@ -2708,3 +2708,40 @@ body.tema-astronave #orologio {
     color: #0080ff !important;
     text-shadow: none !important;
 }
+/* ===========================================================
+   FIX LEGGIBILITÀ BOX MODALI (CREA PIATTO / INGREDIENTE) 
+   NEI TEMI SCURI (NOTTE E ASTRONAVE)
+=========================================================== */
+
+/* --- TEMA NOTTE --- */
+body.tema-notte div[style*="background: #e8f5e9"],
+body.tema-notte div[style*="background: #f4f9f4"],
+body.tema-notte #modalPiattoIngredientiContainer,
+body.tema-notte #modalPiattoDishesCombo,
+body.tema-notte #modalPiattoDishesCombo label {
+    background: #111827 !important;
+    background-color: #111827 !important;
+    border-color: #334155 !important;
+}
+
+/* Sistema la scritta "È un Piatto Combo?" che era verde scuro */
+body.tema-notte b[style*="color: #2e7d32"] {
+    color: #34D399 !important; /* Verde chiaro leggibile su sfondo scuro */
+}
+
+/* --- TEMA ASTRONAVE --- */
+body.tema-astronave div[style*="background: #e8f5e9"],
+body.tema-astronave div[style*="background: #f4f9f4"],
+body.tema-astronave #modalPiattoIngredientiContainer,
+body.tema-astronave #modalPiattoDishesCombo,
+body.tema-astronave #modalPiattoDishesCombo label {
+    background: #06131E !important;
+    background-color: #06131E !important;
+    border-color: #00A6CC !important;
+    box-shadow: inset 0 0 5px rgba(0,217,255,.08) !important;
+}
+
+/* Sistema la scritta "È un Piatto Combo?" che era verde scuro */
+body.tema-astronave b[style*="color: #2e7d32"] {
+    color: #45FF96 !important; /* Verde fluo a tema astronave */
+}
