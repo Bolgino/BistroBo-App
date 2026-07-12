@@ -2920,3 +2920,23 @@ body.tema-astronave #editPiattoIngredientiContainer small,
 body.tema-astronave label:has(.combo-dish-cb-edit) small {
     color: #00A6CC !important; 
 }
+/* ===========================================================
+   FIX SFONDO TRASPARENTE LISTA MENU PREORDINI (TEMI SCURI)
+=========================================================== */
+
+/* Rende trasparente il blocco principale che contiene i piatti */
+body.tema-notte .preordine-menu,
+body.tema-notte #menuClienti {
+    background: transparent !important;
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+body.tema-astronave .preordine-menu,
+body.tema-astronave #menuClienti {
+    background: transparent !important;
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
