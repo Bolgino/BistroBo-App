@@ -3924,7 +3924,19 @@ function aggiornaStatoInvio() {
     // Se la lettera è disabilitata nelle impostazioni, saltiamo il controllo
     const letteraOk = window.settings.letteraComandaAbilitata ? (lettera && /^[A-Z]$/.test(lettera)) : true;
 
-    // disabilita se manca numero, lettera (se abilitata) o piatti
+    // Controllo tavolo obbligatorio (salvo asporto)
+    let tavoloOk = true;
+    if (window.settings.richiediTavolo) {
+        const checkAsporto = document.getElementById("checkAsporto");
+        const isAsporto = window.settings.asportoAbilitato && checkAsporto && checkAsporto.checked;
+        const inputTavolo = document.getElementById("numeroTavoloCassa");
+
+        if (!isAsporto && inputTavolo && !inputTavolo.value.trim()) {
+            tavoloOk = false;
+        }
+    }
+
+    // disabilita se manca numero, lettera (se abilitata), piatti o tavolo
     inviaBtn.disabled = !(numOk && letteraOk && hasPiattiValidi && tavoloOk);
 
     // Aggiorna stile visivo
