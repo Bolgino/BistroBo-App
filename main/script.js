@@ -5215,6 +5215,7 @@ window.apriModalCreaIngrediente = function() {
 // GESTIONE comande admin
 async function caricaGestioneComandeAdmin() {
     if (!checkOnline(true)) return;
+	if (!firebase.auth().currentUser) return;
     showLoader();
     const statiCibo = ["da fare", "in elaborazione", "completato"];
     const statiBere = ["da fare", "in elaborazione", "completato"];
@@ -8832,6 +8833,7 @@ function renderHtmlStatistiche(elementId, stats) {
 }
 async function caricaStatistiche() {
     if (!checkOnline(true)) return;
+	if (!firebase.auth().currentUser) return;
     showLoader();
 
     const filtroSelect = document.getElementById("filtroStatistiche");
