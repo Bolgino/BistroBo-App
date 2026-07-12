@@ -2741,3 +2741,69 @@ body.tema-astronave #modalPiattoDishesCombo label {
     box-shadow: inset 0 0 5px rgba(0,217,255,.08) !important;
 }
 body.tema-astronave b[style*="color: #2e7d32"] { color: #45FF96 !important; }
+/* ===========================================================
+   FIX LEGGIBILITÀ INGREDIENTI CRITICI NEI TEMI SCURI
+=========================================================== */
+
+/* --- TEMA NOTTE --- */
+body.tema-notte .box-ingredienti-critici {
+    background-color: #111827 !important;
+    border-color: #334155 !important;
+}
+body.tema-notte .titolo-colonna {
+    color: #F8FAFC !important;
+    border-bottom-color: #334155 !important;
+}
+body.tema-notte .nessun-dato {
+    color: #94A3B8 !important;
+}
+body.tema-notte .badge-sottosoglia {
+    background-color: #4A1C00 !important;
+    color: #FFB74D !important;
+    border-color: #D97706 !important;
+}
+body.tema-notte .badge-sottosoglia span,
+body.tema-notte .badge-sottosoglia strong {
+    color: #FFB74D !important;
+}
+body.tema-notte .badge-critico {
+    background-color: #4A0000 !important;
+    color: #FF8A80 !important;
+    border-color: #DC2626 !important;
+}
+body.tema-notte .badge-critico span,
+body.tema-notte .badge-critico strong {
+    color: #FF8A80 !important;
+}
+
+/* --- TEMA ASTRONAVE --- */
+body.tema-astronave .box-ingredienti-critici {
+    background-color: #06131E !important;
+    border-color: #00A6CC !important;
+    box-shadow: inset 0 0 5px rgba(0,217,255,.08) !important;
+}
+body.tema-astronave .titolo-colonna {
+    color: #00FFFF !important;
+    border-bottom-color: #00A6CC !important;
+}
+body.tema-astronave .nessun-dato {
+    color: #00A6CC !important;
+}
+body.tema-astronave .badge-sottosoglia {
+    background-color: #453000 !important;
+    color: #FFE36E !important;
+    border-color: #CC9900 !important;
+}
+body.tema-astronave .badge-sottosoglia span,
+body.tema-astronave .badge-sottosoglia strong {
+    color: #FFE36E !important;
+}
+body.tema-astronave .badge-critico {
+    background-color: #420000 !important;
+    color: #FF8A8A !important;
+    border-color: #CC0000 !important;
+}
+body.tema-astronave .badge-critico span,
+body.tema-astronave .badge-critico strong {
+    color: #FF8A8A !important;
+}
