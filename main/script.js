@@ -3929,12 +3929,22 @@ function aggiornaStatoInvio() {
 
     // Se la lettera è disabilitata nelle impostazioni, saltiamo il controllo
     const letteraOk = window.settings.letteraComandaAbilitata ? (lettera && /^[A-Z]$/.test(lettera)) : true;
-	// Controllo Tavolo (Obbligatorio solo se abilitato)
+
+    // Controllo Asporto
+    const checkAsporto = document.getElementById("checkAsporto");
+    const isAsporto = window.settings.asportoAbilitato && checkAsporto && checkAsporto.checked;
+
+    // Controllo Tavolo: Obbligatorio se abilitato E NON è asporto
     const tavoloInput = document.getElementById("tavoloComanda");
     const tavoloVal = tavoloInput ? tavoloInput.value.trim() : "";
-    const tavoloOk = window.settings.tavoloAbilitato ? !!tavoloVal : true;
+    
+    let tavoloOk = true;
+    if (window.settings.tavoloAbilitato && !isAsporto) {
+        // Obbligatorio: deve esserci qualcosa, deve iniziare con numeri e finire al max con 1 lettera. Max 4 caratteri.
+        tavoloOk = tavoloVal.length > 0 && /^\d+[A-Z]?$/.test(tavoloVal) && tavoloVal.length <= 4;
+    }
 
-    // disabilita se manca numero, lettera (se abilitata) o piatti
+    // disabilita se manca numero, lettera, tavolo o piatti
     inviaBtn.disabled = !(numOk && letteraOk && tavoloOk && hasPiattiValidi);
 
     // Aggiorna stile visivo
@@ -3951,9 +3961,30 @@ function aggiornaStatoInvio() {
     }
 }
 // --- LISTENER INPUT ---
-numInput.addEventListener("input", aggiornaStatoInvio);
-letteraInput.addEventListener("input", aggiornaStatoInvio);
-document.getElementById("quantita").addEventListener("change", aggiornaStatoInvio);
+const tavoloInput = document.getElementById("tavoloComanda");
+if (tavoloInput) {
+    tavoloInput.addEventListener("input", function() {
+        // Forza la formattazione in tempo reale: solo numeri all'inizio, max 1 lettera alla fine, max 4 char totali
+        let val = this.value.toUpperCase().replace(/[^0-9A-Z]/g, '');
+        const match = val.match(/^(\d*)([A-Z]?)/);
+        if (match) {
+            this.value = (match[1] + match[2]).substring(0, 4);
+        } else {
+            this.value = "";
+        }
+        aggiornaStatoInvio();
+    });
+}
+
+// Quando si spunta/toglie "Asporto", ricalcola se il tasto Invia deve sbloccarsi
+const checkAsporto = document.getElementById("checkAsporto");
+if (checkAsporto) {
+    checkAsporto.addEventListener("change", () => {
+        const inputTavolo = document.getElementById("tavoloComanda");
+        if (checkAsporto.checked && inputTavolo) inputTavolo.value = ""; // Svuota il tavolo se metti asporto
+        aggiornaStatoInvio();
+    });
+}
 const tavoloInput = document.getElementById("tavoloComanda");
 if(tavoloInput) tavoloInput.addEventListener("input", aggiornaStatoInvio);
 // --- FUNZIONE CALCOLO SCONTO (AGGIORNATA PER VARIANTI) ---
@@ -10698,11 +10729,13 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
 
         doc.setFontSize(24); doc.setFont("helvetica", "bold");
         doc.text(`COMANDA ${numeroComanda}`, pageWidth / 2, y, { align: "center" }); y += 7;
-		// Se è presente un tavolo, lo stampa bello in grande!
+
+        // SE IL TAVOLO È PRESENTE, LO STAMPA SU OGNI TICKET (Copia cliente e Reparti)
         if (cliente && cliente.tavolo) {
-            doc.setFontSize(16);
+            doc.setFontSize(18);
             doc.text(`TAVOLO: ${cliente.tavolo}`, pageWidth / 2, y, { align: "center" }); y += 7;
         }
+
 		if (cliente && cliente.commento && cliente.commento.toUpperCase().includes("ASPORTO")) {
             doc.setFontSize(18); 
             doc.text(`*** DA ASPORTO ***`, pageWidth / 2, y, { align: "center" }); y += 8;
