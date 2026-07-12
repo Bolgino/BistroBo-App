@@ -1420,27 +1420,6 @@ function initImpostazioniToggle() {
             isFirstLoadScorciatoie = false;
         });
     }
-	// ================= TAVOLO CASSA =================
-    const toggleTavoloCassaBtn = document.getElementById("toggleTavoloCassaBtn");
-    const tavoloCassaRef = db.ref("impostazioni/tavoloAbilitato");
-
-    if (toggleTavoloCassaBtn) {
-        initToggle(toggleTavoloCassaBtn, tavoloCassaRef, {on: "ON", off: "OFF"}, false, val => {
-            window.settings.tavoloAbilitato = val;
-            
-            const tavoloContainer = document.getElementById("tavoloContainer");
-            if (tavoloContainer) {
-                tavoloContainer.style.display = val ? "inline-block" : "none";
-            }
-            
-            if (!val) {
-                const t = document.getElementById("tavoloComanda");
-                if (t) t.value = "";
-            }
-            
-            if (typeof aggiornaStatoInvio === "function") aggiornaStatoInvio(); 
-        });
-    }
 }
 function initTickNoteDestinazioni() {
     db.ref("impostazioni/noteDestinazioniAbilitate").on("value", snap => {
@@ -3930,22 +3909,8 @@ function aggiornaStatoInvio() {
     // Se la lettera è disabilitata nelle impostazioni, saltiamo il controllo
     const letteraOk = window.settings.letteraComandaAbilitata ? (lettera && /^[A-Z]$/.test(lettera)) : true;
 
-    // Controllo Asporto
-    const checkAsporto = document.getElementById("checkAsporto");
-    const isAsporto = window.settings.asportoAbilitato && checkAsporto && checkAsporto.checked;
-
-    // Controllo Tavolo: Obbligatorio se abilitato E NON è asporto
-    const tavoloInput = document.getElementById("tavoloComanda");
-    const tavoloVal = tavoloInput ? tavoloInput.value.trim() : "";
-    
-    let tavoloOk = true;
-    if (window.settings.tavoloAbilitato && !isAsporto) {
-        // Obbligatorio: deve esserci qualcosa, deve iniziare con numeri e finire al max con 1 lettera. Max 4 caratteri.
-        tavoloOk = tavoloVal.length > 0 && /^\d+[A-Z]?$/.test(tavoloVal) && tavoloVal.length <= 4;
-    }
-
-    // disabilita se manca numero, lettera, tavolo o piatti
-    inviaBtn.disabled = !(numOk && letteraOk && tavoloOk && hasPiattiValidi);
+    // disabilita se manca numero, lettera (se abilitata) o piatti
+    inviaBtn.disabled = !(numOk && letteraOk && hasPiattiValidi);
 
     // Aggiorna stile visivo
     if (inviaBtn.disabled) {
@@ -3964,30 +3929,6 @@ function aggiornaStatoInvio() {
 numInput.addEventListener("input", aggiornaStatoInvio);
 letteraInput.addEventListener("input", aggiornaStatoInvio);
 document.getElementById("quantita").addEventListener("change", aggiornaStatoInvio);
-const tavoloInput = document.getElementById("tavoloComanda");
-if (tavoloInput) {
-    tavoloInput.addEventListener("input", function() {
-        // Forza la formattazione in tempo reale: solo numeri all'inizio, max 1 lettera alla fine, max 4 char totali
-        let val = this.value.toUpperCase().replace(/[^0-9A-Z]/g, '');
-        const match = val.match(/^(\d*)([A-Z]?)/);
-        if (match) {
-            this.value = (match[1] + match[2]).substring(0, 4);
-        } else {
-            this.value = "";
-        }
-        aggiornaStatoInvio();
-    });
-}
-
-// Quando si spunta/toglie "Asporto", ricalcola se il tasto Invia deve sbloccarsi
-const checkAsporto = document.getElementById("checkAsporto");
-if (checkAsporto) {
-    checkAsporto.addEventListener("change", () => {
-        const inputTavolo = document.getElementById("tavoloComanda");
-        if (checkAsporto.checked && inputTavolo) inputTavolo.value = ""; // Svuota il tavolo se metti asporto
-        aggiornaStatoInvio();
-    });
-}
 // --- FUNZIONE CALCOLO SCONTO (AGGIORNATA PER VARIANTI) ---
 function calcolaPrezzoConSconto(piatto, comandaIntera = null){
     if (!checkOnline(true)) return;
@@ -4525,7 +4466,7 @@ function caricaComandeCassa() {
 
     const nuovoHtml = `
         <div style="margin-bottom:5px;">
-            <div style="margin-bottom:4px;"><b>Comanda #${c.numero}</b> ${c.tavolo ? `<span style="margin-left:10px; padding:2px 8px; background:#e0f7fa; color:#006064; border-radius:4px; font-size:0.9em; border: 1px solid #b2ebf2;">📍 Tavolo: ${c.tavolo}</span>` : ""}</div>
+            <div style="margin-bottom:4px;"><b>Comanda #${c.numero}</b></div>
             <div style="margin-bottom:2px; margin-left:20px;">Piatti: ${piattiCibo}</div>
             <div style="margin-bottom:2px; margin-left:20px;">Bevande: ${piattiBere}</div>
             ${window.settings.snackAbilitato ? `<div style="margin-bottom:2px; margin-left:20px;">Snack: ${piattiSnack}</div>` : ''}
@@ -5427,7 +5368,7 @@ async function caricaGestioneComandeAdmin() {
 
             const mainDiv = document.createElement("div");
             mainDiv.style.display = "flex"; mainDiv.style.justifyContent = "space-between"; mainDiv.style.alignItems = "flex-start"; mainDiv.style.gap = "20px";
-            const numDiv = document.createElement("div"); numDiv.innerHTML = `<b>#${c.numero}</b> ${c.tavolo ? `<span style="margin-left:10px; padding:2px 8px; background:#e0f7fa; color:#006064; border-radius:4px; font-size:0.9em; border: 1px solid #b2ebf2;">📍 Tavolo: ${c.tavolo}</span>` : ""}`; mainDiv.appendChild(numDiv);
+            const numDiv = document.createElement("div"); numDiv.innerHTML = `<b>#${c.numero}</b>`; mainDiv.appendChild(numDiv);
             riga.appendChild(mainDiv);
 
             if (c.commento) { 
@@ -6611,7 +6552,7 @@ async function caricaComandePerRuolo(daFareDiv, storicoDiv, ruolo) {
             mainDiv.style.alignItems = "flex-start";
 
             const numDiv = document.createElement("div");
-            numDiv.innerHTML = `<b>#${c.numero}</b> ${c.tavolo ? `<span style="margin-left:10px; padding:2px 8px; background:#e0f7fa; color:#006064; border-radius:4px; font-size:0.9em; border: 1px solid #b2ebf2;">📍 Tavolo: ${c.tavolo}</span>` : ""}`;
+            numDiv.innerHTML = `<b>#${c.numero}</b>`;
             mainDiv.appendChild(numDiv);
             d.appendChild(mainDiv);
 
@@ -10053,9 +9994,7 @@ document.addEventListener("DOMContentLoaded", () => {
 			    commento: commentoAsporto || null,
 			    metodoPagamento: metodoPagamento,
 			    scontoGlobale: window.scontoGlobaleCorrente || null,
-			    uidCassiere: uid,
-				tavolo: window.settings.tavoloAbilitato ? document.getElementById("tavoloComanda").value.trim().toUpperCase() : null
-				
+			    uidCassiere: uid
 			};
 			
 			// 🔹 FIX: Elimina o commenta i 4 if() successivi che accendevano gli Extra. 
@@ -10087,9 +10026,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 numInput.value = ""; 
             }
             if (letteraInput) letteraInput.value = "";
-			// Svuota il tavolo
-            const inputTavolo = document.getElementById("tavoloComanda");
-            if (inputTavolo) inputTavolo.value = "";
             
             totalePagato = 0;
             const totalePagatoSpan = document.getElementById("totalePagato");
@@ -10107,8 +10043,7 @@ document.addEventListener("DOMContentLoaded", () => {
 			    if (typeof stampaComanda === 'function') {
 			       stampaComanda(piattiDaStampare, numeroComandaFinale, noteDaStampare, { 
 	                    scontoGlobale: scontoDaStampare,
-	                    commento: testoAsporto,
-					   tavolo: window.settings.tavoloAbilitato ? document.getElementById("tavoloComanda").value.trim().toUpperCase() : null
+	                    commento: testoAsporto 
                		 });
 			    }
 			}
@@ -10730,13 +10665,6 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
 
         doc.setFontSize(24); doc.setFont("helvetica", "bold");
         doc.text(`COMANDA ${numeroComanda}`, pageWidth / 2, y, { align: "center" }); y += 7;
-
-        // SE IL TAVOLO È PRESENTE, LO STAMPA SU OGNI TICKET (Copia cliente e Reparti)
-        if (cliente && cliente.tavolo) {
-            doc.setFontSize(18);
-            doc.text(`TAVOLO: ${cliente.tavolo}`, pageWidth / 2, y, { align: "center" }); y += 7;
-        }
-
 		if (cliente && cliente.commento && cliente.commento.toUpperCase().includes("ASPORTO")) {
             doc.setFontSize(18); 
             doc.text(`*** DA ASPORTO ***`, pageWidth / 2, y, { align: "center" }); y += 8;
