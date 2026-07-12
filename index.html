@@ -155,6 +155,10 @@
 		                    </script>
 		                </select>
 		            </span>
+					<span id="containerTavoloCassa" style="display:none; margin-left: 15px; font-weight: bold; color: #333;">
+					    Tavolo:
+					    <input type="text" id="numeroTavoloCassa" placeholder="Es. 12" style="width:60px; padding: 6px; border-radius: 6px; border: 1px solid #ccc; text-align: center;">
+					</span>
 		
 		            <div id="comandaCorrente" 
 		                 style="height:250px; padding:10px; border:1px solid #ddd; border-radius:8px; overflow-y:auto; margin-bottom:15px; margin-top: 10px; background: #fafafa;">
@@ -1346,6 +1350,13 @@
 						<small>Mostra la casella “Asporto” in Cassa per etichettare le comande con "Asporto"</small>
 					</div>
 					<button id="toggleAsportoBtn" class="toggleBtn">OFF</button>
+				</div>
+				<div class="settingItem">
+				    <div class="settingLabel">
+				        <span>Richiedi Numero Tavolo 🪑</span>
+				        <small>Mostra un campo in Cassa per inserire il numero del tavolo. Verrà nascosto se la comanda è da Asporto.</small>
+				    </div>
+				    <button id="toggleTavoloBtn" class="toggleBtn">OFF</button>
 				</div>
 				
 				<div class="settingItem">
