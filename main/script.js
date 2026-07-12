@@ -10104,16 +10104,17 @@ document.addEventListener("DOMContentLoaded", () => {
             if (checkAsporto) checkAsporto.checked = false;
 
             if (!window.settings.stampaAutomaticaComande) {
-			    notify("✅ Comanda " + numeroComandaFinale + " inviata con successo!", "info");
-			} else {
-			    notify("✅ Comanda " + numeroComandaFinale + " inviata, avvio stampa...", "info");
-			    if (typeof stampaComanda === 'function') {
-			       stampaComanda(piattiDaStampare, numeroComandaFinale, noteDaStampare, { 
-	                    scontoGlobale: scontoDaStampare,
-	                    commento: testoAsporto 
-               		 });
-			    }
-			}
+                notify("✅ Comanda " + numeroComandaFinale + " inviata con successo!", "info");
+            } else {
+                notify("✅ Comanda " + numeroComandaFinale + " inviata, avvio stampa...", "info");
+                if (typeof stampaComanda === 'function') {
+                   stampaComanda(piattiDaStampare, numeroComandaFinale, noteDaStampare, { 
+                        scontoGlobale: scontoDaStampare,
+                        commento: testoAsporto,
+                        tavolo: numeroTavolo // <--- AGGIUNGI QUESTA RIGA ESATTAMENTE QUI!
+                     });
+                }
+            }
         } catch (err) {
             console.error("Errore invio comanda:", err);
             notify("Errore invio comanda: " + (err.message || err), "error");
@@ -10732,6 +10733,13 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
 
         doc.setFontSize(24); doc.setFont("helvetica", "bold");
         doc.text(`COMANDA ${numeroComanda}`, pageWidth / 2, y, { align: "center" }); y += 7;
+
+        // ---> INIZIO STAMPA NUMERO TAVOLO <---
+        if (cliente && cliente.tavolo) {
+            doc.setFontSize(20); 
+            doc.text(`TAVOLO: ${cliente.tavolo}`, pageWidth / 2, y, { align: "center" }); y += 8;
+        }
+        // ---> FINE STAMPA NUMERO TAVOLO <---
 		if (cliente && cliente.commento && cliente.commento.toUpperCase().includes("ASPORTO")) {
             doc.setFontSize(18); 
             doc.text(`*** DA ASPORTO ***`, pageWidth / 2, y, { align: "center" }); y += 8;
