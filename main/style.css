@@ -2940,29 +2940,12 @@ body.tema-astronave #menuClienti {
     border: none !important;
     box-shadow: none !important;
 }
-
-/* Ingrandimento e animazione del bottone Annulla */
-#annullaUltimaVenditaBtn {
-    font-size: 1.1rem !important;
-    font-weight: 900 !important;
-    animation: pulseAnnulla 1.2s infinite;
-}
-
-/* Evidenziazione del timer in secondi */
-#timerAnnullamento {
-    font-size: 1.3em;
-    color: #fff;
-    background: rgba(0, 0, 0, 0.4);
-    padding: 2px 8px;
-    border-radius: 6px;
-    display: inline-block;
-    min-width: 25px;
-    text-align: center;
-}
-
-/* Animazione per attirare l'occhio */
-@keyframes pulseAnnulla {
-    0% { transform: scale(1); box-shadow: 0 0 15px rgba(229, 57, 53, 0.6); }
-    50% { transform: scale(1.05); box-shadow: 0 0 25px rgba(229, 57, 53, 0.9); }
-    100% { transform: scale(1); box-shadow: 0 0 15px rgba(229, 57, 53, 0.6); }
+/* Timer Annullamento - Azzurro Neon per i Temi Scuri */
+body.tema-notte #timerAnnullamento,
+body.tema-astronave #timerAnnullamento {
+    color: #00FFFF !important;
+    background: rgba(0, 255, 255, 0.1) !important;
+    border: 1px solid #00FFFF !important;
+    text-shadow: 0 0 5px #00FFFF, 0 0 10px #00FFFF !important;
+    box-shadow: 0 0 8px rgba(0, 255, 255, 0.5), inset 0 0 5px rgba(0, 255, 255, 0.2) !important;
 }
