@@ -1700,8 +1700,9 @@ function aggiornaListaIngredientiCritici(force=false) {
         const ing = ingredientData[id];
         let rimanente = (ing.rimanente === null || ing.rimanente === undefined) ? null : Number(ing.rimanente);
         const unita = (ing.unita || "pz").toLowerCase();
-        const sogliaAtt = sogliePerUnita[unita]?.attenzione ?? 15;
-        const sogliaCrit = sogliePerUnita[unita]?.critica ?? 5;
+        // Se c'è una soglia personalizzata salvata usa quella, altrimenti usa i default
+        const sogliaAtt = (ing.sogliaAttenzione !== undefined && ing.sogliaAttenzione !== null && ing.sogliaAttenzione !== "") ? Number(ing.sogliaAttenzione) : (sogliePerUnita[unita]?.attenzione ?? 15);
+        const sogliaCrit = (ing.sogliaCritica !== undefined && ing.sogliaCritica !== null && ing.sogliaCritica !== "") ? Number(ing.sogliaCritica) : (sogliePerUnita[unita]?.critica ?? 5);
 
         if (rimanente !== null && !isNaN(rimanente) && rimanente <= sogliaAtt) {
             listaCritica.push({
@@ -4714,31 +4715,48 @@ async function caricaIngredienti() {
                         const defP = currentIng.prezzoExtra !== undefined ? currentIng.prezzoExtra : 0.50;
                         const defQ = currentIng.qtyExtra !== undefined ? currentIng.qtyExtra : 1;
                         
+                        // 1. LEGGERE LE SOGLIE PERSONALIZZATE (se esistono)
+                        const valAtt = (currentIng.sogliaAttenzione !== undefined && currentIng.sogliaAttenzione !== null) ? currentIng.sogliaAttenzione : "";
+                        const valCrit = (currentIng.sogliaCritica !== undefined && currentIng.sogliaCritica !== null) ? currentIng.sogliaCritica : "";
+
                         const cats = currentIng.categorieApplicabili || [currentIng.categoria || "cibi"];
                         const isCibi = cats.includes("cibi") ? "checked" : "";
                         const isBevande = cats.includes("bevande") ? "checked" : "";
                         const isSnack = cats.includes("snack") ? "checked" : "";
-						const isExtra1 = cats.includes("extra1") ? "checked" : "";
-					    const isExtra2 = cats.includes("extra2") ? "checked" : "";
-					    const isExtra3 = cats.includes("extra3") ? "checked" : "";
+                        const isExtra1 = cats.includes("extra1") ? "checked" : "";
+                        const isExtra2 = cats.includes("extra2") ? "checked" : "";
+                        const isExtra3 = cats.includes("extra3") ? "checked" : "";
                         
                         const isExtraChecked = currentIng.usabileComeExtra ? "checked" : "";
 
                         const overlay = document.createElement("div");
                         overlay.className = "modal-overlay";
                         overlay.style.zIndex = "10005";
-						const nE1 = window.nomiRepartiExtra?.extra1 || "Extra 1";
-						const nE2 = window.nomiRepartiExtra?.extra2 || "Extra 2";
-						const nE3 = window.nomiRepartiExtra?.extra3 || "Extra 3";
+                        const nE1 = window.nomiRepartiExtra?.extra1 || "Extra 1";
+                        const nE2 = window.nomiRepartiExtra?.extra2 || "Extra 2";
+                        const nE3 = window.nomiRepartiExtra?.extra3 || "Extra 3";
 
                         const modal = document.createElement("div");
                         const displayImpostazioni = currentIng.usabileComeExtra ? "block" : "none";
 
                         modal.className = "modal-varianti";
+                        
+                        // 2. AGGIUNTA DEI BOX SOGLIE CON LA CLASSE CSS (box-soglie-admin) E AGGIUNTA DELLA CLASSE box-usabile-extra
                         modal.innerHTML = `
                             <h3>Impostazioni: ${ing.nome}</h3>
+
+                            <div style="margin-bottom:15px; text-align:left; display:flex; gap:10px; padding: 10px; border: 1px solid #ccc; border-radius: 6px; background: #fafafa;" class="box-soglie-admin">
+                                <div style="flex:1;">
+                                    <label><b>⚠️ Soglia Attenzione:</b></label>
+                                    <input type="number" step="0.1" id="valSogliaAtt" value="${valAtt}" placeholder="Auto" style="width:100%; box-sizing:border-box; padding:8px; margin-top:5px; border-radius:6px; border: 1px solid #ccc;">
+                                </div>
+                                <div style="flex:1;">
+                                    <label><b>🚨 Soglia Critica:</b></label>
+                                    <input type="number" step="0.1" id="valSogliaCrit" value="${valCrit}" placeholder="Auto" style="width:100%; box-sizing:border-box; padding:8px; margin-top:5px; border-radius:6px; border: 1px solid #ccc;">
+                                </div>
+                            </div>
                             
-                            <div style="margin-bottom:15px; text-align:left; background: #e8f5e9; padding: 10px; border-radius: 6px; border: 1px solid #c8e6c9;">
+                            <div style="margin-bottom:15px; text-align:left; background: #e8f5e9; padding: 10px; border-radius: 6px; border: 1px solid #c8e6c9;" class="box-usabile-extra">
                                 <label style="cursor:pointer; display:flex; align-items:center;">
                                     <input type="checkbox" id="chkUsabileExtra" ${isExtraChecked} style="transform: scale(1.2); margin-right: 8px;" onchange="document.getElementById('bloccoImpostazioniExtra').style.display = this.checked ? 'block' : 'none';"> 
                                     <b>Utilizzabile come variante / aggiunta nei piatti</b>
@@ -4774,14 +4792,20 @@ async function caricaIngredienti() {
                                 <button class="btn-salva" id="saveModal">Salva</button>
                             </div>
                         `;
+                        
                         overlay.appendChild(modal);
                         document.body.appendChild(overlay);
 
                         document.getElementById("closeModal").onclick = () => overlay.remove();
+                        
+                        // 3. RECUPERO E SALVATAGGIO DEI NUOVI DATI SU FIREBASE
                         document.getElementById("saveModal").onclick = () => {
                             const p = parseFloat(document.getElementById("valPrezzo").value);
                             const q = parseFloat(document.getElementById("valQty").value);
                             const usabile = document.getElementById("chkUsabileExtra").checked;
+                            
+                            const sAtt = document.getElementById("valSogliaAtt").value;
+                            const sCrit = document.getElementById("valSogliaCrit").value;
                             
                             const selectedCats = [];
                             document.querySelectorAll(".chk-cat:checked").forEach(cb => selectedCats.push(cb.value));
@@ -4790,7 +4814,9 @@ async function caricaIngredienti() {
                                 prezzoExtra: isNaN(p) ? 0 : p, 
                                 qtyExtra: isNaN(q) ? 1 : q,
                                 categorieApplicabili: selectedCats,
-                                usabileComeExtra: usabile
+                                usabileComeExtra: usabile,
+                                sogliaAttenzione: sAtt === "" ? null : parseFloat(sAtt),
+                                sogliaCritica: sCrit === "" ? null : parseFloat(sCrit)
                             });
                             overlay.remove();
                             notify("Modifiche salvate!", "success");
@@ -4994,9 +5020,20 @@ window.apriModalCreaIngrediente = function() {
             </div>
         </div>
 
+        <div style="margin-bottom:15px; text-align:left; display:flex; gap:10px; padding: 10px; border: 1px solid #ccc; border-radius: 6px; background: #fafafa;" class="box-soglie-admin">
+            <div style="flex:1;">
+                <label><b>⚠️ Soglia Attenzione:</b></label>
+                <input type="number" step="0.1" id="modIngSogliaAtt" placeholder="Auto" style="width:100%; box-sizing:border-box; padding:8px; margin-top:5px; border-radius:6px; border:1px solid #ccc;">
+            </div>
+            <div style="flex:1;">
+                <label><b>🚨 Soglia Critica:</b></label>
+                <input type="number" step="0.1" id="modIngSogliaCrit" placeholder="Auto" style="width:100%; box-sizing:border-box; padding:8px; margin-top:5px; border-radius:6px; border:1px solid #ccc;">
+            </div>
+        </div>
+
         <hr style="margin: 15px 0; border: 0; border-top: 1px solid #ddd;">
 
-        <div style="margin-bottom:15px; text-align:left; background: #e8f5e9; padding: 10px; border-radius: 6px; border: 1px solid #c8e6c9;">
+        <div style="margin-bottom:15px; text-align:left; background: #e8f5e9; padding: 10px; border-radius: 6px; border: 1px solid #c8e6c9;" class="box-usabile-extra">
             <label style="cursor:pointer; display:flex; align-items:center;">
                 <input type="checkbox" id="modIngExtra" style="transform: scale(1.2); margin-right: 10px;"> 
                 <b>Utilizzabile come variante / aggiunta</b>
@@ -5057,11 +5094,13 @@ window.apriModalCreaIngrediente = function() {
         const prezzoExtra = parseFloat(document.getElementById("modIngPrezzoExtra").value) || 0;
         const qtyExtra = parseFloat(document.getElementById("modIngQtyExtra").value) || 1;
         
+        const sAtt = document.getElementById("modIngSogliaAtt").value;
+        const sCrit = document.getElementById("modIngSogliaCrit").value;
+        
         const selectedCats = [];
         document.querySelectorAll(".mod-chk-cat:checked").forEach(cb => selectedCats.push(cb.value));
         
         if (!nome) {
-            // Sostituito il brutto alert con la tua notifica
             if (typeof notify === "function") notify("Devi inserire il nome dell'ingrediente!", "warning");
             else alert("Devi inserire il nome dell'ingrediente!");
             return;
@@ -5074,11 +5113,13 @@ window.apriModalCreaIngrediente = function() {
             nome: nome,
             categoria: categoria,
             unita: unita,
-            disponibile: true, // 🔹 FIX: Usa 'disponibile: true' come nel resto dell'app!
+            disponibile: true,
             usabileComeExtra: usabileComeExtra,
             prezzoExtra: prezzoExtra,
             qtyExtra: qtyExtra,
-            categorieApplicabili: selectedCats.length > 0 ? selectedCats : [categoria]
+            categorieApplicabili: selectedCats.length > 0 ? selectedCats : [categoria],
+            sogliaAttenzione: sAtt === "" ? null : parseFloat(sAtt),
+            sogliaCritica: sCrit === "" ? null : parseFloat(sCrit)
         }).then(() => {
             overlay.remove();
             if (typeof notify === "function") notify("Ingrediente creato con successo!", "success");
