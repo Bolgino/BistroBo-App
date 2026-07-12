@@ -3925,7 +3925,7 @@ function aggiornaStatoInvio() {
     const letteraOk = window.settings.letteraComandaAbilitata ? (lettera && /^[A-Z]$/.test(lettera)) : true;
 
     // disabilita se manca numero, lettera (se abilitata) o piatti
-    inviaBtn.disabled = !(numOk && letteraOk && hasPiattiValidi);
+    inviaBtn.disabled = !(numOk && letteraOk && hasPiattiValidi && tavoloOk);
 
     // Aggiorna stile visivo
     if (inviaBtn.disabled) {
