@@ -3961,7 +3961,6 @@ function aggiornaStatoInvio() {
     }
 }
 // --- LISTENER INPUT ---
-const tavoloInput = document.getElementById("tavoloComanda");
 if (tavoloInput) {
     tavoloInput.addEventListener("input", function() {
         // Forza la formattazione in tempo reale: solo numeri all'inizio, max 1 lettera alla fine, max 4 char totali
