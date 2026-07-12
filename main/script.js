@@ -3910,10 +3910,11 @@ function apriPopupVarianti(idx) {
 const numInput = document.getElementById("numComanda");
 const letteraInput = document.getElementById("letteraComanda");
 const inviaBtn = document.getElementById("inviaComandaBtn");
+
 function aggiornaStatoInvio() {
     if (!checkOnline(true)) return;
-    const num = numInput.value.trim();
-    const lettera = letteraInput.value.trim().toUpperCase();
+    const num = numInput ? numInput.value.trim() : "";
+    const lettera = letteraInput ? letteraInput.value.trim().toUpperCase() : "";
 
     // verifica che ci sia almeno un piatto con quantità > 0
     const hasPiattiValidi = comandaCorrente.some(p => p.quantita > 0);
@@ -3925,14 +3926,21 @@ function aggiornaStatoInvio() {
     const letteraOk = window.settings.letteraComandaAbilitata ? (lettera && /^[A-Z]$/.test(lettera)) : true;
 
     // Controllo tavolo obbligatorio (salvo asporto)
-    let tavoloOk = true;
+    let tavoloOk = true; // Iniziamo presupponendo che vada bene
     if (window.settings.richiediTavolo) {
         const checkAsporto = document.getElementById("checkAsporto");
-        const isAsporto = window.settings.asportoAbilitato && checkAsporto && checkAsporto.checked;
         const inputTavolo = document.getElementById("numeroTavoloCassa");
+        
+        // Verifica se l'asporto è attivo e spuntato
+        const isAsporto = window.settings.asportoAbilitato && checkAsporto && checkAsporto.checked;
 
-        if (!isAsporto && inputTavolo && !inputTavolo.value.trim()) {
-            tavoloOk = false;
+        // Se NON è asporto, e il campo esiste...
+        if (!isAsporto && inputTavolo) {
+            // Controlla se il campo ha un valore valido
+            const numeroTavoloVal = inputTavolo.value.trim();
+            if (!numeroTavoloVal) {
+                 tavoloOk = false; // Se è vuoto, tavolo NON va bene
+            }
         }
     }
 
@@ -3953,11 +3961,13 @@ function aggiornaStatoInvio() {
     }
 }
 // --- LISTENER INPUT ---
-numInput.addEventListener("input", aggiornaStatoInvio);
-letteraInput.addEventListener("input", aggiornaStatoInvio);
-document.getElementById("quantita").addEventListener("change", aggiornaStatoInvio);
+if (numInput) numInput.addEventListener("input", aggiornaStatoInvio);
+if (letteraInput) letteraInput.addEventListener("input", aggiornaStatoInvio);
 
-// ---> INIZIO GESTIONE DISABILITAZIONE TAVOLO PER ASPORTO <---
+const inputQuantita = document.getElementById("quantita");
+if (inputQuantita) inputQuantita.addEventListener("change", aggiornaStatoInvio);
+
+// ---> INIZIO GESTIONE DISABILITAZIONE TAVOLO PER ASPORTO E RE-CHECK <---
 const checkAsportoCassa = document.getElementById("checkAsporto");
 if (checkAsportoCassa) {
     checkAsportoCassa.addEventListener("change", (e) => {
@@ -3972,9 +3982,17 @@ if (checkAsportoCassa) {
                 inputTavolo.style.backgroundColor = "#fff";
             }
         }
+        // Quando spunto o tolgo l'asporto, ricontrolla lo stato del bottone invia
+        aggiornaStatoInvio(); 
     });
 }
-// ---> FINE GESTIONE DISABILITAZIONE TAVOLO PER ASPORTO <---
+
+// Quando digito un numero nel tavolo, aggiorna lo stato del bottone invia
+const inputTavoloCassa = document.getElementById("numeroTavoloCassa");
+if (inputTavoloCassa) {
+    inputTavoloCassa.addEventListener("input", aggiornaStatoInvio);
+}
+// ---> FINE GESTIONE DISABILITAZIONE TAVOLO PER ASPORTO E RE-CHECK <---
 // --- FUNZIONE CALCOLO SCONTO (AGGIORNATA PER VARIANTI) ---
 function calcolaPrezzoConSconto(piatto, comandaIntera = null){
     if (!checkOnline(true)) return;
