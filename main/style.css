@@ -2940,3 +2940,21 @@ body.tema-astronave #menuClienti {
     border: none !important;
     box-shadow: none !important;
 }
+/* ===========================================================
+   FIX COLORE TIMER TASTO ANNULLA (TUTTI I TEMI SCURI)
+=========================================================== */
+body.tema-notte #annullaUltimaVenditaBtn, 
+body.tema-astronave #annullaUltimaVenditaBtn,
+body.tema-notte #timerAnnullamento,
+body.tema-astronave #timerAnnullamento {
+    color: #00FFFF !important; /* Ciano brillante/neon */
+    text-shadow: 0 0 5px #00FFFF, 0 0 10px rgba(0, 255, 255, 0.8) !important;
+}
+
+/* Ensure the background of the span doesn't hide the text */
+body.tema-notte #timerAnnullamento,
+body.tema-astronave #timerAnnullamento {
+     background-color: transparent !important;
+     box-shadow: none !important;
+     border: none !important;
+}
