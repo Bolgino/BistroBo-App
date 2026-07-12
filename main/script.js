@@ -3363,7 +3363,12 @@ async function caricaMenuCassa() {
         ingredientiRef.off("value");
         menuRef.off("value");
 
-        ingredientiRef.on("value", snap => { window.ingredientData = snap.val() || {}; aggiornaBottoniBloccati(); });
+        ingredientiRef.on("value", snap => { 
+                window.ingredientData = snap.val() || {}; 
+                aggiornaBottoniBloccati(); 
+                // FIX: Riattiva l'aggiornamento degli ingredienti critici in tempo reale
+                if (typeof aggiornaListaIngredientiCritici === "function") aggiornaListaIngredientiCritici(); 
+            });
         menuRef.on("value", snap => { window.menuData = snap.val() || {}; aggiornaBottoniBloccati(); });
         initBloccoPiattiListener();
     });
@@ -4705,9 +4710,9 @@ async function caricaIngredienti() {
                         });
                     };
 
-                    const btnExtra = document.createElement("button");
-                    btnExtra.innerText = "⚙️ Extra";
-                    btnExtra.title = "Imposta Prezzo e Quantità per Aggiunte";
+                  const btnExtra = document.createElement("button");
+                    btnExtra.innerText = "✏️ Modifica";
+                    btnExtra.title = "Modifica dettagli ingrediente, soglie e aggiunte";
                     btnExtra.style.marginLeft = "5px";
                     btnExtra.onclick = () => {
                         const currentIng = window.ingredientData[ing.id] || ing;
@@ -4715,7 +4720,7 @@ async function caricaIngredienti() {
                         const defP = currentIng.prezzoExtra !== undefined ? currentIng.prezzoExtra : 0.50;
                         const defQ = currentIng.qtyExtra !== undefined ? currentIng.qtyExtra : 1;
                         
-                        // 1. LEGGERE LE SOGLIE PERSONALIZZATE (se esistono)
+                        // Soglie
                         const valAtt = (currentIng.sogliaAttenzione !== undefined && currentIng.sogliaAttenzione !== null) ? currentIng.sogliaAttenzione : "";
                         const valCrit = (currentIng.sogliaCritica !== undefined && currentIng.sogliaCritica !== null) ? currentIng.sogliaCritica : "";
 
@@ -4732,6 +4737,7 @@ async function caricaIngredienti() {
                         const overlay = document.createElement("div");
                         overlay.className = "modal-overlay";
                         overlay.style.zIndex = "10005";
+                        
                         const nE1 = window.nomiRepartiExtra?.extra1 || "Extra 1";
                         const nE2 = window.nomiRepartiExtra?.extra2 || "Extra 2";
                         const nE3 = window.nomiRepartiExtra?.extra3 || "Extra 3";
@@ -4740,10 +4746,41 @@ async function caricaIngredienti() {
                         const displayImpostazioni = currentIng.usabileComeExtra ? "block" : "none";
 
                         modal.className = "modal-varianti";
-                        
-                        // 2. AGGIUNTA DEI BOX SOGLIE CON LA CLASSE CSS (box-soglie-admin) E AGGIUNTA DELLA CLASSE box-usabile-extra
                         modal.innerHTML = `
-                            <h3>Impostazioni: ${ing.nome}</h3>
+                            <h3 style="margin-bottom: 20px;">Modifica: ${currentIng.nome}</h3>
+                            
+                            <div style="margin-bottom:15px; text-align:left;">
+                                <label><b>Nome Ingrediente:</b></label>
+                                <input type="text" id="modIngNomeEdit" value="${currentIng.nome.replace(/"/g, '&quot;')}" style="width:100%; box-sizing:border-box; padding:8px; margin-top:5px; border-radius:6px; border:1px solid #ccc;">
+                            </div>
+
+                            <div style="margin-bottom:15px; text-align:left; display:flex; gap:10px;">
+                                <div style="flex:1;">
+                                    <label><b>Categoria:</b></label>
+                                    <select id="modIngCatEdit" style="width:100%; padding:8px; margin-top:5px; border-radius:6px; border:1px solid #ccc;">
+                                        <option value="cibi" ${currentIng.categoria === 'cibi' ? 'selected' : ''}>Cibi</option>
+                                        <option value="bevande" ${currentIng.categoria === 'bevande' ? 'selected' : ''}>Bevande</option>
+                                        <option value="snack" ${currentIng.categoria === 'snack' ? 'selected' : ''}>Snack</option>
+                                        ${window.settings.extra1Abilitato ? `<option value="extra1" ${currentIng.categoria === 'extra1' ? 'selected' : ''}>${nE1}</option>` : ''}
+                                        ${window.settings.extra2Abilitato ? `<option value="extra2" ${currentIng.categoria === 'extra2' ? 'selected' : ''}>${nE2}</option>` : ''}
+                                        ${window.settings.extra3Abilitato ? `<option value="extra3" ${currentIng.categoria === 'extra3' ? 'selected' : ''}>${nE3}</option>` : ''}
+                                    </select>
+                                </div>
+                                <div style="flex:1;">
+                                    <label><b>Unità di misura:</b></label>
+                                    <select id="modIngUnitaEdit" style="width:100%; padding:8px; margin-top:5px; border-radius:6px; border:1px solid #ccc;">
+                                        <option value="" ${!currentIng.unita ? 'selected' : ''}>Nessuna</option>
+                                        <option value="kg" ${currentIng.unita === 'kg' ? 'selected' : ''}>kg</option>
+                                        <option value="g" ${currentIng.unita === 'g' ? 'selected' : ''}>g</option>
+                                        <option value="l" ${currentIng.unita === 'l' ? 'selected' : ''}>l</option>
+                                        <option value="ml" ${currentIng.unita === 'ml' ? 'selected' : ''}>ml</option>
+                                        <option value="pz" ${currentIng.unita === 'pz' ? 'selected' : ''}>pz</option>
+                                        <option value="Lattina 33cl" ${currentIng.unita === 'Lattina 33cl' ? 'selected' : ''}>Lattina 33cl</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <hr style="margin: 15px 0; border: 0; border-top: 1px solid #ddd;">
 
                             <div style="margin-bottom:15px; text-align:left; display:flex; gap:10px; padding: 10px; border: 1px solid #ccc; border-radius: 6px; background: #fafafa;" class="box-soglie-admin">
                                 <div style="flex:1;">
@@ -4789,7 +4826,7 @@ async function caricaIngredienti() {
                             
                             <div class="modal-actions">
                                 <button class="btn-chiudi" id="closeModal">Annulla</button>
-                                <button class="btn-salva" id="saveModal">Salva</button>
+                                <button class="btn-salva" id="saveModal">Salva Modifiche</button>
                             </div>
                         `;
                         
@@ -4798,8 +4835,16 @@ async function caricaIngredienti() {
 
                         document.getElementById("closeModal").onclick = () => overlay.remove();
                         
-                        // 3. RECUPERO E SALVATAGGIO DEI NUOVI DATI SU FIREBASE
-                        document.getElementById("saveModal").onclick = () => {
+                        document.getElementById("saveModal").onclick = async () => {
+                            const nuovoNome = document.getElementById("modIngNomeEdit").value.trim();
+                            const nuovaCat = document.getElementById("modIngCatEdit").value;
+                            const nuovaUnita = document.getElementById("modIngUnitaEdit").value;
+                            
+                            if (!nuovoNome) {
+                                if (typeof notify === "function") notify("Il nome dell'ingrediente è obbligatorio!", "warn");
+                                return;
+                            }
+
                             const p = parseFloat(document.getElementById("valPrezzo").value);
                             const q = parseFloat(document.getElementById("valQty").value);
                             const usabile = document.getElementById("chkUsabileExtra").checked;
@@ -4810,7 +4855,11 @@ async function caricaIngredienti() {
                             const selectedCats = [];
                             document.querySelectorAll(".chk-cat:checked").forEach(cb => selectedCats.push(cb.value));
 
-                            db.ref(`ingredienti/${ing.id}`).update({ 
+                            // 1. Aggiorna i dati nel nodo "ingredienti"
+                            await db.ref(`ingredienti/${ing.id}`).update({ 
+                                nome: nuovoNome,
+                                categoria: nuovaCat,
+                                unita: nuovaUnita,
                                 prezzoExtra: isNaN(p) ? 0 : p, 
                                 qtyExtra: isNaN(q) ? 1 : q,
                                 categorieApplicabili: selectedCats,
@@ -4818,6 +4867,35 @@ async function caricaIngredienti() {
                                 sogliaAttenzione: sAtt === "" ? null : parseFloat(sAtt),
                                 sogliaCritica: sCrit === "" ? null : parseFloat(sCrit)
                             });
+
+                            // 2. Aggiorna a cascata il nome e l'unità di misura all'interno dei piatti del Menù
+                            try {
+                                const snapMenu = await db.ref("menu").once("value");
+                                const menuData = snapMenu.val() || {};
+                                let updates = {};
+                                
+                                for (const pid in menuData) {
+                                    if (menuData[pid].ingredienti) {
+                                        let changed = false;
+                                        let nuoviIng = menuData[pid].ingredienti.map(i => {
+                                            if (i.id === ing.id && (i.nome !== nuovoNome || i.unita !== nuovaUnita)) {
+                                                changed = true;
+                                                return { ...i, nome: nuovoNome, unita: nuovaUnita };
+                                            }
+                                            return i;
+                                        });
+                                        if (changed) {
+                                            updates[`menu/${pid}/ingredienti`] = nuoviIng;
+                                        }
+                                    }
+                                }
+                                if (Object.keys(updates).length > 0) {
+                                    await db.ref().update(updates);
+                                }
+                            } catch (err) {
+                                console.error("Errore aggiornamento menu a cascata:", err);
+                            }
+
                             overlay.remove();
                             notify("Modifiche salvate!", "success");
                         };
