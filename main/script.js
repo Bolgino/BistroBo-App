@@ -3961,6 +3961,10 @@ function aggiornaStatoInvio() {
     }
 }
 // --- LISTENER INPUT ---
+numInput.addEventListener("input", aggiornaStatoInvio);
+letteraInput.addEventListener("input", aggiornaStatoInvio);
+document.getElementById("quantita").addEventListener("change", aggiornaStatoInvio);
+const tavoloInput = document.getElementById("tavoloComanda");
 if (tavoloInput) {
     tavoloInput.addEventListener("input", function() {
         // Forza la formattazione in tempo reale: solo numeri all'inizio, max 1 lettera alla fine, max 4 char totali
@@ -3984,8 +3988,6 @@ if (checkAsporto) {
         aggiornaStatoInvio();
     });
 }
-const tavoloInput = document.getElementById("tavoloComanda");
-if(tavoloInput) tavoloInput.addEventListener("input", aggiornaStatoInvio);
 // --- FUNZIONE CALCOLO SCONTO (AGGIORNATA PER VARIANTI) ---
 function calcolaPrezzoConSconto(piatto, comandaIntera = null){
     if (!checkOnline(true)) return;
