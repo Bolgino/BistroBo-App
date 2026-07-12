@@ -567,26 +567,43 @@ async function aggiungiPreordineAlleComande(id) {
     if (!snap.exists()) return;
     const p = snap.val();
 
+    // 0️⃣ CONTROLLO ASPORTO (Modalità Deliveroo)
+    let isAsporto = false;
+    let commentoAsporto = null;
+    if (window.settings.preordiniAsportoAutomatico || (window.settings.asportoAbilitato && p.asporto)) {
+        isAsporto = true;
+        commentoAsporto = "ASPORTO";
+    }
+
+    // 0.5️⃣ RICHIESTA TAVOLO (Se non è asporto e i tavoli sono attivi)
+    let numeroTavolo = "";
+    if (window.settings.richiediTavolo && !isAsporto) {
+        numeroTavolo = prompt(`Inserisci il numero del tavolo per il preordine di ${p.nome}:`);
+        // Se il cassiere clicca su "Annulla" nel popup, blocchiamo l'inserimento
+        if (numeroTavolo === null) {
+            notifypreordini("Aggiunta comanda annullata.", "warn");
+            return; 
+        }
+    }
+
     // 1️⃣ Genera numero + lettera per la comanda
     const lettera = (window.settings?.letteraPreordini || "D").toUpperCase();
     const numeroBase = await getProssimoNumero(lettera);
     const numeroComandaFinale = numeroBase + lettera;
 
     // 🔥 2️⃣ SCALA INGREDIENTI DAL MAGAZZINO (Come fa la Cassa!)
-    // Dobbiamo estrarre la funzione di calcolo dal file principale (se esiste) o calcolarli.
     if (typeof calcolaRichiesteDaPiatti === "function" && typeof applicaDecrementiIngredienti === "function") {
         const richieste = calcolaRichiesteDaPiatti(p.piatti || []);
         const resIng = await applicaDecrementiIngredienti(richieste);
         if (!resIng.success) {
             notifypreordini("❌ Errore scalo magazzino: " + (resIng.message || "ingredienti insufficienti"), "error");
-            // Scegli tu se bloccare la comanda (return) o mandarla comunque. Solitamente si manda comunque con avviso:
         }
     }
 
     // 3️⃣ Usa separaComanda per capire chi deve preparare cosa, dividendo perfettamente i contorni
     const { cibo = [], bere = [], snack = [], extra1 = [], extra2 = [], extra3 = [] } = separaComanda(p.piatti || []);
 
-    // 4️⃣ Stati categorie (Dichiariamo sempre tutti gli stati come fa la Cassa normale)
+    // 4️⃣ Stati categorie
     const statoCucina = cibo.length > 0 ? "da fare" : "completato";
     const statoBere = bere.length > 0 ? "da fare" : "completato";
     const statoSnack = snack.length > 0 ? "da fare" : "completato";
@@ -598,10 +615,8 @@ async function aggiungiPreordineAlleComande(id) {
     let noteDestinazioni = ["cucina"];
     if (window.settings.noteDestinazioniAbilitate) {
         if (p.noteDestinazioni && p.noteDestinazioni.length > 0) {
-            // Usa fedelmente le destinazioni spuntate a mano nella UI
             noteDestinazioni = p.noteDestinazioni;
         } else {
-            // Fallback: se nessuna nota è spuntata, invia automaticamente
             if (bere.length > 0) noteDestinazioni.push("bere");
             if (window.settings.snackAbilitato && snack.length > 0) noteDestinazioni.push("snack");
             if (window.settings.extra1Abilitato && extra1.length > 0) noteDestinazioni.push("extra1");
@@ -610,18 +625,9 @@ async function aggiungiPreordineAlleComande(id) {
         }
     }
 
-    // 6️⃣ Commento asporto (MODIFICATO PER ASPORTO AUTOMATICO)
-    let isAsporto = false;
-    let commentoAsporto = null;
-    if (window.settings.preordiniAsportoAutomatico || (window.settings.asportoAbilitato && p.asporto)) {
-        isAsporto = true;
-        commentoAsporto = "ASPORTO";
-    }
-
     // 🔹 AGGIUNTA AUTOMATICA COSTO ASPORTO AI PREORDINI
     if (isAsporto && window.settings.costoAsportoAbilitato) {
         const fee = window.settings.costoAsportoValore || 0;
-        // Controlla che non sia già stato aggiunto
         if (fee > 0 && !p.piatti.some(i => i.nome === "Costo Asporto")) {
             p.piatti.push({
                 nome: "Costo Asporto",
@@ -632,12 +638,12 @@ async function aggiungiPreordineAlleComande(id) {
         }
     }
 
-    // 7️⃣ Metodo pagamento predefinito
     const metodoPagamento = p.metodoPagamento || "contanti";
 
-    // 8️⃣ Costruzione oggetto comanda (Ora include i parametri degli extra!)
+    // 8️⃣ Costruzione oggetto comanda
     const nuovaComanda = {
         numero: numeroComandaFinale,
+        tavolo: numeroTavolo.trim(), // <--- IL TAVOLO VIENE SALVATO QUI
         piatti: p.piatti || [],
         statoCucina,
         statoBere,
@@ -676,15 +682,15 @@ async function aggiungiPreordineAlleComande(id) {
             posizione: p.posizione,
             nomeStand: window.settings.nomeStand,
             restoRichiesto: p.restoRichiesto,
-            commento: commentoAsporto, // 🔹 AGGIUNTO: Permette di stampare "*** ASPORTO ***" sui ticket separati!
-            scontoGlobale: p.scontoGlobale // 🔹 AGGIUNTO: Allinea perfettamente i calcoli e il layout a quelli della Cassa
+            commento: commentoAsporto,
+            scontoGlobale: p.scontoGlobale,
+            tavolo: numeroTavolo.trim() // <--- IL TAVOLO VIENE PASSATO ALLA STAMPANTE
         };
         
-        // La funzione è letteralmente la stessa usata dalla Cassa, ora riceve gli argomenti perfetti
         stampaComanda(p.piatti || [], numeroComandaFinale, p.note || "", datiDellaStampa);
     }
 
-    notifypreordini(`✅ Preordine ${numeroComandaFinale} confermato e ingredienti scalati!`, "info");
+    notifypreordini(`✅ Preordine ${numeroComandaFinale} confermato!`, "info");
 }
 async function eliminaPreordine(id) {
   await preordiniRef.child(id).remove();
