@@ -2857,47 +2857,72 @@ body.tema-astronave .preordine-container b {
     text-shadow: 0 0 2px rgba(0,255,255,.3) !important;
 }
 /* ===========================================================
-   FIX ARROTONDAMENTO BOX RESTO IN PREORDINI
+   FIX BOX RESTO (PREORDINI) E LISTE POPUP (ADMIN) NEI TEMI SCURI
 =========================================================== */
-#bloccoResto, 
-.box-resto,
-#carrello-container div[style*="background: #001f3f"],
-#carrello-container div[style*="background-color: #001f3f"] {
-    border-radius: 12px !important;
-    padding: 15px !important; /* Dà un po' di respiro interno al box */
+
+/* 1. SMUSSA GLI ANGOLI DEL BOX RESTO IN PREORDINI */
+#restoContainer, .resto-container {
+    border-radius: 8px !important;
+    padding: 12px !important;
+    margin-top: 10px;
 }
 
-
-/* ===========================================================
-   FIX POPUP MENU (LISTE INGREDIENTI E COMBO) PER TEMI SCURI
-=========================================================== */
-
-/* --- TEMA NOTTE --- */
-body.tema-notte .modal-content div[style*="overflow-y"],
-body.tema-notte .modal-content div[style*="background: #fff"],
-body.tema-notte .modal-content div[style*="background: white"],
-body.tema-notte .modal-content label {
-    background: #111827 !important;
+/* 2. COLORI TEMA NOTTE */
+body.tema-notte #restoContainer,
+body.tema-notte .resto-container {
     background-color: #111827 !important;
+    border: 1px solid #334155 !important;
+}
+
+body.tema-notte #modIngList,
+body.tema-notte #modComboList,
+body.tema-notte .modal-content div[style*="overflow-y: auto"],
+body.tema-notte div[style*="background: #fafafa"] {
+    background-color: #1f2937 !important;
+    border-color: #374151 !important;
+}
+
+body.tema-notte #modIngList div,
+body.tema-notte #modIngList label,
+body.tema-notte #modComboList div,
+body.tema-notte #modComboList label,
+body.tema-notte div[style*="background: #fff"],
+body.tema-notte div[style*="background: white"],
+body.tema-notte div[style*="background-color: #fff"],
+body.tema-notte div[style*="background-color: white"] {
+    background-color: #111827 !important;
+    background: #111827 !important;
+    border-color: #374151 !important;
     color: #F8FAFC !important;
-    border-color: #334155 !important;
 }
 
-body.tema-notte .modal-content label:hover {
-    background-color: #1E293B !important;
-}
 
-/* --- TEMA ASTRONAVE --- */
-body.tema-astronave .modal-content div[style*="overflow-y"],
-body.tema-astronave .modal-content div[style*="background: #fff"],
-body.tema-astronave .modal-content div[style*="background: white"],
-body.tema-astronave .modal-content label {
-    background: #06131E !important;
+/* 3. COLORI TEMA ASTRONAVE */
+body.tema-astronave #restoContainer,
+body.tema-astronave .resto-container {
     background-color: #06131E !important;
-    color: #D0FFFF !important;
+    border: 1px solid #00A6CC !important;
+    box-shadow: inset 0 0 5px rgba(0,217,255,.08) !important;
+}
+
+body.tema-astronave #modIngList,
+body.tema-astronave #modComboList,
+body.tema-astronave .modal-content div[style*="overflow-y: auto"],
+body.tema-astronave div[style*="background: #fafafa"] {
+    background-color: #040f18 !important;
     border-color: #00A6CC !important;
 }
 
-body.tema-astronave .modal-content label:hover {
-    background-color: #0A243F !important;
+body.tema-astronave #modIngList div,
+body.tema-astronave #modIngList label,
+body.tema-astronave #modComboList div,
+body.tema-astronave #modComboList label,
+body.tema-astronave div[style*="background: #fff"],
+body.tema-astronave div[style*="background: white"],
+body.tema-astronave div[style*="background-color: #fff"],
+body.tema-astronave div[style*="background-color: white"] {
+    background-color: #06131E !important;
+    background: #06131E !important;
+    border-color: #00A6CC !important;
+    color: #00FFFF !important;
 }
