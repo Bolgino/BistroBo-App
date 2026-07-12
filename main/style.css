@@ -2716,6 +2716,8 @@ body.tema-astronave #orologio {
 /* --- TEMA NOTTE --- */
 body.tema-notte div[style*="background: #e8f5e9"],
 body.tema-notte div[style*="background: #f4f9f4"],
+body.tema-notte .box-soglie-admin,
+body.tema-notte .box-usabile-extra,
 body.tema-notte #modalPiattoIngredientiContainer,
 body.tema-notte #modalPiattoDishesCombo,
 body.tema-notte #modalPiattoDishesCombo label {
@@ -2723,15 +2725,13 @@ body.tema-notte #modalPiattoDishesCombo label {
     background-color: #111827 !important;
     border-color: #334155 !important;
 }
-
-/* Sistema la scritta "È un Piatto Combo?" che era verde scuro */
-body.tema-notte b[style*="color: #2e7d32"] {
-    color: #34D399 !important; /* Verde chiaro leggibile su sfondo scuro */
-}
+body.tema-notte b[style*="color: #2e7d32"] { color: #34D399 !important; }
 
 /* --- TEMA ASTRONAVE --- */
 body.tema-astronave div[style*="background: #e8f5e9"],
 body.tema-astronave div[style*="background: #f4f9f4"],
+body.tema-astronave .box-soglie-admin,
+body.tema-astronave .box-usabile-extra,
 body.tema-astronave #modalPiattoIngredientiContainer,
 body.tema-astronave #modalPiattoDishesCombo,
 body.tema-astronave #modalPiattoDishesCombo label {
@@ -2740,8 +2740,4 @@ body.tema-astronave #modalPiattoDishesCombo label {
     border-color: #00A6CC !important;
     box-shadow: inset 0 0 5px rgba(0,217,255,.08) !important;
 }
-
-/* Sistema la scritta "È un Piatto Combo?" che era verde scuro */
-body.tema-astronave b[style*="color: #2e7d32"] {
-    color: #45FF96 !important; /* Verde fluo a tema astronave */
-}
+body.tema-astronave b[style*="color: #2e7d32"] { color: #45FF96 !important; }
