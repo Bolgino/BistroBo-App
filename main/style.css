@@ -2857,71 +2857,66 @@ body.tema-astronave .preordine-container b {
     text-shadow: 0 0 2px rgba(0,255,255,.3) !important;
 }
 /* ===========================================================
-   FIX CARRELLO, BOX RESTO E POPUP MODIFICA (TEMI SCURI)
+   FIX BOX RESTO (TRASPARENTE) E POPUP MODIFICA (TEMI SCURI)
 =========================================================== */
 
 /* --- 1. BOX RESTO: TRASPARENTE E SMUSSATO --- */
-#restoContainer, .resto-container {
-    border-radius: 8px !important; /* Angoli smussati */
+.preordine-soldi, #restoContainer, .resto-container {
+    border-radius: 8px !important;
     padding: 12px !important;
     margin-top: 10px;
-    background-color: transparent !important; /* Sfondo trasparente */
+    background-color: transparent !important;
+    background: transparent !important;
 }
 
 /* --- 2. TEMA NOTTE --- */
-/* Carrello e Box Resto */
-body.tema-notte #carrello, 
-body.tema-notte .riepilogo-box {
-    background-color: #111827 !important;
-    border-color: #334155 !important;
-    color: #F8FAFC !important;
-}
+/* Bordi box resto */
+body.tema-notte .preordine-soldi, 
 body.tema-notte #restoContainer,
 body.tema-notte .resto-container {
     border: 1px solid #334155 !important;
-}
-body.tema-notte #carrello span, body.tema-notte #carrello b, body.tema-notte #carrello p { 
-    color: #F8FAFC !important; 
+    color: #F8FAFC !important;
 }
 
-/* Popup Modifica Piatto (Liste ingredienti e menu combo) */
-body.tema-notte #modIngList div,
-body.tema-notte #modComboList div,
-body.tema-notte .modal-content div[style*="background: white"],
-body.tema-notte .modal-varianti div[style*="background: white"],
-body.tema-notte .modal-content div[style*="background: #ffffff"],
-body.tema-notte .modal-content div[style*="background: #fff"] {
+/* Sfondi nel popup modifica piatto (Sostituisce il #fafafa) */
+body.tema-notte #editPiattoIngredientiContainer,
+body.tema-notte label:has(.combo-dish-cb-edit),
+body.tema-notte div[style*="background: #fafafa"],
+body.tema-notte label[style*="background: #fafafa"] {
+    background: #1f2937 !important;
     background-color: #1f2937 !important;
     border-color: #374151 !important;
     color: #F8FAFC !important;
 }
+/* Colore scritte piccole (es: [cibi]) */
+body.tema-notte #editPiattoIngredientiContainer small,
+body.tema-notte label:has(.combo-dish-cb-edit) small {
+    color: #94a3b8 !important; 
+}
 
 
 /* --- 3. TEMA ASTRONAVE --- */
-/* Carrello e Box Resto */
-body.tema-astronave #carrello, 
-body.tema-astronave .riepilogo-box {
-    background-color: #06131E !important;
-    border-color: #00A6CC !important;
-    color: #D0FFFF !important;
-    box-shadow: inset 0 0 5px rgba(0,217,255,.08) !important;
-}
+/* Bordi box resto */
+body.tema-astronave .preordine-soldi, 
 body.tema-astronave #restoContainer,
 body.tema-astronave .resto-container {
     border: 1px solid #00A6CC !important;
-}
-body.tema-astronave #carrello span, body.tema-astronave #carrello b, body.tema-astronave #carrello p { 
-    color: #D0FFFF !important; 
+    color: #00FFFF !important;
+    box-shadow: inset 0 0 5px rgba(0,217,255,.08) !important;
 }
 
-/* Popup Modifica Piatto (Liste ingredienti e menu combo) */
-body.tema-astronave #modIngList div,
-body.tema-astronave #modComboList div,
-body.tema-astronave .modal-content div[style*="background: white"],
-body.tema-astronave .modal-varianti div[style*="background: white"],
-body.tema-astronave .modal-content div[style*="background: #ffffff"],
-body.tema-astronave .modal-content div[style*="background: #fff"] {
+/* Sfondi nel popup modifica piatto (Sostituisce il #fafafa) */
+body.tema-astronave #editPiattoIngredientiContainer,
+body.tema-astronave label:has(.combo-dish-cb-edit),
+body.tema-astronave div[style*="background: #fafafa"],
+body.tema-astronave label[style*="background: #fafafa"] {
+    background: #040f18 !important;
     background-color: #040f18 !important;
     border-color: #00A6CC !important;
     color: #00FFFF !important;
+}
+/* Colore scritte piccole (es: [cibi]) */
+body.tema-astronave #editPiattoIngredientiContainer small,
+body.tema-astronave label:has(.combo-dish-cb-edit) small {
+    color: #00A6CC !important; 
 }
