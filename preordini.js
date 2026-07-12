@@ -575,11 +575,65 @@ async function aggiungiPreordineAlleComande(id) {
         commentoAsporto = "ASPORTO";
     }
 
-    // 0.5️⃣ RICHIESTA TAVOLO (Se non è asporto e i tavoli sono attivi)
+    // 0.5️⃣ RICHIESTA TAVOLO CON MODALE A TEMA BISTROBÒ
     let numeroTavolo = "";
     if (window.settings.richiediTavolo && !isAsporto) {
-        numeroTavolo = prompt(`Inserisci il numero del tavolo per il preordine di ${p.nome}:`);
-        // Se il cassiere clicca su "Annulla" nel popup, blocchiamo l'inserimento
+        
+        // Creiamo una Promessa per aspettare la risposta del cassiere dal modale
+        numeroTavolo = await new Promise((resolve) => {
+            // Crea l'overlay scuro
+            const overlay = document.createElement("div");
+            overlay.className = "modal-overlay";
+            overlay.style.zIndex = "10005"; // Sta sopra a tutto
+
+            // Crea il box del modale
+            const modal = document.createElement("div");
+            modal.className = "modal-varianti";
+            modal.style.textAlign = "center";
+            
+            // Popola il modale con titolo, testo, input e bottoni
+            modal.innerHTML = `
+                <h3 style="margin-bottom: 15px; color: #333;">🪑 Numero Tavolo</h3>
+                <p style="font-size: 0.9em; color: #555; margin-bottom: 15px;">
+                    Inserisci il tavolo per il preordine di <b>${p.nome}</b>
+                </p>
+                <input type="text" id="inputTavoloModale" placeholder="Es. 12" 
+                       style="width: 100%; box-sizing: border-box; padding: 10px; margin-bottom: 20px; border: 1px solid #ccc; border-radius: 6px; font-size: 1.1rem; text-align: center; outline: none;">
+                <div class="modal-actions" style="display: flex; gap: 10px;">
+                    <button class="btn-chiudi" id="btnAnnullaTavolo" style="flex: 1; margin: 0;">Annulla</button>
+                    <button class="btn-salva" id="btnConfermaTavolo" style="flex: 1; margin: 0; background-color: #4CAF50;">Conferma</button>
+                </div>
+            `;
+            
+            overlay.appendChild(modal);
+            document.body.appendChild(overlay);
+            
+            // Focus automatico sull'input
+            document.getElementById("inputTavoloModale").focus();
+
+            // Gestione Click su Annulla
+            document.getElementById("btnAnnullaTavolo").onclick = () => {
+                overlay.remove();
+                resolve(null); // Restituisce null per bloccare il processo
+            };
+            
+            // Gestione Click su Conferma
+            document.getElementById("btnConfermaTavolo").onclick = () => {
+                const val = document.getElementById("inputTavoloModale").value.trim();
+                overlay.remove();
+                resolve(val); // Restituisce il valore digitato
+            };
+            
+            // Permette di premere INVIO da tastiera per confermare
+            document.getElementById("inputTavoloModale").addEventListener("keypress", function(event) {
+                if (event.key === "Enter") {
+                    event.preventDefault();
+                    document.getElementById("btnConfermaTavolo").click();
+                }
+            });
+        });
+
+        // Se il cassiere ha cliccato "Annulla", numeroTavolo è null -> usciamo dalla funzione
         if (numeroTavolo === null) {
             notifypreordini("Aggiunta comanda annullata.", "warn");
             return; 
