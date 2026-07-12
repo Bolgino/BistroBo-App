@@ -1420,6 +1420,21 @@ function initImpostazioniToggle() {
             isFirstLoadScorciatoie = false;
         });
     }
+	// ================= NUMERO TAVOLO =================
+	const toggleTavoloBtn = document.getElementById("toggleTavoloBtn");
+	const tavoloRef = db.ref("impostazioni/richiediTavolo");
+	
+	if (toggleTavoloBtn) {
+	    initToggle(toggleTavoloBtn, tavoloRef, {on: "ON", off: "OFF"}, false, val => {
+	        window.settings.richiediTavolo = val;
+	        
+	        // Mostra o nascondi il campo in Cassa
+	        const containerTavolo = document.getElementById("containerTavoloCassa");
+	        if (containerTavolo) {
+	            containerTavolo.style.display = val ? "inline-block" : "none";
+	        }
+	    });
+	}
 }
 function initTickNoteDestinazioni() {
     db.ref("impostazioni/noteDestinazioniAbilitate").on("value", snap => {
@@ -3929,6 +3944,25 @@ function aggiornaStatoInvio() {
 numInput.addEventListener("input", aggiornaStatoInvio);
 letteraInput.addEventListener("input", aggiornaStatoInvio);
 document.getElementById("quantita").addEventListener("change", aggiornaStatoInvio);
+
+// ---> INIZIO GESTIONE DISABILITAZIONE TAVOLO PER ASPORTO <---
+const checkAsportoCassa = document.getElementById("checkAsporto");
+if (checkAsportoCassa) {
+    checkAsportoCassa.addEventListener("change", (e) => {
+        const inputTavolo = document.getElementById("numeroTavoloCassa");
+        if (inputTavolo) {
+            if (e.target.checked) {
+                inputTavolo.disabled = true;
+                inputTavolo.style.backgroundColor = "#e0e0e0";
+                inputTavolo.value = ""; // Svuota il tavolo se asporto
+            } else {
+                inputTavolo.disabled = false;
+                inputTavolo.style.backgroundColor = "#fff";
+            }
+        }
+    });
+}
+// ---> FINE GESTIONE DISABILITAZIONE TAVOLO PER ASPORTO <---
 // --- FUNZIONE CALCOLO SCONTO (AGGIORNATA PER VARIANTI) ---
 function calcolaPrezzoConSconto(piatto, comandaIntera = null){
     if (!checkOnline(true)) return;
@@ -9800,6 +9834,21 @@ window.avviaTimerAnnullamento = function(idComanda, datiComanda) {
             
             // 2. ELIMINA LA COMANDA DEFINITIVAMENTE
             await db.ref("comande/" + id).remove();
+
+            // ---> INIZIO INSERIMENTO ROLLBACK CONTATORE <---
+            if (window.settings.comandeProgressive) {
+                const contatoreRef = db.ref("impostazioni/contatoreComande");
+                await contatoreRef.transaction(valoreCorrente => {
+                    // Se il contatore esiste ed è maggiore di 0, scala di 1
+                    if (valoreCorrente && valoreCorrente > 0) {
+                        return valoreCorrente - 1;
+                    }
+                    return valoreCorrente; 
+                });
+            }
+            // ---> FINE INSERIMENTO ROLLBACK CONTATORE <---
+
+            // 3. RIPRISTINA IL CARRELLO A SCHERMO (Cosa utilissima se c'era solo un errore al volo)
             
             // 3. RIPRISTINA IL CARRELLO A SCHERMO (Cosa utilissima se c'era solo un errore al volo)
             comandaCorrente = c.piatti || [];
@@ -9976,7 +10025,12 @@ document.addEventListener("DOMContentLoaded", () => {
 				noteDestinazioni = ["cucina"];
 				if (window.settings.snackAbilitato) noteDestinazioni.push("snack");
 			}
-			
+			// ---> INSERISCI QUI LA CATTURA TAVOLO <---
+			let numeroTavolo = "";
+			if (window.settings.richiediTavolo) {
+			    const inputTavolo = document.getElementById("numeroTavoloCassa");
+			    if (inputTavolo) numeroTavolo = inputTavolo.value.trim();
+			}
 			const nuovaComanda = {
 			    numero: numeroComandaFinale,
 			    piatti: piattiValidi || [],
@@ -9994,6 +10048,7 @@ document.addEventListener("DOMContentLoaded", () => {
 			    commento: commentoAsporto || null,
 			    metodoPagamento: metodoPagamento,
 			    scontoGlobale: window.scontoGlobaleCorrente || null,
+				tavolo: numeroTavolo,
 			    uidCassiere: uid
 			};
 			
