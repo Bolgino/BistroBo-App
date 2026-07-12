@@ -2940,18 +2940,3 @@ body.tema-astronave #menuClienti {
     border: none !important;
     box-shadow: none !important;
 }
-/* Timer Annullamento - Azzurro Neon per i Temi Scuri */
-body.tema-notte #timerAnnullamento,
-body.tema-astronave #timerAnnullamento {
-    color: #00FFFF !important;
-    background: rgba(0, 255, 255, 0.1) !important;
-    border: 1px solid #00FFFF !important;
-    text-shadow: 0 0 5px #00FFFF, 0 0 10px #00FFFF !important;
-    box-shadow: 0 0 8px rgba(0, 255, 255, 0.5), inset 0 0 5px rgba(0, 255, 255, 0.2) !important;
-}
-/* Forza l'azzurro neon per il timer in TUTTI i temi o nei temi scuri */
-#timerAnnullamento {
-    color: #00FFFF !important; /* Azzurro ciano/neon */
-    text-shadow: 0 0 8px rgba(0, 255, 255, 0.8) !important;
-    font-weight: 900 !important;
-}
