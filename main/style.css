@@ -2940,3 +2940,12 @@ body.tema-astronave #menuClienti {
     border: none !important;
     box-shadow: none !important;
 }
+
+/* ===========================================================
+   FIX COLORE TIMER TASTO ANNULLA IN CASSA
+=========================================================== */
+#annullaUltimaVenditaBtn, 
+#annullaUltimaVenditaBtn span {
+    color: #ffffff !important;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.8) !important;
+}
