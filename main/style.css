@@ -2947,3 +2947,61 @@ body #aggiungiComandaTab button#annullaUltimaVenditaBtn span#timerAnnullamento {
     text-shadow: 0 0 5px #00FFFF, 0 0 10px rgba(0, 255, 255, 0.8) !important;
     background-color: transparent !important;
 }
+/* ===========================================================
+   FIX BOX PAGATO, RESTO E TOTALE CLIENTE (TEMI SCURI)
+=========================================================== */
+
+/* --- TEMA NOTTE --- */
+body.tema-notte #boxPagatoCliente,
+body.tema-notte #boxRestoCliente,
+body.tema-notte #boxTotaleCliente {
+    background: #111827 !important;
+    background-color: #111827 !important;
+    border: 1px solid #334155 !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.8) !important;
+}
+
+/* Testi descrittivi */
+body.tema-notte #boxPagatoCliente div:first-child,
+body.tema-notte #boxRestoCliente div:first-child,
+body.tema-notte #boxTotaleCliente div:first-child {
+    color: #94A3B8 !important; /* Grigio chiaro per non accecare */
+}
+
+/* Valori numerici */
+body.tema-notte #vPagato { color: #3b82f6 !important; } /* Blu scuro/notte */
+body.tema-notte #vResto { color: #f59e0b !important; }  /* Arancione/Ambra */
+body.tema-notte #vTotale { color: #FFFFFF !important; } /* Bianco puro */
+
+
+/* --- TEMA ASTRONAVE --- */
+body.tema-astronave #boxPagatoCliente,
+body.tema-astronave #boxRestoCliente,
+body.tema-astronave #boxTotaleCliente {
+    background: #06131E !important;
+    background-color: #06131E !important;
+    border: 1px solid #00A6CC !important;
+    box-shadow: inset 0 0 8px rgba(0,217,255,.1), 0 0 5px rgba(0,217,255,.15) !important;
+}
+
+/* Testi descrittivi */
+body.tema-astronave #boxPagatoCliente div:first-child,
+body.tema-astronave #boxRestoCliente div:first-child,
+body.tema-astronave #boxTotaleCliente div:first-child {
+    color: #87F7FF !important;
+    text-shadow: 0 0 2px rgba(0,255,255,.3) !important;
+}
+
+/* Valori numerici con effetto Neon */
+body.tema-astronave #vPagato { 
+    color: #00D9FF !important; 
+    text-shadow: 0 0 5px #00D9FF, 0 0 10px rgba(0,217,255,0.6) !important; 
+}
+body.tema-astronave #vResto { 
+    color: #FF9A40 !important; 
+    text-shadow: 0 0 5px #FF9A40, 0 0 10px rgba(255,154,64,0.6) !important; 
+}
+body.tema-astronave #vTotale { 
+    color: #FFFFFF !important; 
+    text-shadow: 0 0 5px #00D9FF, 0 0 10px rgba(0,217,255,0.8) !important; 
+}
