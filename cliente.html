@@ -331,12 +331,33 @@
                 document.getElementById("vTotale").innerText = "€ " + data.totale.toFixed(2);
                 document.getElementById("vPagato").innerText = "€ " + (data.pagato || 0).toFixed(2);
                 document.getElementById("vResto").innerText = "€ " + (data.resto || 0).toFixed(2);
-                document.getElementById("areaLista").innerHTML = data.piatti.map(p => `
-                    <div class="riga-ordine">
-                        <span><b style="color:#2196f3; font-weight: 800;">${p.quantita}x</b> &nbsp; ${p.nome}</span>
-                        <span>€ ${(p.prezzo * p.quantita).toFixed(2)}</span>
+                document.getElementById("areaLista").innerHTML = data.piatti.map(p => {
+                    // Raccogliamo extra, varianti o contorni (a seconda di come sono salvati nel DB)
+                    let dettagli = [];
+                    if (p.varianti && Array.isArray(p.varianti)) dettagli.push(...p.varianti);
+                    if (p.extra && Array.isArray(p.extra)) dettagli.push(...p.extra);
+                    if (p.contorni && Array.isArray(p.contorni)) dettagli.push(...p.contorni);
+                    // Se usi un campo testuale "note", decommenta la riga sotto:
+                    // if (p.note) dettagli.push(p.note);
+
+                    let extraHTML = "";
+                    if (dettagli.length > 0) {
+                        extraHTML = `
+                        <div style="font-size: 0.55em; opacity: 0.8; margin-top: 8px; padding-left: 65px; font-weight: 500; display: flex; flex-wrap: wrap; gap: 5px;">
+                            ${dettagli.map(d => `<span style="background: rgba(128,128,128,0.2); padding: 4px 8px; border-radius: 6px;">+ ${d}</span>`).join("")}
+                        </div>`;
+                    }
+
+                    return `
+                    <div class="riga-ordine" style="display: flex; flex-direction: column;">
+                        <div style="display: flex; justify-content: space-between; width: 100%;">
+                            <span><b style="color:#2196f3; font-weight: 800;">${p.quantita}x</b> &nbsp; ${p.nome}</span>
+                            <span>€ ${(p.prezzo * p.quantita).toFixed(2)}</span>
+                        </div>
+                        ${extraHTML}
                     </div>
-                `).join("");
+                    `;
+                }).join("");
             });
 
             db.ref("utenti/" + uidCassa + "/status/state").on("value", stateSnap => {
