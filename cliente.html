@@ -331,7 +331,7 @@
                 document.getElementById("vTotale").innerText = "€ " + data.totale.toFixed(2);
                 document.getElementById("vPagato").innerText = "€ " + (data.pagato || 0).toFixed(2);
                 document.getElementById("vResto").innerText = "€ " + (data.resto || 0).toFixed(2);
-                // DENTRO avviaMonitor(uidCassa) in cliente.html
+               // DENTRO avviaMonitor(uidCassa) in cliente.html
                 document.getElementById("areaLista").innerHTML = data.piatti.map(p => {
                     let variantiHtml = "";
                     let variantiArray = p.varianti ? (Array.isArray(p.varianti) ? p.varianti : Object.values(p.varianti)) : [];
@@ -378,7 +378,6 @@
                     </div>
                     `;
                 }).join("");
-                    }
                 
                     let contorniHtml = "";
                     let contorniArray = p.contorniScelti ? (Array.isArray(p.contorniScelti) ? p.contorniScelti : Object.values(p.contorniScelti)) : [];
