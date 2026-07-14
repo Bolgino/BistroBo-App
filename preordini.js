@@ -1052,41 +1052,65 @@ async function initPreordiniClienti() {
                     }
                 }
             }
+            // Determina se il piatto è esaurito da ingredienti o blocco
+            let esaurito = item.bloccato === true;
+            if (item.ingredienti) {
+                for (const ing of item.ingredienti) {
+                    const dbIng = ingredientiDB[ing.id];
+                    if (dbIng && dbIng.disponibile === false) {
+                        esaurito = true;
+                        break;
+                    }
+                }
+            }
+
+            // CONTROLLO CHIUSURA REPARTO
             let ctg = (item.categoria || "cibi").toLowerCase().trim();
-            let repMatch = ctg;
-            if (ctg === "cibi") repMatch = "cucina";
-            if (ctg === "bevande") repMatch = "bere";
+            const lE1 = (window.nomiRepartiExtra?.extra1 || "").toLowerCase().trim();
+            const lE2 = (window.nomiRepartiExtra?.extra2 || "").toLowerCase().trim();
+            const lE3 = (window.nomiRepartiExtra?.extra3 || "").toLowerCase().trim();
             
+            let repMatch = "cucina";
+            if (ctg === "bevande") repMatch = "bere";
+            else if (ctg === "snack" || ctg.includes("fritti")) repMatch = "snack";
+            else if (ctg === "extra1" || ctg === "risto" || (lE1 && ctg === lE1)) repMatch = "extra1";
+            else if (ctg === "extra2" || (lE2 && ctg === lE2)) repMatch = "extra2";
+            else if (ctg === "extra3" || (lE3 && ctg === lE3)) repMatch = "extra3";
+            else repMatch = "cucina";
+
             let isChiuso = false;
-            // Leggiamo la variabile globale che viene iniettata nel main
             if (window.parent && window.parent.repartiChiusi && window.parent.repartiChiusi[repMatch] === true) {
                 isChiuso = true;
             } else if (window.repartiChiusi && window.repartiChiusi[repMatch] === true) {
                 isChiuso = true;
             }
-            
+
             if (isChiuso) esaurito = true;
 
+            // AGGIORNAMENTO GRAFICA BOTTONE
             if (esaurito) {
                 riga.classList.add("esaurito");
                 btnAggiungi.disabled = true;
-                btnAggiungi.style.background = "#e0e0e0";
-                btnAggiungi.style.color = "#999";
-                btnAggiungi.style.border = "none";
+                
+                // Colora diversamente se è "Chiuso" o "Esaurito"
+                btnAggiungi.style.background = isChiuso ? "#eceff1" : "#e0e0e0";
+                btnAggiungi.style.color = isChiuso ? "#78909c" : "#999";
+                btnAggiungi.style.border = isChiuso ? "2px dashed #90a4ae" : "none";
                 btnAggiungi.style.cursor = "not-allowed";
-                btnAggiungi.innerText = "Esaurito";
+                btnAggiungi.innerText = isChiuso ? "🛑 Chiuso" : "Esaurito";
 
                 if (!labelEsaurito) {
                     const span = document.createElement("span");
                     span.className = "piatto-esaurito-label";
-                    span.innerText = "❌ Non disponibile";
+                    span.innerText = isChiuso ? "🛑 Servizio Terminato" : "❌ Non disponibile";
                     span.style.marginLeft = "10px";
                     riga.querySelector(".menu-item-top").appendChild(span);
+                } else {
+                    labelEsaurito.innerText = isChiuso ? "🛑 Servizio Terminato" : "❌ Non disponibile";
                 }
             } else {
                 riga.classList.remove("esaurito");
                 btnAggiungi.disabled = false;
-                // Stile leggero e moderno
                 btnAggiungi.style.background = "transparent";
                 btnAggiungi.style.color = "#4CAF50";
                 btnAggiungi.style.border = "2px solid #4CAF50";
