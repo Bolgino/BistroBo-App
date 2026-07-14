@@ -11130,7 +11130,7 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
             y += 2;
             
             // INSERISCI QUI IL NOME DEL FILE CHE VUOI CREARE (es. live.html)
-            const baseUrl = "https://bolgino.github.io/BistroBo-App/NOME_CHE_VUOI_TU.html";
+            const baseUrl = "https://bolgino.github.io/BistroBo-App/stato-ordine.html";
             const trackingLink = `${baseUrl}?n=${numeroComanda}`;
             
             try {
