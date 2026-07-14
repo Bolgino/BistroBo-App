@@ -3,96 +3,118 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Pagina non trovata - BistroBò</title>
-  <!-- collega al tuo style.css -->
-  <link rel="stylesheet" href="main/style.css" />
+  <title>Piatto non trovato - BistroBò</title>
+  
+  <!-- ATTENZIONE: I percorsi DEVONO iniziare con /BistroBo-App/ per funzionare nella 404 -->
+  <link rel="icon" href="/BistroBo-App/favicon.ico" type="image/x-icon">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/BistroBo-App/main/style.css" />
+  
   <style>
-    /* aggiungo solo qualche extra per centrare il contenuto */
-    #errorBox {
+    /* Centratura e stile personalizzato per l'errore */
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      font-family: 'Poppins', sans-serif;
       text-align: center;
-      margin-top: 100px;
-    } 
-    #errorBox h1 {
-      font-size: 4rem;
-      color: #e74c3c;
     }
-    #errorBox p {
-      margin: 15px 0;
-      font-size: 1.2rem;
+    .error-container {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 50px 30px;
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      max-width: 500px;
+      width: 90%;
+      z-index: 10;
     }
-    #errorBox a {
-      display: inline-block;
-      margin-top: 10px;
-      padding: 10px 20px;
-      background: var(--main-color, #3498db);
+    
+    /* Adattamento automatico ai tuoi temi scuri */
+    body.tema-notte .error-container,
+    body.tema-astronave .error-container {
+      background: #050A13;
+      border: 1px solid #00A6CC;
       color: #fff;
-      border-radius: 6px;
-      text-decoration: none;
-      transition: 0.3s;
     }
-    #errorBox a:hover {
-      background: #2980b9;
+
+    .error-container h1 {
+      font-size: 6rem;
+      margin: 0;
+      color: #FF5722;
+      text-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+    }
+    .error-container h2 {
+      font-size: 2rem;
+      margin-top: 10px;
+      color: inherit;
+    }
+    .error-container p {
+      font-size: 1.2rem;
+      margin-bottom: 30px;
+      color: #555;
+    }
+    
+    body.tema-notte .error-container p,
+    body.tema-astronave .error-container p {
+      color: #ccc;
+    }
+
+    .home-btn {
+      display: inline-block;
+      padding: 15px 30px;
+      font-size: 1.2rem;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #4caf50, #2e7d32);
+      color: #fff;
+      text-decoration: none;
+      font-weight: bold;
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+    .home-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
     }
   </style>
 </head>
 <body>
-  <div id="errorBox">
+  <!-- Lo sfondo dei tuoi temi -->
+  <div id="themeBackground"></div>
+  
+  <div class="error-container">
     <h1>404</h1>
-    <p>Ops! La pagina che cerchi non esiste.</p>
-    <a href="./index.html">🏠 Torna alla Home</a>
+    <h2>Piatto non trovato! 🍽️</h2>
+    <p>Sembra che la pagina che stai cercando sia finita fuori dal menù o non sia mai esistita.</p>
+    
+    <!-- Percorso assoluto per tornare SEMPRE alla home giusta -->
+    <a href="/BistroBo-App/index.html" class="home-btn">🔙 Torna alla Cassa</a>
   </div>
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-    import { getDatabase, ref, get, onValue } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
-    // Config Firebase (usa la stessa del sito principale)
+  <!-- SCRIPT FIREBASE PER IL TEMA BISTROBÒ -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
+  <script>
     const firebaseConfig = {
-    apiKey: "AIzaSyDxpd24nF3qmNrh8j40jxjhYzh1RC08DhI",
-    authDomain: "comande-6fb85.firebaseapp.com",
-    databaseURL: "https://comande-6fb85-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "comande-6fb85",
-    storageBucket: "comande-6fb85.firebasestorage.app",
-    messagingSenderId: "676960522709",
-    appId: "1:676960522709:web:cc2284c87e73044f566d5c"
+      apiKey: "AIzaSyDxpd24nF3qmNrh8j40jxjhYzh1RC08DhI",
+      authDomain: "comande-6fb85.firebaseapp.com",
+      databaseURL: "https://comande-6fb85-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "comande-6fb85"
     };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-
-    async function applicaTema() {
-      try {
-        const temaSnap = await get(ref(db, "impostazioni/tema"));
-        const tema = temaSnap.val() || "default";
-
-        // Rimuovi tutte le classi tema
-        document.body.classList.remove(
-          "tema-default","tema-scout","tema-inverno",
-          "tema-autunno","tema-primavera","tema-estate"
-        );
-        document.body.classList.add("tema-" + tema, "tema-caricato");
-
-        // Se vuoi, aggiorna anche il colore del titolo
-        const titolo = document.querySelector("#errorBox h1");
-        if (titolo) titolo.style.color = ""; // lascia che segua la classe
-      } catch(e) {
-        console.error("Errore caricamento tema:", e);
-        document.body.classList.add("tema-caricato"); // fallback
-      }
+    
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
     }
+    const db = firebase.database();
 
-    // Applica subito tema
-    applicaTema();
-
-    // Aggiornamento realtime (opzionale)
-    onValue(ref(db, "impostazioni/tema"), snap => {
+    // Applica in tempo reale il tema del BistroBò
+    db.ref("impostazioni/tema").on("value", snap => {
       const tema = snap.val() || "default";
-      document.body.classList.remove(
-        "tema-default","tema-scout","tema-inverno",
-        "tema-autunno","tema-primavera","tema-estate"
-      );
-      document.body.classList.add("tema-" + tema);
+      document.body.className = ""; // pulizia classi
+      document.body.classList.add("tema-" + tema, "tema-caricato");
     });
   </script>
-
 </body>
 </html>
