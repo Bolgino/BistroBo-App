@@ -332,19 +332,45 @@
                 document.getElementById("vPagato").innerText = "€ " + (data.pagato || 0).toFixed(2);
                 document.getElementById("vResto").innerText = "€ " + (data.resto || 0).toFixed(2);
                 document.getElementById("areaLista").innerHTML = data.piatti.map(p => {
-                    // Raccogliamo extra, varianti o contorni (a seconda di come sono salvati nel DB)
-                    let dettagli = [];
-                    if (p.varianti && Array.isArray(p.varianti)) dettagli.push(...p.varianti);
-                    if (p.extra && Array.isArray(p.extra)) dettagli.push(...p.extra);
-                    if (p.contorni && Array.isArray(p.contorni)) dettagli.push(...p.contorni);
-                    // Se usi un campo testuale "note", decommenta la riga sotto:
-                    // if (p.note) dettagli.push(p.note);
-
+                    // NUOVO CODICE CORRETTO:
+                    let badges = [];
+                    
+                    // 1. Gestione Varianti (Aggiunte e Rimozioni raggruppate)
+                    let variantiArray = p.varianti ? (Array.isArray(p.varianti) ? p.varianti : Object.values(p.varianti)) : [];
+                    if (variantiArray.length > 0) {
+                        let conteggio = {};
+                        variantiArray.forEach(v => {
+                            let key = v.tipo + "_" + v.nome;
+                            if (!conteggio[key]) conteggio[key] = { tipo: v.tipo, nome: v.nome, count: 0 };
+                            conteggio[key].count++;
+                        });
+                        
+                        Object.values(conteggio).forEach(v => {
+                            let qTxt = v.count > 1 ? `${v.count}x ` : "";
+                            if (v.tipo === "aggiunta") {
+                                // Badge Verde per le aggiunte (Extra)
+                                badges.push(`<span style="background: rgba(76, 175, 80, 0.15); color: #2e7d32; border: 1px solid #4CAF50; padding: 4px 10px; border-radius: 8px;">+ ${qTxt}${v.nome}</span>`);
+                            } else if (v.tipo === "rimozione") {
+                                // Badge Rosso e barrato per le rimozioni (Senza...)
+                                badges.push(`<span style="background: rgba(244, 67, 54, 0.15); color: #d32f2f; border: 1px solid #F44336; padding: 4px 10px; border-radius: 8px; text-decoration: line-through;">- Senza ${v.nome}</span>`);
+                            }
+                        });
+                    }
+                    
+                    // 2. Gestione Contorni Scelti (Logica Combo)
+                    let contorniArray = p.contorniScelti ? (Array.isArray(p.contorniScelti) ? p.contorniScelti : Object.values(p.contorniScelti)) : [];
+                    if (contorniArray.length > 0) {
+                        contorniArray.forEach(c => {
+                            // Badge Azzurro per i contorni inclusi
+                            badges.push(`<span style="background: rgba(33, 150, 243, 0.15); color: #1565c0; border: 1px solid #2196F3; padding: 4px 10px; border-radius: 8px;">↳ ${c.nome}</span>`);
+                        });
+                    }
+                    
                     let extraHTML = "";
-                    if (dettagli.length > 0) {
+                    if (badges.length > 0) {
                         extraHTML = `
-                        <div style="font-size: 0.55em; opacity: 0.8; margin-top: 8px; padding-left: 65px; font-weight: 500; display: flex; flex-wrap: wrap; gap: 5px;">
-                            ${dettagli.map(d => `<span style="background: rgba(128,128,128,0.2); padding: 4px 8px; border-radius: 6px;">+ ${d}</span>`).join("")}
+                        <div style="font-size: 0.55em; margin-top: 8px; padding-left: 65px; font-weight: 600; display: flex; flex-wrap: wrap; gap: 8px;">
+                            ${badges.join("")}
                         </div>`;
                     }
 
