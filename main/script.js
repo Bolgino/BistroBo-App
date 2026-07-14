@@ -453,55 +453,81 @@ document.getElementById("regBtn").onclick = async () => {
     }
     
 };
-// Variabili globali per lo stato delle chiusure
+
+
+// ================= GESTIONE CHIUSURA FINE SERVIZIO =================
 window.repartiChiusi = {};
 window.permessiChiusura = {};
 
-// ================= GESTIONE CHIUSURA FINE SERVIZIO =================
 const toggleChiusuraBtn = document.getElementById("toggleChiusuraRepartiBtn");
 const btnGestisciChiusure = document.getElementById("btnGestisciChiusure");
 const chiusuraRef = db.ref("impostazioni/chiusuraServizio");
 
 if (toggleChiusuraBtn) {
-    // 1. Inizializza il Toggle Admin
+    // 1. Inizializza il Toggle Master
     initToggle(toggleChiusuraBtn, chiusuraRef.child("abilitato"), {on: "ON", off: "OFF"}, false, val => {
-        btnGestisciChiusure.style.display = val ? "inline-block" : "none";
-        if (val && window.isLoggedInAdmin) apriModaleChiusureAdmin(); // Apre il modale appena lo attivi
+        if (btnGestisciChiusure) btnGestisciChiusure.style.display = val ? "inline-block" : "none";
     });
 
-    // 2. Ascolta lo stato di chiusura in Realtime per TUTTA L'APP
+    // 2. Ascolto Globale
     chiusuraRef.on("value", snap => {
         const data = snap.val() || {};
         window.repartiChiusi = data.chiusi || {};
         window.permessiChiusura = data.permessi || {};
         const sistemaAttivo = data.abilitato === true;
 
-        // Aggiorna bottone Admin
         if (btnGestisciChiusure) btnGestisciChiusure.style.display = sistemaAttivo ? "inline-block" : "none";
 
-        // Aggiorna interfaccia Operatore (Mostra/Nasconde il tasto CHIUDI)
         ["cucina", "bere", "snack", "extra1", "extra2", "extra3"].forEach(rep => {
+            const isChiuso = window.repartiChiusi[rep] === true;
+
+            // --- A) LATO OPERATORE (Es: Cuoco) ---
             const btnOp = document.getElementById(`btnChiudiServizio_${rep}`);
             if (btnOp) {
-                // Se il sistema è attivo, l'operatore ha il permesso e il reparto NON è già chiuso
-                if (sistemaAttivo && window.permessiChiusura[rep] && !window.repartiChiusi[rep]) {
+                // Il tasto Chiudi appare SOLO se ha il permesso E non ha ancora chiuso
+                if (sistemaAttivo && window.permessiChiusura[rep] && !isChiuso) {
                     btnOp.style.display = "inline-block";
                     btnOp.onclick = () => confermaChiusuraOperatore(rep);
                 } else {
-                    btnOp.style.display = "none"; // Sparisce se non permesso o se ha già chiuso
+                    btnOp.style.display = "none"; // Sparisce appena chiude!
+                }
+            }
+
+            // --- B) LATO ADMIN (Gestione Profili) ---
+            const statoSpan = document.getElementById(`statoChiusuraAdmin_${rep}`);
+            const btnAdminChiudi = document.getElementById(`btnAdminChiusura_${rep}`);
+            
+            if (statoSpan && btnAdminChiudi) {
+                if (sistemaAttivo) {
+                    statoSpan.innerHTML = isChiuso 
+                        ? `<span style="color:#d32f2f;">🛑 Chiuso</span>` 
+                        : `<span style="color:#4CAF50;">🟢 Aperto</span>`;
+                    
+                    // Il tasto "Riapri" appare SOLO se il reparto è chiuso
+                    if (isChiuso) {
+                        btnAdminChiudi.style.display = "inline-block";
+                        btnAdminChiudi.onclick = () => {
+                            db.ref(`impostazioni/chiusuraServizio/chiusi/${rep}`).set(false);
+                            notify(`Reparto riaperto!`, "success");
+                        };
+                    } else {
+                        btnAdminChiudi.style.display = "none";
+                    }
+                } else {
+                    statoSpan.innerHTML = "";
+                    btnAdminChiudi.style.display = "none";
                 }
             }
         });
 
-        // 3. AGGIORNA CASSA (Blocca i bottoni)
+        // Aggiorna istantaneamente la cassa
         if (typeof aggiornaBottoniBloccati === "function") aggiornaBottoniBloccati();
     });
 
-    // 4. Click Gestisci Admin
     if (btnGestisciChiusure) btnGestisciChiusure.onclick = apriModaleChiusureAdmin;
 }
 
-// Modale Admin per gestire Permessi e Riaperture
+// 3. Modale Admin "Gestisci" (Stile elegante e Filtro Profili Attivi)
 function apriModaleChiusureAdmin() {
     const overlay = document.createElement("div");
     overlay.className = "modal-overlay";
@@ -511,45 +537,39 @@ function apriModaleChiusureAdmin() {
     modal.className = "modal-varianti";
     modal.style.width = "400px";
 
+    // Mostra SOLO i reparti attualmente abilitati nelle impostazioni generali
     let reparti = [
-        { id: "cucina", nome: "Cucina" },
-        { id: "bere", nome: "Bere" },
-        { id: "snack", nome: "Snack" },
-        { id: "extra1", nome: window.nomiRepartiExtra?.extra1 || "Extra 1" },
-        { id: "extra2", nome: window.nomiRepartiExtra?.extra2 || "Extra 2" },
-        { id: "extra3", nome: window.nomiRepartiExtra?.extra3 || "Extra 3" }
-    ];
+        { id: "cucina", nome: "Cucina", attivo: true },
+        { id: "bere", nome: "Bere", attivo: true },
+        { id: "snack", nome: "Snack", attivo: window.settings.snackAbilitato },
+        { id: "extra1", nome: window.nomiRepartiExtra?.extra1 || "Extra 1", attivo: window.settings.extra1Abilitato },
+        { id: "extra2", nome: window.nomiRepartiExtra?.extra2 || "Extra 2", attivo: window.settings.extra2Abilitato },
+        { id: "extra3", nome: window.nomiRepartiExtra?.extra3 || "Extra 3", attivo: window.settings.extra3Abilitato }
+    ].filter(r => r.attivo);
 
     let html = `
-        <h3 style="color:#d32f2f; margin-top:0;">Gestione Chiusure</h3>
-        <p style="font-size:0.9em; color:#555;">Seleziona chi può chiudere il proprio reparto in autonomia, oppure forza la riapertura di un reparto chiuso.</p>
-        <div style="display:flex; flex-direction:column; gap:10px; margin-bottom: 20px;">
+        <h3 style="color:#d32f2f; margin-top:0;">Permessi di Chiusura</h3>
+        <p style="font-size:0.9em; color:var(--text-color, #555); text-align:center; margin-bottom: 20px;">
+            Spunta i reparti che possono chiudere in autonomia le ordinazioni.
+        </p>
+        <div style="display:flex; flex-direction:column; gap:8px; margin-bottom: 20px; text-align:left;">
     `;
 
     reparti.forEach(r => {
         const isPermesso = window.permessiChiusura[r.id] ? "checked" : "";
-        const isChiuso = window.repartiChiusi[r.id];
-
-        let statoHtml = isChiuso 
-            ? `<button onclick="riapriRepartoAdmin('${r.id}')" style="background:#4CAF50; color:white; border:none; padding:4px 8px; border-radius:4px; font-weight:bold; cursor:pointer;">🟢 RIAPRI</button>`
-            : `<span style="color:green; font-weight:bold;">Operativo</span>`;
-
         html += `
-            <div style="display:flex; justify-content:space-between; align-items:center; padding:10px; background:#f9f9f9; border:1px solid #ddd; border-radius:6px;">
-                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
-                    <input type="checkbox" class="chk-permesso-chiusura" data-rep="${r.id}" ${isPermesso} style="transform:scale(1.2);">
-                    <b>${r.nome}</b>
-                </label>
-                <div>${statoHtml}</div>
-            </div>
+            <label style="display:flex; justify-content:space-between; align-items:center; padding:10px 15px; background: var(--bg-color, #f5f5f5); border-radius:8px; border: 1px solid var(--border-color, #ccc); cursor:pointer; margin:0;">
+                <span style="font-size: 1.1em; font-weight:bold; color:var(--text-color, #333);">${r.nome}</span>
+                <input type="checkbox" class="chk-permesso-chiusura" data-rep="${r.id}" ${isPermesso} style="transform:scale(1.4); cursor:pointer; margin:0;">
+            </label>
         `;
     });
 
     html += `
         </div>
-        <div class="modal-actions">
-            <button class="btn-chiudi" onclick="this.closest('.modal-overlay').remove()">Chiudi</button>
-            <button class="btn-salva" id="salvaPermessiChiusura">Salva Permessi</button>
+        <div class="modal-actions" style="display:flex; gap:10px;">
+            <button class="btn-chiudi" onclick="this.closest('.modal-overlay').remove()" style="flex:1;">Annulla</button>
+            <button class="btn-salva" id="salvaPermessiChiusura" style="flex:1;">Salva</button>
         </div>
     `;
 
@@ -564,23 +584,13 @@ function apriModaleChiusureAdmin() {
         });
         db.ref("impostazioni/chiusuraServizio/permessi").set(permessiAggiornati);
         overlay.remove();
-        notify("Permessi di chiusura salvati!", "success");
+        notify("Permessi salvati!", "success");
     };
 }
 
-// Riapertura forzata da Admin
-window.riapriRepartoAdmin = function(rep) {
-    db.ref(`impostazioni/chiusuraServizio/chiusi/${rep}`).set(false).then(() => {
-        // Chiude e riapre il modale per aggiornare la grafica
-        document.querySelector('.modal-overlay').remove();
-        apriModaleChiusureAdmin();
-        notify(`Reparto riaperto!`, "success");
-    });
-};
-
-// Click Operatore per chiudere il proprio reparto
+// 4. Avviso Operatore
 function confermaChiusuraOperatore(rep) {
-    disonotify("🚨 SEI SICURO DI VOLER CHIUDERE IL REPARTO? \n\nQuesta azione bloccherà istantaneamente tutti i tuoi piatti dalla Cassa e dai Preordini. \nSolo l'amministratore potrà riaprirlo.", {
+    disonotify("🚨 SEI SICURO DI VOLER CHIUDERE IL REPARTO? \n\nQuesta azione bloccherà i tuoi piatti in Cassa e nei Preordini.\nSolo l'Admin potrà riaprire il servizio.", {
         confirmText: "Sì, Chiudi Servizio",
         showCancel: true,
         cancelText: "Annulla",
