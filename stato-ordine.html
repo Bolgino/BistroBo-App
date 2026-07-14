@@ -65,33 +65,54 @@
             100% { box-shadow: 0 0 0 0 rgba(255, 152, 0, 0); } 
         }
 
-        /* --- STILI BOX ERRORE --- */
+        /* --- STILI BOX MINORI --- */
         .error-box { background: #ffebee; padding: 15px; border-radius: 10px; border: 1px solid #f44336; color: #d32f2f; }
         .error-box p { color: #333; margin-bottom: 5px; }
         .error-box small { color: #555; }
 
+        .info-box {
+            margin-top: 30px; text-align: center; color: #555; font-size: 0.85em; 
+            background: rgba(255,255,255,0.85); padding: 10px 20px; border-radius: 20px; font-weight: bold;
+        }
+
+        #btnAttivaAudio {
+            margin-top: 20px; background: rgba(33, 150, 243, 0.15); color: #2196F3; border: 1px solid #2196F3; 
+            padding: 10px 20px; border-radius: 20px; cursor: pointer; font-weight: bold; font-family: 'Poppins', sans-serif;
+        }
+
         /* ========================================================
            ADATTAMENTO PER I TEMI SCURI (Notte e Astronave)
            ======================================================== */
-        body.tema-notte .tracker-box, body.tema-astronave .tracker-box { 
-            background: #06131E !important; border: 1px solid #00A6CC !important; border-top: 5px solid #00A6CC !important; 
+        body.tema-notte .tracker-box, body.tema-astronave .tracker-box,
+        body.tema-notte .info-box, body.tema-astronave .info-box { 
+            background: #050A13 !important; border: 1px solid #00A6CC !important; 
+            box-shadow: inset 0 0 8px rgba(0,217,255,.05) !important;
         }
-        body.tema-notte .reparto-nome, body.tema-astronave .reparto-nome { 
+        body.tema-notte .tracker-box, body.tema-astronave .tracker-box { border-top: 5px solid #00A6CC !important; }
+        
+        body.tema-notte .reparto-nome, body.tema-astronave .reparto-nome,
+        body.tema-notte .info-box, body.tema-astronave .info-box { 
             color: #D0FFFF !important; text-shadow: 0 0 2px rgba(0,255,255,.3) !important; 
         }
         body.tema-notte h1, body.tema-astronave h1 { color: #fff !important; }
 
-        /* Badge nei temi scuri: tolto il bianco, inseriti colori profondi ad alto contrasto */
+        /* Stile scuro per il bottone audio */
+        body.tema-notte #btnAttivaAudio, body.tema-astronave #btnAttivaAudio {
+            background: rgba(0, 166, 204, 0.15) !important; color: #00FFFF !important; border-color: #00A6CC !important;
+            text-shadow: 0 0 3px #00D9FF !important;
+        }
+
+        /* Badge nei temi scuri: colori profondi ad alto contrasto */
         body.tema-notte .badge, body.tema-astronave .badge { text-shadow: none !important; }
         
         body.tema-notte .badge.da-fare, body.tema-astronave .badge.da-fare {
             background: #420000 !important; color: #ff8a80 !important; border-color: #ff5252 !important;
         }
         body.tema-notte .badge.in-elaborazione, body.tema-astronave .badge.in-elaborazione {
-            background: #4a2c00 !important; color: #ffb74d !important; border-color: #ff9800 !important;
+            background: #453000 !important; color: #FFE36E !important; border-color: #CC9900 !important;
         }
         body.tema-notte .badge.completato, body.tema-astronave .badge.completato {
-            background: #003b2a !important; color: #4dffb2 !important; border-color: #00b35f !important;
+            background: #003B2A !important; color: #4DFFB2 !important; border-color: #00B35F !important;
         }
 
         /* Errore nei temi scuri */
@@ -114,17 +135,15 @@
         </div>
     </div>
 
-    <!-- Tasto per attivare il suono (sui browser mobile il suono in automatico può essere bloccato senza una prima interazione) -->
-    <button id="btnAttivaAudio" style="margin-top: 20px; background: rgba(33, 150, 243, 0.2); color: #2196F3; border: 1px solid #2196F3; padding: 10px 20px; border-radius: 20px; cursor: pointer; font-weight: bold; font-family: 'Poppins', sans-serif;">
-        🔊 Attiva Suono Notifiche
-    </button>
+    <!-- Tasto per attivare il suono (sui browser mobile il suono in automatico può essere bloccato senza interazione) -->
+    <button id="btnAttivaAudio">🔊 Attiva Suono Notifiche</button>
 
-    <div style="margin-top: 20px; text-align: center; color: #555; font-size: 0.85em; background: rgba(255,255,255,0.7); padding: 10px 20px; border-radius: 20px;">
+    <div class="info-box">
         Non ricaricare la pagina, si aggiorna da sola!
     </div>
 
     <script>
-        // 1. Inizializza Firebase con i tuoi dati
+        // 1. Inizializza Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyDxpd24nF3qmNrh8j40jxjhYzh1RC08DhI",
             authDomain: "comande-6fb85.firebaseapp.com",
@@ -144,6 +163,7 @@
             this.style.background = "rgba(76, 175, 80, 0.2)";
             this.style.color = "#4CAF50";
             this.style.borderColor = "#4CAF50";
+            this.style.textShadow = "none";
             // Inizializza un context vuoto per sbloccare le policy dei browser mobile
             const AudioContext = window.AudioContext || window.webkitAudioContext;
             if(AudioContext) { const ctx = new AudioContext(); ctx.resume(); }
@@ -173,7 +193,7 @@
             document.getElementById("titolo-ordine").innerText = "#" + numComanda.toUpperCase();
 
             // ==========================================
-            // FUNZIONE SUONO DI COMPLETAMENTO
+            // FUNZIONE SUONO DI COMPLETAMENTO (DOPPIO!)
             // ==========================================
             function playSuonoPronto() {
                 if (!window.audioAbilitato) return;
@@ -182,24 +202,33 @@
                 
                 try {
                     const ctx = new AudioContext();
-                    const osc = ctx.createOscillator();
-                    const gain = ctx.createGain();
                     
-                    osc.type = "sine";
-                    // Arpeggio felice
-                    osc.frequency.setValueAtTime(523.25, ctx.currentTime); // Do
-                    osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.15); // Mi
-                    osc.frequency.setValueAtTime(783.99, ctx.currentTime + 0.3); // Sol
-                    osc.frequency.setValueAtTime(1046.50, ctx.currentTime + 0.45); // Do alto
-                    
-                    gain.gain.setValueAtTime(0.1, ctx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.2);
-                    
-                    osc.connect(gain);
-                    gain.connect(ctx.destination);
-                    
-                    osc.start(ctx.currentTime);
-                    osc.stop(ctx.currentTime + 1.2);
+                    // Sottofunzione per suonare un singolo arpeggio
+                    function playArpeggio(startTime) {
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.type = "sine";
+                        
+                        // Arpeggio felice
+                        osc.frequency.setValueAtTime(523.25, startTime); // Do
+                        osc.frequency.setValueAtTime(659.25, startTime + 0.15); // Mi
+                        osc.frequency.setValueAtTime(783.99, startTime + 0.3); // Sol
+                        osc.frequency.setValueAtTime(1046.50, startTime + 0.45); // Do alto
+                        
+                        gain.gain.setValueAtTime(0.1, startTime);
+                        gain.gain.exponentialRampToValueAtTime(0.001, startTime + 1.2);
+                        
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        osc.start(startTime);
+                        osc.stop(startTime + 1.2);
+                    }
+
+                    // Suona la PRIMA volta subito
+                    playArpeggio(ctx.currentTime);
+                    // Suona la SECONDA volta dopo 1.5 secondi
+                    playArpeggio(ctx.currentTime + 1.5);
+
                 } catch(e) { console.log("Audio bloccato dal browser"); }
             }
 
@@ -223,6 +252,7 @@
                 }
 
                 // --- 1. SCOPRIAMO QUALI REPARTI SONO REALMENTE COINVOLTI NELL'ORDINE ---
+                // Se un reparto non ha piatti associati in questo specifico ordine, rimarrà "false"
                 let repartiReali = { cucina: false, bere: false, snack: false, extra1: false, extra2: false, extra3: false };
                 
                 if (comandaData.piatti) {
@@ -237,11 +267,11 @@
                             else if (cat === "extra2" || tipo === "extra2") repartiReali.extra2 = true;
                             else if (cat === "extra3" || tipo === "extra3") repartiReali.extra3 = true;
                             else if (cat === "snack" || cat.includes("fritti") || tipo === "snack" || nomePiatto.includes("patatine") || nomePiatto.includes("fritto")) repartiReali.snack = true;
-                            else if (cat !== "servizio") repartiReali.cucina = true;
+                            else if (cat !== "servizio") repartiReali.cucina = true; // Tutto il resto è cucina
                         }
                         
                         segnaReparto(p.categoria, p.tipo, p.nome);
-                        // Controlla anche eventuali contorni
+                        // Controlla anche eventuali contorni associati al piatto
                         if (p.contorniScelti) {
                             p.contorniScelti.forEach(c => segnaReparto(c.categoria, "", c.nome));
                         }
@@ -278,15 +308,15 @@
                 // --- 3. CONTROLLO SUONO E TITOLO ---
                 const sottotitolo = document.getElementById("sottotitolo-ordine");
                 if (anyDisplayed && allReady) {
-                    sottotitolo.innerHTML = "<b style='color:#4CAF50;'>PRONTO PER IL RITIRO! 🎉</b>";
-                    // Suona solo la prima volta che diventa tutto pronto
+                    sottotitolo.innerHTML = "<b style='color:#4CAF50; font-size:1.1em;'>TUTTO PRONTO PER IL RITIRO! 🎉</b>";
+                    // Suona (DUE VOLTE) solo la prima volta che diventa tutto pronto
                     if (!window.ordineProntoNotificato) {
                         window.ordineProntoNotificato = true;
                         playSuonoPronto();
                     }
                 } else {
                     sottotitolo.innerHTML = "Aggiornamento in tempo reale 🔄";
-                    window.ordineProntoNotificato = false; // Resetta nel caso l'ordine torni in lavorazione
+                    window.ordineProntoNotificato = false; // Resetta nel caso l'ordine torni indietro in lavorazione
                 }
             }
 
