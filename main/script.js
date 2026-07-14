@@ -10330,7 +10330,13 @@ function sincronizzaDisplayLive() {
         piatti: (typeof comandaCorrente !== 'undefined' ? comandaCorrente : []).map(p => ({
             nome: p.nome,
             quantita: p.quantita,
-            prezzo: p.sconto ? (calcolaPrezzoConSconto(p) / p.quantita) : p.prezzo // prezzo unitario calcolato
+            prezzo: p.sconto ? (calcolaPrezzoConSconto(p) / p.quantita) : p.prezzo, // prezzo unitario calcolato
+            
+            // 🔥 ECCO LA MAGIA: AGGIUNGIAMO I DATI CHE MANCAVANO!
+            extraPrezzo: p.extraPrezzo || 0,
+            varianti: p.varianti ? JSON.parse(JSON.stringify(Array.isArray(p.varianti) ? p.varianti : Object.values(p.varianti))) : [],
+            contorniScelti: p.contorniScelti ? JSON.parse(JSON.stringify(Array.isArray(p.contorniScelti) ? p.contorniScelti : Object.values(p.contorniScelti))) : [],
+            sconto: p.sconto || null
         })),
         totale: totale,
         numeroComanda: (num + lett) || "---",
@@ -10345,6 +10351,8 @@ function sincronizzaDisplayLive() {
     const stringaDati = JSON.stringify(perConfronto);
 
     // Invia al database SOLO se i dati sono cambiati rispetto a 300ms fa
+    if (typeof ultimoDatoLive === 'undefined') window.ultimoDatoLive = ""; // Previene errori se la variabile non è ancora dichiarata
+    
     if (stringaDati !== ultimoDatoLive) {
         db.ref("displayLive/" + uid).set(dati)
           .then(() => { ultimoDatoLive = stringaDati; })
