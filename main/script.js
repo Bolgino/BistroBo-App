@@ -503,15 +503,31 @@ if (toggleChiusuraBtn) {
                         ? `<span style="color:#d32f2f;">🛑 Chiuso</span>` 
                         : `<span style="color:#4CAF50;">🟢 Aperto</span>`;
                     
-                    // Il tasto "Riapri" appare SOLO se il reparto è chiuso
+                    // Il tasto ora è sempre visibile e funziona da toggle
+                    btnAdminChiudi.style.display = "inline-block";
+                    
                     if (isChiuso) {
-                        btnAdminChiudi.style.display = "inline-block";
+                        btnAdminChiudi.innerText = "🟢 RIAPRI";
+                        btnAdminChiudi.style.background = "#4CAF50"; // Verde
                         btnAdminChiudi.onclick = () => {
                             db.ref(`impostazioni/chiusuraServizio/chiusi/${rep}`).set(false);
                             notify(`Reparto riaperto!`, "success");
                         };
                     } else {
-                        btnAdminChiudi.style.display = "none";
+                        btnAdminChiudi.innerText = "🛑 CHIUDI";
+                        btnAdminChiudi.style.background = "#f44336"; // Rosso
+                        btnAdminChiudi.onclick = () => {
+                            // Chiediamo conferma anche all'Admin per evitare click accidentali
+                            disonotify(`Vuoi davvero chiudere il reparto e bloccare le ordinazioni?`, {
+                                confirmText: "Sì, Chiudi",
+                                showCancel: true,
+                                cancelText: "Annulla",
+                                onConfirm: async () => {
+                                    await db.ref(`impostazioni/chiusuraServizio/chiusi/${rep}`).set(true);
+                                    notify(`Reparto chiuso!`, "info");
+                                }
+                            });
+                        };
                     }
                 } else {
                     statoSpan.innerHTML = "";
