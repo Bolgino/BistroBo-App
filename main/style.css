@@ -3031,3 +3031,32 @@ body.tema-astronave .riga-ordine {
     color: #D0FFFF !important;
     text-shadow: 0 0 2px rgba(0,255,255,.3) !important;
 }
+
+/* ===========================================================
+   FIX: BOX TEMPO MEDIO CASSA NEI TEMI SCURI
+=========================================================== */
+
+/* Forza lo sfondo scuro e il testo chiaro nel Tema Notte */
+body.tema-notte #boxTempoMedioCassa {
+    background: #111827 !important;
+    border: 1px solid #334155 !important;
+    color: #F8FAFC !important;
+}
+
+body.tema-notte #boxTempoMedioCassa span {
+    color: #3b82f6 !important; /* Azzurro per il numero, per dare contrasto */
+}
+
+/* Forza lo sfondo scuro e il testo neon nel Tema Astronave */
+body.tema-astronave #boxTempoMedioCassa {
+    background: #06131E !important;
+    border: 1px solid #00A6CC !important;
+    color: #D0FFFF !important;
+    box-shadow: inset 0 0 5px rgba(0,217,255,.08) !important;
+}
+
+body.tema-astronave #boxTempoMedioCassa span {
+    color: #00FFFF !important;
+    text-shadow: 0 0 5px #00D9FF !important;
+}
+
