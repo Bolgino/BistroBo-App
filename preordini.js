@@ -54,6 +54,19 @@ function listenTemaRealtime() {
         aggiornaTitoloPreordini(tema);
     });
 }
+// Ascolta le chiusure globali anche dal file dei preordini
+db.ref("impostazioni/chiusuraServizio/chiusi").on("value", snap => {
+    window.repartiChiusi = snap.val() || {};
+    
+    // Ricarica la grafica dei piatti per aggiornare i bottoni
+    db.ref("menu").once("value").then(snapMenu => {
+        db.ref("ingredienti").once("value").then(snapIng => {
+            if (typeof aggiornaDisponibilitaPiatti === "function") {
+                aggiornaDisponibilitaPiatti(snapMenu.val() || {}, snapIng.val() || {});
+            }
+        });
+    });
+});
 function aggiornaTitoloPreordini(tema) {
     const titolo = document.querySelector(".preordine-title");
     if (!titolo) return;
@@ -1039,6 +1052,20 @@ async function initPreordiniClienti() {
                     }
                 }
             }
+            let ctg = (item.categoria || "cibi").toLowerCase().trim();
+            let repMatch = ctg;
+            if (ctg === "cibi") repMatch = "cucina";
+            if (ctg === "bevande") repMatch = "bere";
+            
+            let isChiuso = false;
+            // Leggiamo la variabile globale che viene iniettata nel main
+            if (window.parent && window.parent.repartiChiusi && window.parent.repartiChiusi[repMatch] === true) {
+                isChiuso = true;
+            } else if (window.repartiChiusi && window.repartiChiusi[repMatch] === true) {
+                isChiuso = true;
+            }
+            
+            if (isChiuso) esaurito = true;
 
             if (esaurito) {
                 riga.classList.add("esaurito");
