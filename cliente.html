@@ -333,6 +333,8 @@
                 document.getElementById("vResto").innerText = "€ " + (data.resto || 0).toFixed(2);
                 
                 document.getElementById("areaLista").innerHTML = data.piatti.map(p => {
+                    
+                    // 1. GESTIONE VARIANTI (EXTRA AGGIUNTI E RIMOZIONI)
                     let variantiHtml = "";
                     let variantiArray = p.varianti ? (Array.isArray(p.varianti) ? p.varianti : Object.values(p.varianti)) : [];
                     
@@ -341,42 +343,57 @@
                         variantiArray.forEach(v => {
                             let key = v.tipo + "_" + v.nome;
                             if (!conteggio[key]) conteggio[key] = { tipo: v.tipo, nome: v.nome, count: 0 };
-                            conteggio[key].count++;
+                            // Leggiamo la quantità se definita (es. +2 Maionese), altrimenti +1
+                            let q = v.qty ? Number(v.qty) : 1;
+                            conteggio[key].count += q;
                         });
                         
                         let txt = Object.values(conteggio).map(v => {
                             let qTxt = v.count > 1 ? `${v.count}x ` : "";
                             let nomeExtra = v.nome.charAt(0).toUpperCase() + v.nome.slice(1);
                             return v.tipo === "aggiunta" 
-                                ? `<span style="color: #4CAF50;">+ ${qTxt}${nomeExtra}</span>` 
-                                : `<span style="color: #F44336;">- Senza ${nomeExtra}</span>`;
-                        }).join("<br>");
+                                ? `<div style="color: #4CAF50; margin-top: 3px;">+ ${qTxt}${nomeExtra}</div>` 
+                                : `<div style="color: #F44336; margin-top: 3px;">- Senza ${nomeExtra}</div>`;
+                        }).join("");
                         
-                        variantiHtml = `<div style="font-size: 0.65em; margin-top: 6px; padding-left: 20px; line-height: 1.4;"><b>${txt}</b></div>`;
+                        variantiHtml = `<div style="font-size: 0.70em; margin-top: 5px;">${txt}</div>`;
                     }
                 
+                    // 2. GESTIONE CONTORNI (PIATTI COMBO)
                     let contorniHtml = "";
                     let contorniArray = p.contorniScelti ? (Array.isArray(p.contorniScelti) ? p.contorniScelti : Object.values(p.contorniScelti)) : [];
                     
                     if (contorniArray.length > 0) {
                         let cTxt = contorniArray.map(c => {
-                            let varsTxt = c.varianti && c.varianti.length > 0 ? " <span style='opacity:0.7; font-weight:normal;'>(" + c.varianti.map(v => v.tipo==='aggiunta'?`+${v.nome}`:`-${v.nome}`).join(", ") + ")</span>" : "";
-                            return `<span style="color: #2196F3;">↳ ${c.nome}${varsTxt}</span>`;
-                        }).join("<br>");
+                            let varsTxt = "";
+                            let cVarArray = c.varianti ? (Array.isArray(c.varianti) ? c.varianti : Object.values(c.varianti)) : [];
+                            // Se il contorno ha a sua volta delle varianti (es. Patatine senza sale)
+                            if (cVarArray.length > 0) {
+                                varsTxt = " <span style='color:#777; font-weight:normal;'>(" + cVarArray.map(v => v.tipo==='aggiunta'?`+${v.nome}`:`- ${v.nome}`).join(", ") + ")</span>";
+                            }
+                            return `<div style="color: #2196F3; margin-top: 5px;">↳ ${c.nome}${varsTxt}</div>`;
+                        }).join("");
                         
-                        contorniHtml = `<div style="font-size: 0.65em; margin-top: 6px; padding-left: 20px; line-height: 1.4;"><b>${cTxt}</b></div>`;
+                        contorniHtml = `<div style="font-size: 0.70em; margin-top: 5px;">${cTxt}</div>`;
                     }
 
-                    const prezzoTotalePiatto = p.prezzo + (p.extraPrezzo || 0);
+                    // 3. PREZZO TOTALE DELLA RIGA (Prezzo base + extra moltiplicato per la quantità)
+                    const prezzoSingoloScontato = p.sconto ? p.prezzo * (1 - (p.sconto.valore / 100)) : p.prezzo;
+                    const prezzoTotalePiatto = (prezzoSingoloScontato + (p.extraPrezzo || 0)) * p.quantita;
                 
+                    // 4. CREAZIONE STRUTTURA RIGA ORDINE
                     return `
-                    <div class="riga-ordine" style="display: flex; flex-direction: column; padding: 15px 0; border-bottom: 1px dashed rgba(128,128,128,0.3); font-size: 1.1em;">
-                        <div style="width: 100%; text-align: left;">
-                            <b style="color:#00bcd4; font-weight: 900; margin-right: 8px;">${p.quantita}x</b> 
-                            <span style="font-weight: 800;">${p.nome}</span> 
-                            <span style="opacity: 0.8; font-size: 0.9em; margin-left: 5px;">(€${prezzoTotalePiatto.toFixed(2)})</span>
+                    <div class="riga-ordine" style="display: flex; flex-direction: column; padding: 18px 0; border-bottom: 1px dashed rgba(128,128,128,0.3); font-size: 1.1em;">
+                        <div style="display: flex; justify-content: space-between; width: 100%; align-items: flex-start;">
+                            <div style="text-align: left;">
+                                <b style="color:#00bcd4; font-weight: 900; margin-right: 8px;">${p.quantita}x</b> 
+                                <span style="font-weight: 800;">${p.nome}</span> 
+                            </div>
+                            <div style="font-weight: bold; white-space: nowrap; margin-left: 15px;">
+                                €${prezzoTotalePiatto.toFixed(2)}
+                            </div>
                         </div>
-                        <div style="padding-left: 45px; font-size: 0.80em; line-height: 1.4;">
+                        <div style="padding-left: 45px; font-weight: 800; line-height: 1.3;">
                             ${variantiHtml}
                             ${contorniHtml}
                         </div>
@@ -384,6 +401,7 @@
                     `;
                 }).join("");
             });
+
             db.ref("utenti/" + uidCassa + "/status/state").on("value", stateSnap => {
                 if (stateSnap.val() === "offline") {
                     notify("Postazione disconnessa dal cassiere.", "warn");
