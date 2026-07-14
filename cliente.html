@@ -34,7 +34,7 @@
             margin: 0 auto; 
             width: 100%; 
             box-sizing: border-box;
-            min-height: 0; /* Permette lo scroll interno */
+            min-height: 0;
         }
 
         .topBar-cliente { 
@@ -54,7 +54,6 @@
             text-shadow: 2px 2px 4px rgba(255,255,255,0.8);
         }
 
-        /* Liste Live con Slider (Scroll) */
         .lista-piatti-scroll { 
             flex: 1; 
             overflow-y: auto; 
@@ -65,18 +64,16 @@
             min-height: 0; 
         }
 
-        /* Scrollbar (Slider) personalizzato */
         .lista-piatti-scroll::-webkit-scrollbar { width: 12px; }
         .lista-piatti-scroll::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); border-radius: 10px; }
         .lista-piatti-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.3); border-radius: 10px; border: 3px solid rgba(255,255,255,0.9); background-clip: content-box; }
 
         .riga-ordine { 
             display: flex; 
-            justify-content: space-between; 
-            font-size: 2.3em; 
-            padding: 15px 0; 
+            flex-direction: column;
+            font-size: 1.1em; 
+            padding: 18px 0; 
             border-bottom: 1px dashed rgba(0,0,0,0.1); 
-            font-weight: 600;
         }
         
         .footer-monitor { 
@@ -85,16 +82,7 @@
             gap: 20px; 
             flex-shrink: 0; 
         }
-        .valore-tot { font-size: 4em; font-weight: 800; line-height: 1; }
         
-        .box-live { 
-            background: rgba(255, 255, 255, 0.95); 
-            border-radius: 20px; 
-            padding: 25px; 
-            box-shadow: 0 15px 35px rgba(0,0,0,0.1); 
-            backdrop-filter: blur(10px);
-        }
-
         .center-screen {
             display: flex;
             align-items: center;
@@ -114,7 +102,6 @@
             box-sizing: border-box;
         }
 
-        /* Toast Persistente */
         .toast.persistent {
             display: flex;
             justify-content: space-between;
@@ -135,8 +122,8 @@
             <h1>BistroBò <span id="labelCassa" style="opacity: 0.6; font-size: 0.5em; font-weight: 400;"></span></h1>
         </div>
         <div style="display: flex; gap: 15px;">
-            <button onclick="cambiaCassa()" id="btnSwitch" style="display:none;">Cambia Cassa</button>
-            <button onclick="eseguiLogout()" id="btnLogout" style="display:none;">Esci</button>
+            <button onclick="cambiaCassa()" id="btnSwitch" style="display:none; padding:10px 15px; border-radius:10px; border:none; font-weight:bold; cursor:pointer;">Cambia Cassa</button>
+            <button onclick="eseguiLogout()" id="btnLogout" style="display:none; padding:10px 15px; border-radius:10px; border:none; background:#f44336; color:white; font-weight:bold; cursor:pointer;">Esci</button>
         </div>
     </div>
 
@@ -154,7 +141,7 @@
                 <p>Inserisci le credenziali autorizzate</p>
                 <input type="email" id="email" class="input-access" placeholder="Email">
                 <input type="password" id="pass" class="input-access" placeholder="Password">
-                <button onclick="login()" style="width: 100%; padding: 20px; font-size: 1.2em; border-radius: 15px;">ACCEDI AL SISTEMA</button>
+                <button onclick="login()" style="width: 100%; padding: 20px; font-size: 1.2em; border-radius: 15px; background: #4CAF50; color: white; border: none; font-weight: bold; cursor: pointer;">ACCEDI AL SISTEMA</button>
             </div>
         </div>
 
@@ -163,7 +150,7 @@
                 <h2 style="font-size:2.5em; font-weight:800;">Configura Monitor</h2>
                 <p>Seleziona una postazione attiva (online):</p>
                 <select id="selectCassa" class="input-access" style="cursor: pointer;"></select>
-                <button onclick="connettiCassa()" style="width: 100%; padding: 20px; font-size: 1.2em; border-radius: 15px;">AVVIA PROIEZIONE</button>
+                <button onclick="connettiCassa()" style="width: 100%; padding: 20px; font-size: 1.2em; border-radius: 15px; background: #2196F3; color: white; border: none; font-weight: bold; cursor: pointer;">AVVIA PROIEZIONE</button>
             </div>
         </div>
 
@@ -172,7 +159,7 @@
                 <div style="text-align:center; margin-top:150px; opacity:0.15; font-size: 2.5em; font-weight: 800;">IN ATTESA DI ARTICOLI...</div>
             </div>
 
-            <div id="footerMonitorCliente" class="footer-monitor" style="display: grid; grid-template-columns: 1fr 1fr 1.5fr; gap: 20px; flex-shrink: 0; align-items: stretch;">
+            <div id="footerMonitorCliente" class="footer-monitor">
     
                 <div id="boxPagatoCliente" style="background: rgba(255, 255, 255, 0.95); border-radius: 20px; padding: 15px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
                     <div style="opacity:0.6; font-weight: 800;">PAGATO</div>
@@ -217,18 +204,15 @@
             const n = document.createElement('div');
             n.className = `toast ${type}`;
             n.style.opacity = "1";
+            n.style.padding = "15px 20px";
+            n.style.borderRadius = "10px";
+            n.style.marginBottom = "10px";
+            n.style.color = "#fff";
+            n.style.fontWeight = "bold";
+            n.style.background = type === 'error' ? '#f44336' : (type === 'warn' ? '#ff9800' : '#4CAF50');
             n.innerText = msg;
             container.appendChild(n);
             setTimeout(() => { n.style.opacity = '0'; setTimeout(() => n.remove(), 500); }, 3500);
-        }
-
-        function showPersistentToast(msg, type = 'info') {
-            const container = document.getElementById('notification-container');
-            const n = document.createElement('div');
-            n.className = `toast ${type} persistent`;
-            n.style.opacity = "1";
-            n.innerHTML = `<span>${msg}</span><span onclick="this.parentElement.remove()" style="cursor:pointer; font-weight:800; padding:0 5px; margin-left:10px;">✕</span>`;
-            container.appendChild(n);
         }
 
         db.ref("impostazioni/displayClienteAbilitato").on("value", snap => {
@@ -316,6 +300,9 @@
             avviaMonitor(uid);
         }
 
+        // ==========================================
+        // MOTORE DI RENDERING (COPIA 1:1 DELLA CASSA)
+        // ==========================================
         function avviaMonitor(uidCassa) {
             if (!monitorAbilitato) return;
             mostraSezione("displayScreen");
@@ -327,62 +314,83 @@
                     resetGrafica();
                     return;
                 }
+                
                 document.getElementById("labelCassa").innerText = "(Collegato)";
                 document.getElementById("vTotale").innerText = "€ " + data.totale.toFixed(2);
                 document.getElementById("vPagato").innerText = "€ " + (data.pagato || 0).toFixed(2);
                 document.getElementById("vResto").innerText = "€ " + (data.resto || 0).toFixed(2);
                 
-                document.getElementById("areaLista").innerHTML = data.piatti.map(p => {
+                let htmlComanda = "";
+                
+                // Assicuriamoci che i piatti siano un Array per iterarli
+                const piattiArray = Array.isArray(data.piatti) ? data.piatti : Object.values(data.piatti);
+                
+                piattiArray.forEach(p => {
+                    let testoVarianti = "";
                     
-                    // 1. GESTIONE VARIANTI (EXTRA AGGIUNTI E RIMOZIONI)
-                    let variantiHtml = "";
+                    // 1. GESTIONE VARIANTI (Aggiunte e Rimozioni)
                     let variantiArray = p.varianti ? (Array.isArray(p.varianti) ? p.varianti : Object.values(p.varianti)) : [];
                     
                     if (variantiArray.length > 0) {
                         let conteggio = {};
                         variantiArray.forEach(v => {
+                            if (!v || !v.tipo) return;
                             let key = v.tipo + "_" + v.nome;
                             if (!conteggio[key]) conteggio[key] = { tipo: v.tipo, nome: v.nome, count: 0 };
-                            // Leggiamo la quantità se definita (es. +2 Maionese), altrimenti +1
-                            let q = v.qty ? Number(v.qty) : 1;
-                            conteggio[key].count += q;
+                            conteggio[key].count++; // Nella cassa usa count++ iterando gli oggetti sparsi
                         });
                         
-                        let txt = Object.values(conteggio).map(v => {
+                        let mapVarianti = Object.values(conteggio).map(v => {
                             let qTxt = v.count > 1 ? `${v.count}x ` : "";
                             let nomeExtra = v.nome.charAt(0).toUpperCase() + v.nome.slice(1);
-                            return v.tipo === "aggiunta" 
-                                ? `<div style="color: #4CAF50; margin-top: 3px;">+ ${qTxt}${nomeExtra}</div>` 
-                                : `<div style="color: #F44336; margin-top: 3px;">- Senza ${nomeExtra}</div>`;
-                        }).join("");
+                            if (v.tipo === "aggiunta") return `<span style="color:#4CAF50">+ ${qTxt}${nomeExtra}</span>`;
+                            else return `<span style="color:#F44336">- Senza ${nomeExtra}</span>`;
+                        }).join("<br>");
                         
-                        variantiHtml = `<div style="font-size: 0.70em; margin-top: 5px;">${txt}</div>`;
+                        testoVarianti += `<div style="font-size: 0.75em; margin-top: 5px; line-height: 1.4;">${mapVarianti}</div>`;
                     }
                 
-                    // 2. GESTIONE CONTORNI (PIATTI COMBO)
-                    let contorniHtml = "";
+                    // 2. GESTIONE CONTORNI E LORO VARIANTI
                     let contorniArray = p.contorniScelti ? (Array.isArray(p.contorniScelti) ? p.contorniScelti : Object.values(p.contorniScelti)) : [];
                     
                     if (contorniArray.length > 0) {
-                        let cTxt = contorniArray.map(c => {
+                        const cTxt = contorniArray.map((c) => {
                             let varsTxt = "";
                             let cVarArray = c.varianti ? (Array.isArray(c.varianti) ? c.varianti : Object.values(c.varianti)) : [];
-                            // Se il contorno ha a sua volta delle varianti (es. Patatine senza sale)
+                            
                             if (cVarArray.length > 0) {
-                                varsTxt = " <span style='color:#777; font-weight:normal;'>(" + cVarArray.map(v => v.tipo==='aggiunta'?`+${v.nome}`:`- ${v.nome}`).join(", ") + ")</span>";
+                                let conteggioC = {};
+                                cVarArray.forEach(v => {
+                                    if (!v || !v.tipo) return;
+                                    let keyC = v.tipo + "_" + v.nome;
+                                    if (!conteggioC[keyC]) conteggioC[keyC] = { tipo: v.tipo, nome: v.nome, count: 0 };
+                                    conteggioC[keyC].count++;
+                                });
+                                let stringaVarianti = Object.values(conteggioC).map(v => {
+                                    let qTxt = v.count > 1 ? `${v.count}x ` : "";
+                                    let nomeExtra = v.nome.charAt(0).toUpperCase() + v.nome.slice(1);
+                                    return v.tipo === 'aggiunta' ? `+${qTxt}${nomeExtra}` : `-${nomeExtra}`;
+                                }).join(", ");
+                                varsTxt = ` <span style='color:#777; font-weight:normal;'>(${stringaVarianti})</span>`;
                             }
-                            return `<div style="color: #2196F3; margin-top: 5px;">↳ ${c.nome}${varsTxt}</div>`;
-                        }).join("");
+                            
+                            return c.isGratis 
+                                ? `<span style="color:#4CAF50;">↳ ${c.nome} (Incluso)${varsTxt}</span>` 
+                                : `<span style="color:#2196F3;">↳ ${c.nome} (+€${(c.prezzoPagato || 0).toFixed(2)})${varsTxt}</span>`;
+                        }).join("<br>");
                         
-                        contorniHtml = `<div style="font-size: 0.70em; margin-top: 5px;">${cTxt}</div>`;
+                        testoVarianti += `<div style="font-size: 0.75em; margin-top: 5px; line-height: 1.4;">${cTxt}</div>`;
                     }
 
-                    // 3. PREZZO TOTALE DELLA RIGA (Prezzo base + extra moltiplicato per la quantità)
-                    const prezzoSingoloScontato = p.sconto ? p.prezzo * (1 - (p.sconto.valore / 100)) : p.prezzo;
-                    const prezzoTotalePiatto = (prezzoSingoloScontato + (p.extraPrezzo || 0)) * p.quantita;
+                    // 3. CALCOLO PREZZO (Uguale a carrello cassa)
+                    let prezzoSingoloScontato = p.prezzo || 0;
+                    if (p.sconto && p.sconto.tipo === "percentuale") {
+                        prezzoSingoloScontato = prezzoSingoloScontato * (1 - (p.sconto.valore / 100));
+                    }
+                    const prezzoTotalePiatto = (prezzoSingoloScontato + (p.extraPrezzo || 0)) * (p.quantita || 1);
                 
-                    // 4. CREAZIONE STRUTTURA RIGA ORDINE
-                    return `
+                    // 4. STRUTTURA FINALE
+                    htmlComanda += `
                     <div class="riga-ordine" style="display: flex; flex-direction: column; padding: 18px 0; border-bottom: 1px dashed rgba(128,128,128,0.3); font-size: 1.1em;">
                         <div style="display: flex; justify-content: space-between; width: 100%; align-items: flex-start;">
                             <div style="text-align: left;">
@@ -393,13 +401,14 @@
                                 €${prezzoTotalePiatto.toFixed(2)}
                             </div>
                         </div>
-                        <div style="padding-left: 45px; font-weight: 800; line-height: 1.3;">
-                            ${variantiHtml}
-                            ${contorniHtml}
+                        <div style="padding-left: 45px; font-weight: 800;">
+                            ${testoVarianti}
                         </div>
                     </div>
                     `;
-                }).join("");
+                });
+
+                document.getElementById("areaLista").innerHTML = htmlComanda;
             });
 
             db.ref("utenti/" + uidCassa + "/status/state").on("value", stateSnap => {
@@ -449,6 +458,7 @@
                 auth.signOut().then(() => location.reload());
             }
         }
+        
         // =============================================================
         // ASCOLTO TOGGLE SOLDI PER SCHERMO CLIENTE
         // =============================================================
@@ -466,11 +476,10 @@
                 if (footerMonitor) footerMonitor.style.gridTemplateColumns = "1fr 1fr 1.5fr";
                 if (boxTotale) boxTotale.style.textAlign = "right";
             } else {
-                // Se il toggle è OFF, nascondi Pagato e Resto e allarga il Totale!
                 if (boxPagato) boxPagato.style.display = "none";
                 if (boxResto) boxResto.style.display = "none";
-                if (footerMonitor) footerMonitor.style.gridTemplateColumns = "1fr"; // Griglia a singola colonna
-                if (boxTotale) boxTotale.style.textAlign = "center"; // Centriamo la scritta
+                if (footerMonitor) footerMonitor.style.gridTemplateColumns = "1fr";
+                if (boxTotale) boxTotale.style.textAlign = "center";
             }
         });
     </script>
