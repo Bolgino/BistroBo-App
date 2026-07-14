@@ -64,6 +64,7 @@ window.settings = {
 	annullamentoVendita: false,
 	tempoAnnullamento: 30,
     giocoScontrino: false,
+	qrCodeStatoOrdine: false,
 	scorciatoieTastiera: false
 };
 
@@ -1598,6 +1599,14 @@ function initImpostazioniToggle() {
 	        if (containerTavolo) {
 	            containerTavolo.style.display = val ? "inline-block" : "none";
 	        }
+	    });
+	}
+	// ================= QR CODE STATO ORDINE =================
+	const toggleQrCodeStatoBtn = document.getElementById("toggleQrCodeStatoBtn");
+	const qrCodeStatoRef = db.ref("impostazioni/qrCodeStatoOrdine");
+	if (toggleQrCodeStatoBtn) {
+	    initToggle(toggleQrCodeStatoBtn, qrCodeStatoRef, {on: "ON", off: "OFF"}, false, val => {
+	        window.settings.qrCodeStatoOrdine = val;
 	    });
 	}
 }
