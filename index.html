@@ -303,6 +303,7 @@
 				<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
 					<h3 style="margin:0; color: #FF9800; font-size: 1.3em;">🍳 Comande da Preparare (<span id="conteggioCucina">0</span>)</h3>
 					<button class="btn-sommario" onclick="apriVistaSommario('cucina')">🍳 VISTA SOMMARIO</button>
+					<button id="btnChiudiServizio_cucina" style="display:none; background:#d32f2f; color:white; border:none; padding:8px 15px; border-radius:8px; font-weight:bold; cursor:pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">🛑 CHIUDI CUCINA</button>
 				</div>
 				<input type="text" id="cercaComandaCucina" placeholder="🔍 Cerca numero comanda..." style="margin:10px 0; width:100%; padding:5px; font-size:16px;">
 				<div id="daFareComandeContainer"></div>
@@ -366,6 +367,7 @@
 				<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
 					<h3 style="margin:0; color: #3F51B5; font-size: 1.3em;">🍺 Comande da Preparare (<span id="conteggioBere">0</span>)</h3>
 					<button class="btn-sommario" onclick="apriVistaSommario('bere')" style="background-color:#3F51B5;">🍺 VISTA SOMMARIO</button>
+					<button id="btnChiudiServizio_bere" style="display:none; background:#d32f2f; color:white; border:none; padding:8px 15px; border-radius:8px; font-weight:bold; cursor:pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">🛑 CHIUDI BIBITE</button>
 				</div>
 				<input type="text" id="cercaComandaBere" placeholder="🔍 Cerca numero comanda..." style="margin:10px 0; width:100%; padding:5px; font-size:16px;">
 				<div id="daBereComandeContainer"></div>
@@ -429,6 +431,7 @@
 				<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
 					<h3 style="margin:0; color: #FF5722; font-size: 1.3em;">🍟 Comande da Preparare (<span id="conteggioSnack">0</span>)</h3>
 					<button class="btn-sommario" onclick="apriVistaSommario('snack')" style="background-color:#FF5722;">🍟 VISTA SOMMARIO</button>
+					<button id="btnChiudiServizio_snack" style="display:none; background:#d32f2f; color:white; border:none; padding:8px 15px; border-radius:8px; font-weight:bold; cursor:pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">🛑 CHIUDI SNACK</button>
 				</div>
 				<input type="text" id="cercaComandaSnack" placeholder="🔍 Cerca numero comanda..." style="margin:10px 0; width:100%; padding:5px; font-size:16px;">
 				<div id="daSnackComandeContainer"></div>
@@ -490,6 +493,7 @@
 				<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
 					<h3 style="margin:0; color: #9C27B0; font-size: 1.3em;" id="comandeTitleExtra1">📦 Comande da Preparare (<span id="conteggioExtra1">0</span>)</h3>
 					<button class="btn-sommario" onclick="apriVistaSommario('extra1')" style="background-color:#9C27B0;">📦 VISTA SOMMARIO</button>
+					<button id="btnChiudiServizio_extra1" style="display:none; background:#d32f2f; color:white; border:none; padding:8px 15px; border-radius:8px; font-weight:bold; cursor:pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">🛑 CHIUDI REPARTO</button>
 				</div>
 				<input type="text" id="cercaComandaExtra1" placeholder="🔍 Cerca numero comanda..." style="margin:10px 0; width:100%; padding:5px; font-size:16px;">
 				<div id="daExtra1ComandeContainer"></div>
@@ -552,6 +556,7 @@
 				<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
 					<h3 style="margin:0; color: #009688; font-size: 1.3em;" id="comandeTitleExtra2">📦 Comande da Preparare (<span id="conteggioExtra2">0</span>)</h3>
 					<button class="btn-sommario" onclick="apriVistaSommario('extra2')" style="background-color:#009688;">📦 VISTA SOMMARIO</button>
+					<button id="btnChiudiServizio_extra2" style="display:none; background:#d32f2f; color:white; border:none; padding:8px 15px; border-radius:8px; font-weight:bold; cursor:pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">🛑 CHIUDI REPARTO</button>
 				</div>
 				<input type="text" id="cercaComandaExtra2" placeholder="🔍 Cerca numero comanda..." style="margin:10px 0; width:100%; padding:5px; font-size:16px;">
 				<div id="daExtra2ComandeContainer"></div>
@@ -614,6 +619,7 @@
 				<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
 					<h3 style="margin:0; color: #795548; font-size: 1.3em;" id="comandeTitleExtra3">📦 Comande da Preparare (<span id="conteggioExtra3">0</span>)</h3>
 					<button class="btn-sommario" onclick="apriVistaSommario('extra3')" style="background-color:#795548;">📦 VISTA SOMMARIO</button>
+					<button id="btnChiudiServizio_extra3" style="display:none; background:#d32f2f; color:white; border:none; padding:8px 15px; border-radius:8px; font-weight:bold; cursor:pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">🛑 CHIUDI REPARTO</button>
 				</div>
 				<input type="text" id="cercaComandaExtra3" placeholder="🔍 Cerca numero comanda..." style="margin:10px 0; width:100%; padding:5px; font-size:16px;">
 				<div id="daExtra3ComandeContainer"></div>
@@ -1216,7 +1222,13 @@
 					</div>
 					<button id="toggleChatAbilitataBtn" class="toggleBtn">ON</button>
 				</div>
-				
+				<div class="settingItem">
+					<div class="settingLabel">
+						<span>Suono Notifica Chat</span>
+						<small>Attiva/disattiva il suono quando arrivano nuovi messaggi nella chat</small>
+					</div>
+					<button id="toggleSuonoChatBtn" class="toggleBtn">🔔 ON</button>
+				</div>
 				<div class="settingItem">
 					<div class="settingLabel">
 						<span>Abilita Sistema Extra</span>
@@ -1240,10 +1252,11 @@
 				</div>
 				<div class="settingItem">
 					<div class="settingLabel">
-						<span>Suono Notifica Chat</span>
-						<small>Attiva/disattiva il suono quando arrivano nuovi messaggi nella chat</small>
+						<span>Chiusura Fine Servizio 🛑</span>
+						<small>Permetti ai reparti di bloccare le ordinazioni a fine serata e gestisci le riaperture.</small>
 					</div>
-					<button id="toggleSuonoChatBtn" class="toggleBtn">🔔 ON</button>
+						<button id="btnGestisciChiusure"  class="toggleBtn" >Gestisci</button>
+						<button id="toggleChiusuraRepartiBtn" class="toggleBtn">OFF</button>
 				</div>
 				<div class="settingItem">
 					<div class="settingLabel">
