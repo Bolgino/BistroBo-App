@@ -57,16 +57,10 @@ function listenTemaRealtime() {
 // Ascolta le chiusure globali anche dal file dei preordini
 db.ref("impostazioni/chiusuraServizio/chiusi").on("value", snap => {
     window.repartiChiusi = snap.val() || {};
-    
-    // Ricarica la grafica dei piatti per aggiornare i bottoni
-    db.ref("menu").once("value").then(snapMenu => {
-        db.ref("ingredienti").once("value").then(snapIng => {
-            // FIX: Ora usa la funzione globale associata a window
-            if (typeof window.aggiornaDisponibilitaPiatti === "function") {
-                window.aggiornaDisponibilitaPiatti(snapMenu.val() || {}, snapIng.val() || {});
-            }
-        });
-    });
+    // Richiama istantaneamente la funzione di blocco senza dover riscaricare il menù
+    if (typeof window.aggiornaDisponibilitaPiatti === "function") {
+        window.aggiornaDisponibilitaPiatti();
+    }
 });
 function aggiornaTitoloPreordini(tema) {
     const titolo = document.querySelector(".preordine-title");
@@ -833,18 +827,24 @@ async function initPreordiniClienti() {
     Promise.all([
         db.ref("menu").once("value"),
         db.ref("ingredienti").once("value"),
-        db.ref("impostazioni").once("value") // AGGIUNTO: Leggiamo le impostazioni complete
+        db.ref("impostazioni").once("value")
     ]).then(([snapMenu, snapIngredienti, snapImp]) => {
         const imp = snapImp.val() || {};
+        
+        // Salviamo subito in memoria globale per i controlli istantanei
+        window.menuPreordini = snapMenu.val() || {};
+        window.ingredientiPreordini = snapIngredienti.val() || {};
+        window.repartiChiusi = imp.chiusuraServizio?.chiusi || {};
+        
         window.settings.snackAbilitato = imp.snackAbilitato === true;
         window.settings.extra1Abilitato = imp.extra1Abilitato === true;
         window.settings.extra2Abilitato = imp.extra2Abilitato === true;
         window.settings.extra3Abilitato = imp.extra3Abilitato === true;
         window.nomiRepartiExtra = imp.nomiRepartiExtra || {};
 
-        const menuData = snapMenu.val() || {};
-        const ingredientiDB = snapIngredienti.val() || {};
-        ingredientiGlobali = snapIngredienti.val() || {};
+        const menuData = window.menuPreordini;
+        const ingredientiDB = window.ingredientiPreordini;
+        ingredientiGlobali = ingredientiDB;
         menuDiv.innerHTML = "";
 
         // Ordina le chiavi dei menuItems includendo dinamicamente gli Extra abilitati
@@ -891,7 +891,7 @@ async function initPreordiniClienti() {
             // 🛑 NUOVO CONTROLLO: Se l'admin ha nascosto il piatto, salta la generazione grafica!
             if (item.visibilePreordini === false) return;
 
-            const piattoBloccato = item.bloccato === true;
+           const piattoBloccato = item.bloccato === true;
             let ingredientiEsauriti = false;
             if (item.ingredienti) {
                 for (const ing of item.ingredienti) {
@@ -902,21 +902,42 @@ async function initPreordiniClienti() {
                     }
                 }
             }
-            const esaurito = piattoBloccato || ingredientiEsauriti;
+
+            // GESTIONE CHIUSURA AL PRIMO CARICAMENTO
+            let ctg = (item.categoria || "cibi").toLowerCase().trim();
+            const lE1 = (window.nomiRepartiExtra?.extra1 || "").toLowerCase().trim();
+            const lE2 = (window.nomiRepartiExtra?.extra2 || "").toLowerCase().trim();
+            const lE3 = (window.nomiRepartiExtra?.extra3 || "").toLowerCase().trim();
+            
+            let repMatch = "cucina";
+            if (ctg === "bevande") repMatch = "bere";
+            else if (ctg === "snack" || ctg.includes("fritti")) repMatch = "snack";
+            else if (ctg === "extra1" || ctg === "risto" || (lE1 && ctg === lE1)) repMatch = "extra1";
+            else if (ctg === "extra2" || (lE2 && ctg === lE2)) repMatch = "extra2";
+            else if (ctg === "extra3" || (lE3 && ctg === lE3)) repMatch = "extra3";
+            else repMatch = "cucina";
+
+            let isChiuso = false;
+            if (window.parent && window.parent.repartiChiusi && window.parent.repartiChiusi[repMatch] === true) {
+                isChiuso = true;
+            } else if (window.repartiChiusi && window.repartiChiusi[repMatch] === true) {
+                isChiuso = true;
+            }
+
+            const esaurito = piattoBloccato || ingredientiEsauriti || isChiuso;
 
             // Crea il contenitore principale
             const riga = document.createElement("div");
             riga.className = "menu-item";
             if (esaurito) riga.classList.add("esaurito");
             
-            // 1. Parte superiore (Nome + Prezzo scontato)
             const topDiv = document.createElement("div");
             topDiv.className = "menu-item-top";
             topDiv.style.display = "flex";
-            topDiv.style.justifyContent = "center"; // 🔥 Centra forzatamente il contenitore
+            topDiv.style.justifyContent = "center";
             topDiv.style.alignItems = "center";
-            topDiv.style.position = "relative";     // 🔥 Necessario per incollare il prezzo a destra
-            topDiv.style.minHeight = "35px";        // Previene sfasamenti
+            topDiv.style.position = "relative";
+            topDiv.style.minHeight = "35px";
             
             const prezzoHtml = item.sconto && item.sconto.tipo === "percentuale"
                 ? `<span style="text-align: right; display:inline-block;">
@@ -925,47 +946,41 @@ async function initPreordiniClienti() {
                    </span>`
                 : `<span>€${item.prezzo.toFixed(2)}</span>`;
             
-            // 🔥 Posizionamento Assoluto per il prezzo: rimane a destra senza spingere il titolo fuori centro!
             topDiv.innerHTML = `
                 <span class="piatto-nome" style="font-weight:bold; text-align:center; padding:0 50px;">${item.nome}</span>
                 <span class="piatto-prezzo" style="position:absolute; right:0; top:50%; transform:translateY(-50%);">${prezzoHtml}</span>
             `;
             
-            // 2. Sconto e Ingredienti
+            // Applica subito l'etichetta al primo caricamento se è chiuso
+            if (esaurito) {
+                topDiv.innerHTML += `<span class="piatto-esaurito-label" style="position:absolute; left:0; top:50%; transform:translateY(-50%); margin-left: 10px; color: #b30000; font-size: 0.85em; font-weight: bold;">${isChiuso ? "🛑 Chiuso" : "❌ Finito"}</span>`;
+            }
+
             let dettagliDiv = "";
-            
-            // Aggiunta label sconto se presente
             if (item.sconto) {
                 dettagliDiv += `<div class="piatto-sconto" style="color:#d9534f; text-align:center; font-weight:bold; font-size:0.85em; margin-bottom: 5px;">
                     ${item.sconto.tipo === "percentuale" ? `${item.sconto.valore}% di sconto`
                     : item.sconto.tipo === "x_paga_y" ? `Prendi ${item.sconto.valore.x} Paga ${item.sconto.valore.y}`
-                    : item.sconto.tipo === "x_paga_y_fisso" ? `Prendi ${item.sconto.valore.x} Paga €${item.sconto.valore.y.toFixed(2)}`
-                    : ""}
+                    : item.sconto.tipo === "x_paga_y_fisso" ? `Prendi ${item.sconto.valore.x} Paga €${item.sconto.valore.y.toFixed(2)}` : ""}
                 </div>`;
             }
-            
-            // Aggiunta ingredienti
             if (item.ingredienti && item.ingredienti.length) {
                 dettagliDiv += `<div class="piatto-ingredienti" style="text-align:center; font-size:0.85em; color:#555; margin-bottom: 10px;">
                     ${item.ingredienti.map(i => `${i.nome}${i.qtyPerUnit ? ` (${i.qtyPerUnit}${i.unita||""})`:""}`).join(", ")}
                 </div>`;
             }
             
-            // 3. Bottone dinamico Intelligente
             let clickAction = "";
             if (item.isCombo && window.settings.piattiComboAbilitati) {
-                // Se è una combo, apre il modale per scegliere i contorni
                 clickAction = `apriPopupComboCliente('${id}')`; 
             } else {
-                // 🔥 FIX MODALE: Aggiunta rapida al carrello! (Niente popup extra qui)
-                // Gli extra si apriranno SOLO cliccando il nome del piatto dentro il carrello.
                 clickAction = `aggiungiVeloceCarrello('${id}')`; 
             }
             
             const btnHtml = `
-                <button id="btn-add-${id}" style="width: 100%; padding: 8px; border-radius: 8px; border: 1.5px solid ${esaurito ? '#ccc' : '#4CAF50'}; background: transparent; color: ${esaurito ? '#aaa' : '#4CAF50'}; cursor: ${esaurito ? 'not-allowed' : 'pointer'}; font-weight: bold; transition: all 0.3s ease;" 
+                <button id="btn-add-${id}" style="width: 100%; padding: 8px; border-radius: 8px; border: 1.5px solid ${esaurito ? (isChiuso ? '#90a4ae' : '#ccc') : '#4CAF50'}; background: ${isChiuso ? '#eceff1' : 'transparent'}; color: ${esaurito ? (isChiuso ? '#78909c' : '#aaa') : '#4CAF50'}; cursor: ${esaurito ? 'not-allowed' : 'pointer'}; font-weight: bold; transition: all 0.3s ease;" 
                     onclick="${clickAction}" ${esaurito ? "disabled" : ""}>
-                    ${esaurito ? "❌ Esaurito" : "+ Aggiungi"}
+                    ${esaurito ? (isChiuso ? "🛑 Chiuso" : "❌ Esaurito") : "+ Aggiungi"}
                 </button>`;
             
             // Assemblaggio finale
@@ -1027,20 +1042,22 @@ async function initPreordiniClienti() {
         aggiornaRiepilogoCarrelloUI();
     }
     // Listener combinato ingredienti + bloccato
-    window.aggiornaDisponibilitaPiatti = function(menuData, ingredientiDB) {
+    // Motore unificato per bloccare/sbloccare i tasti
+    window.aggiornaDisponibilitaPiatti = function() {
+        const menuData = window.menuPreordini || {};
+        const ingredientiDB = window.ingredientiPreordini || {};
+
         document.querySelectorAll(".menu-item").forEach(riga => {
-            const btnAggiungi = riga.querySelector("button[onclick^='apriPopupPersonalizzaCliente'], button[onclick^='aggiungiVeloceCarrello'], button[onclick^='apriPopupCombo']");
+            // TROVA IL BOTTONE TRAMITE ID FISSO (METODO INFALLIBILE)
+            const btnAggiungi = riga.querySelector("button[id^='btn-add-']");
             const labelEsaurito = riga.querySelector(".piatto-esaurito-label");
             if (!btnAggiungi) return;
 
-            const match = btnAggiungi.getAttribute('onclick').match(/'([^']+)'/);
-            if (!match) return;
-            const id = match[1];
-
+            const id = btnAggiungi.id.replace("btn-add-", "");
             const item = menuData[id];
             if (!item) return;
 
-            // 1. Determina se il piatto è esaurito da ingredienti o blocco admin
+            // 1. Determina se il piatto è esaurito
             let esaurito = item.bloccato === true;
             if (item.ingredienti) {
                 for (const ing of item.ingredienti) {
@@ -1075,7 +1092,7 @@ async function initPreordiniClienti() {
 
             if (isChiuso) esaurito = true;
 
-            // 3. Aggiornamento Grafico Bottone
+            // 3. Aggiornamento Grafico Bottone in tempo reale
             if (esaurito) {
                 riga.classList.add("esaurito");
                 btnAggiungi.disabled = true;
@@ -1086,13 +1103,16 @@ async function initPreordiniClienti() {
                 btnAggiungi.innerText = isChiuso ? "🛑 Chiuso" : "Esaurito";
 
                 if (!labelEsaurito) {
-                    const span = document.createElement("span");
-                    span.className = "piatto-esaurito-label";
-                    span.innerText = isChiuso ? "🛑 Servizio Terminato" : "❌ Non disponibile";
-                    span.style.marginLeft = "10px";
-                    riga.querySelector(".menu-item-top").appendChild(span);
+                    const topDiv = riga.querySelector(".menu-item-top");
+                    if (topDiv) {
+                        const span = document.createElement("span");
+                        span.className = "piatto-esaurito-label";
+                        span.innerText = isChiuso ? "🛑 Chiuso" : "❌ Finito";
+                        span.style.cssText = "position:absolute; left:0; top:50%; transform:translateY(-50%); margin-left: 10px; color: #b30000; font-size: 0.85em; font-weight: bold;";
+                        topDiv.appendChild(span);
+                    }
                 } else {
-                    labelEsaurito.innerText = isChiuso ? "🛑 Servizio Terminato" : "❌ Non disponibile";
+                    labelEsaurito.innerText = isChiuso ? "🛑 Chiuso" : "❌ Finito";
                 }
             } else {
                 riga.classList.remove("esaurito");
@@ -1110,28 +1130,21 @@ async function initPreordiniClienti() {
         if (typeof aggiornaRiepilogoCarrelloUI === "function") {
             aggiornaRiepilogoCarrelloUI();
         }
-    }
-    // Listener realtime combinato
-    db.ref("menu").on("value", snapMenu => {
-        const menuData = snapMenu.val() || {};
+    };
 
-        db.ref("ingredienti").once("value").then(snapIng => {
-            const ingredientiDB = snapIng.val() || {};
-            if (typeof window.aggiornaDisponibilitaPiatti === "function") {
-                window.aggiornaDisponibilitaPiatti(menuData, ingredientiDB);
-            }
-        });
+    // Listener realtime combinato che si basa sulla memoria globale!
+    db.ref("menu").on("value", snapMenu => {
+        window.menuPreordini = snapMenu.val() || {};
+        if (typeof window.aggiornaDisponibilitaPiatti === "function") {
+            window.aggiornaDisponibilitaPiatti();
+        }
     });
 
     db.ref("ingredienti").on("value", snapIng => {
-        const ingredientiDB = snapIng.val() || {};
-
-        db.ref("menu").once("value").then(snapMenu => {
-            const menuData = snapMenu.val() || {};
-            if (typeof window.aggiornaDisponibilitaPiatti === "function") {
-                window.aggiornaDisponibilitaPiatti(menuData, ingredientiDB);
-            }
-        });
+        window.ingredientiPreordini = snapIng.val() || {};
+        if (typeof window.aggiornaDisponibilitaPiatti === "function") {
+            window.aggiornaDisponibilitaPiatti();
+        }
     });
 window.aggiungiVeloceCarrello = function(id) {
     const piatto = menuItems[id];
