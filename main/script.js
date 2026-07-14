@@ -453,7 +453,143 @@ document.getElementById("regBtn").onclick = async () => {
     }
     
 };
+// Variabili globali per lo stato delle chiusure
+window.repartiChiusi = {};
+window.permessiChiusura = {};
 
+// ================= GESTIONE CHIUSURA FINE SERVIZIO =================
+const toggleChiusuraBtn = document.getElementById("toggleChiusuraRepartiBtn");
+const btnGestisciChiusure = document.getElementById("btnGestisciChiusure");
+const chiusuraRef = db.ref("impostazioni/chiusuraServizio");
+
+if (toggleChiusuraBtn) {
+    // 1. Inizializza il Toggle Admin
+    initToggle(toggleChiusuraBtn, chiusuraRef.child("abilitato"), {on: "ON", off: "OFF"}, false, val => {
+        btnGestisciChiusure.style.display = val ? "inline-block" : "none";
+        if (val && window.isLoggedInAdmin) apriModaleChiusureAdmin(); // Apre il modale appena lo attivi
+    });
+
+    // 2. Ascolta lo stato di chiusura in Realtime per TUTTA L'APP
+    chiusuraRef.on("value", snap => {
+        const data = snap.val() || {};
+        window.repartiChiusi = data.chiusi || {};
+        window.permessiChiusura = data.permessi || {};
+        const sistemaAttivo = data.abilitato === true;
+
+        // Aggiorna bottone Admin
+        if (btnGestisciChiusure) btnGestisciChiusure.style.display = sistemaAttivo ? "inline-block" : "none";
+
+        // Aggiorna interfaccia Operatore (Mostra/Nasconde il tasto CHIUDI)
+        ["cucina", "bere", "snack", "extra1", "extra2", "extra3"].forEach(rep => {
+            const btnOp = document.getElementById(`btnChiudiServizio_${rep}`);
+            if (btnOp) {
+                // Se il sistema è attivo, l'operatore ha il permesso e il reparto NON è già chiuso
+                if (sistemaAttivo && window.permessiChiusura[rep] && !window.repartiChiusi[rep]) {
+                    btnOp.style.display = "inline-block";
+                    btnOp.onclick = () => confermaChiusuraOperatore(rep);
+                } else {
+                    btnOp.style.display = "none"; // Sparisce se non permesso o se ha già chiuso
+                }
+            }
+        });
+
+        // 3. AGGIORNA CASSA (Blocca i bottoni)
+        if (typeof aggiornaBottoniBloccati === "function") aggiornaBottoniBloccati();
+    });
+
+    // 4. Click Gestisci Admin
+    if (btnGestisciChiusure) btnGestisciChiusure.onclick = apriModaleChiusureAdmin;
+}
+
+// Modale Admin per gestire Permessi e Riaperture
+function apriModaleChiusureAdmin() {
+    const overlay = document.createElement("div");
+    overlay.className = "modal-overlay";
+    overlay.style.zIndex = "10005";
+
+    const modal = document.createElement("div");
+    modal.className = "modal-varianti";
+    modal.style.width = "400px";
+
+    let reparti = [
+        { id: "cucina", nome: "Cucina" },
+        { id: "bere", nome: "Bere" },
+        { id: "snack", nome: "Snack" },
+        { id: "extra1", nome: window.nomiRepartiExtra?.extra1 || "Extra 1" },
+        { id: "extra2", nome: window.nomiRepartiExtra?.extra2 || "Extra 2" },
+        { id: "extra3", nome: window.nomiRepartiExtra?.extra3 || "Extra 3" }
+    ];
+
+    let html = `
+        <h3 style="color:#d32f2f; margin-top:0;">Gestione Chiusure</h3>
+        <p style="font-size:0.9em; color:#555;">Seleziona chi può chiudere il proprio reparto in autonomia, oppure forza la riapertura di un reparto chiuso.</p>
+        <div style="display:flex; flex-direction:column; gap:10px; margin-bottom: 20px;">
+    `;
+
+    reparti.forEach(r => {
+        const isPermesso = window.permessiChiusura[r.id] ? "checked" : "";
+        const isChiuso = window.repartiChiusi[r.id];
+
+        let statoHtml = isChiuso 
+            ? `<button onclick="riapriRepartoAdmin('${r.id}')" style="background:#4CAF50; color:white; border:none; padding:4px 8px; border-radius:4px; font-weight:bold; cursor:pointer;">🟢 RIAPRI</button>`
+            : `<span style="color:green; font-weight:bold;">Operativo</span>`;
+
+        html += `
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:10px; background:#f9f9f9; border:1px solid #ddd; border-radius:6px;">
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                    <input type="checkbox" class="chk-permesso-chiusura" data-rep="${r.id}" ${isPermesso} style="transform:scale(1.2);">
+                    <b>${r.nome}</b>
+                </label>
+                <div>${statoHtml}</div>
+            </div>
+        `;
+    });
+
+    html += `
+        </div>
+        <div class="modal-actions">
+            <button class="btn-chiudi" onclick="this.closest('.modal-overlay').remove()">Chiudi</button>
+            <button class="btn-salva" id="salvaPermessiChiusura">Salva Permessi</button>
+        </div>
+    `;
+
+    modal.innerHTML = html;
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    document.getElementById("salvaPermessiChiusura").onclick = () => {
+        let permessiAggiornati = {};
+        document.querySelectorAll(".chk-permesso-chiusura").forEach(chk => {
+            permessiAggiornati[chk.dataset.rep] = chk.checked;
+        });
+        db.ref("impostazioni/chiusuraServizio/permessi").set(permessiAggiornati);
+        overlay.remove();
+        notify("Permessi di chiusura salvati!", "success");
+    };
+}
+
+// Riapertura forzata da Admin
+window.riapriRepartoAdmin = function(rep) {
+    db.ref(`impostazioni/chiusuraServizio/chiusi/${rep}`).set(false).then(() => {
+        // Chiude e riapre il modale per aggiornare la grafica
+        document.querySelector('.modal-overlay').remove();
+        apriModaleChiusureAdmin();
+        notify(`Reparto riaperto!`, "success");
+    });
+};
+
+// Click Operatore per chiudere il proprio reparto
+function confermaChiusuraOperatore(rep) {
+    disonotify("🚨 SEI SICURO DI VOLER CHIUDERE IL REPARTO? \n\nQuesta azione bloccherà istantaneamente tutti i tuoi piatti dalla Cassa e dai Preordini. \nSolo l'amministratore potrà riaprirlo.", {
+        confirmText: "Sì, Chiudi Servizio",
+        showCancel: true,
+        cancelText: "Annulla",
+        onConfirm: async () => {
+            await db.ref(`impostazioni/chiusuraServizio/chiusi/${rep}`).set(true);
+            notify("✅ Reparto Chiuso! Non riceverai più ordini.", "info");
+        }
+    });
+}
 // -------------------- IMPOSTAZIONI TOGGLE SICURE --------------------
 function initImpostazioniToggle() {
     // MANUTENZIONE
@@ -775,6 +911,7 @@ function initImpostazioniToggle() {
         window.settings.snackAbilitato = !!snap.val();
         aggiornaVisibilitaToggleSnack();
     });
+	
     // 🔹 TOGGLE NOTE MULTIDESTINAZIONE
     const toggleNoteDestinazioniBtn = document.getElementById("toggleNoteDestinazioniBtn");
     const noteDestinazioniRef = db.ref("impostazioni/noteDestinazioniAbilitate");
@@ -3468,15 +3605,34 @@ function aggiornaBottoniBloccati() {
             else if (ctg === "extra1" || ctg === "risto") coloreBase = "#9C27B0";
             else if (ctg === "extra2") coloreBase = "#009688";
             else if (ctg === "extra3") coloreBase = "#795548";
+			let repMatch = ctg;
+			if (ctg === "cibi") repMatch = "cucina";
+			if (ctg === "bevande") repMatch = "bere";
+			
+			if (window.repartiChiusi && window.repartiChiusi[repMatch] === true) {
+			    disponibile = false;
+			    // Se vuoi puoi anche cambiare il testo del bottone se è ottimizzata
+			    item.bloccatoDaChiusura = true; // Flag temporaneo per lo stile
+			} else {
+			    item.bloccatoDaChiusura = false;
+			}
 
             // --- APPLICAZIONE STILI VISIVI E BLOCCHI ---
             if (!disponibile) {
                 btn.disabled = true; // Impedisce il click
                 
-                if (item.bloccato === true) {
+                if (item.bloccatoDaChiusura) {
+                    // REPARTO CHIUSO -> GRIGIO SCURO/ROSSO
+                    if (isOpt) {
+                        btn.style.cssText = `background: #eceff1 !important; color: #78909c !important; border: 2px dashed #90a4ae !important; opacity: 0.6 !important; padding: 4px 2px; border-radius: 6px; width: 100%; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; align-items: center; border-left: 5px solid #607d8b !important;`;
+                    } else {
+                        btn.style.cssText = "";
+                        Object.assign(btn.style, { opacity: 0.6, border: "2px dashed #90a4ae", background: "#eceff1", color: "#78909c" });
+                    }
+                } else if (item.bloccato === true) {
                     // BLOCCO ADMIN MANUALE -> ARANCIONE
                     if (isOpt) {
-                        btn.style.cssText = `background: #fff3cd !important; color: #ff9800 !important; border: 2px dashed orange !important; opacity: 0.8 !important; padding: 4px 2px; margin: 0; border-radius: 6px; width: 100%; height: 100%; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; align-items: center; border-left: 5px solid orange !important; overflow: hidden;`;
+                        btn.style.cssText = `background: #fff3cd !important; color: #ff9800 !important; border: 2px dashed orange !important; opacity: 0.8 !important; padding: 4px 2px; border-radius: 6px; width: 100%; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; align-items: center; border-left: 5px solid orange !important;`;
                     } else {
                         btn.style.cssText = "";
                         Object.assign(btn.style, { opacity: 0.8, border: "2px dashed orange", background: "#fff3cd", color: "#ff9800" });
@@ -3484,7 +3640,7 @@ function aggiornaBottoniBloccati() {
                 } else {
                     // INGREDIENTE ESAURITO -> ROSSO
                     if (isOpt) {
-                        btn.style.cssText = `background: #f8d7da !important; color: #d9534f !important; border: 2px dashed #d9534f !important; opacity: 0.6 !important; padding: 4px 2px; margin: 0; border-radius: 6px; width: 100%; height: 100%; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; align-items: center; border-left: 5px solid #d9534f !important; overflow: hidden;`;
+                        btn.style.cssText = `background: #f8d7da !important; color: #d9534f !important; border: 2px dashed #d9534f !important; opacity: 0.6 !important; padding: 4px 2px; border-radius: 6px; width: 100%; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; align-items: center; border-left: 5px solid #d9534f !important;`;
                     } else {
                         btn.style.cssText = "";
                         Object.assign(btn.style, { opacity: 0.6, border: "2px solid #d9534f", background: "#f8d7da", color: "#d9534f" });
