@@ -344,12 +344,40 @@
                             conteggio[key].count++;
                         });
                         
-                        variantiHtml = Object.values(conteggio).map(v => {
+                        let txt = Object.values(conteggio).map(v => {
                             let qTxt = v.count > 1 ? `${v.count}x ` : "";
+                            let nomeExtra = v.nome.charAt(0).toUpperCase() + v.nome.slice(1);
                             return v.tipo === "aggiunta" 
-                                ? `<div style="color: #4caf50; font-size: 0.6em; font-weight: bold; padding-left: 20px; margin-top: 5px;">+ ${qTxt}${v.nome}</div>` 
-                                : `<div style="color: #f44336; font-size: 0.6em; font-weight: bold; padding-left: 20px; margin-top: 5px; text-decoration: line-through;">- Senza ${v.nome}</div>`;
-                        }).join("");
+                                ? `<span style="color: #4CAF50;">+ ${qTxt}${nomeExtra}</span>` 
+                                : `<span style="color: #F44336;">- Senza ${nomeExtra}</span>`;
+                        }).join("<br>");
+                        
+                        variantiHtml = `<div style="font-size: 0.65em; margin-top: 6px; padding-left: 20px; line-height: 1.4;"><b>${txt}</b></div>`;
+                    }
+                
+                    let contorniHtml = "";
+                    let contorniArray = p.contorniScelti ? (Array.isArray(p.contorniScelti) ? p.contorniScelti : Object.values(p.contorniScelti)) : [];
+                    
+                    if (contorniArray.length > 0) {
+                        let cTxt = contorniArray.map(c => {
+                            let varsTxt = c.varianti && c.varianti.length > 0 ? " <span style='color:#999; font-weight:normal;'>(" + c.varianti.map(v => v.tipo==='aggiunta'?`+${v.nome}`:`-${v.nome}`).join(", ") + ")</span>" : "";
+                            return `<span style="color: #2196F3;">↳ ${c.nome}${varsTxt}</span>`;
+                        }).join("<br>");
+                        
+                        contorniHtml = `<div style="font-size: 0.65em; margin-top: 6px; padding-left: 20px; line-height: 1.4;"><b>${cTxt}</b></div>`;
+                    }
+                
+                    return `
+                    <div class="riga-ordine" style="display: flex; flex-direction: column; padding: 20px 0;">
+                        <div style="display: flex; justify-content: space-between; width: 100%; align-items:center;">
+                            <span style="display:flex; align-items:center;"><b style="color:#2196f3; font-weight: 900; font-size: 1.1em; margin-right:15px;">${p.quantita}x</b> ${p.nome}</span>
+                            <span>€ ${(p.prezzo * p.quantita).toFixed(2)}</span>
+                        </div>
+                        ${variantiHtml}
+                        ${contorniHtml}
+                    </div>
+                    `;
+                }).join("");
                     }
                 
                     let contorniHtml = "";
