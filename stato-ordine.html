@@ -98,59 +98,42 @@
             databaseURL: "https://comande-6fb85-default-rtdb.europe-west1.firebasedatabase.app",
             projectId: "comande-6fb85"
         };
-        firebase.initializeApp(firebaseConfig);
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // 2. Applica il tema in tempo reale per mantenere l'estetica del resto dell'app
+        // 2. Applica il tema in tempo reale
         db.ref("impostazioni/tema").on("value", snap => {
             const tema = snap.val() || "default";
-            // Rimuove vecchi temi e applica quello nuovo
             document.body.className = "tema-caricato tema-" + tema;
         });
         
-        // 3. Estrai nomi reparti personalizzati (Extra 1, 2, 3)
+        // 3. Estrai nomi reparti personalizzati
         let nomiExtra = { extra1: "Extra 1", extra2: "Extra 2", extra3: "Extra 3" };
         db.ref("impostazioni/nomiRepartiExtra").once("value").then(snap => {
             if (snap.exists()) nomiExtra = { ...nomiExtra, ...snap.val() };
         });
 
-        // 4. Ottieni l'ordine dall'URL (es: ?n=12D)
+        // 4. Ottieni l'ordine dall'URL (es: ?n=14)
         const urlParams = new URLSearchParams(window.location.search);
         const numComanda = urlParams.get('n');
+        const container = document.getElementById("status-container");
 
         if (!numComanda) {
             document.getElementById("titolo-ordine").innerText = "Ordine ❌";
-            document.getElementById("status-container").innerHTML = "<p style='color:#d32f2f; font-weight:bold;'>Nessun ordine valido specificato nell'URL.</p>";
+            container.innerHTML = "<p style='color:#d32f2f; font-weight:bold;'>Nessun ordine valido specificato nell'URL.</p>";
         } else {
             document.getElementById("titolo-ordine").innerText = "#" + numComanda.toUpperCase();
 
-            // 5. Ascolta la comanda in Realtime
-            db.ref("comande").orderByChild("numero").equalTo(numComanda.toUpperCase()).on("value", snap => {
-                const container = document.getElementById("status-container");
-                
-                if (!snap.exists()) {
-                    container.innerHTML = "<p style='color:#555;'>Ordine non trovato o già archiviato.<br><br><i>Speriamo ti sia piaciuto! Se lo stai ancora aspettando, rivolgiti alla cassa.</i></p>";
-                    return;
-                }
-
-                let comandaData;
-                snap.forEach(child => { comandaData = child.val(); });
-
-                // Funzione per generare le etichette di stato in base ai valori ("da fare", "in elaborazione", "completato")
+            // ==========================================
+            // FUNZIONE DI AGGIORNAMENTO GRAFICO
+            // ==========================================
+            function aggiornaUI(comandaData) {
                 function creaStatoReparto(nome, stato) {
                     if (!stato) return ""; 
-                    
                     let classeBadge = "da-fare";
                     let testino = "In coda ⏳";
-                    
-                    if (stato === "in elaborazione") { 
-                        classeBadge = "in-elaborazione"; 
-                        testino = "In Preparazione 🍳"; 
-                    }
-                    if (stato === "completato") { 
-                        classeBadge = "completato"; 
-                        testino = "Pronto! ✅"; 
-                    }
+                    if (stato === "in elaborazione") { classeBadge = "in-elaborazione"; testino = "In Preparazione 🍳"; }
+                    if (stato === "completato") { classeBadge = "completato"; testino = "Pronto! ✅"; }
 
                     return `
                         <div class="reparto-status">
@@ -161,9 +144,6 @@
                 }
 
                 let htmlContent = "";
-                
-                // Mappa i reparti attivi per questo ordine.
-                // Firebase salva i nodi come statoCucina, statoBere, statoSnack, ecc.
                 if (comandaData.statoCucina) htmlContent += creaStatoReparto("Cucina", comandaData.statoCucina);
                 if (comandaData.statoBere) htmlContent += creaStatoReparto("Beverage", comandaData.statoBere);
                 if (comandaData.statoSnack) htmlContent += creaStatoReparto("Snack", comandaData.statoSnack);
@@ -171,8 +151,52 @@
                 if (comandaData.statoExtra2) htmlContent += creaStatoReparto(nomiExtra.extra2, comandaData.statoExtra2);
                 if (comandaData.statoExtra3) htmlContent += creaStatoReparto(nomiExtra.extra3, comandaData.statoExtra3);
 
+                if (htmlContent === "") htmlContent = "<p style='color:#777;'>Nessun reparto in lavorazione per questo ordine.</p>";
                 container.innerHTML = htmlContent;
-            });
+            }
+
+            // ==========================================
+            // GESTIONE CONFLITTO TESTO/NUMERO E PERMESSI
+            // ==========================================
+            const queryStr = numComanda.toUpperCase();
+            const queryNum = parseInt(numComanda, 10);
+            const isSoloNumeri = /^\d+$/.test(numComanda);
+
+            function listenerComande(snap) {
+                let comandaData = null;
+                // Estrae i dati dal risultato della query
+                snap.forEach(child => { comandaData = child.val(); });
+                
+                if (comandaData) {
+                    aggiornaUI(comandaData);
+                } else {
+                    container.innerHTML = "<p style='color:#555;'>Ordine non trovato o già archiviato.<br><br><i>Se lo stai ancora aspettando, rivolgiti alla cassa.</i></p>";
+                }
+            }
+
+            function gestioneErrore(err) {
+                container.innerHTML = `
+                    <div style="background: #ffebee; padding: 15px; border-radius: 10px; border: 1px solid #f44336; color: #d32f2f;">
+                        <h3 style="margin-top: 0;">⛔ Accesso Negato</h3>
+                        <p style="font-size:0.9em; color:#333;">Le regole di sicurezza di Firebase stanno bloccando la lettura per i clienti.</p>
+                        <p style="font-size:0.8em; color:#555;"><i>Dettaglio: ${err.message}</i></p>
+                    </div>`;
+            }
+
+            // TENTATIVO 1: Cerca la comanda come Testo (es. "14A" o "14")
+            let refAttivo = db.ref("comande").orderByChild("numero").equalTo(queryStr);
+            
+            refAttivo.on("value", snap => {
+                // Se non trova niente come Testo, ma il parametro è solo un numero (es. 14)...
+                if (!snap.exists() && isSoloNumeri) {
+                    // Stacchiamo il vecchio ascoltatore e proviamo come Numero matematico
+                    refAttivo.off();
+                    refAttivo = db.ref("comande").orderByChild("numero").equalTo(queryNum);
+                    refAttivo.on("value", listenerComande, gestioneErrore);
+                } else {
+                    listenerComande(snap);
+                }
+            }, gestioneErrore);
         }
     </script>
 </body>
