@@ -333,10 +333,9 @@
                 document.getElementById("vResto").innerText = "€ " + (data.resto || 0).toFixed(2);
                 // DENTRO avviaMonitor(uidCassa) in cliente.html
                 document.getElementById("areaLista").innerHTML = data.piatti.map(p => {
-                    let badges = [];
-                
-                    // 1. Varianti (Aggiunte e Rimozioni)
+                    let variantiHtml = "";
                     let variantiArray = p.varianti ? (Array.isArray(p.varianti) ? p.varianti : Object.values(p.varianti)) : [];
+                    
                     if (variantiArray.length > 0) {
                         let conteggio = {};
                         variantiArray.forEach(v => {
@@ -344,40 +343,33 @@
                             if (!conteggio[key]) conteggio[key] = { tipo: v.tipo, nome: v.nome, count: 0 };
                             conteggio[key].count++;
                         });
-                        Object.values(conteggio).forEach(v => {
+                        
+                        variantiHtml = Object.values(conteggio).map(v => {
                             let qTxt = v.count > 1 ? `${v.count}x ` : "";
-                            if (v.tipo === "aggiunta") {
-                                badges.push(`<span style="color: #4caf50;">+ ${qTxt}${v.nome}</span>`);
-                            } else if (v.tipo === "rimozione") {
-                                badges.push(`<span style="color: #f44336; text-decoration: line-through;">- Senza ${v.nome}</span>`);
-                            }
-                        });
+                            return v.tipo === "aggiunta" 
+                                ? `<div style="color: #4caf50; font-size: 0.6em; font-weight: bold; padding-left: 20px; margin-top: 5px;">+ ${qTxt}${v.nome}</div>` 
+                                : `<div style="color: #f44336; font-size: 0.6em; font-weight: bold; padding-left: 20px; margin-top: 5px; text-decoration: line-through;">- Senza ${v.nome}</div>`;
+                        }).join("");
                     }
                 
-                    // 2. Contorni Scelti (Combo)
+                    let contorniHtml = "";
                     let contorniArray = p.contorniScelti ? (Array.isArray(p.contorniScelti) ? p.contorniScelti : Object.values(p.contorniScelti)) : [];
+                    
                     if (contorniArray.length > 0) {
-                        contorniArray.forEach(c => {
-                            badges.push(`<span style="color: #2196F3;">↳ ${c.nome}</span>`);
-                        });
-                    }
-                
-                    // Genera l'HTML dei badges
-                    let extraHTML = "";
-                    if (badges.length > 0) {
-                        extraHTML = `
-                        <div style="font-size: 0.6em; opacity: 0.9; margin-top: 5px; padding-left: 65px; font-weight: 500; display: flex; flex-wrap: wrap; gap: 10px;">
-                            ${badges.join("")}
-                        </div>`;
+                        contorniHtml = contorniArray.map(c => {
+                            let varsTxt = c.varianti && c.varianti.length > 0 ? " <small style='color:#777;'>(" + c.varianti.map(v => v.tipo==='aggiunta'?`+${v.nome}`:`-${v.nome}`).join(", ") + ")</small>" : "";
+                            return `<div style="color: #2196F3; font-size: 0.6em; font-weight: bold; padding-left: 20px; margin-top: 5px;">↳ ${c.nome}${varsTxt}</div>`;
+                        }).join("");
                     }
                 
                     return `
-                    <div class="riga-ordine" style="display: flex; flex-direction: column;">
+                    <div class="riga-ordine" style="display: flex; flex-direction: column; padding: 25px 0;">
                         <div style="display: flex; justify-content: space-between; width: 100%;">
                             <span><b style="color:#2196f3; font-weight: 800;">${p.quantita}x</b> &nbsp; ${p.nome}</span>
                             <span>€ ${(p.prezzo * p.quantita).toFixed(2)}</span>
                         </div>
-                        ${extraHTML}
+                        ${variantiHtml}
+                        ${contorniHtml}
                     </div>
                     `;
                 }).join("");
