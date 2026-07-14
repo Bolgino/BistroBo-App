@@ -548,8 +548,8 @@ function apriModaleChiusureAdmin() {
     ].filter(r => r.attivo);
 
     let html = `
-        <h3 style="color:#d32f2f; margin-top:0;">Permessi di Chiusura</h3>
-        <p style="font-size:0.9em; color:var(--text-color, #555); text-align:center; margin-bottom: 20px;">
+        <h3 style="margin-top:0;">Permessi di Chiusura</h3>
+        <p style="font-size:0.9em; color:#777; text-align:center; margin-bottom: 20px;">
             Spunta i reparti che possono chiudere in autonomia le ordinazioni.
         </p>
         <div style="display:flex; flex-direction:column; gap:8px; margin-bottom: 20px; text-align:left;">
@@ -558,10 +558,12 @@ function apriModaleChiusureAdmin() {
     reparti.forEach(r => {
         const isPermesso = window.permessiChiusura[r.id] ? "checked" : "";
         html += `
-            <label style="display:flex; justify-content:space-between; align-items:center; padding:10px 15px; background: var(--bg-color, #f5f5f5); border-radius:8px; border: 1px solid var(--border-color, #ccc); cursor:pointer; margin:0;">
-                <span style="font-size: 1.1em; font-weight:bold; color:var(--text-color, #333);">${r.nome}</span>
-                <input type="checkbox" class="chk-permesso-chiusura" data-rep="${r.id}" ${isPermesso} style="transform:scale(1.4); cursor:pointer; margin:0;">
-            </label>
+            <div class="settingItem" style="margin-bottom:0; cursor:pointer; padding: 12px 15px;" onclick="const cb = this.querySelector('input'); cb.checked = !cb.checked; cb.dispatchEvent(new Event('change'));">
+                <div class="settingLabel" style="max-width:100%; width:100%; display:flex; justify-content:space-between; align-items:center; flex-direction:row;">
+                    <span style="font-size: 1.15em; margin:0;">${r.nome}</span>
+                    <input type="checkbox" class="chk-permesso-chiusura" data-rep="${r.id}" ${isPermesso} style="transform:scale(1.4); cursor:pointer; margin:0;" onclick="event.stopPropagation()">
+                </div>
+            </div>
         `;
     });
 
