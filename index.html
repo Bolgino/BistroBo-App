@@ -916,8 +916,13 @@
                 <div style="margin-bottom: 25px; border: 1px solid #ddd; border-radius: 8px; padding: 15px; background: #fafafa; border-left: 5px solid #FF9800;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px; border-bottom: 1px dashed #ccc; padding-bottom: 10px;">
                         <h4 style="margin:0; color: #FF9800; font-size: 1.2em;">🍳 Profilo Cucina</h4>
-                        <button onclick="simulaRuolo('cucina')" style="padding: 8px 15px; background: #FF9800; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);"> Simula Cucina</button>
-                    </div>
+                        <div style="display:flex; gap: 10px; align-items:center;">
+					         <span id="statoChiusuraAdmin_cucina" style="font-size:0.95em; font-weight:bold;"></span>
+  						     <!-- Tasto Riapri nascosto di default -->
+  						    <button id="btnAdminChiusura_cucina" style="display:none; padding: 8px 15px; background: #4CAF50; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">🟢 RIAPRI</button>
+							<button onclick="simulaRuolo('cucina')" style="padding: 8px 15px; background: #FF9800; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);"> Simula Cucina</button>
+                   		 </div>
+					</div>
                     
                     <div class="settingItem">
                         <div class="settingLabel">
@@ -945,8 +950,13 @@
                 <div style="margin-bottom: 25px; border: 1px solid #ddd; border-radius: 8px; padding: 15px; background: #fafafa; border-left: 5px solid #3F51B5;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px; border-bottom: 1px dashed #ccc; padding-bottom: 10px;">
                         <h4 style="margin:0; color: #3F51B5; font-size: 1.2em;">🍺 Profilo Bere</h4>
-                        <button onclick="simulaRuolo('bere')" style="padding: 8px 15px; background: #3F51B5; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);"> Simula Bere</button>
-                    </div>
+						<div style="display:flex; gap: 10px; align-items:center;">
+					         <span id="statoChiusuraAdmin_bere" style="font-size:0.95em; font-weight:bold;"></span>
+  						     <!-- Tasto Riapri nascosto di default -->
+							<button id="btnAdminChiusura_bere" style="display:none; padding: 8px 15px; background: #4CAF50; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">🟢 RIAPRI</button>
+  						    <button onclick="simulaRuolo('bere')" style="padding: 8px 15px; background: #3F51B5; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);"> Simula Bere</button>
+                    	</div> 
+					</div>
 
                     <div class="settingItem">
                         <div class="settingLabel">
@@ -974,9 +984,13 @@
                 <div style="margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; padding: 15px; background: #fafafa; border-left: 5px solid #FF5722;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px; border-bottom: 1px dashed #ccc; padding-bottom: 10px;">
                         <h4 style="margin:0; color: #FF5722; font-size: 1.2em;">🍟 Profilo Snack</h4>
-                        <button onclick="simulaRuolo('snack')" style="padding: 8px 15px; background: #FF5722; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);"> Simula Snack</button>
-                    </div>
-
+						<div style="display:flex; gap: 10px; align-items:center;">
+					         <span id="statoChiusuraAdmin_snack" style="font-size:0.95em; font-weight:bold;"></span>
+  						     <!-- Tasto Riapri nascosto di default -->
+							<button id="btnAdminChiusura_snack" style="display:none; padding: 8px 15px; background: #4CAF50; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">🟢 RIAPRI</button>
+                        	<button onclick="simulaRuolo('snack')" style="padding: 8px 15px; background: #FF5722; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);"> Simula Snack</button>
+						</div>
+					</div>
                     <div class="settingItem">
                         <div class="settingLabel">
                             <span>Profilo Snack</span>
@@ -1015,6 +1029,8 @@
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px; border-bottom: 1px dashed #ccc; padding-bottom: 10px;">
                         <h4 style="margin:0; color: #9C27B0; font-size: 1.2em;" id="titoloExtra1">Reparto Extra 1</h4>
                         <div style="display:flex; gap: 8px;">
+							<span id="statoChiusuraAdmin_extra1" style="font-size:0.95em; font-weight:bold;"></span>
+							<button id="btnAdminChiusura_extra1" style="display:none; padding: 8px 15px; background: #4CAF50; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">🟢 RIAPRI</button>
                             <button onclick="modificaNomeExtra('extra1')" style="padding: 8px 15px; background: #fff; color: #333; border: 1px solid #ccc; border-radius: 6px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">Rinomina</button>
                             <button id="simulaExtra1Btn" onclick="simulaRuolo('extra1')" style="padding: 8px 15px; background: #9C27B0; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);" disabled>Simula</button>
                         </div>
@@ -1058,6 +1074,8 @@
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px; border-bottom: 1px dashed #ccc; padding-bottom: 10px;">
                         <h4 style="margin:0; color: #009688; font-size: 1.2em;" id="titoloExtra2">Reparto Extra 2</h4>
                         <div style="display:flex; gap: 8px;">
+							<span id="statoChiusuraAdmin_extra2" style="font-size:0.95em; font-weight:bold;"></span>
+							<button id="btnAdminChiusura_extra2" style="display:none; padding: 8px 15px; background: #4CAF50; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">🟢 RIAPRI</button>
                             <button onclick="modificaNomeExtra('extra2')" style="padding: 8px 15px; background: #fff; color: #333; border: 1px solid #ccc; border-radius: 6px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">Rinomina</button>
                             <button id="simulaExtra2Btn" onclick="simulaRuolo('extra2')" style="padding: 8px 15px; background: #009688; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);" disabled>Simula</button>
                         </div>
@@ -1101,6 +1119,8 @@
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px; border-bottom: 1px dashed #ccc; padding-bottom: 10px;">
                         <h4 style="margin:0; color: #795548; font-size: 1.2em;" id="titoloExtra3">Reparto Extra 3</h4>
                         <div style="display:flex; gap: 8px;">
+							<span id="statoChiusuraAdmin_extra3" style="font-size:0.95em; font-weight:bold;"></span>
+							<button id="btnAdminChiusura_extra3" style="display:none; padding: 8px 15px; background: #4CAF50; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">🟢 RIAPRI</button>
                             <button onclick="modificaNomeExtra('extra3')" style="padding: 8px 15px; background: #fff; color: #333; border: 1px solid #ccc; border-radius: 6px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">Rinomina</button>
                             <button id="simulaExtra3Btn" onclick="simulaRuolo('extra3')" style="padding: 8px 15px; background: #795548; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);" disabled>Simula</button>
                         </div>
@@ -1251,12 +1271,14 @@
 					<button id="toggleScontiGlobaliBtn" class="toggleBtn">OFF</button>
 				</div>
 				<div class="settingItem">
-					<div class="settingLabel">
-						<span>Chiusura Fine Servizio 🛑</span>
-						<small>Permetti ai reparti di bloccare le ordinazioni a fine serata e gestisci le riaperture.</small>
-					</div>
-						<button id="btnGestisciChiusure"  class="toggleBtn" >Gestisci</button>
-						<button id="toggleChiusuraRepartiBtn" class="toggleBtn">OFF</button>
+				    <div class="settingLabel">
+				        <span>Chiusura Fine Servizio 🛑</span>
+				        <small>Permetti ai profili scelti di bloccare le ordinazioni a fine serata.</small>
+				    </div>
+				    <div style="display:flex; gap:10px; align-items:center;">
+				        <button id="toggleChiusuraRepartiBtn" class="toggleBtn">OFF</button>
+				        <button id="btnGestisciChiusure">Gestisci</button>
+				    </div>
 				</div>
 				<div class="settingItem">
 					<div class="settingLabel">
