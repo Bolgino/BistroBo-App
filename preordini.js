@@ -61,8 +61,9 @@ db.ref("impostazioni/chiusuraServizio/chiusi").on("value", snap => {
     // Ricarica la grafica dei piatti per aggiornare i bottoni
     db.ref("menu").once("value").then(snapMenu => {
         db.ref("ingredienti").once("value").then(snapIng => {
-            if (typeof aggiornaDisponibilitaPiatti === "function") {
-                aggiornaDisponibilitaPiatti(snapMenu.val() || {}, snapIng.val() || {});
+            // FIX: Ora usa la funzione globale associata a window
+            if (typeof window.aggiornaDisponibilitaPiatti === "function") {
+                window.aggiornaDisponibilitaPiatti(snapMenu.val() || {}, snapIng.val() || {});
             }
         });
     });
@@ -1026,7 +1027,7 @@ async function initPreordiniClienti() {
         aggiornaRiepilogoCarrelloUI();
     }
     // Listener combinato ingredienti + bloccato
-    function aggiornaDisponibilitaPiatti(menuData, ingredientiDB) {
+    window.aggiornaDisponibilitaPiatti = function(menuData, ingredientiDB) {
         document.querySelectorAll(".menu-item").forEach(riga => {
             const btnAggiungi = riga.querySelector("button[onclick^='apriPopupPersonalizzaCliente'], button[onclick^='aggiungiVeloceCarrello'], button[onclick^='apriPopupCombo']");
             const labelEsaurito = riga.querySelector(".piatto-esaurito-label");
@@ -1116,18 +1117,22 @@ async function initPreordiniClienti() {
 
         db.ref("ingredienti").once("value").then(snapIng => {
             const ingredientiDB = snapIng.val() || {};
-            aggiornaDisponibilitaPiatti(menuData, ingredientiDB);
+            if (typeof window.aggiornaDisponibilitaPiatti === "function") {
+                window.aggiornaDisponibilitaPiatti(menuData, ingredientiDB);
+            }
         });
     });
 
-db.ref("ingredienti").on("value", snapIng => {
-    const ingredientiDB = snapIng.val() || {};
+    db.ref("ingredienti").on("value", snapIng => {
+        const ingredientiDB = snapIng.val() || {};
 
-    db.ref("menu").once("value").then(snapMenu => {
-        const menuData = snapMenu.val() || {};
-        aggiornaDisponibilitaPiatti(menuData, ingredientiDB);
+        db.ref("menu").once("value").then(snapMenu => {
+            const menuData = snapMenu.val() || {};
+            if (typeof window.aggiornaDisponibilitaPiatti === "function") {
+                window.aggiornaDisponibilitaPiatti(menuData, ingredientiDB);
+            }
+        });
     });
-});
 window.aggiungiVeloceCarrello = function(id) {
     const piatto = menuItems[id];
     if (!piatto) return;
