@@ -11114,10 +11114,43 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
             y += (noteSplit.length * 5);
         }
 
-        y += 5;
-        doc.setFontSize(10);
-        doc.setFont("helvetica", "italic");
-        doc.text("Grazie e Buon Appetito!", pageWidth / 2, y, { align: "center" });
+        // ---> 1. QR CODE STATO ORDINE (Solo copia cliente) <---
+        if (window.settings.qrCodeStatoOrdine && (!reparto.nome || reparto.nome === "COPIA CLIENTE")) {
+            if (y > 190) { doc.addPage(); y = 10; } 
+            
+            y += 5;
+            doc.setFontSize(12);
+            doc.setFont("helvetica", "bold");
+            doc.text("SEGUI IL TUO ORDINE LIVE!", pageWidth / 2, y, { align: "center" });
+            y += 5;
+            
+            doc.setFontSize(9);
+            doc.setFont("helvetica", "normal");
+            doc.text("Inquadra il QR con la fotocamera:", pageWidth / 2, y, { align: "center" });
+            y += 2;
+            
+            // INSERISCI QUI IL NOME DEL FILE CHE VUOI CREARE (es. live.html)
+            const baseUrl = "https://bolgino.github.io/BistroBo-App/NOME_CHE_VUOI_TU.html";
+            const trackingLink = `${baseUrl}?n=${numeroComanda}`;
+            
+            try {
+                const qr = new QRious({
+                    value: trackingLink,
+                    size: 200,
+                    level: 'H'
+                });
+                const qrBase64 = qr.toDataURL();
+                
+                const qrSizeMM = 35; 
+                const qrX = (pageWidth - qrSizeMM) / 2; 
+                doc.addImage(qrBase64, 'PNG', qrX, y, qrSizeMM, qrSizeMM);
+                y += qrSizeMM + 5;
+            } catch(e) {
+                console.error("Errore generazione QR Code:", e);
+            }
+            doc.text("-".repeat(45), pageWidth / 2, y, { align: "center" }); 
+            y += 6;
+        }
 
         // --- GIOCHI RANDOM SULLO SCONTRINO ---
         if (window.settings.giocoScontrino && (!reparto.nome || reparto.nome === "COPIA CLIENTE")) {
@@ -11402,6 +11435,15 @@ async function stampaComanda(items, numeroComanda, note = "", cliente = {}) {
                     break;
             }
         }
+		// ---> 3. IL SALUTO FINALE (Sempre in fondo a tutto) <---
+        // Controllo di sicurezza: se il gioco ha riempito la pagina, andiamo su quella nuova
+        if (y > 240) { doc.addPage(); y = 10; }
+        
+        y += 8;
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "italic");
+        doc.text("Grazie e Buon Appetito!", pageWidth / 2, y, { align: "center" });
+        y += 5; // Margine finale prima del taglio
     });
 
     // --- 3. CREAZIONE FINESTRA SINGOLA E STAMPA ---
