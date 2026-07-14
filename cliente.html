@@ -384,30 +384,6 @@
                     `;
                 }).join("");
             });
-                
-                    let contorniHtml = "";
-                    let contorniArray = p.contorniScelti ? (Array.isArray(p.contorniScelti) ? p.contorniScelti : Object.values(p.contorniScelti)) : [];
-                    
-                    if (contorniArray.length > 0) {
-                        contorniHtml = contorniArray.map(c => {
-                            let varsTxt = c.varianti && c.varianti.length > 0 ? " <small style='color:#777;'>(" + c.varianti.map(v => v.tipo==='aggiunta'?`+${v.nome}`:`-${v.nome}`).join(", ") + ")</small>" : "";
-                            return `<div style="color: #2196F3; font-size: 0.6em; font-weight: bold; padding-left: 20px; margin-top: 5px;">↳ ${c.nome}${varsTxt}</div>`;
-                        }).join("");
-                    }
-                
-                    return `
-                    <div class="riga-ordine" style="display: flex; flex-direction: column; padding: 25px 0;">
-                        <div style="display: flex; justify-content: space-between; width: 100%;">
-                            <span><b style="color:#2196f3; font-weight: 800;">${p.quantita}x</b> &nbsp; ${p.nome}</span>
-                            <span>€ ${(p.prezzo * p.quantita).toFixed(2)}</span>
-                        </div>
-                        ${variantiHtml}
-                        ${contorniHtml}
-                    </div>
-                    `;
-                }).join("");
-            });
-
             db.ref("utenti/" + uidCassa + "/status/state").on("value", stateSnap => {
                 if (stateSnap.val() === "offline") {
                     notify("Postazione disconnessa dal cassiere.", "warn");
