@@ -69,6 +69,28 @@
         body.tema-notte .tracker-box, body.tema-astronave .tracker-box { background: #06131E; border: 1px solid #00A6CC; border-top: 5px solid #00A6CC; }
         body.tema-notte .reparto-nome, body.tema-astronave .reparto-nome { color: #D0FFFF; text-shadow: 0 0 2px rgba(0,255,255,.3); }
         body.tema-notte h1, body.tema-astronave h1 { color: #fff; }
+        /* --- Stili per il Box di Errore --- */
+        .error-box {
+            background: #ffebee;
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #f44336;
+            color: #d32f2f;
+        }
+        .error-box p { color: #333; margin-bottom: 5px; }
+        .error-box small { color: #555; }
+
+        /* Adattamento per i Temi Scuri */
+        body.tema-notte .error-box, body.tema-astronave .error-box {
+            background: #420000 !important;
+            border-color: #ff5252 !important;
+            color: #ff8a80 !important;
+        }
+        body.tema-notte .error-box p, body.tema-astronave .error-box p,
+        body.tema-notte .error-box small, body.tema-astronave .error-box small {
+            color: #ffcdd2 !important;
+            text-shadow: none !important;
+        }
     </style>
 </head>
 <body class="tema-caricato">
@@ -176,10 +198,10 @@
 
             function gestioneErrore(err) {
                 container.innerHTML = `
-                    <div style="background: #ffebee; padding: 15px; border-radius: 10px; border: 1px solid #f44336; color: #d32f2f;">
+                    <div class="error-box">
                         <h3 style="margin-top: 0;">⛔ Accesso Negato</h3>
-                        <p style="font-size:0.9em; color:#333;">Le regole di sicurezza di Firebase stanno bloccando la lettura per i clienti.</p>
-                        <p style="font-size:0.8em; color:#555;"><i>Dettaglio: ${err.message}</i></p>
+                        <p style="font-size:0.95em; font-weight:bold;">Le regole di sicurezza di Firebase stanno bloccando la lettura.</p>
+                        <small><i>Dettaglio: ${err.message}</i></small>
                     </div>`;
             }
 
