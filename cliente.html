@@ -331,7 +331,7 @@
                 document.getElementById("vTotale").innerText = "€ " + data.totale.toFixed(2);
                 document.getElementById("vPagato").innerText = "€ " + (data.pagato || 0).toFixed(2);
                 document.getElementById("vResto").innerText = "€ " + (data.resto || 0).toFixed(2);
-               // DENTRO avviaMonitor(uidCassa) in cliente.html
+                
                 document.getElementById("areaLista").innerHTML = data.piatti.map(p => {
                     let variantiHtml = "";
                     let variantiArray = p.varianti ? (Array.isArray(p.varianti) ? p.varianti : Object.values(p.varianti)) : [];
@@ -360,24 +360,30 @@
                     
                     if (contorniArray.length > 0) {
                         let cTxt = contorniArray.map(c => {
-                            let varsTxt = c.varianti && c.varianti.length > 0 ? " <span style='color:#999; font-weight:normal;'>(" + c.varianti.map(v => v.tipo==='aggiunta'?`+${v.nome}`:`-${v.nome}`).join(", ") + ")</span>" : "";
+                            let varsTxt = c.varianti && c.varianti.length > 0 ? " <span style='opacity:0.7; font-weight:normal;'>(" + c.varianti.map(v => v.tipo==='aggiunta'?`+${v.nome}`:`-${v.nome}`).join(", ") + ")</span>" : "";
                             return `<span style="color: #2196F3;">↳ ${c.nome}${varsTxt}</span>`;
                         }).join("<br>");
                         
                         contorniHtml = `<div style="font-size: 0.65em; margin-top: 6px; padding-left: 20px; line-height: 1.4;"><b>${cTxt}</b></div>`;
                     }
+
+                    const prezzoTotalePiatto = p.prezzo + (p.extraPrezzo || 0);
                 
                     return `
-                    <div class="riga-ordine" style="display: flex; flex-direction: column; padding: 20px 0;">
-                        <div style="display: flex; justify-content: space-between; width: 100%; align-items:center;">
-                            <span style="display:flex; align-items:center;"><b style="color:#2196f3; font-weight: 900; font-size: 1.1em; margin-right:15px;">${p.quantita}x</b> ${p.nome}</span>
-                            <span>€ ${(p.prezzo * p.quantita).toFixed(2)}</span>
+                    <div class="riga-ordine" style="display: flex; flex-direction: column; padding: 15px 0; border-bottom: 1px dashed rgba(128,128,128,0.3); font-size: 1.1em;">
+                        <div style="width: 100%; text-align: left;">
+                            <b style="color:#00bcd4; font-weight: 900; margin-right: 8px;">${p.quantita}x</b> 
+                            <span style="font-weight: 800;">${p.nome}</span> 
+                            <span style="opacity: 0.8; font-size: 0.9em; margin-left: 5px;">(€${prezzoTotalePiatto.toFixed(2)})</span>
                         </div>
-                        ${variantiHtml}
-                        ${contorniHtml}
+                        <div style="padding-left: 45px; font-size: 0.80em; line-height: 1.4;">
+                            ${variantiHtml}
+                            ${contorniHtml}
+                        </div>
                     </div>
                     `;
                 }).join("");
+            });
                 
                     let contorniHtml = "";
                     let contorniArray = p.contorniScelti ? (Array.isArray(p.contorniScelti) ? p.contorniScelti : Object.values(p.contorniScelti)) : [];
