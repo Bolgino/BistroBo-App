@@ -53,8 +53,7 @@ function listenTemaRealtime() {
     db.ref("impostazioni/tema").on("value", snap => { temaManualeDB = snap.val() || "default"; valutaEApplicaTemaFinale(); });
     db.ref("impostazioni/temiStagionaliAttivi").on("value", snap => { temiStagionaliDB = snap.val() === true; valutaEApplicaTemaFinale(); });
     db.ref("impostazioni/modalitaNotte").on("value", snap => { modalitaNotteDB = snap.val() === true; valutaEApplicaTemaFinale(); });
-    // Ricalcola ogni 15 min per i cambi d'ora
-    setInterval(valutaEApplicaTemaFinale, 60000 * 15);
+    setInterval(valutaEApplicaTemaFinale, 60000);
 }
 // Ascolta le chiusure globali anche dal file dei preordini
 db.ref("impostazioni/chiusuraServizio/chiusi").on("value", snap => {
