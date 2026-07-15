@@ -1349,17 +1349,6 @@
 					</div>
 					<button id="archiviaComandeBtn" class="toggleBtn" >ARCHIVIA</button>
 				</div>
-				<div class="settingItem">
-					<div class="settingLabel">
-						<span>Backup Database</span>
-						<small>Scarica o ripristina il backup completo (preordini, comande, utenti, menù, ingredienti, impostazioni) del database</small>
-					</div>
-					<div style="display:flex; gap:10px; align-items:center;">
-						<button id="backupDbBtn" class="toggleBtn">Scarica Backup</button>
-						<button id="restoreDbBtn" class="toggleBtn">Ripristina Backup</button>
-						<input type="file" id="restoreDbFile" style="display:none;">
-					</div>
-				</div>
 				<div class="settingItem" style="border-left: 4px solid #f44336; background: #ffebee;">
 					<div class="settingLabel">
 						<span style="color: #d32f2f; font-weight: bold;">Modalità Manutenzione 🛠️</span>
@@ -1387,6 +1376,38 @@
 						<small>Rimuove TUTTI i piatti e TUTTI gli ingredienti. <b>Operazione irreversibile!</b></small>
 					</div>
 					<button id="svuotaMenuDispensaBtn" class="toggleBtn">SVUOTA TUTTO</button>
+				</div>
+				<h4 style="margin-top: 30px; padding-bottom: 5px; color: #00796B; border-top: 1px dashed #ccc; padding-top: 20px;">Backup del sistema</h4>
+				<div class="settingItem">
+					<div class="settingLabel">
+						<span>Backup Database</span>
+						<small>Scarica o ripristina il backup completo (preordini, comande, utenti, menù, ingredienti, impostazioni) del database</small>
+					</div>
+					<div style="display:flex; gap:10px; align-items:center;">
+						<button id="backupDbBtn" class="toggleBtn">Scarica Backup</button>
+						<button id="restoreDbBtn" class="toggleBtn">Ripristina Backup</button>
+						<input type="file" id="restoreDbFile" style="display:none;">
+					</div>
+				</div>
+				<div class="settingItem">
+					<div class="settingLabel">
+						<span>Auto-Backup Cloud ☁️</span>
+						<small>Salvataggio automatico sul server ogni X minuti (mantiene le ultime 2 copie, salva solo se rileva modifiche).</small>
+					</div>
+					<div style="display:flex; gap:10px; align-items:center;">
+						<input type="number" id="inputAutoBackupIntervallo" min="1" max="120" value="15" style="width: 60px; padding: 6px; border-radius: 6px; border: 1px solid #ccc; text-align: center; font-weight: bold;" title="Minuti">
+						<span style="font-weight:bold; color:#555;">min</span>
+						<button id="toggleAutoBackupBtn" class="toggleBtn">OFF</button>
+					</div>
+				</div>
+				<div class="settingItem" id="listaCloudBackupsContainer" style="display:none; flex-direction:column; align-items:flex-start;">
+					<div class="settingLabel" style="max-width:100%; margin-bottom:10px;">
+						<span>Ripristino da Cloud Rapido</span>
+						<small>Ecco le tue 2 copie di sicurezza automatiche più recenti.</small>
+					</div>
+					<div id="listaCloudBackups" style="width:100%; display:flex; flex-direction:column; gap:8px;">
+						<!-- Le copie di backup appariranno qui -->
+					</div>
 				</div>
 				<h4 style="margin-top: 30px; padding-bottom: 5px; color: #00796B; border-top: 1px dashed #ccc; padding-top: 20px;">Stampa Scontrini</h4>
 				<div class="settingItem">
