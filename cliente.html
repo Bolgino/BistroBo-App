@@ -221,11 +221,7 @@
             else refreshStatus(auth.currentUser);
         });
 
-        // 2. MOTORE TEMI (Ascolta Stagioni, Notte e Manuale)
-        listenTemaRealtime();
-        
-        // Incolla qui sotto le funzioni essenziali del motore per renderlo indipendente
-        // MOTORE TEMI UNIVERSALE (Ascolta Stagioni, Notte e Manuale)
+        // ================= MOTORE TEMI UNIVERSALE =================
         let temaManualeDB = "default"; let temiStagionaliDB = false; let modalitaNotteDB = false;
         function getStagioneCorrente() { const m = new Date().getMonth() + 1; const g = new Date().getDate(); if ((m === 3 && g >= 21) || m === 4 || m === 5 || (m === 6 && g <= 20)) return "primavera"; if ((m === 6 && g >= 21) || m === 7 || m === 8 || (m === 9 && g <= 22)) return "estate"; if ((m === 9 && g >= 23) || m === 10 || m === 11 || (m === 12 && g <= 20)) return "autunno"; return "inverno"; }
         function valutaEApplicaTemaFinale() {
@@ -239,6 +235,7 @@
         db.ref("impostazioni/temiStagionaliAttivi").on("value", s => { temiStagionaliDB = s.val() === true; valutaEApplicaTemaFinale(); });
         db.ref("impostazioni/modalitaNotte").on("value", s => { modalitaNotteDB = s.val() === true; valutaEApplicaTemaFinale(); });
         setInterval(valutaEApplicaTemaFinale, 60000);
+        // ==========================================================
 
         function monitoraCasse() {
             if (utentiListener) return;
