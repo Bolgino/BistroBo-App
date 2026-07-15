@@ -11912,11 +11912,13 @@ function valutaEApplicaTemaFinale() {
     
     let temaFinale = temaManuale; 
     let temaForzatoDaSistema = false;
+    let motivoBlocco = "";
 
     // Priorità 2: Stagionale
     if (stagionaleAttivo) {
         temaFinale = getStagioneCorrente();
         temaForzatoDaSistema = true;
+        motivoBlocco = "Tema Stagionale in uso";
     }
 
     // Priorità 1 (Assoluta): Modalità Notte
@@ -11925,17 +11927,28 @@ function valutaEApplicaTemaFinale() {
         if (ora >= 21 || ora < 5) {
             temaFinale = "notte";
             temaForzatoDaSistema = true;
+            motivoBlocco = "Modalità Notte in uso";
         }
     }
 
     // Applica graficamente il tema vincitore
     aggiornaTema(temaFinale, false);
 
-    // Aggiorna la Select nell'interfaccia Admin
+    // Aggiorna e BLOCCA visivamente la Select nell'interfaccia Admin
     const selectTema = document.getElementById("selectTema");
     if (selectTema) {
         selectTema.value = temaFinale;
         selectTema.disabled = temaForzatoDaSistema;
+        
+        if (temaForzatoDaSistema) {
+            selectTema.style.opacity = "0.5";
+            selectTema.style.cursor = "not-allowed";
+            selectTema.title = "Selezione bloccata: " + motivoBlocco;
+        } else {
+            selectTema.style.opacity = "1";
+            selectTema.style.cursor = "pointer";
+            selectTema.title = "Scegli un tema";
+        }
     }
     if (typeof aggiornaTitoloPreordini === "function") aggiornaTitoloPreordini(temaFinale);
 }
@@ -11963,12 +11976,13 @@ document.addEventListener("DOMContentLoaded", () => {
     // 2️⃣ Se l'admin cambia tema manualmente dalla select
     if (selectTema) {
         selectTema.addEventListener("change", () => {
+            if (selectTema.disabled) return; // Sicurezza extra
             const nuovoTema = selectTema.value;
-            aggiornaTema(nuovoTema, true); // Questo salva su Firebase
+            aggiornaTema(nuovoTema, true); // Salva su Firebase
         });
     }
 
-    // 3️⃣ Esegue un controllo ogni minuto per aggiornare automaticamente gli orari
+    // 3️⃣ Esegue un controllo ogni minuto per scattare in automatico al cambio dell'ora/giorno
     setInterval(valutaEApplicaTemaFinale, 60000);
 });
 // ================= CALCOLO TEMPO MEDIO CASSA =================
