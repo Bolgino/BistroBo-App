@@ -1647,6 +1647,17 @@ function initImpostazioniToggle() {
 	db.ref("cloud_backups").on("value", snap => {
 	    renderCloudBackups(snap.val() || {});
 	});
+	// ================= TEMI DINAMICI STAGIONALI =================
+    const toggleTemiStagionaliBtn = document.getElementById("toggleTemiStagionaliBtn");
+    const temiStagionaliRef = db.ref("impostazioni/temiStagionaliAttivi");
+
+    if (toggleTemiStagionaliBtn) {
+        initToggle(toggleTemiStagionaliBtn, temiStagionaliRef, {on: "ON", off: "OFF"}, false, val => {
+            window.settings.temiStagionaliAttivi = val;
+            // Il motore aggiornato all'inizio del file ascolta questo valore in tempo reale
+            console.log("Temi stagionali impostati su:", val);
+        });
+    }
 }
 function initTickNoteDestinazioni() {
     db.ref("impostazioni/noteDestinazioniAbilitate").on("value", snap => {
@@ -11862,71 +11873,114 @@ function aggiornaOrologio() {
 
     span.innerText = `${hh}:${mm}:${ss}`;
 }
-//Tema
-const temiDisponibili = ["default", "scout", "autunno", "inverno", "primavera", "estate","chiaro","notte","astronave"];
+// ================================================================
+// 🔹 1️⃣ GESTIONE TEMA GLOBALE (Manuale, Stagionale, Notte)
+// ================================================================
+
+const temiDisponibili = ["default", "scout", "autunno", "inverno", "primavera", "estate", "chiaro", "notte", "astronave"];
+
+// La TUA funzione originale (perfetta per applicare graficamente)
 function aggiornaTema(tema, salvaSuFirebase = false) {
-  // 🔹 Rimuove tutte le classi dei temi
-  document.body.classList.remove(
-    "tema-default", "tema-scout", "tema-autunno",
-    "tema-inverno", "tema-primavera", "tema-estate",  
-	  "tema-chiaro","tema-notte","tema-astronave"
-  );
+    document.body.classList.remove(
+        "tema-default", "tema-scout", "tema-autunno",
+        "tema-inverno", "tema-primavera", "tema-estate",  
+        "tema-chiaro", "tema-notte", "tema-astronave"
+    );
 
-  // 🔹 Aggiunge il tema selezionato
-  document.body.classList.add("tema-" + tema);
-
-  // 🔹 Solo l’admin autenticato salva su Firebase
-    if (salvaSuFirebase) {
-    const user = firebase.auth().currentUser;
-    if (user) {
-        db.ref("impostazioni/tema").set(tema)
-        .then(() => console.log("✅ Tema salvato globalmente:", tema))
-        .catch(err => console.warn("❌ Errore salvataggio tema globale:", err));
-    } else {
-        console.warn("⚠️ Tema non salvato: nessun utente autenticato.");
-    }
-    }
-
-}
-document.addEventListener("DOMContentLoaded", () => {
-  const selectTema = document.getElementById("selectTema");
-  const temaRef = db.ref("impostazioni/tema");
-
-  // 🔹 1️⃣ Applica subito il tema salvato su Firebase
-    temaRef.once("value").then(snap => {
-    const temaIniziale = snap.exists() ? snap.val() : "default";
-    aggiornaTema(temaIniziale);
-
-    // IMPORTANTE: mostra la pagina solo dopo aver applicato il tema
+    document.body.classList.add("tema-" + tema);
     document.body.classList.add("tema-caricato");
 
-    if (selectTema) selectTema.value = temaIniziale;
-    });
-
-
-  // 🔹 2️⃣ Rimane in ascolto di eventuali cambi dal database (sincronizzazione live)
-    temaRef.on("value", snap => {
-        const temaCorrente = snap.exists() ? snap.val() : "default";
-        aggiornaTema(temaCorrente);
-
-        // Aggiungi classe solo se non già presente
-        if (!document.body.classList.contains("tema-caricato")) {
-            document.body.classList.add("tema-caricato");
+    if (salvaSuFirebase) {
+        const user = firebase.auth().currentUser;
+        if (user) {
+            db.ref("impostazioni/tema").set(tema)
+            .then(() => console.log("✅ Tema manuale salvato su Firebase:", tema))
+            .catch(err => console.warn("❌ Errore salvataggio tema:", err));
         }
+    }
+}
 
-        if (selectTema && selectTema.value !== temaCorrente) {
-        selectTema.value = temaCorrente;
+// Calcolo della stagione corrente
+function getStagioneCorrente() {
+    const oggi = new Date();
+    const mese = oggi.getMonth() + 1; // 1-12
+    const giorno = oggi.getDate();
+
+    if ((mese === 3 && giorno >= 21) || mese === 4 || mese === 5 || (mese === 6 && giorno <= 20)) return "primavera";
+    if ((mese === 6 && giorno >= 21) || mese === 7 || mese === 8 || (mese === 9 && giorno <= 22)) return "estate";
+    if ((mese === 9 && giorno >= 23) || mese === 10 || mese === 11 || (mese === 12 && giorno <= 20)) return "autunno";
+    return "inverno";
+}
+
+// IL CERVELLO: Valuta le priorità e decide che tema mostrare
+function valutaEApplicaTemaFinale() {
+    // Leggiamo i valori in tempo reale dalle variabili globali
+    const temaManuale = window.settings.temaSalvato || "default"; 
+    const stagionaleAttivo = window.settings.temiStagionaliAttivi === true;
+    const notteAttiva = window.settings.modalitaNotte === true;
+    
+    let temaFinale = temaManuale; // Di base, usa quello scelto a mano
+    let temaForzatoDaSistema = false;
+
+    // Priorità 2: Stagionale
+    if (stagionaleAttivo) {
+        temaFinale = getStagioneCorrente();
+        temaForzatoDaSistema = true;
+    }
+
+    // Priorità 1 (Assoluta): Modalità Notte (vince su tutto se è l'ora giusta)
+    if (notteAttiva) {
+        const ora = new Date().getHours();
+        if (ora >= 21 || ora < 5) {
+            temaFinale = "notte";
+            temaForzatoDaSistema = true;
         }
+    }
+
+    // Applica graficamente il tema vincitore (NON salva su Firebase, per non sovrascrivere la scelta manuale)
+    aggiornaTema(temaFinale, false);
+
+    // Aggiorna la Select nell'interfaccia Admin per coerenza visiva
+    const selectTema = document.getElementById("selectTema");
+    if (selectTema) {
+        selectTema.value = temaFinale;
+        // Blocca la select manuale se un automatismo è attivo (per non far confondere l'admin)
+        selectTema.disabled = temaForzatoDaSistema;
+    }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    const selectTema = document.getElementById("selectTema");
+    
+    // Inizializza le impostazioni se non esistono
+    window.settings = window.settings || {};
+
+    // 1️⃣ Ascolta le modifiche su Firebase (Tema Manuale, Stagionale, Notte)
+    db.ref("impostazioni/tema").on("value", snap => {
+        window.settings.temaSalvato = snap.exists() ? snap.val() : "default";
+        valutaEApplicaTemaFinale();
     });
 
-
-  // 🔹 3️⃣ Se l’admin cambia tema manualmente
-  if (selectTema) {
-    selectTema.addEventListener("change", () => {
-      const nuovoTema = selectTema.value;
-      aggiornaTema(nuovoTema, true); // salva solo se admin loggato
+    db.ref("impostazioni/temiStagionaliAttivi").on("value", snap => {
+        window.settings.temiStagionaliAttivi = snap.val() === true;
+        valutaEApplicaTemaFinale();
     });
-  }
+
+    db.ref("impostazioni/modalitaNotte").on("value", snap => {
+        window.settings.modalitaNotte = snap.val() === true;
+        valutaEApplicaTemaFinale();
+    });
+
+    // 2️⃣ Se l'admin cambia tema manualmente dalla select
+    if (selectTema) {
+        selectTema.addEventListener("change", () => {
+            const nuovoTema = selectTema.value;
+            aggiornaTema(nuovoTema, true); // Questo salva su Firebase, innescando l'evento sopra
+        });
+    }
+
+    // 3️⃣ Esegue un controllo ogni 15 minuti (per cambiare tema se scatta la mezzanotte o le 21:00)
+    setInterval(valutaEApplicaTemaFinale, 60000 * 15);
 });
 // ================= CALCOLO TEMPO MEDIO CASSA =================
 async function aggiornaTempoMedioCassa(comandeData) {
@@ -12606,6 +12660,9 @@ function gestisciLoopAutoBackup() {
     
     // Si avvia SOLO se l'utente attuale è l'Admin e l'impostazione è ON
     if (window.isLoggedInAdmin && window.settings.autoBackupAbilitato) {
+        
+        eseguiAutoBackupCloud(); // <--- AGGIUNTA: Esegue SUBITO un salvataggio appena lo attivi
+
         const millis = window.settings.autoBackupIntervallo * 60 * 1000;
         window.autoBackupIntervalId = setInterval(eseguiAutoBackupCloud, millis);
         console.log("☁️ Auto-Backup Cloud attivato ogni " + window.settings.autoBackupIntervallo + " minuti.");
