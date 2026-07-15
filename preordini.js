@@ -10,49 +10,51 @@ let carrelloCliente = []; // Qui salveremo i piatti configurati dal cliente
 let ingredientiGlobali = {}; // Per avere gli ingredienti sempre a disposizione
 
 // ================================================================
-// 🔹 1️⃣ GESTIONE TEMA GLOBALE (uguale al sito principale)
+// 🔹 1️⃣ GESTIONE TEMA GLOBALE (Manuale, Stagionale, Notte)
 // ================================================================
-async function applicaTemaDaDatabase() {
-    try {
-        const snap = await db.ref("impostazioni/tema").once("value");
-        const tema = snap.val() || "default";
+let temaManualeDB = "default";
+let temiStagionaliDB = false;
+let modalitaNotteDB = false;
 
-        document.body.classList.remove(
-            "tema-default","tema-scout","tema-inverno",
-            "tema-autunno","tema-primavera","tema-estate"
-        );
-        document.body.classList.add("tema-" + tema);
+function getStagioneCorrente() {
+    const oggi = new Date();
+    const mese = oggi.getMonth() + 1; // 1-12
+    const giorno = oggi.getDate();
 
-        // mostra il body solo dopo aver applicato il tema
-        document.body.classList.add("tema-caricato");
-
-        localStorage.setItem("temaSelezionato", tema);
-    } catch (err) {
-        console.error("Errore nel caricamento del tema:", err);
-        document.body.classList.add("tema-caricato"); // fallback
-    }
+    if ((mese === 3 && giorno >= 21) || mese === 4 || mese === 5 || (mese === 6 && giorno <= 20)) return "primavera";
+    if ((mese === 6 && giorno >= 21) || mese === 7 || mese === 8 || (mese === 9 && giorno <= 22)) return "estate";
+    if ((mese === 9 && giorno >= 23) || mese === 10 || mese === 11 || (mese === 12 && giorno <= 20)) return "autunno";
+    return "inverno";
 }
+
+function valutaEApplicaTemaFinale() {
+    let temaFinale = temaManualeDB;
+    if (temiStagionaliDB) temaFinale = getStagioneCorrente();
+    if (modalitaNotteDB) {
+        const ora = new Date().getHours();
+        if (ora >= 21 || ora < 5) temaFinale = "notte";
+    }
+
+    document.body.className = document.body.className.replace(/\btema-\S+/g, '');
+    document.body.classList.add("tema-" + temaFinale);
+    document.body.classList.add("tema-caricato");
+    
+    const bg = document.getElementById("themeBackground");
+    if (bg) bg.style.display = "block";
+
+    localStorage.setItem("temaSelezionato", temaFinale);
+    if (typeof aggiornaTitoloPreordini === "function") aggiornaTitoloPreordini(temaFinale);
+}
+
+// Chiamata di fallback per vecchi riferimenti nel codice
+async function applicaTemaDaDatabase() { valutaEApplicaTemaFinale(); }
+
 function listenTemaRealtime() {
-    db.ref("impostazioni/tema").on("value", snap => {
-        const tema = snap.val() || "default";
-
-        // Applica tema all’intera pagina
-        if (typeof aggiornaTema === "function") {
-            aggiornaTema(tema); // se c'è la funzione dell'app interna
-        } else {
-            document.body.classList.remove(
-                "tema-default", "tema-scout", "tema-inverno",
-                "tema-autunno", "tema-primavera", "tema-estate"
-            );
-            document.body.classList.add("tema-" + tema);
-        }
-
-        // Aggiorna localStorage
-        localStorage.setItem("temaSelezionato", tema);
-
-        // Aggiorna anche titolo dei preordini in base al tema
-        aggiornaTitoloPreordini(tema);
-    });
+    db.ref("impostazioni/tema").on("value", snap => { temaManualeDB = snap.val() || "default"; valutaEApplicaTemaFinale(); });
+    db.ref("impostazioni/temiStagionaliAttivi").on("value", snap => { temiStagionaliDB = snap.val() === true; valutaEApplicaTemaFinale(); });
+    db.ref("impostazioni/modalitaNotte").on("value", snap => { modalitaNotteDB = snap.val() === true; valutaEApplicaTemaFinale(); });
+    // Ricalcola ogni 15 min per i cambi d'ora
+    setInterval(valutaEApplicaTemaFinale, 60000 * 15);
 }
 // Ascolta le chiusure globali anche dal file dei preordini
 db.ref("impostazioni/chiusuraServizio/chiusi").on("value", snap => {
