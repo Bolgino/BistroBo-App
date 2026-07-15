@@ -11874,33 +11874,12 @@ function aggiornaOrologio() {
     span.innerText = `${hh}:${mm}:${ss}`;
 }
 // ================================================================
-// 🔹 1️⃣ GESTIONE TEMA GLOBALE (Manuale, Stagionale, Notte)
+// 🔹 1️⃣ MOTORE TEMI UNIVERSALE (Manuale, Stagionale, Notte)
 // ================================================================
+let temaManualeDB = "default";
+let temiStagionaliDB = false;
+let modalitaNotteDB = false;
 
-const temiDisponibili = ["default", "scout", "autunno", "inverno", "primavera", "estate", "chiaro", "notte", "astronave"];
-
-// La TUA funzione originale (perfetta per applicare graficamente)
-function aggiornaTema(tema, salvaSuFirebase = false) {
-    document.body.classList.remove(
-        "tema-default", "tema-scout", "tema-autunno",
-        "tema-inverno", "tema-primavera", "tema-estate",  
-        "tema-chiaro", "tema-notte", "tema-astronave"
-    );
-
-    document.body.classList.add("tema-" + tema);
-    document.body.classList.add("tema-caricato");
-
-    if (salvaSuFirebase) {
-        const user = firebase.auth().currentUser;
-        if (user) {
-            db.ref("impostazioni/tema").set(tema)
-            .then(() => console.log("✅ Tema manuale salvato su Firebase:", tema))
-            .catch(err => console.warn("❌ Errore salvataggio tema:", err));
-        }
-    }
-}
-
-// Calcolo della stagione corrente
 function getStagioneCorrente() {
     const oggi = new Date();
     const mese = oggi.getMonth() + 1; // 1-12
@@ -11912,75 +11891,71 @@ function getStagioneCorrente() {
     return "inverno";
 }
 
-// IL CERVELLO: Valuta le priorità e decide che tema mostrare
 function valutaEApplicaTemaFinale() {
-    // Leggiamo i valori in tempo reale dalle variabili globali
-    const temaManuale = window.settings.temaSalvato || "default"; 
-    const stagionaleAttivo = window.settings.temiStagionaliAttivi === true;
-    const notteAttiva = window.settings.modalitaNotte === true;
-    
-    let temaFinale = temaManuale; // Di base, usa quello scelto a mano
-    let temaForzatoDaSistema = false;
+    let temaFinale = temaManualeDB;
+    let forzato = false;
 
-    // Priorità 2: Stagionale
-    if (stagionaleAttivo) {
+    // Priorità 2: Stagione
+    if (temiStagionaliDB) {
         temaFinale = getStagioneCorrente();
-        temaForzatoDaSistema = true;
+        forzato = true;
     }
 
-    // Priorità 1 (Assoluta): Modalità Notte (vince su tutto se è l'ora giusta)
-    if (notteAttiva) {
+    // Priorità 1 (Assoluta): Notte (Dalle 21:00 alle 05:00)
+    if (modalitaNotteDB) {
         const ora = new Date().getHours();
         if (ora >= 21 || ora < 5) {
             temaFinale = "notte";
-            temaForzatoDaSistema = true;
+            forzato = true;
         }
     }
 
-    // Applica graficamente il tema vincitore (NON salva su Firebase, per non sovrascrivere la scelta manuale)
-    aggiornaTema(temaFinale, false);
+    // Applica graficamente il tema
+    document.body.className = document.body.className.replace(/\btema-\S+/g, '');
+    document.body.classList.add("tema-" + temaFinale);
+    document.body.classList.add("tema-caricato");
+    
+    const bg = document.getElementById("themeBackground");
+    if (bg) bg.style.display = "block";
 
-    // Aggiorna la Select nell'interfaccia Admin per coerenza visiva
+    // Aggiorna l'interfaccia Admin
     const selectTema = document.getElementById("selectTema");
     if (selectTema) {
         selectTema.value = temaFinale;
-        // Blocca la select manuale se un automatismo è attivo (per non far confondere l'admin)
-        selectTema.disabled = temaForzatoDaSistema;
+        selectTema.disabled = forzato; // Blocca se gestito in automatico
     }
+
+    if (typeof aggiornaTitoloPreordini === "function") aggiornaTitoloPreordini(temaFinale);
 }
 
+// Funzione chiamata all'avvio dal DOMContentLoaded
+function listenTemaRealtime() {
+    // Sincronizza i 3 parametri in tempo reale
+    db.ref("impostazioni/tema").on("value", snap => {
+        temaManualeDB = snap.val() || "default";
+        valutaEApplicaTemaFinale();
+    });
+    db.ref("impostazioni/temiStagionaliAttivi").on("value", snap => {
+        temiStagionaliDB = snap.val() === true;
+        valutaEApplicaTemaFinale();
+    });
+    db.ref("impostazioni/modalitaNotte").on("value", snap => {
+        modalitaNotteDB = snap.val() === true;
+        valutaEApplicaTemaFinale();
+    });
+
+    // Controlla ogni minuto (per far scattare la notte/giorno in tempo reale senza ricaricare)
+    setInterval(valutaEApplicaTemaFinale, 60000);
+}
+
+// Se l'admin cambia manualmente dalla select
 document.addEventListener("DOMContentLoaded", () => {
     const selectTema = document.getElementById("selectTema");
-    
-    // Inizializza le impostazioni se non esistono
-    window.settings = window.settings || {};
-
-    // 1️⃣ Ascolta le modifiche su Firebase (Tema Manuale, Stagionale, Notte)
-    db.ref("impostazioni/tema").on("value", snap => {
-        window.settings.temaSalvato = snap.exists() ? snap.val() : "default";
-        valutaEApplicaTemaFinale();
-    });
-
-    db.ref("impostazioni/temiStagionaliAttivi").on("value", snap => {
-        window.settings.temiStagionaliAttivi = snap.val() === true;
-        valutaEApplicaTemaFinale();
-    });
-
-    db.ref("impostazioni/modalitaNotte").on("value", snap => {
-        window.settings.modalitaNotte = snap.val() === true;
-        valutaEApplicaTemaFinale();
-    });
-
-    // 2️⃣ Se l'admin cambia tema manualmente dalla select
     if (selectTema) {
         selectTema.addEventListener("change", () => {
-            const nuovoTema = selectTema.value;
-            aggiornaTema(nuovoTema, true); // Questo salva su Firebase, innescando l'evento sopra
+            db.ref("impostazioni/tema").set(selectTema.value);
         });
     }
-
-    // 3️⃣ Esegue un controllo ogni 15 minuti (per cambiare tema se scatta la mezzanotte o le 21:00)
-    setInterval(valutaEApplicaTemaFinale, 60000 * 15);
 });
 // ================= CALCOLO TEMPO MEDIO CASSA =================
 async function aggiornaTempoMedioCassa(comandeData) {
