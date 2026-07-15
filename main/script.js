@@ -5470,6 +5470,79 @@ window.apriModalCreaIngrediente = function() {
     };
 };
 // GESTIONE comande admin
+// ==========================================
+// RICERCA AVANZATA COMANDE
+// ==========================================
+
+function applicaFiltriAvanzatiAdmin() {
+    // 1. Prendo i valori da tutti gli input
+    const numFiltro = document.getElementById("cercaNumeroAdmin").value.toLowerCase().trim();
+    const tavFiltro = document.getElementById("cercaTavoloAdmin").value.toLowerCase().trim();
+    const prodFiltro = document.getElementById("cercaProdottoAdmin").value.toLowerCase().trim();
+    const orarioDa = document.getElementById("cercaOrarioDaAdmin").value;
+    const orarioA = document.getElementById("cercaOrarioAAdmin").value;
+
+    // 2. Prendo tutte le comande a schermo
+    const ordini = document.querySelectorAll("#listaComandeAdmin .order");
+
+    ordini.forEach(ordine => {
+        let mostra = true; // Di base la comanda è visibile
+
+        // --- Filtro Numero ---
+        if (numFiltro && !ordine.dataset.numero.toLowerCase().includes(numFiltro)) {
+            mostra = false;
+        }
+
+        // --- Filtro Tavolo ---
+        // Match esatto o parziale (es. se cerchi "1", mostra "1", "12", "1A")
+        if (tavFiltro && !ordine.dataset.tavolo.includes(tavFiltro)) {
+            mostra = false;
+        }
+
+        // --- Filtro Prodotto ---
+        if (prodFiltro && !ordine.dataset.prodotti.includes(prodFiltro)) {
+            mostra = false;
+        }
+
+        // --- Filtro Orario ---
+        if (orarioDa || orarioA) {
+            const orarioOrdine = ordine.dataset.orario; // Formato "HH:MM"
+            if (orarioOrdine) {
+                if (orarioDa && orarioOrdine < orarioDa) mostra = false;
+                if (orarioA && orarioOrdine > orarioA) mostra = false;
+            } else {
+                // Se la comanda non ha un orario, la nascondiamo se è attivo il filtro orario
+                mostra = false; 
+            }
+        }
+
+        // Applica visibilità
+        ordine.style.display = mostra ? "block" : "none";
+    });
+}
+
+function pulisciFiltriAdmin() {
+    document.getElementById("cercaNumeroAdmin").value = "";
+    document.getElementById("cercaTavoloAdmin").value = "";
+    document.getElementById("cercaProdottoAdmin").value = "";
+    document.getElementById("cercaOrarioDaAdmin").value = "";
+    document.getElementById("cercaOrarioAAdmin").value = "";
+    applicaFiltriAvanzatiAdmin(); // Riapplica i filtri (che ora sono vuoti) per mostrare tutto
+}
+
+// Inizializza gli Event Listener per attivare la ricerca in tempo reale
+document.addEventListener("DOMContentLoaded", () => {
+    const filtriAvanzatiIds = ["cercaNumeroAdmin", "cercaTavoloAdmin", "cercaProdottoAdmin", "cercaOrarioDaAdmin", "cercaOrarioAAdmin"];
+    
+    filtriAvanzatiIds.forEach(id => {
+        const el = document.getElementById(id);
+        if(el) {
+            // Usa 'input' per il testo e 'change' per gli orari per reattività immediata
+            el.addEventListener("input", applicaFiltriAvanzatiAdmin);
+            el.addEventListener("change", applicaFiltriAvanzatiAdmin);
+        }
+    });
+});
 async function caricaGestioneComandeAdmin() {
     if (!checkOnline(true)) return;
 	if (!firebase.auth().currentUser) return;
@@ -5622,6 +5695,19 @@ async function caricaGestioneComandeAdmin() {
             riga.className = "order";
             riga.id = "admin_comanda_" + id;
             riga.dataset.numero = (c.numero + (c.lettera || "")).toUpperCase();
+			// Aggiungo i metadati per la ricerca avanzata
+			riga.dataset.tavolo = c.tavolo ? c.tavolo.toString().toLowerCase() : "";
+			riga.dataset.orario = c.orario || "";
+			
+			// Estraggo tutti i nomi dei piatti in una stringa per facilitare la ricerca prodotto
+			const stringaPiatti = (c.piatti || []).map(p => p.nome).join(" ").toLowerCase();
+			riga.dataset.prodotti = stringaPiatti;
+			
+			// (Opzionale ma consigliato) Mostra visivamente il tavolo se presente
+			if (c.tavolo) {
+			    const numDiv = mainDiv.querySelector("div"); // Prende il div col numero comanda
+			    numDiv.innerHTML += ` <span style="color:#007bff; margin-left: 10px;">(🪑 Tav: ${c.tavolo})</span>`;
+			}
 
             const mainDiv = document.createElement("div");
             mainDiv.style.display = "flex"; mainDiv.style.justifyContent = "space-between"; mainDiv.style.alignItems = "flex-start"; mainDiv.style.gap = "20px";
