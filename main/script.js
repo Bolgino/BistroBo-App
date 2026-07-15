@@ -5938,6 +5938,10 @@ function aggiornaDashboardAdmin(comandeData) {
 
     const now = Date.now();
     let maxGlobalStress = 0;
+	// --- VARIABILI PER CLIENTI SERVITI ---
+    let clientiCompletati = 0;
+    let primoOrdineTimestamp = Infinity;
+    let ultimoCompletamentoTimestamp = 0;
 
     // 1. Raccolta Dati
     Object.entries(comandeData).forEach(([id, c]) => {
@@ -5971,6 +5975,43 @@ function aggiornaDashboardAdmin(comandeData) {
                 }
             }
         });
+		// --- CALCOLO CLIENTI TOTALMENTE SERVITI ---
+        // Verifichiamo se TUTTI i reparti coinvolti in questa comanda l'hanno completata
+        let comandaFinita = true;
+        let comandaIniziata = false;
+
+        repartiConfig.forEach(r => {
+            // Controlla se il reparto ha piatti in questa comanda
+            let haPiatti = false;
+            if (r.id === "cucina" && cibo.length > 0) haPiatti = true;
+            if (r.id === "bere" && bere.length > 0) haPiatti = true;
+            if (r.id === "snack" && snack.length > 0) haPiatti = true;
+            if (r.id === "extra1" && extra1.length > 0) haPiatti = true;
+            if (r.id === "extra2" && extra2.length > 0) haPiatti = true;
+            if (r.id === "extra3" && extra3.length > 0) haPiatti = true;
+
+            if (haPiatti) {
+                comandaIniziata = true;
+                if (c[r.statoKey] !== "completato") {
+                    comandaFinita = false;
+                } else {
+                    // Troviamo l'ultimo timestamp di completamento per questa comanda
+                    if (c["timestampFine_" + r.id] && c["timestampFine_" + r.id] > ultimoCompletamentoTimestamp) {
+                        ultimoCompletamentoTimestamp = c["timestampFine_" + r.id];
+                    }
+                }
+            }
+        });
+
+        // Se la comanda è valida e finita, incrementiamo i clienti
+        if (comandaIniziata && comandaFinita) {
+            clientiCompletati++;
+        }
+
+        // Troviamo il timestamp del primissimo ordine per calcolare la durata della serata
+        if (c.timestamp && c.timestamp < primoOrdineTimestamp) {
+            primoOrdineTimestamp = c.timestamp;
+        }
     });
 
     // 2. Trova il reparto più veloce (Medaglia)
@@ -6064,7 +6105,37 @@ function aggiornaDashboardAdmin(comandeData) {
     } else {
         globalStatusDiv.className = "bb-status-badge ok"; globalStatusDiv.innerText = "✔️ Flusso Regolare";
     }
-}
+// --- AGGIORNAMENTO UI CLIENTI SERVITI E RITMO ---
+    const elClienti = document.getElementById("dashClientiServiti");
+    const elRitmo = document.getElementById("dashRitmoServizio");
+    
+    if (elClienti && elRitmo) {
+        elClienti.innerText = clientiCompletati;
+
+        if (clientiCompletati > 1 && primoOrdineTimestamp !== Infinity && ultimoCompletamentoTimestamp > primoOrdineTimestamp) {
+            // Calcolo tempo trascorso in secondi tra il primo ordine e l'ultimo piatto uscito
+            const tempoTrascorsoSec = (ultimoCompletamentoTimestamp - primoOrdineTimestamp) / 1000;
+            const secondiPerCliente = Math.floor(tempoTrascorsoSec / clientiCompletati);
+            
+            if (secondiPerCliente > 0) {
+                // Formattiamo il ritmo per renderlo leggibile
+                let ritmoText = "";
+                if (secondiPerCliente < 60) {
+                    ritmoText = `1 cliente ogni ${secondiPerCliente}s`;
+                } else {
+                    const min = Math.floor(secondiPerCliente / 60);
+                    const sec = secondiPerCliente % 60;
+                    ritmoText = `1 cliente ogni ${min}m ${sec}s`;
+                }
+                elRitmo.innerText = `(${ritmoText})`;
+            } else {
+                elRitmo.innerText = "( Troppo veloci! ⚡ )";
+            }
+        } else {
+            elRitmo.innerText = "( Calcolo in corso... )";
+        }
+    }
+} // <-- Questa è l'ultima parentesi graffa della funzione
 
 // ================= POPUP ESCLUSIONE TEMPO CASSA (DESIGN INTEGRATO BISTROBO) =================
 function apriConfigurazioneTempoCassa() {
@@ -8997,6 +9068,8 @@ function analizzaComande(comandeObj, fondoCassaTot) {
     let incassoPreordini = 0;
     let totaleComandePreordini = 0;
     let incassoSoloExtra = 0;
+	let totaleTempoEvasione = 0;
+    let comandeCompletateConTempo = 0;
 
     // Tiene traccia di soldi guadagnati SOLO da aggiunte/contorni
     const piattiMap = {};
@@ -9087,12 +9160,36 @@ function analizzaComande(comandeObj, fondoCassaTot) {
             data: c.data || c.ora || c.timestamp || "", // <-- FIX: recupera la data corretta
             isPreordine: comandaEPreordine
         });
+		// --- CALCOLO TEMPO EVASIONE MEDIO COMANDA ---
+        let maxFine = 0;
+        let isFullyCompleted = true;
+        let hasItemsGlobal = false;
+        
+        const repartiCheck = ["cucina", "bere", "snack", "extra1", "extra2", "extra3"];
+        repartiCheck.forEach(r => {
+            const statoKey = "stato" + r.charAt(0).toUpperCase() + r.slice(1);
+            if (c[statoKey]) {
+                hasItemsGlobal = true;
+                if (c[statoKey] !== "completato") isFullyCompleted = false;
+                if (c["timestampFine_" + r] > maxFine) maxFine = c["timestampFine_" + r];
+            }
+        });
+        
+        if (hasItemsGlobal && isFullyCompleted && maxFine > (c.timestamp || 0)) {
+            const tempo = maxFine - c.timestamp;
+            if (tempo > 0 && tempo < 86400000) { // Ignora anomalie superiori a 24h
+                totaleTempoEvasione += tempo;
+                comandeCompletateConTempo++;
+            }
+        }
     }
 
     const piattiByQuantita = Object.entries(piattiMap).sort((a,b) => b[1].quantita - a[1].quantita);
     const piattiByIncasso = Object.entries(piattiMap).sort((a,b) => b[1].incasso - a[1].incasso);
     const ingrByQuantita = Object.entries(ingrMap).sort((a,b) => b[1] - a[1]);
     const ingrIncassiArray = Object.entries(incassiIngredienti).map(([n,i]) => ({ nome: n, incasso: i }));
+	// Calcolo media in secondi
+    let mediaEvasioneSecondi = comandeCompletateConTempo > 0 ? (totaleTempoEvasione / comandeCompletateConTempo) / 1000 : 0;
 
     return {
         totaleComande,
@@ -9108,7 +9205,8 @@ function analizzaComande(comandeObj, fondoCassaTot) {
         ingrByQuantita,
         ingrIncassiArray,
         listaComande,
-        fondoCassa: fondoCassaTot
+        fondoCassa: fondoCassaTot,
+        mediaEvasioneSecondi
     };
 }
 
@@ -9125,7 +9223,14 @@ function renderHtmlStatistiche(elementId, stats) {
         <div style="font-size: 1.05em;">
             <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
                 <div style="flex:1;">
-                    <p style="margin: 4px 0;"><b>Totale comande:</b> ${stats.totaleComande}</p>
+                    ${(() => {
+                        let ritmoTesto = "--";
+                        if (stats.mediaEvasioneSecondi > 0) {
+                            const sec = Math.floor(stats.mediaEvasioneSecondi);
+                            ritmoTesto = sec < 60 ? `${sec} sec` : `${Math.floor(sec/60)} min ${sec%60} sec`;
+                        }
+                        return `<p style="margin: 4px 0;"><b>Totale comande:</b> ${stats.totaleComande} <span style="color:#2196F3; font-weight:bold; margin-left:15px; border-left: 2px solid #ccc; padding-left: 10px;">⏱️ Media Evasione: ${ritmoTesto}</span></p>`;
+                    })()}
                     <p style="margin: 4px 0;"><b>Fondo Cassa Base:</b> €${stats.fondoCassa.toFixed(2)}</p>
                     <p style="margin: 4px 0;"><b>POS:</b> €${stats.totalePos.toFixed(2)} | <b>Contanti:</b> €${stats.totaleContanti.toFixed(2)}</p>
                 </div>
