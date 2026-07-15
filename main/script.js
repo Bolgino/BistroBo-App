@@ -806,7 +806,11 @@ function initImpostazioniToggle() {
                             // 2. Cancella l'intero archivio delle giornate (se abilitato)
                             await db.ref("storico_giornate").remove();
                             
-                            notify("✅ Database completamente resettato (Comande, Preordini e Archivi)!", "info");
+                            // 3. Cancella i backup automatici sul Cloud
+                            await db.ref("cloud_backups").remove();
+                            window.lastBackupHash = ""; // Resetta anche la memoria locale del backup
+                            
+                            notify("✅ Database completamente resettato (Comande, Preordini, Archivi e Backup)! 💣", "info");
 
                             // Pulisce l'interfaccia UI admin
                             const listaComandeAdmin = document.getElementById("listaComandeAdmin");
@@ -1609,6 +1613,40 @@ function initImpostazioniToggle() {
 	        window.settings.qrCodeStatoOrdine = val;
 	    });
 	}
+	// ================= AUTO-BACKUP CLOUD =================
+	const toggleAutoBackupBtn = document.getElementById("toggleAutoBackupBtn");
+	const autoBackupRef = db.ref("impostazioni/autoBackupAbilitato");
+	const autoBackupIntervalloRef = db.ref("impostazioni/autoBackupIntervallo");
+	const inputAutoBackupIntervallo = document.getElementById("inputAutoBackupIntervallo");
+	const listaCloudBackupsContainer = document.getElementById("listaCloudBackupsContainer");
+
+	if (toggleAutoBackupBtn) {
+	    initToggle(toggleAutoBackupBtn, autoBackupRef, {on: "ON", off: "OFF"}, false, val => {
+	        window.settings.autoBackupAbilitato = val;
+	        if (listaCloudBackupsContainer) listaCloudBackupsContainer.style.display = val ? "flex" : "none";
+	        gestisciLoopAutoBackup(); // Avvia o ferma il loop
+	    });
+	}
+
+	if (inputAutoBackupIntervallo) {
+	    autoBackupIntervalloRef.on("value", snap => {
+	        const val = snap.val() || 15;
+	        window.settings.autoBackupIntervallo = parseInt(val, 10);
+	        inputAutoBackupIntervallo.value = val;
+	        gestisciLoopAutoBackup(); // Riavvia il loop col nuovo tempo
+	    });
+
+	    inputAutoBackupIntervallo.addEventListener("change", () => {
+	        let val = parseInt(inputAutoBackupIntervallo.value, 10);
+	        if (isNaN(val) || val < 1) val = 15;
+	        autoBackupIntervalloRef.set(val);
+	    });
+	}
+
+	// Ascoltatore per aggiornare la grafica delle copie Cloud disponibili
+	db.ref("cloud_backups").on("value", snap => {
+	    renderCloudBackups(snap.val() || {});
+	});
 }
 function initTickNoteDestinazioni() {
     db.ref("impostazioni/noteDestinazioniAbilitate").on("value", snap => {
@@ -2705,6 +2743,7 @@ function mostraSchermata() {
         caricaStatistiche();
         caricaMenuAdmin();
         caricaUtenti();
+		gestisciLoopAutoBackup(); // Avvia il backup automatico se l'Admin si è appena loggato
         setTimeout(() => {
             const dashBtn = document.querySelector("#adminDiv .tabBtn[data-tab='dashboardAdminTab']");
             if (dashBtn) dashBtn.click();
@@ -12549,3 +12588,167 @@ document.addEventListener("keydown", function(e) {
         }
     }
 });
+// ==========================================
+// MOTORE BACKUP AUTOMATICO CLOUD
+// ==========================================
+
+window.autoBackupIntervalId = null;
+window.lastBackupHash = "";
+
+// Funzione che converte una stringa di dati in un numero (Hash) per capire al volo se ci sono state modifiche
+function calcolaHashDati(s) {
+    return s.split("").reduce(function(a,b) { a=((a<<5)-a)+b.charCodeAt(0); return a&a }, 0);
+}
+
+// Accende o spegne il timer del backup
+function gestisciLoopAutoBackup() {
+    if (window.autoBackupIntervalId) clearInterval(window.autoBackupIntervalId);
+    
+    // Si avvia SOLO se l'utente attuale è l'Admin e l'impostazione è ON
+    if (window.isLoggedInAdmin && window.settings.autoBackupAbilitato) {
+        const millis = window.settings.autoBackupIntervallo * 60 * 1000;
+        window.autoBackupIntervalId = setInterval(eseguiAutoBackupCloud, millis);
+        console.log("☁️ Auto-Backup Cloud attivato ogni " + window.settings.autoBackupIntervallo + " minuti.");
+    }
+}
+
+// Esecuzione del salvataggio nel database
+async function eseguiAutoBackupCloud() {
+    if (!checkOnline(true)) return;
+
+    try {
+        // 1. Peschiamo tutti i dati "vitali" del ristorante (ignoriamo i log di sistema e i vecchi backup)
+        const [comande, menu, ingredienti, impostazioni, utenti, preordini, storico, sconti] = await Promise.all([
+            db.ref("comande").once("value"),
+            db.ref("menu").once("value"),
+            db.ref("ingredienti").once("value"),
+            db.ref("impostazioni").once("value"),
+            db.ref("utenti").once("value"),
+            db.ref("preordini").once("value"),
+            db.ref("storico_giornate").once("value"),
+            db.ref("scontiGlobali").once("value")
+        ]);
+
+        const backupData = {
+            comande: comande.val() || {},
+            menu: menu.val() || {},
+            ingredienti: ingredienti.val() || {},
+            impostazioni: impostazioni.val() || {},
+            utenti: utenti.val() || {},
+            preordini: preordini.val() || {},
+            storico_giornate: storico.val() || {},
+            scontiGlobali: sconti.val() || {}
+        };
+
+        const dataString = JSON.stringify(backupData);
+        const currentHash = calcolaHashDati(dataString).toString();
+
+        // 2. Salviamo solo se ci sono state modifiche rispetto all'ultimo check!
+        if (currentHash !== window.lastBackupHash) {
+            window.lastBackupHash = currentHash;
+            const refBackups = db.ref("cloud_backups");
+            
+            // Creiamo il nuovo backup nel Cloud
+            await refBackups.push({
+                timestamp: Date.now(),
+                data: backupData 
+            });
+
+            // 3. Cancelliamo quelli vecchi per tenerne sempre e solo 2
+            const snapBackups = await refBackups.once("value");
+            const backups = snapBackups.val() || {};
+            const keys = Object.keys(backups).sort((a, b) => backups[a].timestamp - backups[b].timestamp); // Dal più vecchio al più nuovo
+            
+            if (keys.length > 2) {
+                const keysToDelete = keys.slice(0, keys.length - 2); // Trova tutti gli scarti oltre i due più recenti
+                for (let k of keysToDelete) {
+                    await refBackups.child(k).remove();
+                }
+            }
+            console.log("☁️ Auto-Backup Cloud aggiornato alle " + new Date().toLocaleTimeString());
+        }
+    } catch (err) {
+        console.error("Errore Auto-Backup Cloud:", err);
+    }
+}
+
+// 4. Mostra i Backup nell'Interfaccia Grafica Admin
+function renderCloudBackups(backupsData) {
+    const container = document.getElementById("listaCloudBackups");
+    if (!container) return;
+    container.innerHTML = "";
+
+    const keys = Object.keys(backupsData).sort((a, b) => backupsData[b].timestamp - backupsData[a].timestamp); // Dal più nuovo al più vecchio
+
+    if (keys.length === 0) {
+        container.innerHTML = "<i style='color:#777;'>In attesa del primo salvataggio automatico...</i>";
+        return;
+    }
+
+    keys.forEach(k => {
+        const b = backupsData[k];
+        const date = new Date(b.timestamp);
+        const div = document.createElement("div");
+        div.style.display = "flex";
+        div.style.justifyContent = "space-between";
+        div.style.alignItems = "center";
+        div.style.background = "#fff";
+        div.style.padding = "10px";
+        div.style.border = "1px solid #ccc";
+        div.style.borderRadius = "6px";
+
+        const info = document.createElement("div");
+        info.innerHTML = `<b>☁️ Salvataggio:</b> ${date.toLocaleDateString('it-IT')} - ${date.toLocaleTimeString('it-IT')}`;
+        
+        const btnContainer = document.createElement("div");
+        btnContainer.style.display = "flex";
+        btnContainer.style.gap = "5px";
+
+        // TASTO: Scarica sul PC (.json)
+        const btnDownload = document.createElement("button");
+        btnDownload.innerText = "Scarica";
+        btnDownload.style.background = "#2196F3";
+        btnDownload.style.color = "white";
+        btnDownload.style.padding = "6px 12px";
+        btnDownload.onclick = () => {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(b.data));
+            const dlAnchorElem = document.createElement('a');
+            dlAnchorElem.setAttribute("href", dataStr);
+            dlAnchorElem.setAttribute("download", `Backup_Cloud_BistroBo_${b.timestamp}.json`);
+            dlAnchorElem.click();
+            notify("Copia locale scaricata!", "success");
+        };
+
+        // TASTO: Ripristina istantaneamente il DB
+        const btnRestore = document.createElement("button");
+        btnRestore.innerText = "Ripristina DB";
+        btnRestore.style.background = "#f44336";
+        btnRestore.style.color = "white";
+        btnRestore.style.padding = "6px 12px";
+        btnRestore.onclick = () => {
+            disonotify("⚠️ Vuoi davvero sovrascrivere tutto il database ripristinando questa copia?", {
+                confirmText: "Ripristina",
+                showCancel: true,
+                cancelText: "Annulla",
+                onConfirm: async () => {
+                    showLoader();
+                    try {
+                        await db.ref().update(b.data);
+                        notify("✅ Database ripristinato con successo!", "success");
+                        setTimeout(() => location.reload(), 1500); // Ricarica per rendere tutto effettivo
+                    } catch (e) {
+                        notify("❌ Errore ripristino: " + e.message, "error");
+                    } finally {
+                        hideLoader();
+                    }
+                }
+            });
+        };
+
+        btnContainer.appendChild(btnDownload);
+        btnContainer.appendChild(btnRestore);
+        div.appendChild(info);
+        div.appendChild(btnContainer);
+        container.appendChild(div);
+    });
+}
