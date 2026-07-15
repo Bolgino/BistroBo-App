@@ -11876,9 +11876,22 @@ function aggiornaOrologio() {
 // ================================================================
 // 🔹 1️⃣ MOTORE TEMI UNIVERSALE (Manuale, Stagionale, Notte)
 // ================================================================
-let temaManualeDB = "default";
-let temiStagionaliDB = false;
-let modalitaNotteDB = false;
+const temiDisponibili = ["default", "scout", "autunno", "inverno", "primavera", "estate", "chiaro", "notte", "astronave"];
+
+function aggiornaTema(tema, salvaSuFirebase = false) {
+    document.body.className = document.body.className.replace(/\btema-\S+/g, '');
+    document.body.classList.add("tema-" + tema);
+    document.body.classList.add("tema-caricato");
+
+    if (salvaSuFirebase) {
+        const user = firebase.auth().currentUser;
+        if (user) {
+            db.ref("impostazioni/tema").set(tema)
+            .then(() => console.log("✅ Tema manuale salvato su Firebase:", tema))
+            .catch(err => console.warn("❌ Errore salvataggio tema:", err));
+        }
+    }
+}
 
 function getStagioneCorrente() {
     const oggi = new Date();
@@ -11892,70 +11905,71 @@ function getStagioneCorrente() {
 }
 
 function valutaEApplicaTemaFinale() {
-    let temaFinale = temaManualeDB;
-    let forzato = false;
+    window.settings = window.settings || {};
+    const temaManuale = window.settings.temaSalvato || "default"; 
+    const stagionaleAttivo = window.settings.temiStagionaliAttivi === true;
+    const notteAttiva = window.settings.modalitaNotte === true;
+    
+    let temaFinale = temaManuale; 
+    let temaForzatoDaSistema = false;
 
-    // Priorità 2: Stagione
-    if (temiStagionaliDB) {
+    // Priorità 2: Stagionale
+    if (stagionaleAttivo) {
         temaFinale = getStagioneCorrente();
-        forzato = true;
+        temaForzatoDaSistema = true;
     }
 
-    // Priorità 1 (Assoluta): Notte (Dalle 21:00 alle 05:00)
-    if (modalitaNotteDB) {
+    // Priorità 1 (Assoluta): Modalità Notte
+    if (notteAttiva) {
         const ora = new Date().getHours();
         if (ora >= 21 || ora < 5) {
             temaFinale = "notte";
-            forzato = true;
+            temaForzatoDaSistema = true;
         }
     }
 
-    // Applica graficamente il tema
-    document.body.className = document.body.className.replace(/\btema-\S+/g, '');
-    document.body.classList.add("tema-" + temaFinale);
-    document.body.classList.add("tema-caricato");
-    
-    const bg = document.getElementById("themeBackground");
-    if (bg) bg.style.display = "block";
+    // Applica graficamente il tema vincitore
+    aggiornaTema(temaFinale, false);
 
-    // Aggiorna l'interfaccia Admin
+    // Aggiorna la Select nell'interfaccia Admin
     const selectTema = document.getElementById("selectTema");
     if (selectTema) {
         selectTema.value = temaFinale;
-        selectTema.disabled = forzato; // Blocca se gestito in automatico
+        selectTema.disabled = temaForzatoDaSistema;
     }
-
     if (typeof aggiornaTitoloPreordini === "function") aggiornaTitoloPreordini(temaFinale);
 }
 
-// Funzione chiamata all'avvio dal DOMContentLoaded
-function listenTemaRealtime() {
-    // Sincronizza i 3 parametri in tempo reale
-    db.ref("impostazioni/tema").on("value", snap => {
-        temaManualeDB = snap.val() || "default";
-        valutaEApplicaTemaFinale();
-    });
-    db.ref("impostazioni/temiStagionaliAttivi").on("value", snap => {
-        temiStagionaliDB = snap.val() === true;
-        valutaEApplicaTemaFinale();
-    });
-    db.ref("impostazioni/modalitaNotte").on("value", snap => {
-        modalitaNotteDB = snap.val() === true;
-        valutaEApplicaTemaFinale();
-    });
-
-    // Controlla ogni minuto (per far scattare la notte/giorno in tempo reale senza ricaricare)
-    setInterval(valutaEApplicaTemaFinale, 60000);
-}
-
-// Se l'admin cambia manualmente dalla select
 document.addEventListener("DOMContentLoaded", () => {
     const selectTema = document.getElementById("selectTema");
+    window.settings = window.settings || {};
+
+    // 1️⃣ Ascolta le modifiche su Firebase
+    db.ref("impostazioni/tema").on("value", snap => {
+        window.settings.temaSalvato = snap.exists() ? snap.val() : "default";
+        valutaEApplicaTemaFinale();
+    });
+
+    db.ref("impostazioni/temiStagionaliAttivi").on("value", snap => {
+        window.settings.temiStagionaliAttivi = snap.val() === true;
+        valutaEApplicaTemaFinale();
+    });
+
+    db.ref("impostazioni/modalitaNotte").on("value", snap => {
+        window.settings.modalitaNotte = snap.val() === true;
+        valutaEApplicaTemaFinale();
+    });
+
+    // 2️⃣ Se l'admin cambia tema manualmente dalla select
     if (selectTema) {
         selectTema.addEventListener("change", () => {
-            db.ref("impostazioni/tema").set(selectTema.value);
+            const nuovoTema = selectTema.value;
+            aggiornaTema(nuovoTema, true); // Questo salva su Firebase
         });
     }
+
+    // 3️⃣ Esegue un controllo ogni minuto per aggiornare automaticamente gli orari
+    setInterval(valutaEApplicaTemaFinale, 60000);
 });
 // ================= CALCOLO TEMPO MEDIO CASSA =================
 async function aggiornaTempoMedioCassa(comandeData) {
@@ -12329,50 +12343,6 @@ function chiediValoreConPopup(titolo, messaggio, valoreDefault, callback) {
         callback(val); // Ritorna il valore inserito
     };
 }
-
-// ================= MODALITA' NOTTE AUTOMATICA (GLOBALE) =================
-window.settings = window.settings || {};
-
-function controllaModalitaNotte() {
-    // Recuperiamo il tema originale scelto (se non c'è, usiamo "default")
-    const temaOriginale = window.settings.temaSalvato || "default";
-
-    // Se la modalità notte automatica è abilitata
-    if (window.settings.modalitaNotte) {
-        const oraAttuale = new Date().getHours();
-        
-        // Attivo dalle 21:00 (incluse) fino alle 04:59 (5 escluso)
-        if (oraAttuale >= 21 || oraAttuale < 5) {
-            // Applica il tema notte ignorando quello originale. 
-            // "false" assicura che NON venga salvato nel Database globale!
-            aggiornaTema("notte", false);
-        } else {
-            // È giorno: ripristiniamo il tema originale scelto
-            aggiornaTema(temaOriginale, false);
-        }
-    } else {
-        // Se la modalità automatica è spenta, ci assicuriamo che torni il tema originale
-        aggiornaTema(temaOriginale, false);
-    }
-}
-
-// 1. Ascolta i cambiamenti della modalità notte in tempo reale
-db.ref("impostazioni/modalitaNotte").on("value", snap => {
-    window.settings.modalitaNotte = snap.val() || false;
-    controllaModalitaNotte(); // Aggiorna subito l'interfaccia
-});
-
-// 2. Registriamo anche il tema originale scelto.
-// Questo ci serve come "memoria" per sapere a quale tema tornare di giorno!
-db.ref("impostazioni/tema").on("value", snap => {
-    window.settings.temaSalvato = snap.exists() ? snap.val() : "default";
-    controllaModalitaNotte(); // Ricalcola subito se serve sovrascrivere con la notte
-});
-
-// 3. Controlla l'orologio ogni 60 secondi
-// Se scoccano le 21:00 mentre l'app è aperta, il tema passa a "notte" da solo!
-setInterval(controllaModalitaNotte, 60000);
-
 // ================= GESTIONE CLICK FUORI DAI MODALI =================
 document.addEventListener("mousedown", function(e) {
     // Controlla se l'elemento cliccato è ESATTAMENTE lo sfondo scuro del popup (l'overlay)
