@@ -4744,16 +4744,19 @@ function caricaComandeCassa() {
 
 
         if (!d) {
-            // nuova comanda → creo il div e lo metto in alto
             d = document.createElement("div");
             d.id = "cassa_comanda_" + id;
             d.className = "order";
-            // qui aggiungi l'attributo per la ricerca
-            d.dataset.numero = (c.numero + (c.lettera || "")).toUpperCase(); // es: "12A"
+            d.dataset.numero = (c.numero + (c.lettera || "")).toUpperCase();
+            d.dataset.tavolo = c.tavolo ? c.tavolo.toString().toLowerCase() : "";
+            d.dataset.orario = c.orario || "";
+            d.dataset.prodotti = (c.piatti || []).map(p => p.nome).join(" ").toLowerCase();
             div.prepend(d);
         } else {
-            // aggiorno il dataset anche se il div esiste già
             d.dataset.numero = (c.numero + (c.lettera || "")).toUpperCase();
+            d.dataset.tavolo = c.tavolo ? c.tavolo.toString().toLowerCase() : "";
+            d.dataset.orario = c.orario || "";
+            d.dataset.prodotti = (c.piatti || []).map(p => p.nome).join(" ").toLowerCase();
         }
         // aggiorno contenuto
         d.innerHTML = nuovoHtml;
@@ -5469,80 +5472,51 @@ window.apriModalCreaIngrediente = function() {
         });
     };
 };
-// GESTIONE comande admin
 // ==========================================
-// RICERCA AVANZATA COMANDE
+// RICERCA AVANZATA UNIVERSALE
 // ==========================================
+function applicaFiltriAvanzati(prefix, containerId) {
+    // Leggo i valori usando il prefisso (es. "Admin", "Cassa", "Cucina")
+    const numFiltro = document.getElementById(`cercaNumero${prefix}`)?.value.toLowerCase().trim() || "";
+    const tavFiltro = document.getElementById(`cercaTavolo${prefix}`)?.value.toLowerCase().trim() || "";
+    const prodFiltro = document.getElementById(`cercaProdotto${prefix}`)?.value.toLowerCase().trim() || "";
+    const orarioDa = document.getElementById(`cercaOrarioDa${prefix}`)?.value || "";
+    const orarioA = document.getElementById(`cercaOrarioA${prefix}`)?.value || "";
 
-function applicaFiltriAvanzatiAdmin() {
-    // 1. Prendo i valori da tutti gli input
-    const numFiltro = document.getElementById("cercaNumeroAdmin").value.toLowerCase().trim();
-    const tavFiltro = document.getElementById("cercaTavoloAdmin").value.toLowerCase().trim();
-    const prodFiltro = document.getElementById("cercaProdottoAdmin").value.toLowerCase().trim();
-    const orarioDa = document.getElementById("cercaOrarioDaAdmin").value;
-    const orarioA = document.getElementById("cercaOrarioAAdmin").value;
-
-    // 2. Prendo tutte le comande a schermo
-    const ordini = document.querySelectorAll("#listaComandeAdmin .order");
+    // Trovo tutte le comande dentro il contenitore specifico
+    const ordini = document.querySelectorAll(`#${containerId} .order`);
 
     ordini.forEach(ordine => {
-        let mostra = true; // Di base la comanda è visibile
-
-        // --- Filtro Numero ---
-        if (numFiltro && !ordine.dataset.numero.toLowerCase().includes(numFiltro)) {
-            mostra = false;
-        }
-
-        // --- Filtro Tavolo ---
-        // Match esatto o parziale (es. se cerchi "1", mostra "1", "12", "1A")
-        if (tavFiltro && !ordine.dataset.tavolo.includes(tavFiltro)) {
-            mostra = false;
-        }
-
-        // --- Filtro Prodotto ---
-        if (prodFiltro && !ordine.dataset.prodotti.includes(prodFiltro)) {
-            mostra = false;
-        }
-
-        // --- Filtro Orario ---
+        let mostra = true;
+        
+        if (numFiltro && !ordine.dataset.numero?.toLowerCase().includes(numFiltro)) mostra = false;
+        if (tavFiltro && !ordine.dataset.tavolo?.includes(tavFiltro)) mostra = false;
+        if (prodFiltro && !ordine.dataset.prodotti?.includes(prodFiltro)) mostra = false;
+        
         if (orarioDa || orarioA) {
-            const orarioOrdine = ordine.dataset.orario; // Formato "HH:MM"
+            const orarioOrdine = ordine.dataset.orario;
             if (orarioOrdine) {
                 if (orarioDa && orarioOrdine < orarioDa) mostra = false;
                 if (orarioA && orarioOrdine > orarioA) mostra = false;
             } else {
-                // Se la comanda non ha un orario, la nascondiamo se è attivo il filtro orario
                 mostra = false; 
             }
         }
-
-        // Applica visibilità
+        
         ordine.style.display = mostra ? "block" : "none";
     });
 }
 
-function pulisciFiltriAdmin() {
-    document.getElementById("cercaNumeroAdmin").value = "";
-    document.getElementById("cercaTavoloAdmin").value = "";
-    document.getElementById("cercaProdottoAdmin").value = "";
-    document.getElementById("cercaOrarioDaAdmin").value = "";
-    document.getElementById("cercaOrarioAAdmin").value = "";
-    applicaFiltriAvanzatiAdmin(); // Riapplica i filtri (che ora sono vuoti) per mostrare tutto
-}
-
-// Inizializza gli Event Listener per attivare la ricerca in tempo reale
-document.addEventListener("DOMContentLoaded", () => {
-    const filtriAvanzatiIds = ["cercaNumeroAdmin", "cercaTavoloAdmin", "cercaProdottoAdmin", "cercaOrarioDaAdmin", "cercaOrarioAAdmin"];
+function pulisciFiltri(prefix, containerId) {
+    if(document.getElementById(`cercaNumero${prefix}`)) document.getElementById(`cercaNumero${prefix}`).value = "";
+    if(document.getElementById(`cercaTavolo${prefix}`)) document.getElementById(`cercaTavolo${prefix}`).value = "";
+    if(document.getElementById(`cercaProdotto${prefix}`)) document.getElementById(`cercaProdotto${prefix}`).value = "";
+    if(document.getElementById(`cercaOrarioDa${prefix}`)) document.getElementById(`cercaOrarioDa${prefix}`).value = "";
+    if(document.getElementById(`cercaOrarioA${prefix}`)) document.getElementById(`cercaOrarioA${prefix}`).value = "";
     
-    filtriAvanzatiIds.forEach(id => {
-        const el = document.getElementById(id);
-        if(el) {
-            // Usa 'input' per il testo e 'change' per gli orari per reattività immediata
-            el.addEventListener("input", applicaFiltriAvanzatiAdmin);
-            el.addEventListener("change", applicaFiltriAvanzatiAdmin);
-        }
-    });
-});
+    applicaFiltriAvanzati(prefix, containerId);
+}
+// GESTIONE comande admin
 async function caricaGestioneComandeAdmin() {
     if (!checkOnline(true)) return;
 	if (!firebase.auth().currentUser) return;
@@ -5696,24 +5670,29 @@ async function caricaGestioneComandeAdmin() {
             riga.id = "admin_comanda_" + id;
             riga.dataset.numero = (c.numero + (c.lettera || "")).toUpperCase();
 			// Aggiungo i metadati per la ricerca avanzata
-			riga.dataset.tavolo = c.tavolo ? c.tavolo.toString().toLowerCase() : "";
-			riga.dataset.orario = c.orario || "";
-			
-			// Estraggo tutti i nomi dei piatti in una stringa per facilitare la ricerca prodotto
-			const stringaPiatti = (c.piatti || []).map(p => p.nome).join(" ").toLowerCase();
-			riga.dataset.prodotti = stringaPiatti;
-			
-			// (Opzionale ma consigliato) Mostra visivamente il tavolo se presente
-			if (c.tavolo) {
-			    const numDiv = mainDiv.querySelector("div"); // Prende il div col numero comanda
-			    numDiv.innerHTML += ` <span style="color:#007bff; margin-left: 10px;">(🪑 Tav: ${c.tavolo})</span>`;
-			}
+            riga.dataset.tavolo = c.tavolo ? c.tavolo.toString().toLowerCase() : "";
+            riga.dataset.orario = c.orario || "";
+            
+            // Estraggo tutti i nomi dei piatti in una stringa per facilitare la ricerca prodotto
+            const stringaPiatti = (c.piatti || []).map(p => p.nome).join(" ").toLowerCase();
+            riga.dataset.prodotti = stringaPiatti;
 
+            // 1. PRIMA creo il mainDiv e il numDiv
             const mainDiv = document.createElement("div");
             mainDiv.style.display = "flex"; mainDiv.style.justifyContent = "space-between"; mainDiv.style.alignItems = "flex-start"; mainDiv.style.gap = "20px";
-            const numDiv = document.createElement("div"); numDiv.innerHTML = `<b>#${c.numero}</b>`; mainDiv.appendChild(numDiv);
-            riga.appendChild(mainDiv);
+            
+            const numDiv = document.createElement("div"); 
+            numDiv.innerHTML = `<b>#${c.numero}</b>`; 
+            
+            // 2. DOPO posso aggiungere l'etichetta visiva del tavolo
+            if (c.tavolo) {
+                numDiv.innerHTML += ` <span style="color:#007bff; margin-left: 10px;">(🪑 Tav: ${c.tavolo})</span>`;
+            }
 
+            // 3. Infine assemblo il tutto
+            mainDiv.appendChild(numDiv);
+            riga.appendChild(mainDiv);
+			
             if (c.commento) { 
                 const asportoDiv = document.createElement("div"); asportoDiv.className = "asportoLabel"; asportoDiv.innerText = c.commento; asportoDiv.style.margin = "4px 0 6px 0.8cm"; riga.appendChild(asportoDiv); 
             }
@@ -6887,6 +6866,9 @@ async function caricaComandePerRuolo(daFareDiv, storicoDiv, ruolo) {
             d.className = "order";
             d.id = "ruolo_comanda_" + id + "_" + ruolo;
             d.dataset.numero = (c.numero + (c.lettera || "")).toUpperCase();
+			d.dataset.tavolo = c.tavolo ? c.tavolo.toString().toLowerCase() : "";
+            d.dataset.orario = c.orario || "";
+            d.dataset.prodotti = (c.piatti || []).map(p => p.nome).join(" ").toLowerCase();
 
             // 🔹 Div principale
             const mainDiv = document.createElement("div");
