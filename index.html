@@ -720,7 +720,23 @@
 				<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
 					<h3 style="margin:0; color: #FF9800; font-size: 1.3em;">📝 Comande Inviate (<span id="conteggioComandeAdmin">0</span>)</h3>
 				</div>
-				<input type="text" id="cercaComandaAdmin" placeholder="🔍 Cerca numero comanda..." style="margin-bottom: 15px; width:100%; padding:10px; font-size:1em; border-radius:8px; border:1px solid #ccc; box-sizing:border-box;">
+				<!-- Pannello Ricerca Avanzata -->
+				<div id="filtriAvanzatiAdmin" style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; background: #f9f9f9; padding: 15px; border-radius: 8px; border: 1px solid #ddd;">
+				    <input type="text" id="cercaNumeroAdmin" placeholder="🔍 N. Comanda" style="flex: 1; min-width: 100px; padding: 8px; border-radius: 6px; border: 1px solid #ccc;">
+				    
+				    <input type="text" id="cercaTavoloAdmin" placeholder="🪑 Tavolo" style="flex: 1; min-width: 100px; padding: 8px; border-radius: 6px; border: 1px solid #ccc;">
+				    
+				    <input type="text" id="cercaProdottoAdmin" placeholder="🍔 Contiene Piatto..." style="flex: 2; min-width: 150px; padding: 8px; border-radius: 6px; border: 1px solid #ccc;">
+				    
+				    <div style="display: flex; align-items: center; gap: 5px; flex: 2; min-width: 200px;">
+				        <span style="font-size: 0.9em; color: #555;">Da:</span>
+				        <input type="time" id="cercaOrarioDaAdmin" style="padding: 8px; border-radius: 6px; border: 1px solid #ccc; flex: 1;">
+				        <span style="font-size: 0.9em; color: #555;">A:</span>
+				        <input type="time" id="cercaOrarioAAdmin" style="padding: 8px; border-radius: 6px; border: 1px solid #ccc; flex: 1;">
+				    </div>
+				
+				    <button onclick="pulisciFiltriAdmin()" style="padding: 8px 15px; background: #f44336; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">Reset</button>
+				</div>
 				<div id="listaComandeAdmin"></div>
 			</div>
 		</div>
