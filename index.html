@@ -716,8 +716,21 @@
 		</div>
 		<div id="dashboardAdminTab" class="tabContent">
 		    <div class="bb-dash-container">
-		        <div class="bb-dash-header">
-		            <h3>📊 Centro di Controllo</h3>
+		        <div class="bb-dash-header" style="flex-wrap: wrap; gap: 15px;">
+		            <h3 style="margin: 0; color: #673AB7; font-size: 1.6em;">📊 Centro di Controllo</h3>
+		            
+		            <!-- NUOVO BOX: Contatore Clienti Serviti -->
+		            <div style="display: flex; align-items: center; gap: 15px; background: #f3e5f5; border: 1px solid #ce93d8; padding: 10px 20px; border-radius: 12px; margin-left: auto;">
+		                <div style="font-size: 2em; line-height: 1;">👥</div>
+		                <div>
+		                    <div style="font-size: 0.9em; color: #6a1b9a; font-weight: bold; text-transform: uppercase;">Clienti Serviti Oggi</div>
+		                    <div style="display: flex; align-items: baseline; gap: 10px;">
+		                        <span id="dashClientiServiti" style="font-size: 1.8em; font-weight: 900; color: #4a148c; line-height: 1;">0</span>
+		                        <span id="dashRitmoServizio" style="font-size: 0.85em; color: #7b1fa2; font-weight: bold;">( -- )</span>
+		                    </div>
+		                </div>
+		            </div>
+
 		            <div id="bb-global-status" class="bb-status-badge ok">Flusso Regolare</div>
 		        </div>
 		        
