@@ -12086,7 +12086,14 @@ function getStagioneCorrente() {
 
 function valutaEApplicaTemaFinale() {
     window.settings = window.settings || {};
-    const temaManuale = window.settings.temaSalvato || "default"; 
+    
+    // Se Firebase non ha ancora risposto dopo il ricaricamento della pagina, 
+    // NON sovrascrivere con "default", aspetta che arrivi il valore reale dal DB.
+    if (window.settings.temaSalvato === undefined) {
+        return; 
+    }
+
+    const temaManuale = window.settings.temaSalvato; 
     const stagionaleAttivo = window.settings.temiStagionaliAttivi === true;
     const notteAttiva = window.settings.modalitaNotte === true;
     
@@ -12094,14 +12101,14 @@ function valutaEApplicaTemaFinale() {
     let temaForzatoDaSistema = false;
     let motivoBlocco = "";
 
-    // Priorità 2: Stagionale
+    // 1️⃣ PRIORITÀ 2 (Bassa): Stagionale
     if (stagionaleAttivo) {
         temaFinale = getStagioneCorrente();
         temaForzatoDaSistema = true;
         motivoBlocco = "Tema Stagionale in uso";
     }
 
-    // Priorità 1 (Assoluta): Modalità Notte
+    // 2️⃣ PRIORITÀ 1 (Assoluta): Modalità Notte (Vince sullo stagionale)
     if (notteAttiva) {
         const ora = new Date().getHours();
         if (ora >= 21 || ora < 5) {
@@ -12111,37 +12118,43 @@ function valutaEApplicaTemaFinale() {
         }
     }
 
-    // Applica graficamente il tema vincitore
+    // Applica graficamente il tema vincitore sul body del sito
     aggiornaTema(temaFinale, false);
 
     // Aggiorna e BLOCCA visivamente la Select nell'interfaccia Admin
     const selectTema = document.getElementById("selectTema");
     if (selectTema) {
-        // 🔥 LA MODIFICA È QUI: Assegniamo temaManuale, non temaFinale!
+        // Resta fisso sul tema manuale reale scelto, senza saltare su default o sul tema forzato
         selectTema.value = temaManuale; 
         
+        // Disabilitazione totale ed eliminazione eventi di click
         selectTema.disabled = temaForzatoDaSistema;
         
         if (temaForzatoDaSistema) {
             selectTema.style.opacity = "0.5";
             selectTema.style.cursor = "not-allowed";
+            selectTema.style.pointerEvents = "none"; // Blocco radicale: ignora qualsiasi tocco o click del mouse
             selectTema.title = "Selezione bloccata: " + motivoBlocco;
         } else {
             selectTema.style.opacity = "1";
             selectTema.style.cursor = "pointer";
+            selectTema.style.pointerEvents = "auto"; // Ripristina l'interazione standard
             selectTema.title = "Scegli un tema";
         }
     }
     if (typeof aggiornaTitoloPreordini === "function") aggiornaTitoloPreordini(temaFinale);
 }
+
 document.addEventListener("DOMContentLoaded", () => {
     const selectTema = document.getElementById("selectTema");
     window.settings = window.settings || {};
 
     // 1️⃣ Ascolta le modifiche su Firebase
     db.ref("impostazioni/tema").on("value", snap => {
-        window.settings.temaSalvato = snap.exists() ? snap.val() : "default";
-        valutaEApplicaTemaFinale();
+        if (snap.exists()) {
+            window.settings.temaSalvato = snap.val();
+            valutaEApplicaTemaFinale();
+        }
     });
 
     db.ref("impostazioni/temiStagionaliAttivi").on("value", snap => {
@@ -12157,9 +12170,15 @@ document.addEventListener("DOMContentLoaded", () => {
     // 2️⃣ Se l'admin cambia tema manualmente dalla select
     if (selectTema) {
         selectTema.addEventListener("change", () => {
-            if (selectTema.disabled) return; // Sicurezza extra
+            // Se il sistema è in modalità forzata o disabilitato, blocca la modifica a monte
+            if (selectTema.disabled || window.settings.temiStagionaliAttivi === true || (window.settings.modalitaNotte === true && (new Date().getHours() >= 21 || new Date().getHours() < 5))) {
+                // Ripristina graficamente l'ultimo valore valido impedendo lo sminchiamento
+                selectTema.value = window.settings.temaSalvato || "default";
+                return; 
+            }
             const nuovoTema = selectTema.value;
-            aggiornaTema(nuovoTema, true); // Salva su Firebase
+            window.settings.temaSalvato = nuovoTema; // Aggiorna istantaneamente l'oggetto locale
+            aggiornaTema(nuovoTema, true); // Invia il salvataggio a Firebase
         });
     }
 
