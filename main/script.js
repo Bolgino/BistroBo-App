@@ -12059,15 +12059,18 @@ function aggiornaOrologio() {
 const temiDisponibili = ["default", "scout", "autunno", "inverno", "primavera", "estate", "chiaro", "notte", "astronave"];
 
 function aggiornaTema(tema, salvaSuFirebase = false) {
+    // 1. Assicuriamoci che il tema sia tutto minuscolo e senza spazi
+    const temaPulito = (tema || "default").toLowerCase().trim();
+    
     document.body.className = document.body.className.replace(/\btema-\S+/g, '');
-    document.body.classList.add("tema-" + tema);
+    document.body.classList.add("tema-" + temaPulito);
     document.body.classList.add("tema-caricato");
 
     if (salvaSuFirebase) {
         const user = firebase.auth().currentUser;
         if (user) {
-            db.ref("impostazioni/tema").set(tema)
-            .then(() => console.log("✅ Tema manuale salvato su Firebase:", tema))
+            db.ref("impostazioni/tema").set(temaPulito)
+            .then(() => console.log("✅ Tema manuale salvato su Firebase:", temaPulito))
             .catch(err => console.warn("❌ Errore salvataggio tema:", err));
         }
     }
@@ -12087,28 +12090,26 @@ function getStagioneCorrente() {
 function valutaEApplicaTemaFinale() {
     window.settings = window.settings || {};
     
-    // Se Firebase non ha ancora risposto dopo il ricaricamento della pagina, 
-    // NON sovrascrivere con "default", aspetta che arrivi il valore reale dal DB.
-    if (window.settings.temaSalvato === undefined) {
-        return; 
-    }
+    // 2. Se non c'è valore o arriva in ritardo, usiamo un fallback morbido
+    const temaManuale = window.settings.temaSalvato || "default"; 
+    // Forziamo il minuscolo per evitare che la select sballi saltando su "Default"
+    const temaManualePulito = temaManuale.toLowerCase().trim(); 
 
-    const temaManuale = window.settings.temaSalvato; 
     const stagionaleAttivo = window.settings.temiStagionaliAttivi === true;
     const notteAttiva = window.settings.modalitaNotte === true;
     
-    let temaFinale = temaManuale; 
+    let temaFinale = temaManualePulito; 
     let temaForzatoDaSistema = false;
     let motivoBlocco = "";
 
-    // 1️⃣ PRIORITÀ 2 (Bassa): Stagionale
+    // Priorità 2 (Bassa): Stagionale
     if (stagionaleAttivo) {
         temaFinale = getStagioneCorrente();
         temaForzatoDaSistema = true;
         motivoBlocco = "Tema Stagionale in uso";
     }
 
-    // 2️⃣ PRIORITÀ 1 (Assoluta): Modalità Notte (Vince sullo stagionale)
+    // Priorità 1 (Assoluta): Modalità Notte
     if (notteAttiva) {
         const ora = new Date().getHours();
         if (ora >= 21 || ora < 5) {
@@ -12118,27 +12119,26 @@ function valutaEApplicaTemaFinale() {
         }
     }
 
-    // Applica graficamente il tema vincitore sul body del sito
+    // Applica graficamente il tema vincitore
     aggiornaTema(temaFinale, false);
 
     // Aggiorna e BLOCCA visivamente la Select nell'interfaccia Admin
     const selectTema = document.getElementById("selectTema");
     if (selectTema) {
-        // Resta fisso sul tema manuale reale scelto, senza saltare su default o sul tema forzato
-        selectTema.value = temaManuale; 
+        // IL FIX CHIAVE: Assegna il valore matematicamente perfetto per l'HTML
+        selectTema.value = temaManualePulito; 
         
-        // Disabilitazione totale ed eliminazione eventi di click
         selectTema.disabled = temaForzatoDaSistema;
         
         if (temaForzatoDaSistema) {
             selectTema.style.opacity = "0.5";
             selectTema.style.cursor = "not-allowed";
-            selectTema.style.pointerEvents = "none"; // Blocco radicale: ignora qualsiasi tocco o click del mouse
+            selectTema.style.pointerEvents = "none"; // Blocco antimanomissione
             selectTema.title = "Selezione bloccata: " + motivoBlocco;
         } else {
             selectTema.style.opacity = "1";
             selectTema.style.cursor = "pointer";
-            selectTema.style.pointerEvents = "auto"; // Ripristina l'interazione standard
+            selectTema.style.pointerEvents = "auto";
             selectTema.title = "Scegli un tema";
         }
     }
@@ -12149,12 +12149,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const selectTema = document.getElementById("selectTema");
     window.settings = window.settings || {};
 
-    // 1️⃣ Ascolta le modifiche su Firebase
+    // 1️⃣ Ascolta le modifiche su Firebase e forza la formattazione
     db.ref("impostazioni/tema").on("value", snap => {
-        if (snap.exists()) {
-            window.settings.temaSalvato = snap.val();
-            valutaEApplicaTemaFinale();
-        }
+        window.settings.temaSalvato = snap.exists() ? String(snap.val()).toLowerCase().trim() : "default";
+        valutaEApplicaTemaFinale();
     });
 
     db.ref("impostazioni/temiStagionaliAttivi").on("value", snap => {
@@ -12170,19 +12168,18 @@ document.addEventListener("DOMContentLoaded", () => {
     // 2️⃣ Se l'admin cambia tema manualmente dalla select
     if (selectTema) {
         selectTema.addEventListener("change", () => {
-            // Se il sistema è in modalità forzata o disabilitato, blocca la modifica a monte
+            // Impedisce che "furbetti" possano aggirare il blocco smanettando da console
             if (selectTema.disabled || window.settings.temiStagionaliAttivi === true || (window.settings.modalitaNotte === true && (new Date().getHours() >= 21 || new Date().getHours() < 5))) {
-                // Ripristina graficamente l'ultimo valore valido impedendo lo sminchiamento
                 selectTema.value = window.settings.temaSalvato || "default";
                 return; 
             }
-            const nuovoTema = selectTema.value;
-            window.settings.temaSalvato = nuovoTema; // Aggiorna istantaneamente l'oggetto locale
-            aggiornaTema(nuovoTema, true); // Invia il salvataggio a Firebase
+            const nuovoTema = selectTema.value.toLowerCase().trim();
+            window.settings.temaSalvato = nuovoTema; 
+            aggiornaTema(nuovoTema, true); // Salva su Firebase
         });
     }
 
-    // 3️⃣ Esegue un controllo ogni minuto per scattare in automatico al cambio dell'ora/giorno
+    // 3️⃣ Esegue un controllo ogni minuto
     setInterval(valutaEApplicaTemaFinale, 60000);
 });
 // ================= CALCOLO TEMPO MEDIO CASSA =================
