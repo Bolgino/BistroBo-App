@@ -3103,3 +3103,22 @@ body.tema-astronave .chat-target-select {
     color: #EFFFFF !important;
     border: 1px solid #0088AA !important;
 }
+/* ===========================================================
+   FIX: LEGGIBILITÀ BOTTONI "AGGIUNGI DAL MENU" NEL POPUP MODIFICA
+   Garantisce che i testi (nome e prezzo) siano scuri e leggibili
+=========================================================== */
+
+/* Forza il NERO sul nome del piatto (tag <b>) e sul prezzo (tag <span>) */
+body.tema-astronave .modal-varianti .piatto-btn b,
+body.tema-notte .modal-varianti .piatto-btn b {
+    color: #000000 !important;
+    text-shadow: none !important;
+}
+
+/* Colore rosso scuro per il prezzo (tag <span> dentro il bottone) */
+body.tema-astronave .modal-varianti .piatto-btn span,
+body.tema-notte .modal-varianti .piatto-btn span {
+    color: #b71c1c !important;
+    text-shadow: none !important;
+    font-weight: bold !important;
+}
