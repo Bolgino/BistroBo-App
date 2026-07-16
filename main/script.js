@@ -12117,7 +12117,9 @@ function valutaEApplicaTemaFinale() {
     // Aggiorna e BLOCCA visivamente la Select nell'interfaccia Admin
     const selectTema = document.getElementById("selectTema");
     if (selectTema) {
-        selectTema.value = temaFinale;
+        // 🔥 LA MODIFICA È QUI: Assegniamo temaManuale, non temaFinale!
+        selectTema.value = temaManuale; 
+        
         selectTema.disabled = temaForzatoDaSistema;
         
         if (temaForzatoDaSistema) {
