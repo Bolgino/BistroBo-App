@@ -12085,54 +12085,47 @@ function getStagioneCorrente() {
 }
 
 function valutaEApplicaTemaFinale() {
-    window.settings = window.settings || {};
-    const temaManuale = window.settings.temaSalvato || "default"; 
-    const stagionaleAttivo = window.settings.temiStagionaliAttivi === true;
-    const notteAttiva = window.settings.modalitaNotte === true;
-    
-    let temaFinale = temaManuale; 
-    let temaForzatoDaSistema = false;
-    let motivoBlocco = "";
+    let t = temaManualeDB;
+    let sovrascritturaAttiva = false; // Flag per capire se un automatismo è in corso
 
-    // Priorità 2: Stagionale
-    if (stagionaleAttivo) {
-        temaFinale = getStagioneCorrente();
-        temaForzatoDaSistema = true;
-        motivoBlocco = "Tema Stagionale in uso";
+    // Controllo Temi Stagionali
+    if (temiStagionaliDB) { 
+        t = getStagioneCorrente(); 
+        sovrascritturaAttiva = true; 
     }
-
-    // Priorità 1 (Assoluta): Modalità Notte
-    if (notteAttiva) {
-        const ora = new Date().getHours();
-        if (ora >= 21 || ora < 5) {
-            temaFinale = "notte";
-            temaForzatoDaSistema = true;
-            motivoBlocco = "Modalità Notte in uso";
+    
+    // Controllo Modalità Notte (ha la priorità sulle stagioni)
+    if (modalitaNotteDB) { 
+        const o = new Date().getHours(); 
+        if (o >= 21 || o < 5) {
+            t = "notte";
+            sovrascritturaAttiva = true;
         }
     }
 
-    // Applica graficamente il tema vincitore
-    aggiornaTema(temaFinale, false);
+    // 1. Applica il tema al Body
+    document.body.className = document.body.className.replace(/\btema-\S+/g, ''); 
+    document.body.classList.add("tema-" + t); 
+    document.body.classList.add("tema-caricato");
+    
+    const bg = document.getElementById("themeBackground"); 
+    if (bg) bg.style.display = "block";
 
-    // Aggiorna e BLOCCA visivamente la Select nell'interfaccia Admin
+    // 2. AGGIORNAMENTO GRAFICO DELLA SELECT IN ADMIN
     const selectTema = document.getElementById("selectTema");
     if (selectTema) {
-        selectTema.value = temaFinale;
-        selectTema.disabled = temaForzatoDaSistema;
+        // Imposta la scritta della tendina sul tema realmente in uso in questo momento
+        selectTema.value = t; 
         
-        if (temaForzatoDaSistema) {
-            selectTema.style.opacity = "0.5";
-            selectTema.style.cursor = "not-allowed";
-            selectTema.title = "Selezione bloccata: " + motivoBlocco;
-        } else {
-            selectTema.style.opacity = "1";
-            selectTema.style.cursor = "pointer";
-            selectTema.title = "Scegli un tema";
-        }
+        // Se c'è un automatismo attivo (stagione o notte), disabilita la select
+        // Se gli automatismi sono spenti, riabilita la select permettendo la scelta manuale
+        selectTema.disabled = sovrascritturaAttiva; 
     }
-    if (typeof aggiornaTitoloPreordini === "function") aggiornaTitoloPreordini(temaFinale);
-}
 
+    // Salva nel localStorage se necessario per altre funzioni
+    localStorage.setItem("temaSelezionato", t);
+    if (typeof aggiornaTitoloPreordini === "function") aggiornaTitoloPreordini(t);
+}
 document.addEventListener("DOMContentLoaded", () => {
     const selectTema = document.getElementById("selectTema");
     window.settings = window.settings || {};
