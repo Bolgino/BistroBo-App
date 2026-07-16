@@ -1029,11 +1029,11 @@ async function initPreordiniClienti() {
                 // Filtra le singole righe dei piatti
                 document.querySelectorAll('.menu-item').forEach(riga => {
                     if (filter === 'all') {
-                        riga.style.display = 'flex'; 
+                        riga.style.display = 'block'; // 🔥 FIX: Usa block invece di flex
                     } else {
                         const tags = JSON.parse(riga.dataset.tags || '{}');
                         if (tags[filter]) {
-                            riga.style.display = 'flex';
+                            riga.style.display = 'block'; // 🔥 FIX: Usa block invece di flex
                         } else {
                             riga.style.display = 'none';
                         }
