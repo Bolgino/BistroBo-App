@@ -8741,7 +8741,18 @@ document.addEventListener("DOMContentLoaded", () => {
 	            <label><b>Aggiunte max gratuite:</b></label>
 	            <input type="number" id="modalPiattoMaxGratis" min="0" placeholder="0 (Nessuna gratuità)" style="width: 100%; padding: 8px; box-sizing: border-box; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px;">
 	        </div>
-			<div style="margin-bottom: 15px;">
+
+            <div class="box-allergeni-admin" style="margin-bottom: 15px; text-align: left; background: #fafafa; padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
+                <label style="font-weight: bold; display: block; margin-bottom: 8px; color: #333;">Diete / Allergeni:</label>
+                <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                    <label><input type="checkbox" id="piattoSG"> Senza Glutine (SG)</label>
+                    <label><input type="checkbox" id="piattoSL"> Senza Lattosio (SL)</label>
+                    <label><input type="checkbox" id="piattoV"> Vegetariano (V)</label>
+                    <label><input type="checkbox" id="piattoVG"> Vegano (VG)</label>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 15px;">
 	            <label><b>Ingredienti / Ricetta Piatto:</b></label>
                 <div id="modalPiattoIngredientiContainer" style="margin-top: 8px; max-height: 220px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; border-radius: 6px; background: #fafafa;"></div>
             </div>
@@ -9071,7 +9082,7 @@ function modificaPiattoMenu(menuId, piatto) {
             <input type="number" id="editPiattoMaxGratis" min="0" placeholder="0" style="width: 100%; padding: 8px; box-sizing: border-box; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px;">
         </div>
 
-        <div style="margin-bottom: 15px; text-align: left; background: #f9f9f9; padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
+        <div class="box-allergeni-admin" style="margin-bottom: 15px; text-align: left; background: #fafafa; padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
             <label style="font-weight: bold; display: block; margin-bottom: 8px; color: #333;">Diete / Allergeni:</label>
             <div style="display: flex; flex-wrap: wrap; gap: 10px;">
                 <label><input type="checkbox" id="editPiattoSG" ${piatto.tags && piatto.tags.sg ? 'checked' : ''}> Senza Glutine (SG)</label>
