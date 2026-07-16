@@ -806,11 +806,7 @@ function initImpostazioniToggle() {
                             // 2. Cancella l'intero archivio delle giornate (se abilitato)
                             await db.ref("storico_giornate").remove();
                             
-                            // 3. Cancella i backup automatici sul Cloud
-                            await db.ref("cloud_backups").remove();
-                            window.lastBackupHash = ""; // Resetta anche la memoria locale del backup
-                            
-                            notify("✅ Database completamente resettato (Comande, Preordini, Archivi e Backup)! 💣", "info");
+                            notify("✅ Database completamente resettato (Comande, Preordini e Archivi)! 💣", "info");
 
                             // Pulisce l'interfaccia UI admin
                             const listaComandeAdmin = document.getElementById("listaComandeAdmin");
@@ -1657,6 +1653,38 @@ function initImpostazioniToggle() {
             // Il motore aggiornato all'inizio del file ascolta questo valore in tempo reale
             console.log("Temi stagionali impostati su:", val);
         });
+    }
+	// ================= PULSANTE ELIMINA BACKUP CLOUD =================
+    const eliminaCloudBackupsBtn = document.getElementById("eliminaCloudBackupsBtn");
+    if (eliminaCloudBackupsBtn) {
+        eliminaCloudBackupsBtn.onclick = async () => {
+            if (!checkOnline(true)) return;
+
+            disonotify("⚠️ Sei sicuro di voler eliminare definitivamente TUTTI i backup automatici salvati sul cloud?", {
+                confirmText: "Sì, Elimina",
+                showCancel: true,
+                cancelText: "Annulla",
+                onConfirm: async () => {
+                    try {
+                        showLoader();
+                        // 1. Cancella i backup automatici sul Cloud
+                        await db.ref("cloud_backups").remove();
+                        // 2. Resetta la memoria locale
+                        window.lastBackupHash = ""; 
+                        
+                        notify("✅ Backup Cloud eliminati con successo!", "info");
+                        hideLoader();
+                    } catch (err) {
+                        console.error(err);
+                        hideLoader();
+                        notify("❌ Errore durante l'eliminazione: " + err.message, "error");
+                    }
+                },
+                onCancel: () => {
+                    notify("Operazione annullata", "attenzione");
+                }
+            });
+        };
     }
 }
 function initTickNoteDestinazioni() {
