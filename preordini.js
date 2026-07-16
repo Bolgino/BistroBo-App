@@ -939,6 +939,7 @@ async function initPreordiniClienti() {
             // Crea il contenitore principale
             const riga = document.createElement("div");
             riga.className = "menu-item";
+            riga.dataset.tags = JSON.stringify(piatto.tags || {});
             if (esaurito) riga.classList.add("esaurito");
             
             const topDiv = document.createElement("div");
@@ -956,8 +957,12 @@ async function initPreordiniClienti() {
                    </span>`
                 : `<span>€${item.prezzo.toFixed(2)}</span>`;
             
+            const badgesHtml = typeof generaBadgeDiete === "function" ? generaBadgeDiete(item) : "";
+
             topDiv.innerHTML = `
-                <span class="piatto-nome" style="font-weight:bold; text-align:center; padding:0 50px;">${item.nome}</span>
+                <span class="piatto-nome" style="font-weight:bold; text-align:center; padding:0 50px;">
+                    ${item.nome} <div style="margin-top:4px;">${badgesHtml}</div>
+                </span>
                 <span class="piatto-prezzo" style="position:absolute; right:0; top:50%; transform:translateY(-50%);">${prezzoHtml}</span>
             `;
             
@@ -1008,7 +1013,50 @@ async function initPreordiniClienti() {
 
     });
     menuDiv.style.visibility = "visible";
-    
+    // === INIZIO LOGICA FILTRI DIETE ===
+    const filtriContainer = document.getElementById("filtriDiete");
+    if (filtriContainer) {
+        filtriContainer.style.display = "flex";
+
+        document.querySelectorAll('.diet-filter-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                // Grafica dei bottoni
+                document.querySelectorAll('.diet-filter-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                
+                const filter = e.target.dataset.filter;
+                
+                // Filtra le singole righe dei piatti
+                document.querySelectorAll('.menu-item').forEach(riga => {
+                    if (filter === 'all') {
+                        riga.style.display = 'flex'; 
+                    } else {
+                        const tags = JSON.parse(riga.dataset.tags || '{}');
+                        if (tags[filter]) {
+                            riga.style.display = 'flex';
+                        } else {
+                            riga.style.display = 'none';
+                        }
+                    }
+                });
+                
+                // Nascondi i titoli delle categorie se rimangono vuote
+                document.querySelectorAll('.categoria-titolo').forEach(titolo => {
+                    let hasVisible = false;
+                    let next = titolo.nextElementSibling;
+                    while(next && next.classList.contains('menu-item')) {
+                        if (next.style.display !== 'none') {
+                            hasVisible = true;
+                            break;
+                        }
+                        next = next.nextElementSibling;
+                    }
+                    titolo.style.display = hasVisible ? 'block' : 'none';
+                });
+            });
+        });
+    }
+   
   });
     const telefonoInput = document.getElementById("telefonoCliente");
     telefonoInput.addEventListener("input", () => {
@@ -1172,7 +1220,7 @@ window.aggiungiVeloceCarrello = function(id) {
         extraPrezzo: 0,
         quantita: 1,
         maxVariantiGratis: piatto.maxVariantiGratis || 0,
-        tags: item.tags || {}
+        tags: piatto.tags || {}
         
     });
     
@@ -2165,7 +2213,7 @@ function renderListaPiattiComboCliente(piattoCombo) {
                     prezzoPagato: (index >= maxGratis) ? c.prezzoBase : 0, 
                     isGratis: (index < maxGratis),
                     categoria: menuItems[c.id]?.categoria || "cibi",
-                    tags: item.tags || {}
+                    tags: c.tags || {}
                 });
             });
 
