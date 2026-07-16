@@ -12084,13 +12084,20 @@ function getStagioneCorrente() {
     return "inverno";
 }
 
+// Aggiungiamo una variabile locale robusta per ricordare sempre la scelta manuale
+let ultimaSceltaManualeTema = localStorage.getItem("ultimoTemaManuale") || "default";
+
 function valutaEApplicaTemaFinale() {
-    // Leggi i dati dal database (variabili globali di script.js)
-    const temaManuale = temaManualeDB || "default"; 
+    // Aggiorniamo la scelta manuale se nel DB c'è un valore (e lo salviamo)
+    if (temaManualeDB) {
+        ultimaSceltaManualeTema = temaManualeDB;
+        localStorage.setItem("ultimoTemaManuale", ultimaSceltaManualeTema);
+    }
+
     const stagionaleAttivo = temiStagionaliDB === true;
     const notteAttiva = modalitaNotteDB === true;
     
-    let temaFinale = temaManuale; 
+    let temaFinale = ultimaSceltaManualeTema; 
     let temaForzatoDaSistema = false;
     let motivoBlocco = "";
 
@@ -12111,7 +12118,7 @@ function valutaEApplicaTemaFinale() {
         }
     }
 
-    // Applica graficamente il tema VINCITORE (quello forzato)
+    // Applica graficamente il tema VINCITORE (quello forzato o manuale)
     document.body.className = document.body.className.replace(/\btema-\S+/g, '');
     document.body.classList.add("tema-" + temaFinale);
     document.body.classList.add("tema-caricato");
@@ -12121,8 +12128,8 @@ function valutaEApplicaTemaFinale() {
     // Aggiorna e BLOCCA visivamente la Select nell'interfaccia Admin
     const selectTema = document.getElementById("selectTema");
     if (selectTema) {
-        // IL SEGRETO È QUI: Metti il tema MANUALE, non quello finale!
-        selectTema.value = temaManuale; 
+        // Mette SEMPRE la scritta corrispondente all'ultima scelta manuale!
+        selectTema.value = ultimaSceltaManualeTema; 
         
         selectTema.disabled = temaForzatoDaSistema;
         
@@ -12140,6 +12147,22 @@ function valutaEApplicaTemaFinale() {
     localStorage.setItem("temaSelezionato", temaFinale);
     if (typeof aggiornaTitoloPreordini === "function") aggiornaTitoloPreordini(temaFinale);
 }
+
+// 3. ASSICURARSI CHE LA SCELTA VENGA SALVATA IN FIREBASE E IN LOCALE
+document.addEventListener("DOMContentLoaded", () => {
+    const selectTema = document.getElementById("selectTema");
+    if (selectTema) {
+        selectTema.addEventListener("change", (e) => {
+            const nuovoTema = e.target.value;
+            // Salva nel DB (che attiverà il listener realtime e farà ripartire valutaEApplicaTemaFinale)
+            db.ref("impostazioni/tema").set(nuovoTema);
+            
+            // Salva subito anche in locale per sicurezza immediata
+            ultimaSceltaManualeTema = nuovoTema;
+            localStorage.setItem("ultimoTemaManuale", nuovoTema);
+        });
+    }
+});
 document.addEventListener("DOMContentLoaded", () => {
     const selectTema = document.getElementById("selectTema");
     window.settings = window.settings || {};
