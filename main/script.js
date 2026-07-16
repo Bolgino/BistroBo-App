@@ -3354,7 +3354,8 @@ function separaComanda(items) {
                         varianti: c.varianti ? JSON.parse(JSON.stringify(c.varianti)) : [],
                         contorniScelti: [],
                         ingredienti: [],
-                        note: i.note || ""
+                        note: i.note || "",
+						tags: c.tags || {}
                     };
 
                     if (destC === "cibo") cibo.push(splitItem);
@@ -9183,7 +9184,8 @@ function modificaPiattoMenu(menuId, piatto) {
                 maxVariantiGratis: newMaxGratis,
                 isCombo: newIsCombo,
                 maxContorniGratis: newMaxContorniGratis,
-                piattiComboAmmessi: newPiattiComboAmmessi
+                piattiComboAmmessi: newPiattiComboAmmessi,
+				tags: newTags
             });
             window.selectedMap = {};
             overlay.remove();
