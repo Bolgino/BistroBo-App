@@ -8823,23 +8823,42 @@ document.addEventListener("DOMContentLoaded", () => {
 	        }
 	
 	        const ingredienti = Object.keys(window.selectedMap)
-	            .filter(id => id && window.ingredientData[id])
-	            .map(id => ({
-	                id,
-	                nome: window.ingredientData[id].nome,
-	                qtyPerUnit: window.selectedMap[id],
-	                unita: window.ingredientData[id].unita || "pz"
-	            }));
-	
-	        try {
-	            await db.ref("menu").push({ nome, prezzo, categoria, ingredienti, maxVariantiGratis, isCombo, maxContorniGratis, piattiComboAmmessi });
-	            window.selectedMap = {};
-	            overlay.remove();
-	            notify("Piatto aggiunto con successo al menu!", "success");
-	        } catch (err) {
-	            notify("Errore nell'aggiunta: " + err.message, "error");
-	        }
-	    };
+                .filter(id => id && window.ingredientData[id])
+                .map(id => ({
+                    id,
+                    nome: window.ingredientData[id].nome,
+                    qtyPerUnit: window.selectedMap[id],
+                    unita: window.ingredientData[id].unita || "pz"
+                }));
+
+            try {
+                // 🔥 RECUPERO TAG ALLERGENI PER IL NUOVO PIATTO
+                const newTags = {
+                    sg: document.getElementById('piattoSG') ? document.getElementById('piattoSG').checked : false,
+                    sl: document.getElementById('piattoSL') ? document.getElementById('piattoSL').checked : false,
+                    v: document.getElementById('piattoV') ? document.getElementById('piattoV').checked : false,
+                    vg: document.getElementById('piattoVG') ? document.getElementById('piattoVG').checked : false
+                };
+
+                await db.ref("menu").push({ 
+                    nome, 
+                    prezzo, 
+                    categoria, 
+                    ingredienti, 
+                    maxVariantiGratis, 
+                    isCombo, 
+                    maxContorniGratis, 
+                    piattiComboAmmessi,
+                    tags: newTags // 🔥 SALVATAGGIO NEL DB
+                });
+                
+                window.selectedMap = {};
+                overlay.remove();
+                notify("Piatto aggiunto con successo al menu!", "success");
+            } catch (err) {
+                notify("Errore nell'aggiunta: " + err.message, "error");
+            }
+        };
 	};
     db.ref("ingredienti").on("value", snap => {
         // RIGA RIMOSSA: db.ref("menu").off(); 
@@ -9051,6 +9070,17 @@ function modificaPiattoMenu(menuId, piatto) {
             <label><b>Aggiunte max gratuite:</b></label>
             <input type="number" id="editPiattoMaxGratis" min="0" placeholder="0" style="width: 100%; padding: 8px; box-sizing: border-box; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px;">
         </div>
+
+        <div style="margin-bottom: 15px; text-align: left; background: #f9f9f9; padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
+            <label style="font-weight: bold; display: block; margin-bottom: 8px; color: #333;">Diete / Allergeni:</label>
+            <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                <label><input type="checkbox" id="editPiattoSG" ${piatto.tags && piatto.tags.sg ? 'checked' : ''}> Senza Glutine (SG)</label>
+                <label><input type="checkbox" id="editPiattoSL" ${piatto.tags && piatto.tags.sl ? 'checked' : ''}> Senza Lattosio (SL)</label>
+                <label><input type="checkbox" id="editPiattoV" ${piatto.tags && piatto.tags.v ? 'checked' : ''}> Vegetariano (V)</label>
+                <label><input type="checkbox" id="editPiattoVG" ${piatto.tags && piatto.tags.vg ? 'checked' : ''}> Vegano (VG)</label>
+            </div>
+        </div>
+
 		<div style="margin-bottom: 15px;">
             <label><b>Ingredienti / Composizione:</b></label>
             <div id="editPiattoIngredientiContainer" style="margin-top: 8px; max-height: 220px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; border-radius: 6px; background: #fafafa;"></div>
@@ -9175,7 +9205,15 @@ function modificaPiattoMenu(menuId, piatto) {
             }
         });
 
-        try {
+       try {
+            // Recupero le spunte dal modale
+            const newTags = {
+                sg: document.getElementById('editPiattoSG').checked,
+                sl: document.getElementById('editPiattoSL').checked,
+                v: document.getElementById('editPiattoV').checked,
+                vg: document.getElementById('editPiattoVG').checked
+            };
+
             await db.ref("menu/" + menuId).update({
                 nome: newName,
                 prezzo: newPrezzo,
@@ -9185,7 +9223,7 @@ function modificaPiattoMenu(menuId, piatto) {
                 isCombo: newIsCombo,
                 maxContorniGratis: newMaxContorniGratis,
                 piattiComboAmmessi: newPiattiComboAmmessi,
-				tags: newTags
+                tags: newTags // 🔥 AGGIUNTO QUI!
             });
             window.selectedMap = {};
             overlay.remove();
