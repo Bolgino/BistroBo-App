@@ -5969,6 +5969,71 @@ async function caricaGestioneComandeAdmin() {
 }
 
 // ================= DASHBOARD ADMIN (STILE BISTROBO AVANZATO) =================
+function aggiornaColliDiBottiglia() {
+    // Prendiamo solo le ultime 500 preparazioni per non calcolare vecchie sagre
+    db.ref("statistiche_tempi_prodotti").orderByChild("timestamp").limitToLast(500).once("value").then(snap => {
+        const data = snap.val() || {};
+        const stats = {};
+
+        // 1. Raggruppa i tempi per categoria e poi per nome prodotto
+        Object.values(data).forEach(item => {
+            let cat = (item.categoria || "cibi").toLowerCase().trim();
+            if (cat === "cucina") cat = "cibi";
+            
+            if (!stats[cat]) stats[cat] = {};
+            if (!stats[cat][item.nome]) stats[cat][item.nome] = { sum: 0, count: 0 };
+
+            stats[cat][item.nome].sum += item.tempoMs;
+            stats[cat][item.nome].count++;
+        });
+
+        let html = "";
+
+        // 2. Trova il prodotto con la media più alta per ogni categoria
+        Object.keys(stats).forEach(cat => {
+            let maxAvg = 0;
+            let slowestProduct = null;
+            let totalPreparations = 0;
+
+            Object.keys(stats[cat]).forEach(nome => {
+                const obj = stats[cat][nome];
+                // Ignoriamo prodotti fatti meno di 3 volte per evitare medie falsate
+                if (obj.count >= 3) {
+                    let avg = obj.sum / obj.count;
+                    if (avg > maxAvg) {
+                        maxAvg = avg;
+                        slowestProduct = nome;
+                        totalPreparations = obj.count;
+                    }
+                }
+            });
+
+            // 3. Genera la grafica per il "perdente" della categoria
+            if (slowestProduct) {
+                let minuti = (maxAvg / 60000).toFixed(1);
+                let nomeCatBello = cat.charAt(0).toUpperCase() + cat.slice(1);
+                if (cat.startsWith("extra")) nomeCatBello = window.nomiRepartiExtra?.[cat] || nomeCatBello;
+
+                html += `
+                    <div style="background: #fff3cd; border-left: 5px solid #ff9800; padding: 12px 18px; border-radius: 8px; flex: 1; min-width: 200px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                        <div style="font-size: 0.85em; color: #e65100; font-weight: 800; text-transform: uppercase; margin-bottom: 5px;">📍 Reparto: ${nomeCatBello}</div>
+                        <div style="font-size: 1.15em; font-weight: 900; color: #333; margin-bottom: 8px;">${slowestProduct}</div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #ffe0b2; padding-top: 8px;">
+                            <span style="font-size: 0.95em; color: #d32f2f; font-weight: bold;">⏱️ ${minuti} min</span>
+                            <span style="font-size: 0.8em; color: #777;">(su ${totalPreparations} calcoli)</span>
+                        </div>
+                    </div>
+                `;
+            }
+        });
+
+        const container = document.getElementById("colliBottigliaContainer");
+        if (container) {
+            container.innerHTML = html || "<div style='color: #777; font-style: italic;'>Dati insufficienti. Le statistiche appariranno man mano che i cuochi spunteranno i piatti completati.</div>";
+        }
+    });
+}
+
 function aggiornaDashboardAdmin(comandeData) {
     if (!document.getElementById("dashboardAdminTab")) return;
 
@@ -6185,6 +6250,7 @@ function aggiornaDashboardAdmin(comandeData) {
             elRitmo.innerText = "( Calcolo in corso... )";
         }
     }
+	aggiornaColliDiBottiglia();
 } // <-- Questa è l'ultima parentesi graffa della funzione
 
 // ================= POPUP ESCLUSIONE TEMPO CASSA (DESIGN INTEGRATO BISTROBO) =================
@@ -7097,10 +7163,32 @@ async function caricaComandePerRuolo(daFareDiv, storicoDiv, ruolo) {
                             box.checked = window.tickState[comandaId][voceKey];
                             box.disabled = isDisabled;
 
-                            box.addEventListener("change", () => {
+                           box.addEventListener("change", () => {
                                 window.tickState[comandaId][voceKey] = box.checked;
                                 const checkboxes = d.querySelectorAll(".tickItem");
                                 if (bComp) bComp.disabled = ![...checkboxes].every(cb => cb.checked);
+                                
+                                // --- LOGICA TEMPI PRODOTTO AGGIORNATA ---
+                                // Creiamo un ID sicuro per Firebase (senza punti o parentesi)
+                                const safeVoceKey = voceKey.replace(/[.#$\[\]]/g, "_");
+                                const statRef = db.ref(`statistiche_tempi_prodotti/${comandaId}_${safeVoceKey}`);
+                                
+                                if (box.checked && c.timestamp) {
+                                    const tempoMs = Date.now() - c.timestamp;
+                                    // Ignora click accidentali o troppo rapidi (< 10 secondi)
+                                    if (tempoMs > 10000 && tempoMs < 14400000) { 
+                                        statRef.set({
+                                            nome: nomePulito,
+                                            categoria: i.categoria || "cibi",
+                                            tempoMs: tempoMs,
+                                            timestamp: Date.now()
+                                        });
+                                    }
+                                } else {
+                                    // SE IL CUOCO TOGLIE LA SPUNTA, ELIMINIAMO LA STATISTICA!
+                                    statRef.remove();
+                                }
+                                // ----------------------------------------
                             });
                             mainDiv.appendChild(box);
                         }
@@ -7205,6 +7293,26 @@ async function caricaComandePerRuolo(daFareDiv, storicoDiv, ruolo) {
                                     window.tickState[comandaId][cVoceKey] = cBox.checked;
                                     const checkboxes = d.querySelectorAll(".tickItem");
                                     if (bComp) bComp.disabled = ![...checkboxes].every(cb => cb.checked);
+
+                                    // --- LOGICA TEMPI CONTORNO AGGIORNATA ---
+                                    const safeCVoceKey = cVoceKey.replace(/[.#$\[\]]/g, "_");
+                                    const statRef = db.ref(`statistiche_tempi_prodotti/${comandaId}_${safeCVoceKey}`);
+
+                                    if (cBox.checked && c.timestamp) {
+                                        const tempoMs = Date.now() - c.timestamp;
+                                        if (tempoMs > 10000 && tempoMs < 14400000) { 
+                                            statRef.set({
+                                                nome: nomePulito,
+                                                categoria: contorno.categoria || i.categoria || "cibi",
+                                                tempoMs: tempoMs,
+                                                timestamp: Date.now()
+                                            });
+                                        }
+                                    } else {
+                                        // SE IL CUOCO TOGLIE LA SPUNTA, ELIMINIAMO LA STATISTICA!
+                                        statRef.remove();
+                                    }
+                                    // ----------------------------------------
                                 });
                                 cDiv.appendChild(cBox);
                             }
