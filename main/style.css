@@ -3059,4 +3059,47 @@ body.tema-astronave #boxTempoMedioCassa span {
     color: #00FFFF !important;
     text-shadow: 0 0 5px #00D9FF !important;
 }
+/* ================= CSS CHAT MULTICANALE ================= */
+.chat-target-select {
+    padding: 10px 14px;
+    border-radius: 20px;
+    border: 1px solid #ccc;
+    font-size: 0.9em;
+    background: #fff;
+    outline: none;
+    cursor: pointer;
+    font-weight: bold;
+    color: #333;
+    transition: 0.2s;
+}
 
+.chat-target-select:focus {
+    border-color: #4caf50;
+    box-shadow: 0 0 4px #4caf50;
+}
+
+/* Evidenzia il messaggio se è arrivato privatamente in un canale separato */
+.private-msg {
+    border: 1px dashed #FF9800 !important;
+    background-color: #FFF8E1 !important;
+}
+
+/* Evidenziazione per Tema Chiaro */
+body.tema-chiaro .private-msg {
+    background-color: #FFF3E0 !important;
+}
+
+/* Evidenziazione per Temi Scuri (Notte, Astronave) */
+body.tema-notte .private-msg, 
+body.tema-astronave .private-msg {
+    background-color: #4A2800 !important;
+    border-color: #FF9800 !important;
+    color: #FFB74D !important;
+}
+
+body.tema-notte .chat-target-select,
+body.tema-astronave .chat-target-select {
+    background: #030912 !important;
+    color: #EFFFFF !important;
+    border: 1px solid #0088AA !important;
+}
