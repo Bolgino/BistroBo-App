@@ -12085,7 +12085,7 @@ function getStagioneCorrente() {
 }
 
 function valutaEApplicaTemaFinale() {
-    // Leggiamo dalle variabili globali che Firebase aggiorna in tempo reale
+    // Leggi i dati dal database (variabili globali di script.js)
     const temaManuale = temaManualeDB || "default"; 
     const stagionaleAttivo = temiStagionaliDB === true;
     const notteAttiva = modalitaNotteDB === true;
@@ -12111,18 +12111,19 @@ function valutaEApplicaTemaFinale() {
         }
     }
 
-    // Applica graficamente il tema vincitore al body
-    document.body.className = document.body.className.replace(/\btema-\S+/g, ''); 
-    document.body.classList.add("tema-" + temaFinale); 
+    // Applica graficamente il tema VINCITORE (quello forzato)
+    document.body.className = document.body.className.replace(/\btema-\S+/g, '');
+    document.body.classList.add("tema-" + temaFinale);
     document.body.classList.add("tema-caricato");
-    
-    const bg = document.getElementById("themeBackground"); 
+    const bg = document.getElementById("themeBackground");
     if (bg) bg.style.display = "block";
 
     // Aggiorna e BLOCCA visivamente la Select nell'interfaccia Admin
     const selectTema = document.getElementById("selectTema");
     if (selectTema) {
-        selectTema.value = temaFinale; // Mette la scritta corrispondente al tema
+        // IL SEGRETO È QUI: Metti il tema MANUALE, non quello finale!
+        selectTema.value = temaManuale; 
+        
         selectTema.disabled = temaForzatoDaSistema;
         
         if (temaForzatoDaSistema) {
@@ -12136,7 +12137,6 @@ function valutaEApplicaTemaFinale() {
         }
     }
 
-    // Salva nel localStorage 
     localStorage.setItem("temaSelezionato", temaFinale);
     if (typeof aggiornaTitoloPreordini === "function") aggiornaTitoloPreordini(temaFinale);
 }
