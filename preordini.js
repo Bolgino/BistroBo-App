@@ -939,7 +939,7 @@ async function initPreordiniClienti() {
             // Crea il contenitore principale
             const riga = document.createElement("div");
             riga.className = "menu-item";
-            riga.dataset.tags = JSON.stringify(piatto.tags || {});
+            riga.dataset.tags = JSON.stringify(item.tags || {});
             if (esaurito) riga.classList.add("esaurito");
             
             const topDiv = document.createElement("div");
@@ -1917,7 +1917,8 @@ function renderVariantiCliente(piatto, maxGratis) {
                 contorniScelti: [],
                 extraPrezzo: extraFinali,
                 quantita: 1,
-                maxVariantiGratis: piatto.maxVariantiGratis || 0
+                maxVariantiGratis: piatto.maxVariantiGratis || 0,
+                tags: piatto.tags || {}
             });
         }
         
@@ -2231,7 +2232,8 @@ function renderListaPiattiComboCliente(piattoCombo) {
                 quantita: 1, 
                 maxVariantiGratis: piattoCombo.maxVariantiGratis || 0,
                 contorniScelti: contorniDaSalvare,
-                sconto: piattoCombo.sconto || null 
+                sconto: piattoCombo.sconto || null,
+                tags: piattoCombo.tags || {}
             });
             
             if (typeof aggiornaRiepilogoCarrelloUI === "function") {
