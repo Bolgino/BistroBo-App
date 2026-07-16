@@ -84,7 +84,13 @@
 
   <div class="preordine-container">
     <h1>Preordina al <span id="nome-stand-display">BistroBo</span></h1>
-
+    <div id="filtriDiete" style="display: none; justify-content: center; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; width: 100%; max-width: 600px;">
+        <button class="diet-filter-btn active" data-filter="all">Tutti</button>
+        <button class="diet-filter-btn" data-filter="sg">Senza Glutine (SG)</button>
+        <button class="diet-filter-btn" data-filter="sl">Senza Lattosio (SL)</button>
+        <button class="diet-filter-btn" data-filter="v">Vegetariano (V)</button>
+        <button class="diet-filter-btn" data-filter="vg">Vegano (VG)</button>
+    </div>
     <div id="menuClienti" class="preordine-menu"></div>
     <div id="carrelloContainer" style="display: none; background: #fff; padding: 15px 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px;">
         <h3 style="margin: 0 0 15px 0; color: #333; font-size: 1.2em; border-bottom: 2px solid #f0f0f0; padding-bottom: 10px;">🛒 Il tuo ordine</h3>
