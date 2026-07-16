@@ -2945,7 +2945,7 @@ document.addEventListener("DOMContentLoaded", () => {
         btnAdminFondo.onclick = () => gestisciFondoCassa(true);
     }
 });
-// ================== CHAT INTERNA GLOBALE ==================
+// ================== CHAT MULTICANALE (GLOBALE E PRIVATA) ==================
 function ruoloCapitalizzato() {
   if (!ruolo) return "";
   return ruolo.charAt(0).toUpperCase() + ruolo.slice(1);
@@ -2963,63 +2963,104 @@ function initChat() {
 
   // Se i div non esistono a schermo, fermati senza dare errori
   if (!chatContainer || !chatInput || !chatSendBtn) return;
+  
+  const chatInputBar = chatInput.parentElement;
+  
+  // 3. INIEZIONE SELETTORE DESTINATARIO (STILE ZOOM)
+  let targetSelect = document.getElementById(`chatTarget${ruoloCap}`);
+  if (!targetSelect) {
+      targetSelect = document.createElement("select");
+      targetSelect.id = `chatTarget${ruoloCap}`;
+      targetSelect.className = "chat-target-select";
+      
+      let optionsHtml = `
+          <option value="tutti">🌐 A Tutti</option>
+          <option value="admin">👑 @Admin</option>
+          <option value="cassa">💶 @Cassa</option>
+          <option value="cucina">🍳 @Cucina</option>
+          <option value="bere">🍺 @Bere</option>
+      `;
+      if (window.settings.snackAbilitato) optionsHtml += `<option value="snack">🍟 @Snack</option>`;
+      if (window.settings.extra1Abilitato) optionsHtml += `<option value="extra1">📦 @${window.nomiRepartiExtra?.extra1 || 'Extra 1'}</option>`;
+      if (window.settings.extra2Abilitato) optionsHtml += `<option value="extra2">📦 @${window.nomiRepartiExtra?.extra2 || 'Extra 2'}</option>`;
+      if (window.settings.extra3Abilitato) optionsHtml += `<option value="extra3">📦 @${window.nomiRepartiExtra?.extra3 || 'Extra 3'}</option>`;
+      
+      targetSelect.innerHTML = optionsHtml;
+      chatInputBar.insertBefore(targetSelect, chatInput);
+  }
 
   const chatRef = db.ref("chat/messaggi");
   const notificati = new Set(JSON.parse(localStorage.getItem("chatNotificati_" + uid) || "[]"));
 
-  // 3. CARICA MESSAGGI
-  chatRef.limitToLast(10).on("value", snap => {
+  // 4. CARICA MESSAGGI (Aumentato a 50 per evitare che i messaggi privati mangino subito lo storico)
+  chatRef.limitToLast(50).on("value", snap => {
     const data = snap.val() || {};
     chatContainer.innerHTML = ""; // pulisci tutto
     
     Object.values(data)
       .sort((a, b) => a.timestamp - b.timestamp)
       .forEach(msg => {
+        // Controllo Visibilità: è per tutti? è per me? l'ho inviato io?
+        const target = msg.destinatario || "tutti";
+        const isVisible = (target === "tutti" || target === ruolo || msg.uid === uid);
+        
+        if (!isVisible) return;
+
         const div = document.createElement("div");
-        div.className = "chat-message " + (msg.uid === uid ? "me" : "other");
+        div.className = "chat-message " + (msg.uid === uid ? "me" : "other") + (target !== "tutti" ? " private-msg" : "");
 
         const sender = document.createElement("div");
         sender.className = "chat-sender";
         
-        // --- INIZIO MODIFICA NOME REPARTO ---
+        // --- NOME REPARTO CHE INVIA ---
         let displayRuolo = msg.ruolo || "sconosciuto";
         if (displayRuolo.startsWith("extra")) {
-            // Cerca il nome personalizzato globale, altrimenti usa un fallback
             displayRuolo = window.nomiRepartiExtra?.[displayRuolo] || displayRuolo.charAt(0).toUpperCase() + displayRuolo.slice(1);
         } else {
-            // Capitalizza l'iniziale per ruoli come "cucina", "cassa", "bere"
             displayRuolo = displayRuolo.charAt(0).toUpperCase() + displayRuolo.slice(1);
         }
-        // --- FINE MODIFICA ---
+        
+        // --- NOME REPARTO CHE RICEVE (se privato) ---
+        let senderTesto = msg.uid === uid ? "Tu" : `${msg.email} (${displayRuolo})`;
+        if (target !== "tutti") {
+            let targetName = target.charAt(0).toUpperCase() + target.slice(1);
+            if (target.startsWith("extra")) targetName = window.nomiRepartiExtra?.[target] || targetName;
+            
+            senderTesto += msg.uid === uid ? ` (a @${targetName})` : ` (a te in privato)`;
+        }
 
-        sender.textContent = msg.uid === uid ? "Tu" : `${msg.email} (${displayRuolo})`;
+        sender.textContent = senderTesto;
 
         const text = document.createElement("div");
         text.textContent = msg.testo;
+        if (target !== "tutti") text.style.fontStyle = "italic";
 
         div.appendChild(sender);
         div.appendChild(text);
         chatContainer.appendChild(div);
       });
 
-    // 4. NOTIFICHE
+    // 5. NOTIFICHE
     Object.values(data).forEach(msg => {
         const msgKey = `${msg.uid}_${msg.timestamp}`;
-        if (msg.uid !== uid && !notificati.has(msgKey)) {
+        const target = msg.destinatario || "tutti";
+        const isVisible = (target === "tutti" || target === ruolo || msg.uid === uid);
+
+        // Se non lo devo vedere, non mi deve neanche notificare
+        if (msg.uid !== uid && !notificati.has(msgKey) && isVisible) {
             if (!window.settings.chatAbilitata) return;
 
             if (window.settings.suonoChat) riproduciSuonoNotifica();
             
-            // --- INIZIO MODIFICA NOME REPARTO PER NOTIFICA ---
             let displayRuolo = msg.ruolo || "sconosciuto";
             if (displayRuolo.startsWith("extra")) {
                 displayRuolo = window.nomiRepartiExtra?.[displayRuolo] || displayRuolo.charAt(0).toUpperCase() + displayRuolo.slice(1);
             } else {
                 displayRuolo = displayRuolo.charAt(0).toUpperCase() + displayRuolo.slice(1);
             }
-            // --- FINE MODIFICA ---
 
-            notify(`💬 Nuovo messaggio da: ${msg.email} (${displayRuolo})`, "info");
+            let prefissoPrivato = target !== "tutti" ? "🔒 Privato da " : "💬 Nuovo da ";
+            notify(`${prefissoPrivato}${msg.email} (${displayRuolo})`, "info");
 
             notificati.add(msgKey); 
             localStorage.setItem("chatNotificati_" + uid, JSON.stringify([...notificati])); 
@@ -3028,7 +3069,7 @@ function initChat() {
     chatContainer.scrollTop = chatContainer.scrollHeight;
   });
 
-  // 5. INVIO MESSAGGIO CON RUOLO REALE
+  // 6. INVIO MESSAGGIO CON DESTINATARIO
   chatSendBtn.onclick = null; // Pulisce click precedenti
   chatSendBtn.onclick = async () => {
     if (!window.settings.chatAbilitata) {
@@ -3038,7 +3079,9 @@ function initChat() {
     const testo = chatInput.value.trim();
     if (!testo) return;
 
-    // Questa chiamata assicura che tu sia sempre "admin" se il tuo account è admin
+    const currentTargetSelect = document.getElementById(`chatTarget${ruoloCap}`);
+    const destinatario = currentTargetSelect ? currentTargetSelect.value : "tutti";
+
     const userSnap = await db.ref("utenti/" + uid).once("value");
     const user = userSnap.val() || {};
 
@@ -3047,20 +3090,21 @@ function initChat() {
       ruolo: user.ruolo || ruolo || "sconosciuto", 
       email: user.username || "anonimo",
       uid: uid,
+      destinatario: destinatario, 
       timestamp: Date.now()
     };
 
     await chatRef.push(newMsg);
     chatInput.value = "";
 
-    // PULIZIA VECCHI MESSAGGI DAL DATABASE
+    // PULIZIA VECCHI MESSAGGI DAL DATABASE (Soglia alzata a 50)
     const snap = await chatRef.once("value");
     const data = snap.val() || {};
     const keys = Object.keys(data);
-    if (keys.length > 10) {
+    if (keys.length > 50) {
       const toDelete = keys
           .sort((a, b) => data[a].timestamp - data[b].timestamp)
-          .slice(0, keys.length - 10);
+          .slice(0, keys.length - 50);
 
       toDelete.forEach(k => {
           chatRef.child(k).remove();
