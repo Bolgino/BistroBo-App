@@ -3520,8 +3520,9 @@ async function caricaMenuCassa() {
                         categoria: item.categoria,
                         ingredienti: item.ingredienti || [], 
                         sconto: item.sconto || null, 
-                        maxVariantiGratis: item.maxVariantiGratis || 0  // 🔹 Qui aggiungiamo "|| 0" per evitare il crash!
-                    });
+                        maxVariantiGratis: item.maxVariantiGratis || 0,
+						tags: item.tags || {}
+					});
                 }
                 aggiornaComandaCorrente();
             };
@@ -3532,7 +3533,7 @@ async function caricaMenuCassa() {
             
             const nomeDiv = document.createElement("div");
             nomeDiv.className = "piatto-nome";
-            nomeDiv.textContent = item.nome;
+            nomeDiv.innerHTML = `${item.nome} ${generaBadgeDiete(item)}`;
             wrapper.appendChild(nomeDiv);
 
             const prezzoDiv = document.createElement("div");
@@ -3593,12 +3594,16 @@ async function caricaMenuCassa() {
                  `;
                  
                  const prezzoScontato = item.sconto ? calcolaPrezzoConSconto(item).toFixed(2) : item.prezzo.toFixed(2);
-                 
-                 // Rimuovi style="color:#555" da dentro il tag <small>
+				const badgesHtml = generaBadgeDiete(item); // <--- Calcola i badge
+				
 				btn.innerHTML = `
-					<span style="font-weight:bold; font-size:12px; white-space:normal; line-height:1.1; text-align:center;">${item.nome}</span>
+					<span style="font-weight:bold; font-size:12px; white-space:normal; line-height:1.1; text-align:center; display:flex; flex-direction:column; align-items:center; gap:4px;">
+						${item.nome}
+						<div style="display:flex; gap:2px;">${badgesHtml}</div>
+					</span>
 					<small style="font-size:11px; font-weight:bold; margin-top:2px;">€${prezzoScontato}</small>
 				`;
+                 
                  
                  const containerIdMap = {
                      cibi: { id: "menuCibi", nome: "Cibi", enabled: true, color: "#4CAF50" },
@@ -4739,6 +4744,17 @@ function caricaComandeCassa() {
       function formattaPiatto(i) {
           // --- MAGIA PER PIATTO PRINCIPALE ---
           let nomePulito = i.nome || "";
+		  // AGGIUNTA TAG ALLERGENI PER LA CUCINA
+			let tagTestuali = "";
+			if (i.tags) {
+			    if (i.tags.sg) tagTestuali += "[SG]";
+			    if (i.tags.sl) tagTestuali += "[SL]";
+			    if (i.tags.v) tagTestuali += "[V]";
+			    if (i.tags.vg) tagTestuali += "[VG]";
+			}
+			if (tagTestuali !== "") {
+			    nomePulito += ` <span style="color:#d32f2f; font-weight:900; font-size:0.95em;">${tagTestuali}</span>`;
+			}
           let varTxt = "";
           let variantiArray = i.varianti ? (Array.isArray(i.varianti) ? i.varianti : Object.values(i.varianti)) : [];
           
@@ -5692,6 +5708,17 @@ async function caricaGestioneComandeAdmin() {
             function formattaPiattoAdmin(i) {
                 // --- MAGIA PER PIATTO PRINCIPALE ---
                 let nomePulito = i.nome || "";
+				// AGGIUNTA TAG ALLERGENI PER LA CUCINA
+				let tagTestuali = "";
+				if (i.tags) {
+				    if (i.tags.sg) tagTestuali += "[SG]";
+				    if (i.tags.sl) tagTestuali += "[SL]";
+				    if (i.tags.v) tagTestuali += "[V]";
+				    if (i.tags.vg) tagTestuali += "[VG]";
+				}
+				if (tagTestuali !== "") {
+				    nomePulito += ` <span style="color:#d32f2f; font-weight:900; font-size:0.95em;">${tagTestuali}</span>`;
+				}
                 let varTxt = "";
                 let variantiArray = i.varianti ? (Array.isArray(i.varianti) ? i.varianti : Object.values(i.varianti)) : [];
                 
