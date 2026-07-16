@@ -153,6 +153,15 @@ window.categoriaHaPiatti = function(catCercata) {
     }
     return false;
 };
+function generaBadgeDiete(piatto) {
+    if (!piatto.tags) return "";
+    let badges = "";
+    if (piatto.tags.sg) badges += `<span class="badge-diet badge-sg" title="Senza Glutine">SG</span>`;
+    if (piatto.tags.sl) badges += `<span class="badge-diet badge-sl" title="Senza Lattosio">SL</span>`;
+    if (piatto.tags.v)  badges += `<span class="badge-diet badge-v" title="Vegetariano">V</span>`;
+    if (piatto.tags.vg) badges += `<span class="badge-diet badge-vg" title="Vegano">VG</span>`;
+    return badges;
+}
 // ----------- IMPOSTAZIONI ----------------
 // Funzione toggle sicuro, dinamico e multi-uso
 function initToggle(btn, ref, labels = {on: "ON", off: "OFF"}, fallback = false, callback = null) {
