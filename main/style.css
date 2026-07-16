@@ -3145,3 +3145,71 @@ body.tema-notte .modal-varianti .piatto-btn span {
 .diet-filter-btn.active {
     background: #4CAF50; color: white; border-color: #4CAF50; box-shadow: 0 2px 5px rgba(76,175,80,0.4);
 }
+/* ===========================================================
+   FIX STILE FILTRI PREORDINI (E TEMI SCURI)
+=========================================================== */
+#filtriDiete {
+    gap: 10px !important;
+    margin-bottom: 25px !important;
+}
+
+.diet-filter-btn {
+    padding: 8px 18px !important; 
+    border-radius: 25px !important; 
+    border: 2px solid #ccc !important;
+    background: #fff !important; 
+    cursor: pointer !important; 
+    font-size: 0.95em !important; 
+    transition: all 0.2s ease !important;
+    font-weight: bold !important; 
+    color: #555 !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
+}
+
+.diet-filter-btn:hover { 
+    transform: translateY(-2px);
+    border-color: #aaa !important;
+}
+
+.diet-filter-btn.active {
+    background: linear-gradient(135deg, #4CAF50, #2E7D32) !important; 
+    color: white !important; 
+    border-color: #2E7D32 !important; 
+    box-shadow: 0 4px 10px rgba(76,175,80,0.4) !important;
+    text-shadow: none !important;
+}
+
+/* Adattamento Filtri per Tema Notte e Astronave */
+body.tema-notte .diet-filter-btn,
+body.tema-astronave .diet-filter-btn {
+    background: #111827 !important;
+    color: #D0FFFF !important;
+    border-color: #334155 !important;
+}
+body.tema-astronave .diet-filter-btn {
+    background: #06131E !important;
+    border-color: #00A6CC !important;
+    box-shadow: inset 0 0 5px rgba(0,217,255,.08) !important;
+}
+
+/* ===========================================================
+   FIX BOX ALLERGENI MODALE ADMIN (TEMI SCURI)
+=========================================================== */
+body.tema-notte .box-allergeni-admin {
+    background: #1f2937 !important;
+    background-color: #1f2937 !important;
+    border-color: #374151 !important;
+}
+body.tema-notte .box-allergeni-admin label {
+    color: #F8FAFC !important;
+}
+
+body.tema-astronave .box-allergeni-admin {
+    background: #040f18 !important;
+    background-color: #040f18 !important;
+    border-color: #00A6CC !important;
+    box-shadow: inset 0 0 5px rgba(0,217,255,.08) !important;
+}
+body.tema-astronave .box-allergeni-admin label {
+    color: #00FFFF !important;
+}
