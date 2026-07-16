@@ -12084,20 +12084,13 @@ function getStagioneCorrente() {
     return "inverno";
 }
 
-// Aggiungiamo una variabile locale robusta per ricordare sempre la scelta manuale
-let ultimaSceltaManualeTema = localStorage.getItem("ultimoTemaManuale") || "default";
-
 function valutaEApplicaTemaFinale() {
-    // Aggiorniamo la scelta manuale se nel DB c'è un valore (e lo salviamo)
-    if (temaManualeDB) {
-        ultimaSceltaManualeTema = temaManualeDB;
-        localStorage.setItem("ultimoTemaManuale", ultimaSceltaManualeTema);
-    }
-
-    const stagionaleAttivo = temiStagionaliDB === true;
-    const notteAttiva = modalitaNotteDB === true;
+    window.settings = window.settings || {};
+    const temaManuale = window.settings.temaSalvato || "default"; 
+    const stagionaleAttivo = window.settings.temiStagionaliAttivi === true;
+    const notteAttiva = window.settings.modalitaNotte === true;
     
-    let temaFinale = ultimaSceltaManualeTema; 
+    let temaFinale = temaManuale; 
     let temaForzatoDaSistema = false;
     let motivoBlocco = "";
 
@@ -12118,19 +12111,13 @@ function valutaEApplicaTemaFinale() {
         }
     }
 
-    // Applica graficamente il tema VINCITORE (quello forzato o manuale)
-    document.body.className = document.body.className.replace(/\btema-\S+/g, '');
-    document.body.classList.add("tema-" + temaFinale);
-    document.body.classList.add("tema-caricato");
-    const bg = document.getElementById("themeBackground");
-    if (bg) bg.style.display = "block";
+    // Applica graficamente il tema vincitore
+    aggiornaTema(temaFinale, false);
 
     // Aggiorna e BLOCCA visivamente la Select nell'interfaccia Admin
     const selectTema = document.getElementById("selectTema");
     if (selectTema) {
-        // Mette SEMPRE la scritta corrispondente all'ultima scelta manuale!
-        selectTema.value = ultimaSceltaManualeTema; 
-        
+        selectTema.value = temaFinale;
         selectTema.disabled = temaForzatoDaSistema;
         
         if (temaForzatoDaSistema) {
@@ -12143,26 +12130,8 @@ function valutaEApplicaTemaFinale() {
             selectTema.title = "Scegli un tema";
         }
     }
-
-    localStorage.setItem("temaSelezionato", temaFinale);
     if (typeof aggiornaTitoloPreordini === "function") aggiornaTitoloPreordini(temaFinale);
 }
-
-// 3. ASSICURARSI CHE LA SCELTA VENGA SALVATA IN FIREBASE E IN LOCALE
-document.addEventListener("DOMContentLoaded", () => {
-    const selectTema = document.getElementById("selectTema");
-    if (selectTema) {
-        selectTema.addEventListener("change", (e) => {
-            const nuovoTema = e.target.value;
-            // Salva nel DB (che attiverà il listener realtime e farà ripartire valutaEApplicaTemaFinale)
-            db.ref("impostazioni/tema").set(nuovoTema);
-            
-            // Salva subito anche in locale per sicurezza immediata
-            ultimaSceltaManualeTema = nuovoTema;
-            localStorage.setItem("ultimoTemaManuale", nuovoTema);
-        });
-    }
-});
 document.addEventListener("DOMContentLoaded", () => {
     const selectTema = document.getElementById("selectTema");
     window.settings = window.settings || {};
