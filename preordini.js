@@ -67,6 +67,15 @@ function aggiornaTitoloPreordini(tema) {
     const titolo = document.querySelector(".preordine-title");
     if (!titolo) return;
 }
+function generaBadgeDiete(piatto) {
+    if (!piatto.tags) return "";
+    let badges = "";
+    if (piatto.tags.sg) badges += `<span class="badge-diet badge-sg" title="Senza Glutine">SG</span>`;
+    if (piatto.tags.sl) badges += `<span class="badge-diet badge-sl" title="Senza Lattosio">SL</span>`;
+    if (piatto.tags.v)  badges += `<span class="badge-diet badge-v" title="Vegetariano">V</span>`;
+    if (piatto.tags.vg) badges += `<span class="badge-diet badge-vg" title="Vegano">VG</span>`;
+    return badges;
+}
 // ================================================================
 // ========== 2️⃣ PARTE INTERNA (CASSA + ADMIN) ====================
 // ================================================================
