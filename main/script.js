@@ -1686,6 +1686,31 @@ function initImpostazioniToggle() {
             });
         };
     }
+	// ================= TEMA SITO (MENU A TENDINA) =================
+    const selectTema = document.getElementById("selectTema");
+    const temaRef = db.ref("impostazioni/tema");
+
+    if (selectTema) {
+        // 1. Quando la pagina si carica o il DB cambia, fissa la tendina sul valore MANUALE
+        // ignorando se in quel momento c'è un tema stagionale/notte attivo.
+        temaRef.on("value", snap => {
+            const temaManualeSalvato = snap.val() || "default";
+            selectTema.value = temaManualeSalvato;
+        });
+
+        // 2. Quando l'utente cambia il tema dalla tendina, salva il nuovo valore sul DB
+        selectTema.addEventListener("change", async (e) => {
+            const nuovoTema = e.target.value;
+            try {
+                await temaRef.set(nuovoTema);
+                if (typeof notify === "function") {
+                    notify("Tema base impostato su: " + nuovoTema, "success");
+                }
+            } catch (err) {
+                console.error("Errore salvataggio tema:", err);
+            }
+        });
+    }
 }
 function initTickNoteDestinazioni() {
     db.ref("impostazioni/noteDestinazioniAbilitate").on("value", snap => {
