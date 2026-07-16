@@ -12058,22 +12058,11 @@ function aggiornaOrologio() {
 // ================================================================
 const temiDisponibili = ["default", "scout", "autunno", "inverno", "primavera", "estate", "chiaro", "notte", "astronave"];
 
-function aggiornaTema(tema, salvaSuFirebase = false) {
-    // 1. Assicuriamoci che il tema sia tutto minuscolo e senza spazi
-    const temaPulito = (tema || "default").toLowerCase().trim();
-    
+function aggiornaTema(tema) {
+    const temaPulito = String(tema || "default").toLowerCase().trim();
     document.body.className = document.body.className.replace(/\btema-\S+/g, '');
     document.body.classList.add("tema-" + temaPulito);
     document.body.classList.add("tema-caricato");
-
-    if (salvaSuFirebase) {
-        const user = firebase.auth().currentUser;
-        if (user) {
-            db.ref("impostazioni/tema").set(temaPulito)
-            .then(() => console.log("✅ Tema manuale salvato su Firebase:", temaPulito))
-            .catch(err => console.warn("❌ Errore salvataggio tema:", err));
-        }
-    }
 }
 
 function getStagioneCorrente() {
@@ -12087,30 +12076,31 @@ function getStagioneCorrente() {
     return "inverno";
 }
 
-function valutaEApplicaTemaFinale() {
-    window.settings = window.settings || {};
-    
-    // 2. Se non c'è valore o arriva in ritardo, usiamo un fallback morbido
-    const temaManuale = window.settings.temaSalvato || "default"; 
-    // Forziamo il minuscolo per evitare che la select sballi saltando su "Default"
-    const temaManualePulito = temaManuale.toLowerCase().trim(); 
+// Variabile di stato globale esclusiva per i temi
+let statoTemi = {
+    manuale: "default",
+    stagionaleAttivo: false,
+    notteAttiva: false,
+    pronto: false // Ci dice se Firebase ha caricato il dato
+};
 
-    const stagionaleAttivo = window.settings.temiStagionaliAttivi === true;
-    const notteAttiva = window.settings.modalitaNotte === true;
-    
-    let temaFinale = temaManualePulito; 
+function applicaMotoreTemi() {
+    // Aspetta che Firebase abbia effettivamente dato la risposta
+    if (!statoTemi.pronto) return; 
+
+    let temaFinale = statoTemi.manuale; 
     let temaForzatoDaSistema = false;
     let motivoBlocco = "";
 
-    // Priorità 2 (Bassa): Stagionale
-    if (stagionaleAttivo) {
+    // 1️⃣ Priorità Bassa: Stagionale
+    if (statoTemi.stagionaleAttivo) {
         temaFinale = getStagioneCorrente();
         temaForzatoDaSistema = true;
         motivoBlocco = "Tema Stagionale in uso";
     }
 
-    // Priorità 1 (Assoluta): Modalità Notte
-    if (notteAttiva) {
+    // 2️⃣ Priorità Assoluta: Notte
+    if (statoTemi.notteAttiva) {
         const ora = new Date().getHours();
         if (ora >= 21 || ora < 5) {
             temaFinale = "notte";
@@ -12119,21 +12109,23 @@ function valutaEApplicaTemaFinale() {
         }
     }
 
-    // Applica graficamente il tema vincitore
-    aggiornaTema(temaFinale, false);
+    // Applica l'estetica al sito
+    aggiornaTema(temaFinale);
 
-    // Aggiorna e BLOCCA visivamente la Select nell'interfaccia Admin
+    // ==========================================
+    // AGGIORNAMENTO BLINDATO DELLA TENDINA
+    // ==========================================
     const selectTema = document.getElementById("selectTema");
     if (selectTema) {
-        // IL FIX CHIAVE: Assegna il valore matematicamente perfetto per l'HTML
-        selectTema.value = temaManualePulito; 
+        // La forziamo sull'ultimo tema manuale pescato dal DB
+        selectTema.value = statoTemi.manuale; 
         
         selectTema.disabled = temaForzatoDaSistema;
         
         if (temaForzatoDaSistema) {
             selectTema.style.opacity = "0.5";
             selectTema.style.cursor = "not-allowed";
-            selectTema.style.pointerEvents = "none"; // Blocco antimanomissione
+            selectTema.style.pointerEvents = "none"; // Blocca ogni interazione utente
             selectTema.title = "Selezione bloccata: " + motivoBlocco;
         } else {
             selectTema.style.opacity = "1";
@@ -12142,45 +12134,50 @@ function valutaEApplicaTemaFinale() {
             selectTema.title = "Scegli un tema";
         }
     }
+    
     if (typeof aggiornaTitoloPreordini === "function") aggiornaTitoloPreordini(temaFinale);
 }
 
+// --- LISTENER FIREBASE ---
+// Partono in parallelo subito.
+db.ref("impostazioni/tema").on("value", snap => {
+    statoTemi.manuale = snap.exists() ? String(snap.val()).toLowerCase().trim() : "default";
+    statoTemi.pronto = true; 
+    applicaMotoreTemi();
+});
+
+db.ref("impostazioni/temiStagionaliAttivi").on("value", snap => {
+    statoTemi.stagionaleAttivo = snap.val() === true;
+    applicaMotoreTemi();
+});
+
+db.ref("impostazioni/modalitaNotte").on("value", snap => {
+    statoTemi.notteAttiva = snap.val() === true;
+    applicaMotoreTemi();
+});
+
+// Controllo in loop per orari
+setInterval(applicaMotoreTemi, 60000);
+
+// --- ALLA CREAZIONE DELL'HTML ---
 document.addEventListener("DOMContentLoaded", () => {
+    // 🚀 IL FIX DEL CTRL+F5:
+    // Se Firebase era stato più veloce della pagina, lo costringiamo a riaggiornare la tendina ORA che esiste nel DOM.
+    applicaMotoreTemi();
+
+    // Listener del cambio per Admin
     const selectTema = document.getElementById("selectTema");
-    window.settings = window.settings || {};
-
-    // 1️⃣ Ascolta le modifiche su Firebase e forza la formattazione
-    db.ref("impostazioni/tema").on("value", snap => {
-        window.settings.temaSalvato = snap.exists() ? String(snap.val()).toLowerCase().trim() : "default";
-        valutaEApplicaTemaFinale();
-    });
-
-    db.ref("impostazioni/temiStagionaliAttivi").on("value", snap => {
-        window.settings.temiStagionaliAttivi = snap.val() === true;
-        valutaEApplicaTemaFinale();
-    });
-
-    db.ref("impostazioni/modalitaNotte").on("value", snap => {
-        window.settings.modalitaNotte = snap.val() === true;
-        valutaEApplicaTemaFinale();
-    });
-
-    // 2️⃣ Se l'admin cambia tema manualmente dalla select
     if (selectTema) {
-        selectTema.addEventListener("change", () => {
-            // Impedisce che "furbetti" possano aggirare il blocco smanettando da console
-            if (selectTema.disabled || window.settings.temiStagionaliAttivi === true || (window.settings.modalitaNotte === true && (new Date().getHours() >= 21 || new Date().getHours() < 5))) {
-                selectTema.value = window.settings.temaSalvato || "default";
+        selectTema.addEventListener("change", (e) => {
+            // Anti-manomissione
+            if (selectTema.disabled || statoTemi.stagionaleAttivo || (statoTemi.notteAttiva && (new Date().getHours() >= 21 || new Date().getHours() < 5))) {
+                selectTema.value = statoTemi.manuale; 
                 return; 
             }
-            const nuovoTema = selectTema.value.toLowerCase().trim();
-            window.settings.temaSalvato = nuovoTema; 
-            aggiornaTema(nuovoTema, true); // Salva su Firebase
+            // Scrive su Firebase. Firebase ricaricherà il tema su tutti i dispositivi.
+            db.ref("impostazioni/tema").set(e.target.value);
         });
     }
-
-    // 3️⃣ Esegue un controllo ogni minuto
-    setInterval(valutaEApplicaTemaFinale, 60000);
 });
 // ================= CALCOLO TEMPO MEDIO CASSA =================
 async function aggiornaTempoMedioCassa(comandeData) {
