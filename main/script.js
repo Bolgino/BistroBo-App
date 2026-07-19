@@ -13069,6 +13069,10 @@ function renderCloudBackups(backupsData) {
 // 1. Inizializzazione Toggle nell'initImpostazioniToggle()
 // Cerca la tua funzione initImpostazioniToggle() e aggiungi questo codice alla fine:
 
+// ==========================================
+// GESTIONE MANSIONARIO DIGITALE
+// ==========================================
+
 function initImpostazioniMansionario() {
     if (!checkOnline(true)) return;
 
@@ -13097,7 +13101,7 @@ function initImpostazioniMansionario() {
         });
     }
 
-    // Ascolto globale per abilitare/disabilitare il tasto in alto
+    // Ascolto globale in realtime
     db.ref("impostazioni/mansionarioAbilitato").on("value", snap => {
         window.settings.mansionarioAbilitato = snap.val() === true;
         aggiornaTastoMansionarioVisibilita();
@@ -13105,13 +13109,28 @@ function initImpostazioniMansionario() {
 }
 
 function aggiornaTastoMansionarioVisibilita() {
+    // 1. Tasto per gli operatori (vicino al logout)
     const btnMansionario = document.getElementById("btnMansionario");
-    // Nascondi in Admin, mostra negli altri ruoli se abilitato
     if (btnMansionario) {
         btnMansionario.style.display = (window.settings.mansionarioAbilitato && ruolo !== "admin") ? "inline-block" : "none";
     }
-}
 
+    // 2. Grafica della Tab nell'Admin (Mostra Avviso o Editor)
+    const msgDisabilitato = document.getElementById("mansionarioDisabilitatoMsg");
+    const editorContent = document.getElementById("mansionarioEditorContent");
+    
+    if (msgDisabilitato && editorContent) {
+        if (window.settings.mansionarioAbilitato) {
+            msgDisabilitato.style.display = "none";
+            editorContent.style.display = "block";
+            // Genera gli input se non sono ancora stati creati
+            generaEditorMansionarioAdmin();
+        } else {
+            msgDisabilitato.style.display = "block";
+            editorContent.style.display = "none";
+        }
+    }
+}
 // Chiamiamo l'init
 document.addEventListener("DOMContentLoaded", () => {
     // Attendi un attimo che il DOM sia pronto
