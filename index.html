@@ -963,13 +963,15 @@
 		        </div>
 		
 		        <!-- Stato ON -->
-		        <div id="mansionarioEditorContent" style="display: none;">
-		            <h4 style="color: #555; border-bottom: 1px dashed #ccc; padding-bottom: 5px; margin-top: 0;">Scrivi le mansioni (una riga = una spunta)</h4>
-		            <div id="editorMansionarioContainer" style="display: flex; flex-direction: column; gap: 15px;">
-		                <!-- I box di testo verranno generati dinamicamente via JS -->
-		            </div>
-		            <button id="salvaMansionarioBtn" class="primaryButton" style="width: 100%; padding: 12px; margin-top: 20px; background: #4CAF50; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">💾 Salva Mansioni</button>
-		        </div>
+				<div id="mansionarioEditorContent" style="display: none;">
+				    <h4 style="color: #555; border-bottom: 1px dashed #ccc; padding-bottom: 5px; margin-top: 0;">Personalizza le mansioni</h4>
+				    <p style="font-size: 0.9em; color: #666; margin-bottom: 15px;">Usa i pulsanti per formattare il testo e inserire le spunte (obbligatorie per chiudere la postazione) dove preferisci.</p>
+				    
+				    <div id="editorMansionarioContainer" style="display: flex; flex-direction: column; gap: 20px;">
+				        <!-- I box Editor verranno generati dinamicamente via JS -->
+				    </div>
+				    <button id="salvaMansionarioBtn" class="primaryButton" style="width: 100%; padding: 12px; margin-top: 20px; background: #4CAF50; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">💾 Salva Mansioni</button>
+				</div>
 		    </div>
 		</div>
 		<div id="utentiTab" class="tabContent">
@@ -1406,21 +1408,19 @@
 				    </div>
 				    <button id="toggleMansionarioMasterBtn" class="toggleBtn">OFF</button>
 				</div>
-				<div id="impostazioniMansionarioAvanzate" style="display: none; margin-left: 20px; border-left: 3px solid #00BCD4; padding-left: 15px; margin-bottom: 20px;">
-				    <div class="settingItem" style="border: none; background: transparent; padding: 0 0 10px 0;">
-				        <div class="settingLabel">
-				            <span>Richiedi al Logout</span>
-				            <small>Mostra automaticamente il mansionario quando un operatore clicca su Logout.</small>
-				        </div>
-				        <button id="toggleMansionarioLogoutBtn" class="toggleBtn">OFF</button>
-				    </div>
-				    <div class="settingItem" style="border: none; background: transparent; padding: 0;">
-				        <div class="settingLabel">
-				            <span>Rendi Spunte Obbligatorie</span>
-				            <small>L'operatore non potrà fare logout se non ha spuntato tutte le voci.</small>
-				        </div>
-				        <button id="toggleMansionarioObbligatorioBtn" class="toggleBtn">OFF</button>
-				    </div>
+				<div class="settingItem" style="border: none; background: transparent; padding: 0 0 10px 0;">
+					<div class="settingLabel">
+						<span>Richiedi al Logout</span>
+						<small>Mostra automaticamente il mansionario quando un operatore clicca su Logout.</small>
+					</div>
+					<button id="toggleMansionarioLogoutBtn" class="toggleBtn">OFF</button>
+				</div>
+				<div class="settingItem" style="border: none; background: transparent; padding: 0;">
+					<div class="settingLabel">
+						<span>Rendi Spunte Obbligatorie</span>
+						<small>L'operatore non potrà fare logout se non ha spuntato tutte le voci.</small>
+					</div>
+					<button id="toggleMansionarioObbligatorioBtn" class="toggleBtn">OFF</button>
 				</div>
 				<div class="settingItem" style="border-left: 4px solid #f44336; background: #ffebee;">
 					<div class="settingLabel">
