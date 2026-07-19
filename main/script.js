@@ -13073,12 +13073,21 @@ function initImpostazioniMansionario() {
     const toggleMaster = document.getElementById("toggleMansionarioMasterBtn");
     const toggleLogout = document.getElementById("toggleMansionarioLogoutBtn");
     const toggleObbligo = document.getElementById("toggleMansionarioObbligatorioBtn");
-    const containerAvanzate = document.getElementById("impostazioniMansionarioAvanzate");
+    
+    // Peschiamo i div singoli
+    const settingLogout = document.getElementById("settingMansionarioLogout");
+    const settingObbligo = document.getElementById("settingMansionarioObbligatorio");
+
+    // Funzione helper per nascondere/mostrare le singole righe
+    function aggiornaVisibilitaImpostazioniAvanzate(val) {
+        if (settingLogout) settingLogout.style.display = val ? "flex" : "none";
+        if (settingObbligo) settingObbligo.style.display = val ? "flex" : "none";
+    }
 
     if (toggleMaster) {
         initToggle(toggleMaster, db.ref("impostazioni/mansionarioAbilitato"), {on: "ON", off: "OFF"}, false, val => {
             window.settings.mansionarioAbilitato = val;
-            if (containerAvanzate) containerAvanzate.style.display = val ? "block" : "none";
+            aggiornaVisibilitaImpostazioniAvanzate(val);
             aggiornaTastoMansionarioVisibilita();
         });
     }
@@ -13098,7 +13107,7 @@ function initImpostazioniMansionario() {
     // Ascolto globale in realtime
     db.ref("impostazioni/mansionarioAbilitato").on("value", snap => {
         window.settings.mansionarioAbilitato = snap.val() === true;
-        if (containerAvanzate) containerAvanzate.style.display = window.settings.mansionarioAbilitato ? "block" : "none";
+        aggiornaVisibilitaImpostazioniAvanzate(window.settings.mansionarioAbilitato);
         aggiornaTastoMansionarioVisibilita();
     });
 }
