@@ -92,6 +92,7 @@
 
 			<div style="display: flex; gap: 10px; align-items: center; justify-content: flex-end; flex: 1;">
 				<button id="passaACassaBtn" style="display:none;"></button>
+				<button id="btnMansionario" style="display:none; padding:10px 15px; border-radius:50px; border:none; background: linear-gradient(135deg, #00BCD4, #009688); color:white; font-weight:bold; cursor:pointer; box-shadow: 0 4px 10px rgba(0, 188, 212, 0.3);">📋 Mansionario</button>
 				<button id="logoutBtn">Logout</button>
 			</div>
 		</div>
@@ -707,6 +708,7 @@
 			<button class="tabBtn" data-tab="menuTab">Menu</button>
 			<button class="tabBtn" data-tab="ingredientiTab">Ingredienti</button>
 			<button class="tabBtn" data-tab="scontiTab">Sconti</button> 
+			<button class="tabBtn" data-tab="mansionarioTab">📋 Mansionario</button>
 			<button class="tabBtn" data-tab="incassiTab">Statistiche Vendita</button>
 			<button class="tabBtn" data-tab="gamificationTab">🏆 Classifica Staff</button>
 			<button class="tabBtn" data-tab="utentiTab">Utenti</button>
@@ -947,6 +949,45 @@
                 
             </div>
 		</div>		
+		<!-- TAB MANSIONARIO ADMIN -->
+		<div id="mansionarioTab" class="tabContent">
+		    <div style="background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-top: 5px solid #00BCD4;">
+		        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
+		            <h3 style="margin:0; color: #00BCD4; font-size: 1.3em;">📋 Mansionario Digitale</h3>
+		        </div>
+		
+		        <div class="settingItem">
+		            <div class="settingLabel">
+		                <span style="color: #00BCD4; font-weight: bold;">Abilita Mansionario</span>
+		                <small>Attiva la funzione Mansionario per lo staff (tasto vicino al logout).</small>
+		            </div>
+		            <button id="toggleMansionarioMasterBtn" class="toggleBtn">OFF</button>
+		        </div>
+		
+		        <div id="impostazioniMansionarioAvanzate" style="display: none; margin-left: 20px; border-left: 3px solid #00BCD4; padding-left: 15px; margin-bottom: 20px;">
+		            <div class="settingItem" style="border: none; background: transparent; padding: 0 0 10px 0;">
+		                <div class="settingLabel">
+		                    <span>Richiedi al Logout</span>
+		                    <small>Mostra automaticamente il mansionario quando un operatore clicca su Logout.</small>
+		                </div>
+		                <button id="toggleMansionarioLogoutBtn" class="toggleBtn">OFF</button>
+		            </div>
+		            <div class="settingItem" style="border: none; background: transparent; padding: 0;">
+		                <div class="settingLabel">
+		                    <span>Rendi Spunte Obbligatorie</span>
+		                    <small>L'operatore non potrà fare logout se non ha spuntato tutte le voci.</small>
+		                </div>
+		                <button id="toggleMansionarioObbligatorioBtn" class="toggleBtn">OFF</button>
+		            </div>
+		        </div>
+		
+		        <h4 style="color: #555; border-bottom: 1px dashed #ccc; padding-bottom: 5px;">Scrivi le mansioni (una riga = una spunta)</h4>
+		        <div id="editorMansionarioContainer" style="display: flex; flex-direction: column; gap: 15px;">
+		            <!-- I box di testo verranno generati dinamicamente via JS -->
+		        </div>
+		        <button id="salvaMansionarioBtn" class="primaryButton" style="width: 100%; padding: 12px; margin-top: 20px; background: #4CAF50; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">💾 Salva Mansioni</button>
+		    </div>
+		</div>
 		<div id="utentiTab" class="tabContent">
 			<div style="background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-top: 5px solid #2196F3;">
 				<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom:10px; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
