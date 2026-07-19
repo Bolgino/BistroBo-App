@@ -13135,6 +13135,7 @@ function aggiornaTastoMansionarioVisibilita() {
     }
 }
 
+// Chiamata solo per i Toggle. Il generatore viene chiamato da mostraSchermata()
 document.addEventListener("DOMContentLoaded", () => {
     setTimeout(initImpostazioniMansionario, 1000);
 });
@@ -13144,6 +13145,7 @@ window.inserisciSpuntaMansionario = function(editorId) {
     const editor = document.getElementById(editorId);
     if (editor) {
         editor.focus();
+        // Genera la spunta nell'HTML (disattivata in admin per non cliccarla per sbaglio)
         const html = `&nbsp;<input type="checkbox" class="chk-mansione" style="transform: scale(1.4); cursor: pointer; vertical-align: middle; margin: 0 5px;" onclick="return false;">&nbsp;`;
         document.execCommand('insertHTML', false, html);
     }
@@ -13179,10 +13181,12 @@ async function generaEditorMansionarioAdmin() {
             let testoGenerico = "";
             let testoLogout = "";
 
-            // Legge i dati, con fallback se era stato salvato con il vecchio metodo (solo stringa)
+            // Legge i dati, con fallback se era stato salvato con il vecchio metodo
             if (datiSalvati[r.id]) {
                 if (typeof datiSalvati[r.id] === 'string') {
                     testoGenerico = datiSalvati[r.id];
+                } else if (Array.isArray(datiSalvati[r.id])) {
+                    testoGenerico = datiSalvati[r.id].join("<br>");
                 } else {
                     testoGenerico = datiSalvati[r.id].generico || "";
                     testoLogout = datiSalvati[r.id].logout || "";
@@ -13195,7 +13199,7 @@ async function generaEditorMansionarioAdmin() {
                     
                     <!-- 1. EDITOR MANSIONI DI CONSULTAZIONE (GENERICO) -->
                     <label style="font-weight: bold; color: #333; display: block; margin-bottom: 5px; font-size: 1.1em;">📖 Consultazione Libera (Tasto "Mansionario")</label>
-                    <p style="font-size: 0.85em; color: #666; margin-top: 0;">Quello che vede l'operatore cliccando sul tasto a fine pagina (le spunte sono facoltative).</p>
+                    <p style="font-size: 0.85em; color: #666; margin-top: 0;">Quello che vede l'operatore cliccando sul tasto a fine pagina (le spunte sono <b>sempre facoltative</b>).</p>
                     <div style="display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; background: #eee; padding: 6px; border-radius: 6px; border: 1px solid #ccc;">
                         <button title="Grassetto" type="button" onclick="document.getElementById('editor_${r.id}_generico').focus(); document.execCommand('bold', false, null)" style="padding: 4px 10px; font-weight: bold; background: white; border: 1px solid #bbb; border-radius: 4px; cursor: pointer; color: #333;">B</button>
                         <button title="Corsivo" type="button" onclick="document.getElementById('editor_${r.id}_generico').focus(); document.execCommand('italic', false, null)" style="padding: 4px 10px; font-style: italic; background: white; border: 1px solid #bbb; border-radius: 4px; cursor: pointer; color: #333;">I</button>
@@ -13276,7 +13280,7 @@ async function apriPopupMansionario(azionePostConferma = null, isLogout = false)
             htmlMansioni = isLogout ? (data.logout || "") : (data.generico || "");
         }
 
-        // Se l'editor specifico è vuoto, procedi e basta
+        // Se l'editor specifico è vuoto, salta il popup ed esegue l'azione (es. logout immediato)
         if (!htmlMansioni || htmlMansioni.trim() === "") {
             if (azionePostConferma) azionePostConferma();
             return;
@@ -13284,8 +13288,8 @@ async function apriPopupMansionario(azionePostConferma = null, isLogout = false)
 
         const overlay = document.createElement("div");
         overlay.className = "modal-overlay";
-        // 🚀 Z-INDEX A 10020: Garantisce che il popup di LOGOUT stia sopra a QUALSIASI COSA (Cassa, Sconti, Preordini)
-        overlay.style.zIndex = isLogout ? "10020" : "10005";
+        // 🚀 Z-INDEX A 10050: Garantisce che il popup stia sopra a QUALSIASI COSA (Cassa, Sconti, Preordini)
+        overlay.style.zIndex = "10050";
 
         const modal = document.createElement("div");
         modal.className = "modal-varianti";
@@ -13295,7 +13299,7 @@ async function apriPopupMansionario(azionePostConferma = null, isLogout = false)
         let colorTitolo = isLogout ? "#d32f2f" : "#00BCD4";
         let subTesto = isLogout ? "Verifica di aver svolto queste mansioni prima di uscire." : "Promemoria delle tue attività e configurazioni.";
         
-        // L'obbligo vale SOLO durante il Logout!
+        // L'obbligo vale SOLO durante il Logout! (Il popup generico è sempre facoltativo)
         const isObbligatorio = isLogout && window.settings.mansionarioObbligatorio;
         if (isObbligatorio) subTesto += "<br><b style='color:red;'>Devi spuntare tutte le voci per poter uscire dal sistema.</b>";
 
@@ -13322,7 +13326,7 @@ async function apriPopupMansionario(azionePostConferma = null, isLogout = false)
         const checkboxes = contenutoOperatore.querySelectorAll(".chk-mansione");
         
         checkboxes.forEach(chk => {
-            chk.removeAttribute("onclick"); // Togliamo il blocco
+            chk.removeAttribute("onclick"); // Togliamo il blocco "return false"
             chk.checked = false; // Partono sempre vuote per obbligare l'operatore a farle
         });
 
@@ -13356,3 +13360,13 @@ async function apriPopupMansionario(azionePostConferma = null, isLogout = false)
         if (azionePostConferma) azionePostConferma();
     }
 }
+
+// -------------------- ASCOLTO TASTI --------------------
+document.addEventListener("DOMContentLoaded", () => {
+    // Bottone standalone in alto ("Mansionario")
+    const btnMans = document.getElementById("btnMansionario");
+    if (btnMans) {
+        // Cliccando il tasto in alto NON è un logout, quindi isLogout = false
+        btnMans.addEventListener("click", () => apriPopupMansionario(null, false));
+    }
+});
