@@ -13370,3 +13370,127 @@ document.addEventListener("DOMContentLoaded", () => {
         btnMans.addEventListener("click", () => apriPopupMansionario(null, false));
     }
 });
+// =========================================================================
+// GESTIONE SCARTI E SPRECHI (Punto 42)
+// =========================================================================
+
+window.apriPopupScarti = function(reparto) {
+    if (!checkOnline(true)) return;
+
+    // Assicuriamoci che i dati siano aggiornati
+    if (!window.ingredientData || !window.menuData) {
+        notify("Dati in caricamento, riprova tra un secondo.", "warn");
+        return;
+    }
+
+    const overlay = document.createElement("div");
+    overlay.className = "modal-overlay";
+    overlay.style.zIndex = "10005";
+
+    const modal = document.createElement("div");
+    modal.className = "modal-varianti";
+    modal.style.textAlign = "center";
+
+    // Costruiamo la lista degli elementi (Ingredienti e Piatti)
+    let optionsHtml = `<optgroup label="🍅 Ingredienti / Dispensa">`;
+    
+    // Ordiniamo gli ingredienti alfabeticamente
+    let ingredientiArray = Object.entries(window.ingredientData).sort((a, b) => a[1].nome.localeCompare(b[1].nome));
+    ingredientiArray.forEach(([id, ing]) => {
+        optionsHtml += `<option value="ing_${id}">${ing.nome} (${ing.unita || 'pz'})</option>`;
+    });
+    
+    optionsHtml += `</optgroup><optgroup label="🍔 Piatti / Menu Completo">`;
+    
+    // Ordiniamo i piatti alfabeticamente
+    let menuArray = Object.entries(window.menuData).sort((a, b) => a[1].nome.localeCompare(b[1].nome));
+    menuArray.forEach(([id, piatto]) => {
+        optionsHtml += `<option value="menu_${id}">${piatto.nome}</option>`;
+    });
+    optionsHtml += `</optgroup>`;
+
+    modal.innerHTML = `
+        <h3 style="margin-bottom: 10px; color: #d32f2f; margin-top:0;">🗑️ Registra Scarto</h3>
+        <p style="font-size: 0.9em; color: #555; margin-bottom: 15px;">Seleziona cosa è stato bruciato o buttato. Verrà scalato in automatico dalle scorte.</p>
+
+        <div style="text-align: left; margin-bottom: 15px;">
+            <label><b>Cosa devi buttare?</b></label>
+            <select id="scartoSelect" style="width: 100%; padding: 10px; margin-top: 5px; border-radius: 6px; border: 1px solid #ccc; font-size: 1.1em; background:#f9f9f9; outline:none;">
+                ${optionsHtml}
+            </select>
+        </div>
+
+        <div style="text-align: left; margin-bottom: 20px;">
+            <label><b>Quantità:</b></label>
+            <input type="number" id="scartoQty" value="1" min="0.1" step="any" style="width: 100%; padding: 10px; margin-top: 5px; border-radius: 6px; border: 1px solid #ccc; font-size: 1.1em; outline:none;">
+        </div>
+
+        <div class="modal-actions" style="display: flex; gap: 10px;">
+            <button class="btn-chiudi" id="btnAnnullaScarto" style="flex: 1; margin:0;">Annulla</button>
+            <button class="btn-salva" id="btnConfermaScarto" style="flex: 1; margin:0; background-color: #d32f2f; color:white; font-weight:bold;">Conferma Scarto</button>
+        </div>
+    `;
+
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    // Chiusura
+    document.getElementById("btnAnnullaScarto").onclick = () => overlay.remove();
+
+    // Conferma
+    document.getElementById("btnConfermaScarto").onclick = async () => {
+        const selectVal = document.getElementById("scartoSelect").value;
+        const qty = parseFloat(document.getElementById("scartoQty").value);
+        const itemName = document.getElementById("scartoSelect").options[document.getElementById("scartoSelect").selectedIndex].text;
+
+        if (isNaN(qty) || qty <= 0) {
+            notify("Inserisci una quantità valida da scartare!", "warn");
+            return;
+        }
+
+        const btn = document.getElementById("btnConfermaScarto");
+        btn.disabled = true;
+        btn.innerText = "Registrazione...";
+
+        try {
+            // Caso 1: È stato scartato un Ingrediente singolo
+            if (selectVal.startsWith("ing_")) {
+                const ingId = selectVal.replace("ing_", "");
+                const res = await applicaDecrementoSingolo(ingId, qty);
+                if (!res.success) throw new Error(res.message);
+            } 
+            // Caso 2: È stato scartato un Piatto intero (scaliamo tutti i suoi ingredienti)
+            else if (selectVal.startsWith("menu_")) {
+                const menuId = selectVal.replace("menu_", "");
+                const piatto = window.menuData[menuId];
+                if (piatto) {
+                    // Creiamo una "finta comanda" per usare il motore di decurtazione esistente
+                    const mockPiatto = JSON.parse(JSON.stringify(piatto));
+                    mockPiatto.quantita = qty;
+                    const richieste = calcolaRichiesteDaPiatti([mockPiatto]);
+                    const res = await applicaDecrementiIngredienti(richieste);
+                    if (!res.success) throw new Error(res.message);
+                }
+            }
+
+            // Salviamo il log per lo storico (utile per le statistiche admin future)
+            await db.ref("scarti").push({
+                tipo: selectVal.split("_")[0], // "ing" o "menu"
+                id_oggetto: selectVal.split("_")[1],
+                nome: itemName,
+                quantita: qty,
+                reparto: reparto,
+                timestamp: Date.now(),
+                operatore_uid: uid || "sconosciuto"
+            });
+
+            notify(`✅ ${qty}x ${itemName} registrato come scarto. Scorte aggiornate!`, "info");
+            overlay.remove();
+        } catch (error) {
+            console.error("Errore scarto:", error);
+            notify("❌ Errore durante l'aggiornamento scorte: " + error.message, "error");
+            btn.disabled = false;
+            btn.innerText = "Riprova Scarto";
+        }
+    };
+};
