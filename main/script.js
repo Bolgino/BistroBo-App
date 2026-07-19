@@ -13374,12 +13374,33 @@ document.addEventListener("DOMContentLoaded", () => {
 // GESTIONE SCARTI E SPRECHI (Punto 42)
 // =========================================================================
 
-window.apriPopupScarti = function(reparto) {
+window.apriPopupScarti = async function(reparto) {
     if (!checkOnline(true)) return;
 
-    // Assicuriamoci che i dati siano aggiornati
-    if (!window.ingredientData || !window.menuData) {
-        notify("Dati in caricamento, riprova tra un secondo.", "warn");
+    // Mostriamo il loader per un attimo mentre peschiamo i dati freschi e sicuri dal DB
+    showLoader();
+
+    try {
+        // Scarichiamo Menu e Ingredienti in parallelo per fare velocissimo
+        const [snapIng, snapMenu] = await Promise.all([
+            db.ref("ingredienti").once("value"),
+            db.ref("menu").once("value")
+        ]);
+
+        window.ingredientData = snapIng.val() || {};
+        window.menuData = snapMenu.val() || {};
+    } catch (error) {
+        console.error("Errore caricamento dati scarti:", error);
+        hideLoader();
+        notify("Errore di connessione al database.", "error");
+        return;
+    }
+
+    hideLoader();
+
+    // Se sia menu che dispensa sono completamente vuoti
+    if (Object.keys(window.ingredientData).length === 0 && Object.keys(window.menuData).length === 0) {
+        notify("Nessun dato presente nel Menu o in Dispensa!", "warn");
         return;
     }
 
@@ -13394,8 +13415,8 @@ window.apriPopupScarti = function(reparto) {
     // Costruiamo la lista degli elementi (Ingredienti e Piatti)
     let optionsHtml = `<optgroup label="🍅 Ingredienti / Dispensa">`;
     
-    // Ordiniamo gli ingredienti alfabeticamente
-    let ingredientiArray = Object.entries(window.ingredientData).sort((a, b) => a[1].nome.localeCompare(b[1].nome));
+    // Ordiniamo gli ingredienti alfabeticamente (con controllo anti-crash se manca il nome)
+    let ingredientiArray = Object.entries(window.ingredientData).sort((a, b) => (a[1].nome || "").localeCompare(b[1].nome || ""));
     ingredientiArray.forEach(([id, ing]) => {
         optionsHtml += `<option value="ing_${id}">${ing.nome} (${ing.unita || 'pz'})</option>`;
     });
@@ -13403,7 +13424,7 @@ window.apriPopupScarti = function(reparto) {
     optionsHtml += `</optgroup><optgroup label="🍔 Piatti / Menu Completo">`;
     
     // Ordiniamo i piatti alfabeticamente
-    let menuArray = Object.entries(window.menuData).sort((a, b) => a[1].nome.localeCompare(b[1].nome));
+    let menuArray = Object.entries(window.menuData).sort((a, b) => (a[1].nome || "").localeCompare(b[1].nome || ""));
     menuArray.forEach(([id, piatto]) => {
         optionsHtml += `<option value="menu_${id}">${piatto.nome}</option>`;
     });
