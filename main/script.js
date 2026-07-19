@@ -13113,14 +13113,17 @@ function aggiornaTastoMansionarioVisibilita() {
     // 2. Grafica della Tab nell'Admin
     const msgDisabilitato = document.getElementById("mansionarioDisabilitatoMsg");
     const editorContent = document.getElementById("mansionarioEditorContent");
+    const btnSalva = document.getElementById("salvaMansionarioBtn"); // <-- Peschiamo il tasto salva
     
     if (msgDisabilitato && editorContent) {
         if (window.settings.mansionarioAbilitato) {
             msgDisabilitato.style.display = "none";
             editorContent.style.display = "block";
+            if (btnSalva) btnSalva.style.display = "inline-block"; // <-- Mostriamo il tasto
         } else {
             msgDisabilitato.style.display = "block";
             editorContent.style.display = "none";
+            if (btnSalva) btnSalva.style.display = "none"; // <-- Nascondiamo il tasto
         }
     }
 }
