@@ -3134,6 +3134,7 @@ window.simulaRuolo = function(ruoloScelto) {
     // Override temporaneo delle variabili globali
     ruolo = ruoloScelto; 
     window.isLoggedInAdmin = false; 
+	if (typeof aggiornaVisibilitaTastoMansionario === "function") aggiornaVisibilitaTastoMansionario();
 
     if (ruoloScelto === "cassa") {
         window.isLoggedInCassa = true;
@@ -3170,6 +3171,7 @@ function mostraAdminDaSimulazione() {
     window.isLoggedInAdmin = true;
     window.isLoggedInCassa = false;
 	document.getElementById("simulatoreRuoliDiv").style.display = "flex";
+	if (typeof aggiornaVisibilitaTastoMansionario === "function") aggiornaVisibilitaTastoMansionario();
     
     // Nascondi tutte le aree
     document.getElementById("cassaDiv").classList.add("hidden");
@@ -13411,6 +13413,8 @@ window.apriPopupScarti = async function(reparto) {
     const modal = document.createElement("div");
     modal.className = "modal-varianti";
     modal.style.textAlign = "center";
+	modal.style.maxWidth = "500px"; 
+    modal.style.width = "95%";
 
     // Costruiamo la lista degli elementi (Ingredienti e Piatti)
     let optionsHtml = `<optgroup label="🍅 Ingredienti / Dispensa">`;
@@ -13515,3 +13519,24 @@ window.apriPopupScarti = async function(reparto) {
         }
     };
 };
+// =========================================================================
+// FIX VISIBILITÀ TASTO MANSIONARIO (Nascosto per Admin)
+// =========================================================================
+window.aggiornaVisibilitaTastoMansionario = function() {
+    const btn = document.getElementById("btnMansionario");
+    if (!btn) return;
+    
+    // Lo mostriamo SOLO se è abilitato nelle impostazioni E se il ruolo attuale NON è admin
+    if (window.settings && window.settings.mansionarioAbilitato && ruolo !== "admin") {
+        btn.style.display = "inline-block";
+    } else {
+        btn.style.display = "none";
+    }
+};
+
+// Mettiamo in ascolto il database per accenderlo/spegnerlo in tempo reale
+db.ref("impostazioni/mansionarioAbilitato").on("value", snap => {
+    if (!window.settings) window.settings = {};
+    window.settings.mansionarioAbilitato = snap.val() === true;
+    aggiornaVisibilitaTastoMansionario();
+});
