@@ -13064,7 +13064,7 @@ function renderCloudBackups(backupsData) {
     });
 }
 // ==========================================
-// GESTIONE MANSIONARIO DIGITALE (CON EDITOR WYSIWYG)
+// GESTIONE MANSIONARIO DIGITALE (DOPPIO EDITOR)
 // ==========================================
 
 function initImpostazioniMansionario() {
@@ -13074,11 +13074,9 @@ function initImpostazioniMansionario() {
     const toggleLogout = document.getElementById("toggleMansionarioLogoutBtn");
     const toggleObbligo = document.getElementById("toggleMansionarioObbligatorioBtn");
     
-    // Peschiamo i div singoli
     const settingLogout = document.getElementById("settingMansionarioLogout");
     const settingObbligo = document.getElementById("settingMansionarioObbligatorio");
 
-    // Funzione helper per nascondere/mostrare le singole righe
     function aggiornaVisibilitaImpostazioniAvanzate(val) {
         if (settingLogout) settingLogout.style.display = val ? "flex" : "none";
         if (settingObbligo) settingObbligo.style.display = val ? "flex" : "none";
@@ -13113,31 +13111,30 @@ function initImpostazioniMansionario() {
 }
 
 function aggiornaTastoMansionarioVisibilita() {
-    // 1. Tasto per gli operatori (vicino al logout)
+    // Tasto per gli operatori (vicino al logout)
     const btnMansionario = document.getElementById("btnMansionario");
     if (btnMansionario) {
         btnMansionario.style.display = (window.settings.mansionarioAbilitato && ruolo !== "admin") ? "inline-block" : "none";
     }
 
-    // 2. Grafica della Tab nell'Admin
+    // Grafica della Tab nell'Admin
     const msgDisabilitato = document.getElementById("mansionarioDisabilitatoMsg");
     const editorContent = document.getElementById("mansionarioEditorContent");
-    const btnSalva = document.getElementById("salvaMansionarioBtn"); // <-- Peschiamo il tasto salva
+    const btnSalva = document.getElementById("salvaMansionarioBtn"); 
     
     if (msgDisabilitato && editorContent) {
         if (window.settings.mansionarioAbilitato) {
             msgDisabilitato.style.display = "none";
             editorContent.style.display = "block";
-            if (btnSalva) btnSalva.style.display = "inline-block"; // <-- Mostriamo il tasto
+            if (btnSalva) btnSalva.style.display = "inline-block"; 
         } else {
             msgDisabilitato.style.display = "block";
             editorContent.style.display = "none";
-            if (btnSalva) btnSalva.style.display = "none"; // <-- Nascondiamo il tasto
+            if (btnSalva) btnSalva.style.display = "none"; 
         }
     }
 }
 
-// Chiamata solo per i Toggle. Il generatore viene chiamato solo quando si apre l'Admin.
 document.addEventListener("DOMContentLoaded", () => {
     setTimeout(initImpostazioniMansionario, 1000);
 });
@@ -13147,19 +13144,18 @@ window.inserisciSpuntaMansionario = function(editorId) {
     const editor = document.getElementById(editorId);
     if (editor) {
         editor.focus();
-        // Genera la spunta nell'HTML (disattivata in admin per non cliccarla per sbaglio)
         const html = `&nbsp;<input type="checkbox" class="chk-mansione" style="transform: scale(1.4); cursor: pointer; vertical-align: middle; margin: 0 5px;" onclick="return false;">&nbsp;`;
         document.execCommand('insertHTML', false, html);
     }
 };
 
-// Generazione editor WYSIWYG
+// Generazione DOPPIO editor WYSIWYG per ruolo
 async function generaEditorMansionarioAdmin() {
     const container = document.getElementById("editorMansionarioContainer");
     const btnSalva = document.getElementById("salvaMansionarioBtn");
     
     if (!container || !btnSalva) return;
-    if (ruolo !== "admin") return; // Previene l'errore se non sei Admin
+    if (ruolo !== "admin") return; 
 
     const ruoli = [
         { id: "cassa", nome: "Cassa", colore: "#4CAF50" },
@@ -13180,23 +13176,46 @@ async function generaEditorMansionarioAdmin() {
         ruoli.forEach(r => {
             if (r.abil && !window.settings[r.abil]) return;
 
-            const testoEsistente = datiSalvati[r.id] || "";
+            let testoGenerico = "";
+            let testoLogout = "";
+
+            // Legge i dati, con fallback se era stato salvato con il vecchio metodo (solo stringa)
+            if (datiSalvati[r.id]) {
+                if (typeof datiSalvati[r.id] === 'string') {
+                    testoGenerico = datiSalvati[r.id];
+                } else {
+                    testoGenerico = datiSalvati[r.id].generico || "";
+                    testoLogout = datiSalvati[r.id].logout || "";
+                }
+            }
 
             const html = `
-                <div style="border-left: 5px solid ${r.colore}; padding-left: 10px; background: #fafafa; border-radius: 6px; padding: 10px; margin-bottom: 10px;">
-                    <label style="font-weight: bold; color: ${r.colore}; display: block; margin-bottom: 8px;">Mansioni ${r.nome}</label>
+                <div style="border-left: 5px solid ${r.colore}; padding-left: 10px; background: #fafafa; border-radius: 6px; padding: 15px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.08);">
+                    <h3 style="margin-top: 0; margin-bottom: 15px; color: ${r.colore}; border-bottom: 2px solid #ddd; padding-bottom: 5px;">Mansioni: ${r.nome}</h3>
                     
-                    <!-- Toolbar WYSIWYG -->
+                    <!-- 1. EDITOR MANSIONI DI CONSULTAZIONE (GENERICO) -->
+                    <label style="font-weight: bold; color: #333; display: block; margin-bottom: 5px; font-size: 1.1em;">📖 Consultazione Libera (Tasto "Mansionario")</label>
+                    <p style="font-size: 0.85em; color: #666; margin-top: 0;">Quello che vede l'operatore cliccando sul tasto a fine pagina (le spunte sono facoltative).</p>
                     <div style="display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; background: #eee; padding: 6px; border-radius: 6px; border: 1px solid #ccc;">
-                        <button title="Grassetto" type="button" onclick="document.getElementById('editor_${r.id}').focus(); document.execCommand('bold', false, null)" style="padding: 4px 10px; font-weight: bold; background: white; border: 1px solid #bbb; border-radius: 4px; cursor: pointer; color: #333;">B</button>
-                        <button title="Corsivo" type="button" onclick="document.getElementById('editor_${r.id}').focus(); document.execCommand('italic', false, null)" style="padding: 4px 10px; font-style: italic; background: white; border: 1px solid #bbb; border-radius: 4px; cursor: pointer; color: #333;">I</button>
-                        <button title="Sottolineato" type="button" onclick="document.getElementById('editor_${r.id}').focus(); document.execCommand('underline', false, null)" style="padding: 4px 10px; text-decoration: underline; background: white; border: 1px solid #bbb; border-radius: 4px; cursor: pointer; color: #333;">U</button>
+                        <button title="Grassetto" type="button" onclick="document.getElementById('editor_${r.id}_generico').focus(); document.execCommand('bold', false, null)" style="padding: 4px 10px; font-weight: bold; background: white; border: 1px solid #bbb; border-radius: 4px; cursor: pointer; color: #333;">B</button>
+                        <button title="Corsivo" type="button" onclick="document.getElementById('editor_${r.id}_generico').focus(); document.execCommand('italic', false, null)" style="padding: 4px 10px; font-style: italic; background: white; border: 1px solid #bbb; border-radius: 4px; cursor: pointer; color: #333;">I</button>
+                        <button title="Sottolineato" type="button" onclick="document.getElementById('editor_${r.id}_generico').focus(); document.execCommand('underline', false, null)" style="padding: 4px 10px; text-decoration: underline; background: white; border: 1px solid #bbb; border-radius: 4px; cursor: pointer; color: #333;">U</button>
                         <div style="width: 2px; background: #ccc; margin: 0 5px;"></div>
-                        <button title="Aggiungi Spunta" type="button" onclick="inserisciSpuntaMansionario('editor_${r.id}')" style="padding: 4px 12px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">☑ Aggiungi Spunta Cliccabile</button>
+                        <button title="Aggiungi Spunta" type="button" onclick="inserisciSpuntaMansionario('editor_${r.id}_generico')" style="padding: 4px 12px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">☑ Aggiungi Spunta</button>
                     </div>
+                    <div id="editor_${r.id}_generico" contenteditable="true" style="min-height: 80px; background: white; border: 1px solid #ccc; border-radius: 6px; padding: 12px; outline: none; line-height: 1.5; color: #333; margin-bottom: 25px;">${testoGenerico}</div>
                     
-                    <!-- Area Content Editable -->
-                    <div id="editor_${r.id}" contenteditable="true" style="min-height: 100px; background: white; border: 1px solid #ccc; border-radius: 6px; padding: 12px; outline: none; line-height: 1.5; color: #333;">${testoEsistente}</div>
+                    <!-- 2. EDITOR MANSIONI DI CHIUSURA (LOGOUT) -->
+                    <label style="font-weight: bold; color: #d32f2f; display: block; margin-bottom: 5px; font-size: 1.1em;">🛑 Operazioni di Chiusura (Al Logout)</label>
+                    <p style="font-size: 0.85em; color: #666; margin-top: 0;">Quello che si apre quando si tenta di fare Logout. Sottostà alle regole di blocco delle impostazioni.</p>
+                    <div style="display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; background: #eee; padding: 6px; border-radius: 6px; border: 1px solid #ccc;">
+                        <button title="Grassetto" type="button" onclick="document.getElementById('editor_${r.id}_logout').focus(); document.execCommand('bold', false, null)" style="padding: 4px 10px; font-weight: bold; background: white; border: 1px solid #bbb; border-radius: 4px; cursor: pointer; color: #333;">B</button>
+                        <button title="Corsivo" type="button" onclick="document.getElementById('editor_${r.id}_logout').focus(); document.execCommand('italic', false, null)" style="padding: 4px 10px; font-style: italic; background: white; border: 1px solid #bbb; border-radius: 4px; cursor: pointer; color: #333;">I</button>
+                        <button title="Sottolineato" type="button" onclick="document.getElementById('editor_${r.id}_logout').focus(); document.execCommand('underline', false, null)" style="padding: 4px 10px; text-decoration: underline; background: white; border: 1px solid #bbb; border-radius: 4px; cursor: pointer; color: #333;">U</button>
+                        <div style="width: 2px; background: #ccc; margin: 0 5px;"></div>
+                        <button title="Aggiungi Spunta" type="button" onclick="inserisciSpuntaMansionario('editor_${r.id}_logout')" style="padding: 4px 12px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">☑ Aggiungi Spunta</button>
+                    </div>
+                    <div id="editor_${r.id}_logout" contenteditable="true" style="min-height: 80px; background: white; border: 1px solid #ccc; border-radius: 6px; padding: 12px; outline: none; line-height: 1.5; color: #333;">${testoLogout}</div>
                 </div>
             `;
             container.innerHTML += html;
@@ -13209,18 +13228,25 @@ async function generaEditorMansionarioAdmin() {
             const aggiornamenti = {};
             ruoli.forEach(r => {
                 if (r.abil && !window.settings[r.abil]) return;
-                const editor = document.getElementById(`editor_${r.id}`);
-                if (editor) {
-                    // Prendi l'HTML puro scritto dall'admin
-                    const contenuto = editor.innerHTML.trim();
-                    aggiornamenti[r.id] = (contenuto === "" || contenuto === "<br>") ? null : contenuto;
+                
+                const edGen = document.getElementById(`editor_${r.id}_generico`);
+                const edLog = document.getElementById(`editor_${r.id}_logout`);
+                
+                if (edGen && edLog) {
+                    const contGen = edGen.innerHTML.trim();
+                    const contLog = edLog.innerHTML.trim();
+                    
+                    aggiornamenti[r.id] = {
+                        generico: (contGen === "" || contGen === "<br>") ? null : contGen,
+                        logout: (contLog === "" || contLog === "<br>") ? null : contLog
+                    };
                 }
             });
 
             await db.ref("mansionari").set(aggiornamenti);
-            notify("Mansionario salvato con successo!", "success");
+            notify("Mansionari salvati con successo!", "success");
             
-            btnSalva.innerText = "💾 Salva Mansioni";
+            btnSalva.innerHTML = "💾 Salva Mansioni";
             btnSalva.disabled = false;
         };
 
@@ -13229,7 +13255,9 @@ async function generaEditorMansionarioAdmin() {
     }
 }
 
-// Popup Operatore
+// ==========================================
+// POPUP OPERATORE (Dinamico in base al momento)
+// ==========================================
 async function apriPopupMansionario(azionePostConferma = null, isLogout = false) {
     if (!checkOnline(true)) return;
     
@@ -13240,8 +13268,15 @@ async function apriPopupMansionario(azionePostConferma = null, isLogout = false)
 
     try {
         const snap = await db.ref(`mansionari/${ruolo}`).once("value");
-        const htmlMansioni = snap.val();
+        const data = snap.val();
 
+        let htmlMansioni = "";
+        if (data) {
+            // Seleziona il testo in base all'azione che stiamo compiendo
+            htmlMansioni = isLogout ? (data.logout || "") : (data.generico || "");
+        }
+
+        // Se l'editor specifico è vuoto, procedi e basta
         if (!htmlMansioni || htmlMansioni.trim() === "") {
             if (azionePostConferma) azionePostConferma();
             return;
@@ -13249,20 +13284,23 @@ async function apriPopupMansionario(azionePostConferma = null, isLogout = false)
 
         const overlay = document.createElement("div");
         overlay.className = "modal-overlay";
-        overlay.style.zIndex = "10005";
+        // 🚀 Z-INDEX A 10020: Garantisce che il popup di LOGOUT stia sopra a QUALSIASI COSA (Cassa, Sconti, Preordini)
+        overlay.style.zIndex = isLogout ? "10020" : "10005";
 
         const modal = document.createElement("div");
         modal.className = "modal-varianti";
         modal.style.maxWidth = "550px";
 
-        let titolo = isLogout ? "🛑 Operazioni di Chiusura" : "📋 Mansionario Postazione";
-        let subTesto = isLogout ? "Verifica di aver svolto queste mansioni prima di uscire." : "Le mansioni previste per il tuo ruolo:";
+        let titolo = isLogout ? "🛑 Operazioni di Chiusura" : "📖 Consultazione Libera";
+        let colorTitolo = isLogout ? "#d32f2f" : "#00BCD4";
+        let subTesto = isLogout ? "Verifica di aver svolto queste mansioni prima di uscire." : "Promemoria delle tue attività e configurazioni.";
         
+        // L'obbligo vale SOLO durante il Logout!
         const isObbligatorio = isLogout && window.settings.mansionarioObbligatorio;
         if (isObbligatorio) subTesto += "<br><b style='color:red;'>Devi spuntare tutte le voci per poter uscire dal sistema.</b>";
 
         let html = `
-            <h3 style="margin-top: 0; color: #00BCD4;">${titolo}</h3>
+            <h3 style="margin-top: 0; color: ${colorTitolo};">${titolo}</h3>
             <p style="font-size: 0.9em; color: #555; text-align: center; margin-bottom: 20px;">${subTesto}</p>
             
             <div id="mansionarioContenutoOperatore" style="margin-bottom: 20px; text-align: left; background: #fcfcfc; padding: 20px; border-radius: 8px; border: 1px solid #ddd; font-size: 1.1em; line-height: 1.6; max-height: 50vh; overflow-y: auto; color: #333;">
@@ -13270,8 +13308,8 @@ async function apriPopupMansionario(azionePostConferma = null, isLogout = false)
             </div>
             
             <div class="modal-actions" style="display: flex; gap: 10px;">
-                ${!isObbligatorio || !isLogout ? `<button class="btn-chiudi" id="btnAnnullaMansionario" style="flex: 1; margin:0;">Annulla</button>` : ''}
-                <button class="btn-salva" id="btnConfermaMansionario" style="flex: 1; margin:0; background: #4CAF50;">${isLogout ? "Conferma e Logout" : "Fatto"}</button>
+                ${!isObbligatorio ? `<button class="btn-chiudi" id="btnAnnullaMansionario" style="flex: 1; margin:0;">Annulla</button>` : ''}
+                <button class="btn-salva" id="btnConfermaMansionario" style="flex: 1; margin:0; background: #4CAF50;">${isLogout ? "Conferma e Logout" : "Ho Capito"}</button>
             </div>
         `;
 
@@ -13279,17 +13317,18 @@ async function apriPopupMansionario(azionePostConferma = null, isLogout = false)
         overlay.appendChild(modal);
         document.body.appendChild(overlay);
 
-        // Riabilitiamo le spunte per l'operatore!
+        // Riabilitiamo le spunte all'interno dell'HTML (che erano state disabilitate nell'editor)
         const contenutoOperatore = document.getElementById("mansionarioContenutoOperatore");
         const checkboxes = contenutoOperatore.querySelectorAll(".chk-mansione");
         
         checkboxes.forEach(chk => {
             chk.removeAttribute("onclick"); // Togliamo il blocco
-            chk.checked = false; // Partono sempre vuote
+            chk.checked = false; // Partono sempre vuote per obbligare l'operatore a farle
         });
 
         const btnConferma = document.getElementById("btnConfermaMansionario");
         
+        // Logica di blocco tasto per l'obbligatorietà (attiva solo in logout se richiesto)
         if (isObbligatorio && checkboxes.length > 0) {
             btnConferma.disabled = true;
             btnConferma.style.opacity = "0.5";
