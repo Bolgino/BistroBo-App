@@ -3247,30 +3247,43 @@ document.getElementById("registraBtn").onclick = async () => {
 
 // -------------------- LOGOUT --------------------
 document.getElementById("logoutBtn").addEventListener("click", async () => {
-    logoutVolontario = true; // segnala logout manuale
-    try {
-        // rimuove listener stato
-        if(statusListenerRef && uid){
-            const userStatusDatabaseRef = db.ref("/utenti/" + uid + "/status");
-            userStatusDatabaseRef.off("value", statusListenerRef);
-            statusListenerRef = null;
-        }
+    
+    // Funzione interna che esegue l'effettivo logout
+    const eseguiLogoutReale = async () => {
+        logoutVolontario = true; // segnala logout manuale
+        try {
+            // rimuove listener stato
+            if(statusListenerRef && uid){
+                const userStatusDatabaseRef = db.ref("/utenti/" + uid + "/status");
+                userStatusDatabaseRef.off("value", statusListenerRef);
+                statusListenerRef = null;
+            }
 
-        db.ref("ingredienti").off();
-        db.ref("comande").off();
-        db.ref("utenti").off();
-        db.ref("menu").off();
-        firebase.database().ref().off();
-        if(uid){
-            await db.ref("/utenti/" + uid + "/status").set({
-                state: "offline",
-                last_changed: firebase.database.ServerValue.TIMESTAMP
-            });
-        }
+            db.ref("ingredienti").off();
+            db.ref("comande").off();
+            db.ref("utenti").off();
+            db.ref("menu").off();
+            firebase.database().ref().off();
+            if(uid){
+                await db.ref("/utenti/" + uid + "/status").set({
+                    state: "offline",
+                    last_changed: firebase.database.ServerValue.TIMESTAMP
+                });
+            }
 
-        await auth.signOut();
-        location.reload();
-    } catch(e){ console.warn(e); }
+            await auth.signOut();
+            location.reload();
+        } catch(e){ console.warn(e); }
+    };
+
+    // Controllo Mansionario
+    if (window.settings.mansionarioAbilitato && window.settings.mansionarioRichiediLogout && ruolo !== "admin") {
+        // Mostra il popup e passa la funzione di logout come callback
+        apriPopupMansionario(eseguiLogoutReale, true);
+    } else {
+        // Nessun mansionario attivo, fai logout normalmente
+        eseguiLogoutReale();
+    }
 });
 
 // -------------------- FUNZIONI COMANDE --------------------
@@ -13049,3 +13062,229 @@ function renderCloudBackups(backupsData) {
         container.appendChild(div);
     });
 }
+// ==========================================
+// GESTIONE MANSIONARIO DIGITALE
+// ==========================================
+
+// 1. Inizializzazione Toggle nell'initImpostazioniToggle()
+// Cerca la tua funzione initImpostazioniToggle() e aggiungi questo codice alla fine:
+
+function initImpostazioniMansionario() {
+    if (!checkOnline(true)) return;
+
+    const toggleMaster = document.getElementById("toggleMansionarioMasterBtn");
+    const toggleLogout = document.getElementById("toggleMansionarioLogoutBtn");
+    const toggleObbligo = document.getElementById("toggleMansionarioObbligatorioBtn");
+    const containerAvanzate = document.getElementById("impostazioniMansionarioAvanzate");
+
+    if (toggleMaster) {
+        initToggle(toggleMaster, db.ref("impostazioni/mansionarioAbilitato"), {on: "ON", off: "OFF"}, false, val => {
+            window.settings.mansionarioAbilitato = val;
+            if (containerAvanzate) containerAvanzate.style.display = val ? "block" : "none";
+            aggiornaTastoMansionarioVisibilita();
+        });
+    }
+
+    if (toggleLogout) {
+        initToggle(toggleLogout, db.ref("impostazioni/mansionarioRichiediLogout"), {on: "ON", off: "OFF"}, false, val => {
+            window.settings.mansionarioRichiediLogout = val;
+        });
+    }
+
+    if (toggleObbligo) {
+        initToggle(toggleObbligo, db.ref("impostazioni/mansionarioObbligatorio"), {on: "ON", off: "OFF"}, false, val => {
+            window.settings.mansionarioObbligatorio = val;
+        });
+    }
+
+    // Ascolto globale per abilitare/disabilitare il tasto in alto
+    db.ref("impostazioni/mansionarioAbilitato").on("value", snap => {
+        window.settings.mansionarioAbilitato = snap.val() === true;
+        aggiornaTastoMansionarioVisibilita();
+    });
+}
+
+function aggiornaTastoMansionarioVisibilita() {
+    const btnMansionario = document.getElementById("btnMansionario");
+    // Nascondi in Admin, mostra negli altri ruoli se abilitato
+    if (btnMansionario) {
+        btnMansionario.style.display = (window.settings.mansionarioAbilitato && ruolo !== "admin") ? "inline-block" : "none";
+    }
+}
+
+// Chiamiamo l'init
+document.addEventListener("DOMContentLoaded", () => {
+    // Attendi un attimo che il DOM sia pronto
+    setTimeout(initImpostazioniMansionario, 1000);
+    setTimeout(generaEditorMansionarioAdmin, 1000);
+});
+
+// 2. Generazione dinamica dell'editor Admin
+async function generaEditorMansionarioAdmin() {
+    const container = document.getElementById("editorMansionarioContainer");
+    const btnSalva = document.getElementById("salvaMansionarioBtn");
+    if (!container || !btnSalva) return;
+
+    // Definiamo i ruoli da mostrare
+    const ruoli = [
+        { id: "cassa", nome: "Cassa", colore: "#4CAF50" },
+        { id: "cucina", nome: "Cucina", colore: "#FF9800" },
+        { id: "bere", nome: "Bere", colore: "#3F51B5" },
+        { id: "snack", nome: "Snack", colore: "#FF5722", abil: "snackAbilitato" },
+        { id: "extra1", nome: window.nomiRepartiExtra?.extra1 || "Extra 1", colore: "#9C27B0", abil: "extra1Abilitato" },
+        { id: "extra2", nome: window.nomiRepartiExtra?.extra2 || "Extra 2", colore: "#009688", abil: "extra2Abilitato" },
+        { id: "extra3", nome: window.nomiRepartiExtra?.extra3 || "Extra 3", colore: "#795548", abil: "extra3Abilitato" }
+    ];
+
+    try {
+        const snap = await db.ref("mansionari").once("value");
+        const datiSalvati = snap.val() || {};
+
+        container.innerHTML = "";
+        
+        ruoli.forEach(r => {
+            // Mostra solo i ruoli abilitati
+            if (r.abil && !window.settings[r.abil]) return;
+
+            const testoEsistente = datiSalvati[r.id] ? datiSalvati[r.id].join("\n") : "";
+
+            const html = `
+                <div style="border-left: 5px solid ${r.colore}; padding-left: 10px; background: #fafafa; border-radius: 6px; padding: 10px;">
+                    <label style="font-weight: bold; color: ${r.colore}; display: block; margin-bottom: 5px;">Mansioni ${r.nome}</label>
+                    <textarea id="mansioneTesto_${r.id}" rows="3" style="width: 100%; box-sizing: border-box; padding: 10px; border-radius: 6px; border: 1px solid #ccc; outline: none; resize: vertical;" placeholder="Scrivi una mansione per riga...">${testoEsistente}</textarea>
+                </div>
+            `;
+            container.innerHTML += html;
+        });
+
+        // Salvataggio
+        btnSalva.onclick = async () => {
+            btnSalva.innerText = "Salvataggio in corso...";
+            btnSalva.disabled = true;
+
+            const aggiornamenti = {};
+            ruoli.forEach(r => {
+                if (r.abil && !window.settings[r.abil]) return;
+                const area = document.getElementById(`mansioneTesto_${r.id}`);
+                if (area) {
+                    // Prende il testo, lo divide per righe e rimuove quelle vuote
+                    const righe = area.value.split("\n").map(riga => riga.trim()).filter(riga => riga !== "");
+                    aggiornamenti[r.id] = righe.length > 0 ? righe : null;
+                }
+            });
+
+            await db.ref("mansionari").set(aggiornamenti);
+            notify("Mansionario salvato con successo!", "success");
+            
+            btnSalva.innerText = "💾 Salva Mansioni";
+            btnSalva.disabled = false;
+        };
+
+    } catch (e) {
+        console.error("Errore caricamento mansionario admin", e);
+    }
+}
+
+// 3. Popup Operatore (richiamato al click del tasto o al logout)
+async function apriPopupMansionario(azionePostConferma = null, isLogout = false) {
+    if (!checkOnline(true)) return;
+    
+    // Per admin non c'è mansionario
+    if (ruolo === "admin") {
+        if (azionePostConferma) azionePostConferma();
+        return;
+    }
+
+    try {
+        const snap = await db.ref(`mansionari/${ruolo}`).once("value");
+        const mansioni = snap.val();
+
+        // Se non ci sono mansioni per questo ruolo, esegui l'azione (es. logout) senza mostrare nulla
+        if (!mansioni || mansioni.length === 0) {
+            if (azionePostConferma) azionePostConferma();
+            return;
+        }
+
+        const overlay = document.createElement("div");
+        overlay.className = "modal-overlay";
+        overlay.style.zIndex = "10005";
+
+        const modal = document.createElement("div");
+        modal.className = "modal-varianti";
+        modal.style.maxWidth = "450px";
+
+        let titolo = isLogout ? "🛑 Operazioni di Chiusura" : "📋 Mansionario Postazione";
+        let subTesto = isLogout ? "Verifica di aver svolto queste mansioni prima di uscire." : "Le mansioni previste per il tuo ruolo:";
+        
+        // Verifica l'obbligo
+        const isObbligatorio = isLogout && window.settings.mansionarioObbligatorio;
+        if (isObbligatorio) subTesto += "<br><b style='color:red;'>Devi spuntare tutte le voci per uscire.</b>";
+
+        let html = `
+            <h3 style="margin-top: 0; color: #00BCD4;">${titolo}</h3>
+            <p style="font-size: 0.9em; color: #555; text-align: center; margin-bottom: 20px;">${subTesto}</p>
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; text-align: left; background: #fafafa; padding: 15px; border-radius: 8px; border: 1px solid #eee;">
+        `;
+
+        mansioni.forEach((task, index) => {
+            html += `
+                <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; padding: 8px; border-bottom: 1px solid #e0e0e0;">
+                    <input type="checkbox" class="chk-mansione" style="transform: scale(1.4); margin-top: 4px;">
+                    <span style="font-size: 1.05em; color: #333; line-height: 1.3;">${task}</span>
+                </label>
+            `;
+        });
+
+        html += `</div>
+            <div class="modal-actions" style="display: flex; gap: 10px;">
+                ${!isObbligatorio || !isLogout ? `<button class="btn-chiudi" id="btnAnnullaMansionario" style="flex: 1;">Annulla</button>` : ''}
+                <button class="btn-salva" id="btnConfermaMansionario" style="flex: 1; background: #4CAF50;">${isLogout ? "Conferma e Logout" : "Fatto"}</button>
+            </div>
+        `;
+
+        modal.innerHTML = html;
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+
+        const btnConferma = document.getElementById("btnConfermaMansionario");
+        
+        // Logica obbligo spunte
+        if (isObbligatorio) {
+            btnConferma.disabled = true;
+            btnConferma.style.opacity = "0.5";
+            
+            const checkboxes = overlay.querySelectorAll(".chk-mansione");
+            checkboxes.forEach(chk => {
+                chk.addEventListener("change", () => {
+                    const allChecked = Array.from(checkboxes).every(c => c.checked);
+                    btnConferma.disabled = !allChecked;
+                    btnConferma.style.opacity = allChecked ? "1" : "0.5";
+                });
+            });
+        }
+
+        if (document.getElementById("btnAnnullaMansionario")) {
+            document.getElementById("btnAnnullaMansionario").onclick = () => overlay.remove();
+        }
+
+        btnConferma.onclick = () => {
+            overlay.remove();
+            if (azionePostConferma) azionePostConferma();
+        };
+
+    } catch (e) {
+        console.error("Errore lettura mansionario", e);
+        if (azionePostConferma) azionePostConferma(); // In caso di errore sblocca il logout
+    }
+}
+
+// 4. Collegamento ai Bottoni
+document.addEventListener("DOMContentLoaded", () => {
+    // Bottone standalone in alto
+    const btnMans = document.getElementById("btnMansionario");
+    if (btnMans) {
+        btnMans.addEventListener("click", () => {
+            apriPopupMansionario(null, false);
+        });
+    }
+});
