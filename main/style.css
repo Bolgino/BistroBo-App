@@ -3213,3 +3213,57 @@ body.tema-astronave .box-allergeni-admin {
 body.tema-astronave .box-allergeni-admin label {
     color: #00FFFF !important;
 }
+/* ===========================================================
+   FIX DEFINITIVO MANSIONARIO (TEMI SCURI E COPIA-INCOLLA)
+=========================================================== */
+
+/* 1. Neutralizza la formattazione del copia-incolla (Sfondo e colore testo) */
+div[id^="editor_"] *,
+#mansionarioContenutoOperatore * {
+    background-color: transparent !important;
+    color: inherit !important;
+    font-family: inherit !important;
+}
+
+/* 2. TEMA NOTTE: Sfondi scuri e testi chiari per gli editor e i loro contenitori */
+body.tema-notte div[style*="background: #fafafa"],
+body.tema-notte div[id^="editor_"],
+body.tema-notte #mansionarioContenutoOperatore {
+    background: #111827 !important;
+    background-color: #111827 !important;
+    color: #F8FAFC !important;
+    border-color: #334155 !important;
+}
+
+/* 3. TEMA ASTRONAVE: Sfondi scuri spaziali e testi ciano per gli editor e i contenitori */
+body.tema-astronave div[style*="background: #fafafa"],
+body.tema-astronave div[id^="editor_"],
+body.tema-astronave #mansionarioContenutoOperatore {
+    background: #040f18 !important;
+    background-color: #040f18 !important;
+    color: #00FFFF !important;
+    border-color: #00A6CC !important;
+    box-shadow: inset 0 0 5px rgba(0,217,255,.08) !important;
+    text-shadow: none !important;
+}
+
+/* 4. FIX TOOLBAR (i bottoncini B, I, U) nei temi scuri */
+body.tema-notte div[style*="background: #eee"] {
+    background: #1E293B !important;
+    border-color: #334155 !important;
+}
+body.tema-notte div[style*="background: #eee"] button:not([title="Aggiungi Spunta"]) {
+    background: #334155 !important;
+    color: #FFF !important;
+    border-color: #475569 !important;
+}
+
+body.tema-astronave div[style*="background: #eee"] {
+    background: #061524 !important;
+    border-color: #00A6CC !important;
+}
+body.tema-astronave div[style*="background: #eee"] button:not([title="Aggiungi Spunta"]) {
+    background: #07131F !important;
+    color: #AFFFFF !important;
+    border-color: #00A6CC !important;
+}
