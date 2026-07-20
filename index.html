@@ -83,47 +83,8 @@
 			<div id="forgotMsg" style="margin-top: 10px; font-weight: bold;"></div>
 		</div>
 	</div>
-	<!-- ================= LOGOUT E PROFILO ================= -->
-	<div id="logoutDiv" class="hidden" style="padding-bottom: 10px;">
-		<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-			
-			<div id="simulatoreRuoliDiv" style="display: none !important;"></div>
-
-			<!-- MENU PROFILO UTENTE -->
-			<div style="display: flex; gap: 10px; align-items: center; justify-content: flex-end; flex: 1;">
-				<button id="passaACassaBtn" style="display:none;"></button>
-				<button id="btnMansionario" style="display:none; padding:10px 15px; border-radius:50px; border:none; background: linear-gradient(135deg, #00BCD4, #009688); color:white; font-weight:bold; cursor:pointer; box-shadow: 0 4px 10px rgba(0, 188, 212, 0.3);">📋 Mansionario</button>
-				
-				<!-- NUOVO MENU A TENDINA PROFILO -->
-				<div class="user-profile-menu">
-					<button class="user-trigger-btn" onclick="toggleUserProfile(this)">
-						<img id="userAvatarIcon" src="img/avatar_default.png" alt="Avatar" class="user-avatar-mini" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 100 100\\'><circle cx=\\'50\\' cy=\\'50\\' r=\\'50\\' fill=\\'%23ccc\\'/></svg>'">
-						<span id="userNameDisplay" style="font-weight: bold; margin: 0 8px;">Utente</span>
-						▾
-					</button>
-					<div class="user-dropdown-content" id="userProfileDropdown">
-						<div style="padding: 15px; border-bottom: 1px solid #eee; text-align: center;">
-							<div style="font-size: 0.85em; color: #777;" id="userRoleDisplay">Ruolo</div>
-							<div style="font-style: italic; font-size: 0.9em; margin-top: 5px;" id="userStatusDisplay">"Pronto al servizio!"</div>
-						</div>
-						<button class="tabBtn" onclick="apriImpostazioniProfilo()">👤 Modifica Profilo</button>
-						<button class="tabBtn" onclick="apriBachecaBadge()">🏆 I miei Badge</button>
-						<button id="logoutBtn" style="width: 100%; border-radius: 0; background: #f44336; color: white; margin-top: 5px;">🚪 Esci (Logout)</button>
-					</div>
-				</div>
-			</div>
-		</div>
-
-		<div id="orologioDiv" 
-			style="text-align:right; 
-					margin-top:8px;
-					font-weight:bold; 
-					font-size:1.3em; 
-					color:#000000;">
-			<span id="orologio">--:--</span>
-		</div>
-	</div>
-	<!-- ================= LOGOUT ================= 
+	
+	<!-- ================= LOGOUT ================= -->
 	<div id="logoutDiv" class="hidden" style="padding-bottom: 10px;">
 		<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
 			
@@ -144,7 +105,7 @@
 					color:#000000;">
 			<span id="orologio">--:--</span>
 		</div>
-	</div> -->
+	</div>
 
 	<!-- ================= CASSA ================= -->
 	<div id="cassaDiv" class="hidden">
