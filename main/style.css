@@ -3380,48 +3380,48 @@ body.tema-astronave .admin-dropdown-content .tabBtn:hover {
 
 /* FORZATURA DIMENSIONI: Identiche per le Tab normali e per i Bottoni a tendina */
 #adminTabsContainer .tabBtn,
-.dropdown-trigger-btn {
-    margin: 0 !important; /* Distanza gestita dal gap del contenitore */
-    padding: 10px 20px !important; /* Padding tassativo e identico */
+#adminTabsContainer .dropdown-trigger-btn {
+    margin: 0 !important; 
+    padding: 10px 20px !important; 
     font-family: 'Poppins', sans-serif !important;
-    font-size: 14px !important; /* Grandezza testo unificata */
-    line-height: 1.2 !important; /* Evita che il simbolo ▾ sballi l'altezza */
+    font-size: 14px !important; 
+    line-height: 1.2 !important; 
     white-space: nowrap !important;
     height: auto !important; 
-    border-radius: 50px !important;
+    border-radius: 50px !important; /* <--- Questo assicura la forma a pillola/ovale perfetta! */
     font-weight: 600 !important;
     cursor: pointer;
     transition: all 0.3s ease;
 }
 
 /* Stili specifici base per il tasto tendina (che eredita tutto il resto sopra) */
-.dropdown-trigger-btn {
+#adminTabsContainer .dropdown-trigger-btn {
     background: #f0f2f5;
     color: #555;
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     border: 1px solid transparent;
 }
 
-.dropdown-trigger-btn:hover, 
-.admin-dropdown.open .dropdown-trigger-btn {
+#adminTabsContainer .dropdown-trigger-btn:hover, 
+#adminTabsContainer .admin-dropdown.open .dropdown-trigger-btn {
     background: #e4e6eb;
     transform: translateY(-2px);
     color: #333;
 }
 
 /* --- Supporto Temi Scuri --- */
-body.tema-notte .dropdown-trigger-btn,
-body.tema-astronave .dropdown-trigger-btn {
+body.tema-notte #adminTabsContainer .dropdown-trigger-btn,
+body.tema-astronave #adminTabsContainer .dropdown-trigger-btn {
     background: #050A13 !important;
     color: #87F7FF !important;
     border: 1px solid #006B88 !important;
 }
 
-body.tema-notte .dropdown-trigger-btn:hover,
-body.tema-notte .admin-dropdown.open .dropdown-trigger-btn,
-body.tema-astronave .dropdown-trigger-btn:hover,
-body.tema-astronave .admin-dropdown.open .dropdown-trigger-btn {
+body.tema-notte #adminTabsContainer .dropdown-trigger-btn:hover,
+body.tema-notte #adminTabsContainer .admin-dropdown.open .dropdown-trigger-btn,
+body.tema-astronave #adminTabsContainer .dropdown-trigger-btn:hover,
+body.tema-astronave #adminTabsContainer .admin-dropdown.open .dropdown-trigger-btn {
     background: #003B55 !important;
     color: #FFFFFF !important;
-    box-shadow: 0 0 8px rgba(0,229,255,.4);
+    box-shadow: 0 0 8px rgba(0,229,255,.4) !important;
 }
