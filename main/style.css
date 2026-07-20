@@ -3394,16 +3394,16 @@ body.tema-astronave .admin-dropdown-content .tabBtn:hover {
     transition: all 0.3s ease;
 }
 
-/* Stili specifici base per il tasto tendina (che eredita tutto il resto sopra) */
-#adminTabsContainer .dropdown-trigger-btn {
+/* Stili specifici base per il tasto tendina (Senza scudo, così i temi li colorano!) */
+.dropdown-trigger-btn {
     background: #f0f2f5;
     color: #555;
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     border: 1px solid transparent;
 }
 
-#adminTabsContainer .dropdown-trigger-btn:hover, 
-#adminTabsContainer .admin-dropdown.open .dropdown-trigger-btn {
+.dropdown-trigger-btn:hover, 
+.admin-dropdown.open .dropdown-trigger-btn {
     background: #e4e6eb;
     transform: translateY(-2px);
     color: #333;
