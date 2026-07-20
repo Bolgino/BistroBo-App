@@ -707,6 +707,37 @@
 	<!-- ================= ADMIN ================= -->
 	<div id="adminDiv" class="hidden">
 		<h2>Admin</h2>
+		<div id="adminTabsContainer" style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 15px;">
+			<!-- TASTI SEMPRE VISIBILI -->
+			<button class="tabBtn" data-tab="dashboardAdminTab">🚀 Centro Controllo</button> 
+			<button class="tabBtn" data-tab="comandeTab">Comande</button>
+			<button class="tabBtn" data-tab="preordiniAdminTab">Preordini</button>
+			<button class="tabBtn" data-tab="menuTab">Menu</button>
+			<button class="tabBtn" data-tab="ingredientiTab">Ingredienti</button>
+			<button class="tabBtn" data-tab="chatAdminTab">Chat</button>
+		
+			<!-- MENU TENDINA: STATISTICHE -->
+			<div class="admin-dropdown">
+				<button class="tabBtn dropdown-trigger">📊 Statistiche ▾</button>
+				<div class="admin-dropdown-content">
+					<button class="tabBtn" data-tab="incassiTab">Vendite e Incassi</button>
+					<button class="tabBtn" data-tab="gamificationTab">🏆 Classifica Staff</button>
+				</div>
+			</div>
+		
+			<!-- MENU TENDINA: AMMINISTRAZIONE -->
+			<div class="admin-dropdown">
+				<button class="tabBtn dropdown-trigger">⚙️ Amministrazione ▾</button>
+				<div class="admin-dropdown-content">
+					<button class="tabBtn" data-tab="gestioneProfiliTab">Gestione Profili</button>
+					<button class="tabBtn" data-tab="utentiTab">Utenti</button>
+					<button class="tabBtn" data-tab="scontiTab">Sconti</button> 
+					<button class="tabBtn" data-tab="mansionarioTab">📋 Mansionario</button>
+					<button class="tabBtn" data-tab="impostazioniTab">⚙️ Impostazioni</button>
+				</div>
+			</div>
+		</div>
+		<!--
 		<div id="adminTabsContainer">
 			<button class="tabBtn" data-tab="dashboardAdminTab">🚀 Centro Controllo</button> 
 			<button class="tabBtn" data-tab="comandeTab">Comande</button>
@@ -721,7 +752,7 @@
 		    <button class="tabBtn" data-tab="chatAdminTab">Chat</button>
 			<button class="tabBtn" data-tab="gestioneProfiliTab">Gestione Profili</button>
 			<button class="tabBtn" data-tab="impostazioniTab">⚙️Impostazioni</button>
-		</div>
+		</div> -->
 		<div id="dashboardAdminTab" class="tabContent">
 		    <div class="bb-dash-container">
 		        <div class="bb-dash-header" style="flex-wrap: wrap; gap: 15px;">
