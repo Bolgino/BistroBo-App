@@ -3359,3 +3359,59 @@ body.tema-astronave .admin-dropdown-content .tabBtn:hover {
     background-color: #112233 !important;
     color: #FFFFFF !important;
 }
+/* ===========================================================
+   FIX DROPDOWN ADMIN (Modalità Click invece di Hover)
+=========================================================== */
+/* 1. Annulla l'hover ballerino precedente */
+.admin-dropdown:hover .admin-dropdown-content {
+    display: none !important;
+}
+
+/* 2. Mostra la tendina in modo fisso quando clicchi (tramite classe .open) */
+.admin-dropdown.open .admin-dropdown-content {
+    display: flex !important;
+    flex-direction: column;
+    animation: fadeIn 0.15s ease-out;
+}
+
+/* 3. Stile identico alle Tab per i bottoni innesco (Senza attivare i bug del JS) */
+.dropdown-trigger-btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 50px;
+    background: #f0f2f5;
+    color: #555;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 600;
+    margin-right: 8px;
+    margin-bottom: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    border: 1px solid transparent;
+    font-family: 'Poppins', sans-serif;
+    font-size: 1rem;
+}
+
+.dropdown-trigger-btn:hover, 
+.admin-dropdown.open .dropdown-trigger-btn {
+    background: #e4e6eb;
+    transform: translateY(-2px);
+    color: #333;
+}
+
+/* 4. Supporto Temi Scuri per i pulsanti della tendina */
+body.tema-notte .dropdown-trigger-btn,
+body.tema-astronave .dropdown-trigger-btn {
+    background: #050A13 !important;
+    color: #87F7FF !important;
+    border: 1px solid #006B88 !important;
+}
+
+body.tema-notte .dropdown-trigger-btn:hover,
+body.tema-notte .admin-dropdown.open .dropdown-trigger-btn,
+body.tema-astronave .dropdown-trigger-btn:hover,
+body.tema-astronave .admin-dropdown.open .dropdown-trigger-btn {
+    background: #003B55 !important;
+    color: #FFFFFF !important;
+    box-shadow: 0 0 8px rgba(0,229,255,.4);
+}
