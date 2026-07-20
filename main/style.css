@@ -3430,21 +3430,26 @@ body.tema-astronave #adminTabsContainer .admin-dropdown.open .dropdown-trigger-b
 =========================================================== */
 /* 1. Il contenitore principale della tendina */
 .admin-dropdown-content {
-    border-radius: 12px !important; /* Angoli dolci per il box principale */
-    overflow: hidden !important; /* Fondamentale: taglia via gli spigoli dei bottoni interni */
-    padding: 0 !important; /* Nessun buco ai lati */
+    border-radius: 12px !important; 
+    overflow: hidden !important; 
+    padding: 0 !important; 
+    border: 1px solid #ccc !important;
 }
 
 /* 2. I bottoni DENTRO la tendina tornano rettangolari e a tutta larghezza */
 #adminTabsContainer .admin-dropdown-content .tabBtn {
-    border-radius: 0 !important; /* Annulla il 50px del bottone padre */
-    width: 100% !important; /* Occupa tutto lo spazio orizzontale */
-    text-align: left !important; /* Testo allineato a sinistra */
-    background: transparent !important; /* Sfondo trasparente di base */
-    box-shadow: none !important; /* Niente ombre fluttuanti sui singoli tasti */
-    border: none !important; /* Togli i bordi spessi */
-    border-bottom: 1px solid #ddd !important; /* Sottile riga di separazione chiara */
-    transform: none !important; /* Annulla il saltello quando ci passi il mouse */
+    border-radius: 0 !important; 
+    width: 100% !important; 
+    text-align: left !important; 
+    background: transparent !important; 
+    box-shadow: none !important; 
+    border: none !important; 
+    border-bottom: 1px solid #ddd !important; 
+    transform: none !important; 
+    margin: 0 !important; /* Forza margin a zero, annullando eventuali gap */
+    padding: 12px 20px !important; /* Ripristina un padding arioso */
+    display: block !important; /* Forza il bottone a riempire la riga */
+    color: #333 !important;
 }
 
 /* Rimuovi la riga sotto l'ultimo elemento per pulizia visiva */
@@ -3453,9 +3458,16 @@ body.tema-astronave #adminTabsContainer .admin-dropdown.open .dropdown-trigger-b
 }
 
 /* 3. Colori specifici per Temi Scuri (Notte e Astronave) */
+body.tema-notte .admin-dropdown-content,
+body.tema-astronave .admin-dropdown-content {
+    background-color: #06131E !important;
+    border-color: #00A6CC !important;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.8), inset 0 0 5px rgba(0,217,255,.08) !important;
+}
+
 body.tema-notte #adminTabsContainer .admin-dropdown-content .tabBtn,
 body.tema-astronave #adminTabsContainer .admin-dropdown-content .tabBtn {
-    border-bottom: 1px solid rgba(0, 166, 204, 0.3) !important; /* Riga azzurrina/scura */
+    border-bottom: 1px solid rgba(0, 166, 204, 0.3) !important; 
     color: #D0FFFF !important;
 }
 
@@ -3467,10 +3479,11 @@ body.tema-astronave #adminTabsContainer .admin-dropdown-content .tabBtn:last-chi
 /* 4. Effetto Hover (Passaggio del mouse) fluido sui sottomenu */
 #adminTabsContainer .admin-dropdown-content .tabBtn:hover {
     background-color: #f0f0f0 !important;
+    color: #000 !important;
 }
 
 body.tema-notte #adminTabsContainer .admin-dropdown-content .tabBtn:hover,
 body.tema-astronave #adminTabsContainer .admin-dropdown-content .tabBtn:hover {
-    background-color: rgba(0, 217, 255, 0.15) !important; /* Evidenziazione azzurra spaziale */
+    background-color: rgba(0, 217, 255, 0.15) !important; 
     color: #ffffff !important;
 }
