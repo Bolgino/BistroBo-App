@@ -3409,24 +3409,36 @@ body.tema-astronave .admin-dropdown-content .tabBtn:hover {
     color: #333;
 }
 
-/* --- Supporto Temi Scuri --- */
-body.tema-notte #adminTabsContainer .dropdown-trigger-btn,
+/* --- Supporto Tema Astronave --- */
 body.tema-astronave #adminTabsContainer .dropdown-trigger-btn {
     background: #050A13 !important;
     color: #87F7FF !important;
     border: 1px solid #006B88 !important;
 }
 
-body.tema-notte #adminTabsContainer .dropdown-trigger-btn:hover,
-body.tema-notte #adminTabsContainer .admin-dropdown.open .dropdown-trigger-btn,
 body.tema-astronave #adminTabsContainer .dropdown-trigger-btn:hover,
 body.tema-astronave #adminTabsContainer .admin-dropdown.open .dropdown-trigger-btn {
     background: #003B55 !important;
     color: #FFFFFF !important;
     box-shadow: 0 0 8px rgba(0,229,255,.4) !important;
 }
+
+/* --- Supporto Tema Notte --- */
+body.tema-notte #adminTabsContainer .dropdown-trigger-btn {
+    background: #f0f2f5 !important; /* Si abbina perfettamente alle altre tab chiare */
+    color: #000000 !important; /* Forza il testo nero */
+    border: 1px solid transparent !important;
+}
+
+body.tema-notte #adminTabsContainer .dropdown-trigger-btn:hover,
+body.tema-notte #adminTabsContainer .admin-dropdown.open .dropdown-trigger-btn {
+    background: #e4e6eb !important;
+    color: #000000 !important;
+    transform: translateY(-2px);
+}
+
 /* ===========================================================
-   FIX INTERNO MENU A TENDINA (Rimuove l'ovale dai sottomenu)
+   FIX INTERNO MENU A TENDINA (Colori separati per Temi Scuri)
 =========================================================== */
 /* 1. Il contenitore principale della tendina */
 .admin-dropdown-content {
@@ -3446,44 +3458,60 @@ body.tema-astronave #adminTabsContainer .admin-dropdown.open .dropdown-trigger-b
     border: none !important; 
     border-bottom: 1px solid #ddd !important; 
     transform: none !important; 
-    margin: 0 !important; /* Forza margin a zero, annullando eventuali gap */
-    padding: 12px 20px !important; /* Ripristina un padding arioso */
-    display: block !important; /* Forza il bottone a riempire la riga */
+    margin: 0 !important; 
+    padding: 12px 20px !important; 
+    display: block !important; 
     color: #333 !important;
 }
 
-/* Rimuovi la riga sotto l'ultimo elemento per pulizia visiva */
 #adminTabsContainer .admin-dropdown-content .tabBtn:last-child {
     border-bottom: none !important;
 }
 
-/* 3. Colori specifici per Temi Scuri (Notte e Astronave) */
-body.tema-notte .admin-dropdown-content,
+/* Effetto Hover standard (chiaro) */
+#adminTabsContainer .admin-dropdown-content .tabBtn:hover {
+    background-color: #f0f0f0 !important;
+    color: #000 !important;
+}
+
+/* 3. Colori Menu a tendina: TEMA ASTRONAVE */
 body.tema-astronave .admin-dropdown-content {
     background-color: #06131E !important;
     border-color: #00A6CC !important;
     box-shadow: 0 8px 20px rgba(0,0,0,0.8), inset 0 0 5px rgba(0,217,255,.08) !important;
 }
 
-body.tema-notte #adminTabsContainer .admin-dropdown-content .tabBtn,
 body.tema-astronave #adminTabsContainer .admin-dropdown-content .tabBtn {
     border-bottom: 1px solid rgba(0, 166, 204, 0.3) !important; 
     color: #D0FFFF !important;
 }
 
-body.tema-notte #adminTabsContainer .admin-dropdown-content .tabBtn:last-child,
 body.tema-astronave #adminTabsContainer .admin-dropdown-content .tabBtn:last-child {
     border-bottom: none !important;
 }
 
-/* 4. Effetto Hover (Passaggio del mouse) fluido sui sottomenu */
-#adminTabsContainer .admin-dropdown-content .tabBtn:hover {
-    background-color: #f0f0f0 !important;
-    color: #000 !important;
-}
-
-body.tema-notte #adminTabsContainer .admin-dropdown-content .tabBtn:hover,
 body.tema-astronave #adminTabsContainer .admin-dropdown-content .tabBtn:hover {
     background-color: rgba(0, 217, 255, 0.15) !important; 
     color: #ffffff !important;
+}
+
+/* 4. Colori Menu a tendina: TEMA NOTTE */
+body.tema-notte .admin-dropdown-content {
+    background-color: #111827 !important; /* Grigio scuro/notte */
+    border-color: #334155 !important;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.8) !important;
+}
+
+body.tema-notte #adminTabsContainer .admin-dropdown-content .tabBtn {
+    border-bottom: 1px solid #1E293B !important; 
+    color: #F8FAFC !important;
+}
+
+body.tema-notte #adminTabsContainer .admin-dropdown-content .tabBtn:last-child {
+    border-bottom: none !important;
+}
+
+body.tema-notte #adminTabsContainer .admin-dropdown-content .tabBtn:hover {
+    background-color: #1E293B !important; 
+    color: #FFFFFF !important;
 }
