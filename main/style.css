@@ -3279,3 +3279,83 @@ body.tema-astronave div[style*="background: #eee"] button:not([title="Aggiungi S
     padding: 15px 20px !important; /* Diamo spazio interno */
     border-radius: 25px !important; /* Arrotonda il box contenitore */
 }
+/* ===========================================================
+   MENU A TENDINA (DROPDOWN) PER ADMIN
+=========================================================== */
+.admin-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+/* Rimuove il margine inferiore dal bottone trigger per allinearlo agli altri */
+.admin-dropdown .dropdown-trigger {
+    margin-bottom: 0 !important;
+}
+
+/* Contenitore della tendina */
+.admin-dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: #ffffff;
+    min-width: 200px;
+    box-shadow: 0px 8px 16px rgba(0,0,0,0.2);
+    z-index: 10000;
+    border-radius: 12px;
+    border: 1px solid #ccc;
+    overflow: hidden;
+    top: 100%;
+    left: 0;
+    margin-top: 5px;
+}
+
+/* Mostra la tendina al passaggio del mouse */
+.admin-dropdown:hover .admin-dropdown-content {
+    display: flex;
+    flex-direction: column;
+    animation: fadeIn 0.2s ease-in-out;
+}
+
+/* Adatta i bottoni dentro la tendina */
+.admin-dropdown-content .tabBtn {
+    margin: 0 !important;
+    border-radius: 0 !important;
+    text-align: left;
+    width: 100%;
+    background: transparent !important;
+    color: #333 !important;
+    border: none !important;
+    padding: 12px 20px;
+    box-shadow: none !important;
+    border-bottom: 1px solid #eee !important;
+}
+.admin-dropdown-content .tabBtn:last-child {
+    border-bottom: none !important;
+}
+.admin-dropdown-content .tabBtn:hover {
+    background-color: #f0f0f0 !important;
+    transform: none !important;
+}
+
+/* --- SUPPORTO PER TEMA NOTTE E ASTRONAVE --- */
+body.tema-notte .admin-dropdown-content,
+body.tema-astronave .admin-dropdown-content {
+    background-color: #06131E !important;
+    border: 1px solid #00A6CC !important;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.8), inset 0 0 5px rgba(0,217,255,.08) !important;
+}
+
+body.tema-notte .admin-dropdown-content .tabBtn,
+body.tema-astronave .admin-dropdown-content .tabBtn {
+    color: #D0FFFF !important;
+    border-bottom: 1px solid #1E293B !important;
+}
+
+body.tema-astronave .admin-dropdown-content .tabBtn {
+    border-bottom: 1px solid rgba(0,217,255,0.2) !important;
+}
+
+body.tema-notte .admin-dropdown-content .tabBtn:hover,
+body.tema-astronave .admin-dropdown-content .tabBtn:hover {
+    background-color: #112233 !important;
+    color: #FFFFFF !important;
+}
