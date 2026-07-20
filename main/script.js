@@ -2860,6 +2860,7 @@ function mostraSchermata() {
             }
         }
     }, 200);
+	if (typeof aggiornaVisibilitaTastoMansionario === "function") aggiornaVisibilitaTastoMansionario();
 }
 // ================= GESTIONE FONDO CASSA GLOBALE E ADMIN =================
 function gestisciFondoCassa(forzaModifica = false) {
@@ -13520,7 +13521,7 @@ window.apriPopupScarti = async function(reparto) {
     };
 };
 // =========================================================================
-// FIX VISIBILITÀ TASTO MANSIONARIO (Nascosto per Admin puro)
+// FIX VISIBILITÀ TASTO MANSIONARIO (Nascosto per Admin)
 // =========================================================================
 window.aggiornaVisibilitaTastoMansionario = function() {
     const btn = document.getElementById("btnMansionario");
@@ -13528,8 +13529,9 @@ window.aggiornaVisibilitaTastoMansionario = function() {
     
     // Lo mostriamo SOLO se:
     // 1. È abilitato nelle impostazioni globali
-    // 2. NON siamo nella schermata Admin principale (quindi apparirà se siamo un reparto o se l'Admin sta simulando)
-    if (window.settings && window.settings.mansionarioAbilitato && !window.isLoggedInAdmin) {
+    // 2. L'utente ha completato il login (la variabile 'ruolo' non è vuota)
+    // 3. Il ruolo attuale NON è admin
+    if (window.settings && window.settings.mansionarioAbilitato && ruolo && ruolo !== "admin") {
         btn.style.display = "inline-block";
     } else {
         btn.style.display = "none";
