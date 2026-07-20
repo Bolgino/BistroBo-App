@@ -3425,3 +3425,52 @@ body.tema-astronave #adminTabsContainer .admin-dropdown.open .dropdown-trigger-b
     color: #FFFFFF !important;
     box-shadow: 0 0 8px rgba(0,229,255,.4) !important;
 }
+/* ===========================================================
+   FIX INTERNO MENU A TENDINA (Rimuove l'ovale dai sottomenu)
+=========================================================== */
+/* 1. Il contenitore principale della tendina */
+.admin-dropdown-content {
+    border-radius: 12px !important; /* Angoli dolci per il box principale */
+    overflow: hidden !important; /* Fondamentale: taglia via gli spigoli dei bottoni interni */
+    padding: 0 !important; /* Nessun buco ai lati */
+}
+
+/* 2. I bottoni DENTRO la tendina tornano rettangolari e a tutta larghezza */
+#adminTabsContainer .admin-dropdown-content .tabBtn {
+    border-radius: 0 !important; /* Annulla il 50px del bottone padre */
+    width: 100% !important; /* Occupa tutto lo spazio orizzontale */
+    text-align: left !important; /* Testo allineato a sinistra */
+    background: transparent !important; /* Sfondo trasparente di base */
+    box-shadow: none !important; /* Niente ombre fluttuanti sui singoli tasti */
+    border: none !important; /* Togli i bordi spessi */
+    border-bottom: 1px solid #ddd !important; /* Sottile riga di separazione chiara */
+    transform: none !important; /* Annulla il saltello quando ci passi il mouse */
+}
+
+/* Rimuovi la riga sotto l'ultimo elemento per pulizia visiva */
+#adminTabsContainer .admin-dropdown-content .tabBtn:last-child {
+    border-bottom: none !important;
+}
+
+/* 3. Colori specifici per Temi Scuri (Notte e Astronave) */
+body.tema-notte #adminTabsContainer .admin-dropdown-content .tabBtn,
+body.tema-astronave #adminTabsContainer .admin-dropdown-content .tabBtn {
+    border-bottom: 1px solid rgba(0, 166, 204, 0.3) !important; /* Riga azzurrina/scura */
+    color: #D0FFFF !important;
+}
+
+body.tema-notte #adminTabsContainer .admin-dropdown-content .tabBtn:last-child,
+body.tema-astronave #adminTabsContainer .admin-dropdown-content .tabBtn:last-child {
+    border-bottom: none !important;
+}
+
+/* 4. Effetto Hover (Passaggio del mouse) fluido sui sottomenu */
+#adminTabsContainer .admin-dropdown-content .tabBtn:hover {
+    background-color: #f0f0f0 !important;
+}
+
+body.tema-notte #adminTabsContainer .admin-dropdown-content .tabBtn:hover,
+body.tema-astronave #adminTabsContainer .admin-dropdown-content .tabBtn:hover {
+    background-color: rgba(0, 217, 255, 0.15) !important; /* Evidenziazione azzurra spaziale */
+    color: #ffffff !important;
+}
