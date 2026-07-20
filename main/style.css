@@ -3360,21 +3360,29 @@ body.tema-astronave .admin-dropdown-content .tabBtn:hover {
     color: #FFFFFF !important;
 }
 /* ===========================================================
-   FIX DROPDOWN ADMIN (Modalità Click invece di Hover)
+   FIX DROPDOWN ADMIN (Modalità Click e Dimensioni Speculari)
 =========================================================== */
-/* 1. Annulla l'hover ballerino precedente */
+
+/* 1. Il contenitore a tendina deve essere "flex" per allinearsi all'altezza degli altri bottoni */
+.admin-dropdown {
+    position: relative;
+    display: flex; 
+    align-items: center;
+}
+
+/* 2. Annulla l'hover ballerino precedente */
 .admin-dropdown:hover .admin-dropdown-content {
     display: none !important;
 }
 
-/* 2. Mostra la tendina in modo fisso quando clicchi (tramite classe .open) */
+/* 3. Mostra la tendina in modo fisso quando clicchi (tramite classe .open) */
 .admin-dropdown.open .admin-dropdown-content {
     display: flex !important;
     flex-direction: column;
     animation: fadeIn 0.15s ease-out;
 }
 
-/* 3. Stile ESATTAMENTE identico alle Tab (stessi font, padding e allineamenti) */
+/* 4. Stile ESATTAMENTE identico alle Tab (senza font forzati) */
 .dropdown-trigger-btn {
     padding: 10px 20px;
     border: none;
@@ -3384,18 +3392,17 @@ body.tema-astronave .admin-dropdown-content .tabBtn:hover {
     cursor: pointer;
     transition: all 0.3s ease;
     font-weight: 600;
-    margin-right: 8px;
-    margin-bottom: 8px;
+    margin: 0; /* Rimuoviamo i margini perché la distanza è gestita dal "gap: 8px" del contenitore padre */
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     border: 1px solid transparent;
-    
-    /* FIX CHIAVE PER LE DIMENSIONI: */
-    font-family: 'Poppins', sans-serif;
-    font-size: 13.3333px; /* Stessa dimensione che eredita .tabBtn */
-    line-height: normal;
-    height: auto;
 }
 
+/* 5. Togliamo i margini "sporchi" anche dalle vecchie tab nell'Admin così la riga è perfettamente dritta */
+#adminTabsContainer .tabBtn {
+    margin: 0 !important;
+}
+
+/* 6. Effetti Hover normali */
 .dropdown-trigger-btn:hover, 
 .admin-dropdown.open .dropdown-trigger-btn {
     background: #e4e6eb;
@@ -3403,7 +3410,7 @@ body.tema-astronave .admin-dropdown-content .tabBtn:hover {
     color: #333;
 }
 
-/* 4. Supporto Temi Scuri per i pulsanti della tendina */
+/* 7. Supporto Temi Scuri per i pulsanti della tendina */
 body.tema-notte .dropdown-trigger-btn,
 body.tema-astronave .dropdown-trigger-btn {
     background: #050A13 !important;
