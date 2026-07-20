@@ -13544,3 +13544,32 @@ db.ref("impostazioni/mansionarioAbilitato").on("value", snap => {
     window.settings.mansionarioAbilitato = snap.val() === true;
     aggiornaVisibilitaTastoMansionario();
 });
+// =========================================================================
+// FIX MENU A TENDINA ADMIN (Click per aprire e chiudere)
+// =========================================================================
+window.toggleDropdown = function(btn) {
+    const parent = btn.closest('.admin-dropdown');
+    const wasOpen = parent.classList.contains('open');
+
+    // Chiude eventuali altri dropdown aperti
+    document.querySelectorAll('.admin-dropdown').forEach(d => d.classList.remove('open'));
+
+    // Se non era aperto, lo apre
+    if (!wasOpen) {
+        parent.classList.add('open');
+    }
+};
+
+// Ascolta i click su tutta la pagina per chiudere i menu
+document.addEventListener('click', function(event) {
+    // 1. Se hai cliccato una tab DENTRO il menu, chiudilo
+    if (event.target.classList.contains('tabBtn') && event.target.closest('.admin-dropdown-content')) {
+        document.querySelectorAll('.admin-dropdown').forEach(d => d.classList.remove('open'));
+        return;
+    }
+    
+    // 2. Se hai cliccato FUORI dal menu, chiudilo
+    if (!event.target.closest('.admin-dropdown')) {
+        document.querySelectorAll('.admin-dropdown').forEach(d => d.classList.remove('open'));
+    }
+});
