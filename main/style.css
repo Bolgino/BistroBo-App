@@ -3374,7 +3374,7 @@ body.tema-astronave .admin-dropdown-content .tabBtn:hover {
     animation: fadeIn 0.15s ease-out;
 }
 
-/* 3. Stile identico alle Tab per i bottoni innesco (Senza attivare i bug del JS) */
+/* 3. Stile ESATTAMENTE identico alle Tab (stessi font, padding e allineamenti) */
 .dropdown-trigger-btn {
     padding: 10px 20px;
     border: none;
@@ -3388,8 +3388,12 @@ body.tema-astronave .admin-dropdown-content .tabBtn:hover {
     margin-bottom: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     border: 1px solid transparent;
+    
+    /* FIX CHIAVE PER LE DIMENSIONI: */
     font-family: 'Poppins', sans-serif;
-    font-size: 1rem;
+    font-size: 13.3333px; /* Stessa dimensione che eredita .tabBtn */
+    line-height: normal;
+    height: auto;
 }
 
 .dropdown-trigger-btn:hover, 
