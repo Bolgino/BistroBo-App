@@ -13446,8 +13446,8 @@ window.apriPopupScarti = async function(reparto) {
         </div>
 
         <div style="text-align: left; margin-bottom: 20px;">
-            <label><b>Quantità:</b></label>
-            <input type="number" id="scartoQty" value="1" min="0.1" step="any" style="width: 100%; padding: 10px; margin-top: 5px; border-radius: 6px; border: 1px solid #ccc; font-size: 1.1em; outline:none;">
+            <label><b>Quantità:</b></label><br>
+            <input type="number" id="scartoQty" value="1" min="0.1" step="any" style="width: 120px; padding: 10px; margin-top: 5px; border-radius: 6px; border: 1px solid #ccc; font-size: 1.1em; outline:none;">
         </div>
 
         <div class="modal-actions" style="display: flex; gap: 10px;">
@@ -13520,14 +13520,16 @@ window.apriPopupScarti = async function(reparto) {
     };
 };
 // =========================================================================
-// FIX VISIBILITÀ TASTO MANSIONARIO (Nascosto per Admin)
+// FIX VISIBILITÀ TASTO MANSIONARIO (Nascosto per Admin puro)
 // =========================================================================
 window.aggiornaVisibilitaTastoMansionario = function() {
     const btn = document.getElementById("btnMansionario");
     if (!btn) return;
     
-    // Lo mostriamo SOLO se è abilitato nelle impostazioni E se il ruolo attuale NON è admin
-    if (window.settings && window.settings.mansionarioAbilitato && ruolo !== "admin") {
+    // Lo mostriamo SOLO se:
+    // 1. È abilitato nelle impostazioni globali
+    // 2. NON siamo nella schermata Admin principale (quindi apparirà se siamo un reparto o se l'Admin sta simulando)
+    if (window.settings && window.settings.mansionarioAbilitato && !window.isLoggedInAdmin) {
         btn.style.display = "inline-block";
     } else {
         btn.style.display = "none";
