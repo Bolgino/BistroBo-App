@@ -13751,3 +13751,12 @@ window.aggiungiEsperienza = async function(punti) {
         }
     } catch(e) { console.error("Errore exp:", e); }
 };
+// --- CHIUSURA MENU A TENDINA CLICCANDO FUORI ---
+window.addEventListener("click", function(e) {
+    document.querySelectorAll(".admin-dropdown.open").forEach(dropdown => {
+        // Se il click avviene fuori dal menu a tendina, chiudilo
+        if (!dropdown.contains(e.target)) {
+            dropdown.classList.remove("open");
+        }
+    });
+});
