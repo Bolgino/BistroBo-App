@@ -1805,14 +1805,40 @@ body.tema-estate button {
 }
 /* ================= COMPATTAZIONE INTESTAZIONE EQUILIBRATA (TUTTI I PROFILI) ================= */
 
-/* 1. Blocco superiore: Simula a sx, Logout a dx, Orologio sotto. 
-   Uso :not(.hidden) per NON farlo apparire nella schermata di login! */
+/* 1. Blocco superiore: Simula a sx, Logout a dx, Orologio sotto. */
 #logoutDiv:not(.hidden) {
     display: block !important; 
-    padding-bottom: 0 !important;
-    margin-bottom: 5px !important; /* Lascia un piccolo margine sotto */
-    margin-top: 5px !important; 
+    padding: 5px 20px !important; /* Molto più stretto e senza spreco di spazio */
+    margin: 0 !important; /* Azzera i margini esterni */
 }
+
+/* Stile per i bottoni del profilo (Così non vanno in conflitto con le tab!) */
+.profile-dropdown-btn {
+    border-radius: 0 !important; 
+    width: 100% !important; 
+    text-align: left !important; 
+    background: transparent !important; 
+    box-shadow: none !important; 
+    border: none !important; 
+    border-bottom: 1px solid #ddd !important; 
+    margin: 0 !important; 
+    padding: 12px 20px !important; 
+    display: block !important; 
+    color: #333 !important;
+    font-family: 'Poppins', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
+}
+.profile-dropdown-btn:last-child { border-bottom: none !important; }
+.profile-dropdown-btn:hover { background-color: #f0f0f0 !important; color: #000 !important; }
+
+/* Temi Scuri per il nuovo bottone */
+body.tema-astronave .profile-dropdown-btn { border-bottom: 1px solid rgba(0, 166, 204, 0.3) !important; color: #D0FFFF !important; }
+body.tema-astronave .profile-dropdown-btn:hover { background-color: rgba(0, 217, 255, 0.15) !important; color: #ffffff !important; }
+body.tema-notte .profile-dropdown-btn { border-bottom: 1px solid #1E293B !important; color: #F8FAFC !important; }
+body.tema-notte .profile-dropdown-btn:hover { background-color: #1E293B !important; color: #FFFFFF !important; }
 
 /* Orologio sotto al tasto Logout */
 #orologioDiv {
