@@ -8566,10 +8566,23 @@ async function caricaUtenti(){
             // Colore verde se online, grigio se offline
             const colore = stato === "online" ? "green" : "gray";
 
+            // Recupero statistiche e grado dell'utente
+            const expUtente = u.exp || 0;
+            const badgeUtente = calcolaBadge(expUtente);
+
+            infoSpan.style.flex = "1"; // Assicura che le info occupino lo spazio necessario a sinistra
             infoSpan.innerHTML = `
-                ${u.username || "(no username)"} 
-                (<span style="color:${colore}">${stato.toUpperCase()}</span>) 
-                - Ultimo accesso: ${last}
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <div style="font-size: 1.1em;">
+                        <b>${u.username || "(no username)"}</b> 
+                        <span style="font-size: 0.75em; color:${colore}; font-weight: bold; border: 1px solid ${colore}; padding: 2px 8px; border-radius: 12px; margin-left: 8px;">${stato.toUpperCase()}</span>
+                    </div>
+                    <div style="font-size: 0.85em; color: #555; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 2px;">
+                        <span>⭐ <b>EXP:</b> <span style="color: #FF9800; font-weight: bold;">${expUtente}</span></span>
+                        <span>🏆 <b>Grado:</b> <span style="color:${badgeUtente.color}; font-weight:bold;">${badgeUtente.nome}</span></span>
+                        <span style="color: #888;">🕒 <b>Accesso:</b> ${last}</span>
+                    </div>
+                </div>
             `;
 
             d.appendChild(infoSpan);
@@ -13614,12 +13627,16 @@ document.addEventListener('click', function(event) {
 // GESTIONE PROFILO, AVATAR E GAMIFICATION (BADGE)
 // =========================================================================
 
-// 1. Calcola il Badge in base ai Punti Esperienza
+// 1. Calcola il Badge in base ai Punti Esperienza (Curva Lenta)
 function calcolaBadge(exp) {
-    if (exp >= 1500) return { nome: "Oro 🥇", color: "#FFD700" };
-    if (exp >= 500)  return { nome: "Argento 🥈", color: "#C0C0C0" };
-    if (exp >= 100)  return { nome: "Bronzo 🥉", color: "#cd7f32" };
-    return { nome: "Legno 🪵", color: "#8B4513" };
+    if (exp >= 40000) return { nome: "Leggenda Vivente 👑", color: "#8a2be2" }; // ~8000 comande
+    if (exp >= 20000) return { nome: "Executive Chef 🌟", color: "#ff007f" }; // ~4000 comande
+    if (exp >= 10000) return { nome: "Sous Chef 💎", color: "#00BCD4" };      // ~2000 comande
+    if (exp >= 5000)  return { nome: "Chef di Partita 🔪", color: "#607D8B" };// ~1000 comande
+    if (exp >= 2500)  return { nome: "Cuoco Esperto 🥇", color: "#FFD700" };  // ~500 comande
+    if (exp >= 1000)  return { nome: "Aiuto Cuoco 🥈", color: "#C0C0C0" };    // ~200 comande
+    if (exp >= 250)   return { nome: "Apprendista 🥉", color: "#cd7f32" };    // ~50 comande
+    return { nome: "Novellino 🪵", color: "#8B4513" };                        // Base
 }
 
 // 2. Aggiorna l'interfaccia della Top Bar
