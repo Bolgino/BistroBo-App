@@ -1782,7 +1782,6 @@ if (settingLetteraPreordini && inputLetteraPreordini) {
     });
 }
 // ================= ARCHIVIA COMANDE =================
-// ================= ARCHIVIA COMANDE =================
 const archiviaComandeBtn = document.getElementById("archiviaComandeBtn");
 const archiviaComandeStatsBtn = document.getElementById("archiviaComandeStatsBtn");
 
@@ -2320,7 +2319,24 @@ document.getElementById("loginBtn").addEventListener("click", async () => {
 
         // se tutto ok -> login completato
         ruolo = userData.ruolo;
-        mostraSchermata();
+        
+        // --- GESTIONE PROFILO E PRIMO AVVIO ---
+        window.profiloUtente = {
+            avatar: userData.avatar || "🧑‍🍳",
+            stato: userData.stato || "Sono operativo!",
+            exp: userData.exp || 0
+        };
+        
+        mostraSchermata(); // Carica l'interfaccia
+
+        // Aggiorna la grafica della barra e controlla se serve il popup
+        setTimeout(() => {
+            aggiornaTopBarProfilo();
+            if (!userData.avatarSetup) {
+                apriModalProfilo(true); // true = obbliga l'utente a salvare
+            }
+        }, 500);
+
         // ================== STATO ONLINE ==================
         const userStatusDatabaseRef = db.ref("/utenti/" + uid + "/status");
         const isOfflineForDatabase = {
@@ -2992,8 +3008,14 @@ function initChat() {
         
         if (!isVisible) return;
 
+        const isMe = msg.uid === uid;
         const div = document.createElement("div");
-        div.className = "chat-message " + (msg.uid === uid ? "me" : "other") + (target !== "tutti" ? " private-msg" : "");
+        div.className = "chat-message " + (isMe ? "me" : "other") + (target !== "tutti" ? " private-msg" : "");
+
+        // --- AVATAR TIPO WHATSAPP ---
+        const avatarWrapper = document.createElement("div");
+        avatarWrapper.className = "chat-avatar-wrapper";
+        avatarWrapper.innerText = msg.avatar || "🧑‍🍳";
 
         const sender = document.createElement("div");
         sender.className = "chat-sender";
@@ -3021,6 +3043,7 @@ function initChat() {
         text.textContent = msg.testo;
         if (target !== "tutti") text.style.fontStyle = "italic";
 
+        div.appendChild(avatarWrapper); // Inserisce l'avatar
         div.appendChild(sender);
         div.appendChild(text);
         chatContainer.appendChild(div);
@@ -3076,6 +3099,7 @@ function initChat() {
       ruolo: user.ruolo || ruolo || "sconosciuto", 
       email: user.username || "anonimo",
       uid: uid,
+      avatar: window.profiloUtente ? window.profiloUtente.avatar : "🧑‍🍳", // Salva l'avatar nel DB
       destinatario: destinatario, 
       timestamp: Date.now()
     };
@@ -7511,6 +7535,9 @@ async function caricaComandePerRuolo(daFareDiv, storicoDiv, ruolo) {
                 bComp.onclick = async () => {
                     if ((ruolo === "cucina" || ruolo === "bere" || (ruolo === "snack" && snackAbilitato) || (ruolo === "extra1" && window.settings.extra1Abilitato) || (ruolo === "extra2" && window.settings.extra2Abilitato) || (ruolo === "extra3" && window.settings.extra3Abilitato)) && [...d.querySelectorAll(".tickItem")].some(cb => !cb.checked)) return;
 
+                    // Da 5 punti esperienza per aver completato la comanda!
+                    if(typeof aggiungiEsperienza === "function") aggiungiEsperienza(5);
+
                     await aggiornaStatoConTermine(id, statoKey, "completato");
                     if (window.tickState && window.tickState[id]) delete window.tickState[id];
                 };
@@ -10788,11 +10815,13 @@ document.addEventListener("DOMContentLoaded", () => {
 				
 				// Salvataggio nel DB
 	        await ref.set(nuovaComanda);
-	
+			
+			
 	        // 🔹 AVVIO TIMER ANNULLAMENTO (SE ABILITATO)
 	        if (window.settings.annullamentoVendita) {
 	            avviaTimerAnnullamento(ref.key, nuovaComanda);
 	        }
+			if(typeof aggiungiEsperienza === "function") aggiungiEsperienza(10); // 10 punti per ogni scontrino
 	
 	        // --- 7. STAMPA E RESET FRONTEND (MANTENUTO) ---
             const piattiDaStampare = [...comandaCorrente];
@@ -13573,3 +13602,130 @@ document.addEventListener('click', function(event) {
         document.querySelectorAll('.admin-dropdown').forEach(d => d.classList.remove('open'));
     }
 });
+// =========================================================================
+// GESTIONE PROFILO, AVATAR E GAMIFICATION (BADGE)
+// =========================================================================
+
+// 1. Calcola il Badge in base ai Punti Esperienza
+function calcolaBadge(exp) {
+    if (exp >= 1500) return { nome: "Oro 🥇", color: "#FFD700" };
+    if (exp >= 500)  return { nome: "Argento 🥈", color: "#C0C0C0" };
+    if (exp >= 100)  return { nome: "Bronzo 🥉", color: "#cd7f32" };
+    return { nome: "Legno 🪵", color: "#8B4513" };
+}
+
+// 2. Aggiorna l'interfaccia della Top Bar
+window.aggiornaTopBarProfilo = function() {
+    if (!window.profiloUtente) return;
+    const avatar = window.profiloUtente.avatar;
+    const stato = window.profiloUtente.stato;
+    const badge = calcolaBadge(window.profiloUtente.exp);
+
+    // Aggiorna i testi nella barra visibile
+    const avatarEl = document.getElementById("topBarAvatar");
+    if(avatarEl) avatarEl.outerHTML = `<div id="topBarAvatar" class="avatar-sm">${avatar}</div>`;
+    
+    const usernameEl = document.getElementById("topBarUsername");
+    if(usernameEl) usernameEl.innerText = (ruolo || "Utente").charAt(0).toUpperCase() + (ruolo || "utente").slice(1);
+    
+    const statusEl = document.getElementById("topBarStatus");
+    if(statusEl) statusEl.innerText = stato;
+
+    // Aggiorna il Dropdown (Menù a tendina)
+    const dropAvatar = document.getElementById("dropdownAvatar");
+    if(dropAvatar) dropAvatar.innerText = avatar;
+    
+    const dropExp = document.getElementById("dropdownExp");
+    if(dropExp) dropExp.innerText = `Esperienza: ${window.profiloUtente.exp} pt`;
+    
+    const bEl = document.getElementById("dropdownBadge");
+    if(bEl) {
+        bEl.innerText = `Badge ${badge.nome}`;
+        bEl.style.color = badge.color;
+    }
+};
+
+// 3. Gestione del Popup di modifica
+let isPrimoAvvio = false;
+
+window.apriModalProfilo = function(primoAvvio = false) {
+    isPrimoAvvio = primoAvvio;
+    const modal = document.getElementById("modalProfilo");
+    if(modal) modal.classList.remove("hidden");
+    
+    const inputStato = document.getElementById("inputStatoProfilo");
+    if(inputStato) inputStato.value = window.profiloUtente.stato;
+    
+    // Gestione Selezione Grafica Avatar
+    document.querySelectorAll(".avatar-option").forEach(opt => {
+        opt.classList.remove("selected");
+        if (opt.dataset.avatar === window.profiloUtente.avatar) opt.classList.add("selected");
+        
+        opt.onclick = () => {
+            document.querySelectorAll(".avatar-option").forEach(o => o.classList.remove("selected"));
+            opt.classList.add("selected");
+        };
+    });
+};
+
+// 4. Salvataggio del profilo nel DB
+const salvaProfiloBtn = document.getElementById("salvaProfiloBtn");
+if(salvaProfiloBtn) {
+    salvaProfiloBtn.onclick = async () => {
+        const selezionato = document.querySelector(".avatar-option.selected");
+        const avatarScelto = selezionato ? selezionato.dataset.avatar : "🧑‍🍳";
+        const statoInserito = document.getElementById("inputStatoProfilo").value.trim() || "Operativo!";
+
+        window.profiloUtente.avatar = avatarScelto;
+        window.profiloUtente.stato = statoInserito;
+
+        try {
+            await db.ref("utenti/" + uid).update({
+                avatar: avatarScelto,
+                stato: statoInserito,
+                avatarSetup: true 
+            });
+            
+            aggiornaTopBarProfilo();
+            document.getElementById("modalProfilo").classList.add("hidden");
+            
+            if(isPrimoAvvio) notify("Profilo configurato con successo! Buon lavoro!", "success");
+            else notify("Profilo aggiornato!", "info");
+
+        } catch (err) {
+            notify("Errore salvataggio profilo: " + err.message, "error");
+        }
+    };
+}
+
+// 5. Funzione per far salire l'Esperienza
+window.aggiungiEsperienza = async function(punti) {
+    if (!uid) return;
+    try {
+        const refExp = db.ref(`utenti/${uid}/exp`);
+        await refExp.transaction(currentExp => {
+            return (currentExp || 0) + punti;
+        });
+        
+        window.profiloUtente.exp += punti;
+        aggiornaTopBarProfilo();
+        
+        // Controlla se c'è stato un "Level Up!"
+        const vecchiPunti = window.profiloUtente.exp - punti;
+        const nuovoBadge = calcolaBadge(window.profiloUtente.exp).nome;
+        const vecchioBadge = calcolaBadge(vecchiPunti).nome;
+        
+        if(nuovoBadge !== vecchioBadge) {
+            notify(`🎉 LEVEL UP! Hai ottenuto il: ${nuovoBadge}!`, "success");
+        }
+    } catch(e) { console.error("Errore exp:", e); }
+};
+
+// 6. Collega il nuovo pulsante di Logout
+const logoutBtnNew = document.getElementById("logoutBtnNew");
+if(logoutBtnNew) {
+    logoutBtnNew.addEventListener("click", () => {
+        // Clicca "di nascosto" il tuo vecchio tasto logout per far partire il mansionario o il logout
+        document.getElementById("logoutBtn").click(); 
+    });
+}
