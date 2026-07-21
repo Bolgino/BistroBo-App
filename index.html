@@ -102,7 +102,7 @@
 	
 	            <!-- Pulsante Profilo con Avatar -->
 	            <div class="admin-dropdown">
-	                <button class="profile-trigger-btn">
+	                <button class="profile-trigger-btn" onclick="this.closest('.admin-dropdown').classList.toggle('open'); event.stopPropagation();">
 	                    <div id="topBarAvatar" class="avatar-sm">🧑‍🍳</div>
 	                    <div class="profile-text-info">
 	                        <span id="topBarUsername">Utente</span>
