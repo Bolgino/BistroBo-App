@@ -2320,18 +2320,6 @@ document.getElementById("loginBtn").addEventListener("click", async () => {
 
         // se tutto ok -> login completato
         ruolo = userData.ruolo;
-		// --- GESTIONE PROFILO E PRIMO AVVIO ---
-        window.profiloUtente = {
-            avatar: userData.avatar || "🧑‍🍳",
-            stato: userData.stato || "Sono operativo!",
-            exp: userData.exp || 0
-        };
-        aggiornaTopBarProfilo();
-
-        // Se non ha mai impostato l'avatar (primo avvio o vecchio profilo), mostra il popup
-        if (!userData.avatarSetup) {
-            apriModalProfilo(true); // true indica che non può chiuderlo finché non salva
-        }
         mostraSchermata();
         // ================== STATO ONLINE ==================
         const userStatusDatabaseRef = db.ref("/utenti/" + uid + "/status");
@@ -3004,15 +2992,8 @@ function initChat() {
         
         if (!isVisible) return;
 
-        const isMe = msg.uid === uid;
         const div = document.createElement("div");
-        div.className = "chat-message " + (isMe ? "me" : "other") + (target !== "tutti" ? " private-msg" : "");
-
-        // --- AVATAR EMOJI ---
-        const avatarText = msg.avatar || "🧑‍🍳"; 
-        const avatarWrapper = document.createElement("div");
-        avatarWrapper.className = "chat-avatar-wrapper";
-        avatarWrapper.innerText = avatarText;
+        div.className = "chat-message " + (msg.uid === uid ? "me" : "other") + (target !== "tutti" ? " private-msg" : "");
 
         const sender = document.createElement("div");
         sender.className = "chat-sender";
@@ -3040,8 +3021,6 @@ function initChat() {
         text.textContent = msg.testo;
         if (target !== "tutti") text.style.fontStyle = "italic";
 
-        // Struttura in stile WhatsApp con Avatar
-        div.appendChild(avatarWrapper);
         div.appendChild(sender);
         div.appendChild(text);
         chatContainer.appendChild(div);
@@ -3097,8 +3076,6 @@ function initChat() {
       ruolo: user.ruolo || ruolo || "sconosciuto", 
       email: user.username || "anonimo",
       uid: uid,
-      // Se il profilo è caricato prende il suo avatar, altrimenti mette il cuoco di default
-      avatar: (window.profiloUtente && window.profiloUtente.avatar) ? window.profiloUtente.avatar : "🧑‍🍳", 
       destinatario: destinatario, 
       timestamp: Date.now()
     };
@@ -7536,7 +7513,6 @@ async function caricaComandePerRuolo(daFareDiv, storicoDiv, ruolo) {
 
                     await aggiornaStatoConTermine(id, statoKey, "completato");
                     if (window.tickState && window.tickState[id]) delete window.tickState[id];
-					aggiungiEsperienza(5);
                 };
 
                 buttonsDiv.appendChild(bComp);
@@ -10812,12 +10788,6 @@ document.addEventListener("DOMContentLoaded", () => {
 				
 				// Salvataggio nel DB
 	        await ref.set(nuovaComanda);
-			// ==========================================
-            // 🎮 GAMIFICATION: ASSEGNA PUNTI ESPERIENZA
-            // ==========================================
-            if (typeof aggiungiEsperienza === "function") {
-                aggiungiEsperienza(10); // +10 punti per ogni comanda inviata
-            }
 	
 	        // 🔹 AVVIO TIMER ANNULLAMENTO (SE ABILITATO)
 	        if (window.settings.annullamentoVendita) {
@@ -13603,102 +13573,3 @@ document.addEventListener('click', function(event) {
         document.querySelectorAll('.admin-dropdown').forEach(d => d.classList.remove('open'));
     }
 });
-// Funzione per calcolare il Badge in base all'esperienza
-function calcolaBadge(exp) {
-    if (exp >= 1500) return { nome: "Oro 🥇", color: "#FFD700" };
-    if (exp >= 500)  return { nome: "Argento 🥈", color: "#C0C0C0" };
-    if (exp >= 100)  return { nome: "Bronzo 🥉", color: "#cd7f32" };
-    return { nome: "Legno 🪵", color: "#8B4513" };
-}
-
-function aggiornaTopBarProfilo() {
-    const avatar = window.profiloUtente.avatar;
-    const stato = window.profiloUtente.stato;
-    const badge = calcolaBadge(window.profiloUtente.exp);
-
-    // Aggiorna l'interfaccia utente
-    document.getElementById("topBarAvatar").outerHTML = `<div id="topBarAvatar" class="avatar-sm">${avatar}</div>`;
-    document.getElementById("topBarUsername").innerText = (ruolo || "Utente").charAt(0).toUpperCase() + (ruolo || "utente").slice(1);
-    document.getElementById("topBarStatus").innerText = stato;
-
-    // Aggiorna Dropdown
-    document.getElementById("dropdownAvatar").innerText = avatar;
-    document.getElementById("dropdownExp").innerText = `Livello Esperienza: ${window.profiloUtente.exp} pt`;
-    const bEl = document.getElementById("dropdownBadge");
-    bEl.innerText = badge.nome;
-    bEl.style.color = badge.color;
-}
-
-// Logica del Modale Profilo
-let isPrimoAvvio = false;
-
-window.apriModalProfilo = function(primoAvvio = false) {
-    isPrimoAvvio = primoAvvio;
-    const modal = document.getElementById("modalProfilo");
-    modal.classList.remove("hidden");
-    
-    document.getElementById("inputStatoProfilo").value = window.profiloUtente.stato;
-    
-    // Gestione Selezione Avatar
-    document.querySelectorAll(".avatar-option").forEach(opt => {
-        opt.classList.remove("selected");
-        if (opt.dataset.avatar === window.profiloUtente.avatar) opt.classList.add("selected");
-        
-        opt.onclick = () => {
-            document.querySelectorAll(".avatar-option").forEach(o => o.classList.remove("selected"));
-            opt.classList.add("selected");
-        };
-    });
-};
-
-document.getElementById("salvaProfiloBtn").onclick = async () => {
-    const avatarSelezionato = document.querySelector(".avatar-option.selected").dataset.avatar;
-    const statoInserito = document.getElementById("inputStatoProfilo").value.trim() || "Operativo!";
-
-    window.profiloUtente.avatar = avatarSelezionato;
-    window.profiloUtente.stato = statoInserito;
-
-    try {
-        await db.ref("utenti/" + uid).update({
-            avatar: avatarSelezionato,
-            stato: statoInserito,
-            avatarSetup: true // Flag per non mostrarlo più al login
-        });
-        
-        aggiornaTopBarProfilo();
-        document.getElementById("modalProfilo").classList.add("hidden");
-        if(isPrimoAvvio) notify("Profilo configurato con successo! Benvenuto!", "success");
-        else notify("Profilo aggiornato!", "info");
-
-    } catch (err) {
-        notify("Errore salvataggio profilo: " + err.message, "error");
-    }
-};
-
-// --- GESTIONE NUOVO PULSANTE LOGOUT ---
-document.getElementById("logoutBtnNew").addEventListener("click", () => {
-    document.getElementById("logoutBtn").click(); // Richiama la tua funzione di logout esistente (Mansionario compreso)
-});
-window.aggiungiEsperienza = async function(punti) {
-    if (!uid) return;
-    try {
-        // Usa una transazione per evitare sovrascritture se lavora velocemente
-        await db.ref(`utenti/${uid}/exp`).transaction(currentExp => {
-            return (currentExp || 0) + punti;
-        });
-        
-        // Aggiorna in locale per reattività
-        window.profiloUtente.exp += punti;
-        aggiornaTopBarProfilo();
-        
-        // Opzionale: Controllo se ha superato una soglia per mostrare una notifica "Level Up!"
-        const vecchiPunti = window.profiloUtente.exp - punti;
-        const nuovoBadge = calcolaBadge(window.profiloUtente.exp).nome;
-        const vecchioBadge = calcolaBadge(vecchiPunti).nome;
-        
-        if(nuovoBadge !== vecchioBadge) {
-            notify(`🎉 LEVEL UP! Hai sbloccato il badge: ${nuovoBadge}!`, "success");
-            riproduciSuono("sblocco"); // Se hai un suono per i traguardi
-        }
-    } catch(e) { console.error("Errore gamification:", e); }
-};
