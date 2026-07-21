@@ -13625,13 +13625,14 @@ function calcolaBadge(exp) {
 // 2. Aggiorna l'interfaccia della Top Bar
 window.aggiornaTopBarProfilo = function() {
     if (!window.profiloUtente) return;
-    const avatar = window.profiloUtente.avatar;
-    const stato = window.profiloUtente.stato;
-    const badge = calcolaBadge(window.profiloUtente.exp);
+    const avatar = window.profiloUtente.avatar || "🧑‍🍳";
+    const stato = window.profiloUtente.stato || "Operativo!";
+    const exp = window.profiloUtente.exp || 0;
+    const badge = calcolaBadge(exp);
 
     // Aggiorna i testi nella barra visibile
     const avatarEl = document.getElementById("topBarAvatar");
-    if(avatarEl) avatarEl.outerHTML = `<div id="topBarAvatar" class="avatar-sm">${avatar}</div>`;
+    if(avatarEl) avatarEl.innerText = avatar;
     
     const usernameEl = document.getElementById("topBarUsername");
     if(usernameEl) usernameEl.innerText = (ruolo || "Utente").charAt(0).toUpperCase() + (ruolo || "utente").slice(1);
@@ -13644,7 +13645,7 @@ window.aggiornaTopBarProfilo = function() {
     if(dropAvatar) dropAvatar.innerText = avatar;
     
     const dropExp = document.getElementById("dropdownExp");
-    if(dropExp) dropExp.innerText = `Esperienza: ${window.profiloUtente.exp} pt`;
+    if(dropExp) dropExp.innerText = `Esperienza: ${exp} pt`;
     
     const bEl = document.getElementById("dropdownBadge");
     if(bEl) {
@@ -13653,21 +13654,35 @@ window.aggiornaTopBarProfilo = function() {
     }
 };
 
-// 3. Gestione del Popup di modifica
+// 3. Gestione del Popup di modifica (Fissato)
 let isPrimoAvvio = false;
 
 window.apriModalProfilo = function(primoAvvio = false) {
     isPrimoAvvio = primoAvvio;
     const modal = document.getElementById("modalProfilo");
-    if(modal) modal.classList.remove("hidden");
+    if(!modal) return; // Evita l'errore se non trova l'HTML
+    
+    // Mostra il popup forzando il display
+    modal.style.display = "flex";
+    
+    // Gestione bottone Annulla: se è il primo avvio non puoi annullare, devi salvare!
+    const btnAnnulla = document.getElementById("chiudiProfiloBtn");
+    if (btnAnnulla) {
+        btnAnnulla.style.display = primoAvvio ? "none" : "block";
+        btnAnnulla.onclick = () => { modal.style.display = "none"; };
+    }
     
     const inputStato = document.getElementById("inputStatoProfilo");
-    if(inputStato) inputStato.value = window.profiloUtente.stato;
+    if(inputStato && window.profiloUtente) {
+        inputStato.value = window.profiloUtente.stato || "";
+    }
     
     // Gestione Selezione Grafica Avatar
     document.querySelectorAll(".avatar-option").forEach(opt => {
         opt.classList.remove("selected");
-        if (opt.dataset.avatar === window.profiloUtente.avatar) opt.classList.add("selected");
+        if (window.profiloUtente && opt.dataset.avatar === window.profiloUtente.avatar) {
+            opt.classList.add("selected");
+        }
         
         opt.onclick = () => {
             document.querySelectorAll(".avatar-option").forEach(o => o.classList.remove("selected"));
@@ -13682,20 +13697,27 @@ if(salvaProfiloBtn) {
     salvaProfiloBtn.onclick = async () => {
         const selezionato = document.querySelector(".avatar-option.selected");
         const avatarScelto = selezionato ? selezionato.dataset.avatar : "🧑‍🍳";
-        const statoInserito = document.getElementById("inputStatoProfilo").value.trim() || "Operativo!";
+        const inputStato = document.getElementById("inputStatoProfilo");
+        const statoInserito = inputStato ? inputStato.value.trim() : "Operativo!";
 
+        if (!window.profiloUtente) window.profiloUtente = {};
         window.profiloUtente.avatar = avatarScelto;
-        window.profiloUtente.stato = statoInserito;
+        window.profiloUtente.stato = statoInserito || "Operativo!";
 
         try {
-            await db.ref("utenti/" + uid).update({
-                avatar: avatarScelto,
-                stato: statoInserito,
-                avatarSetup: true 
-            });
+            if (uid) {
+                await db.ref("utenti/" + uid).update({
+                    avatar: avatarScelto,
+                    stato: window.profiloUtente.stato,
+                    avatarSetup: true 
+                });
+            }
             
             aggiornaTopBarProfilo();
-            document.getElementById("modalProfilo").classList.add("hidden");
+            
+            // Chiude il modal
+            const modal = document.getElementById("modalProfilo");
+            if (modal) modal.style.display = "none";
             
             if(isPrimoAvvio) notify("Profilo configurato con successo! Buon lavoro!", "success");
             else notify("Profilo aggiornato!", "info");
@@ -13715,6 +13737,7 @@ window.aggiungiEsperienza = async function(punti) {
             return (currentExp || 0) + punti;
         });
         
+        if (!window.profiloUtente) window.profiloUtente = { exp: 0 };
         window.profiloUtente.exp += punti;
         aggiornaTopBarProfilo();
         
@@ -13728,4 +13751,3 @@ window.aggiungiEsperienza = async function(punti) {
         }
     } catch(e) { console.error("Errore exp:", e); }
 };
-
