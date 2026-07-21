@@ -1695,6 +1695,53 @@ function initImpostazioniToggle() {
             });
         };
     }
+	// ================= MANSIONARIO =================
+    const toggleMansionarioMasterBtn = document.getElementById("toggleMansionarioMasterBtn");
+    const mansionarioRef = db.ref("impostazioni/mansionarioAbilitato");
+    
+    const settingMansionarioLogout = document.getElementById("settingMansionarioLogout");
+    const toggleMansionarioLogoutBtn = document.getElementById("toggleMansionarioLogoutBtn");
+    const mansionarioLogoutRef = db.ref("impostazioni/mansionarioRichiediLogout");
+    
+    const settingMansionarioObbligatorio = document.getElementById("settingMansionarioObbligatorio");
+    const toggleMansionarioObbligatorioBtn = document.getElementById("toggleMansionarioObbligatorioBtn");
+    const mansionarioObbligatorioRef = db.ref("impostazioni/mansionarioObbligatorio");
+
+    if (toggleMansionarioMasterBtn) {
+        initToggle(toggleMansionarioMasterBtn, mansionarioRef, {on: "ON", off: "OFF"}, false, val => {
+            window.settings.mansionarioAbilitato = val;
+            
+            // 1. Mostra/Nascondi dinamicamente le opzioni secondarie del mansionario
+            if (settingMansionarioLogout) settingMansionarioLogout.style.display = val ? "flex" : "none";
+            if (settingMansionarioObbligatorio) settingMansionarioObbligatorio.style.display = val ? "flex" : "none";
+            
+            // 2. Mostra/Nascondi ISTANTANEAMENTE i box di testo nell'Admin
+            const msgDisabilitato = document.getElementById("mansionarioDisabilitatoMsg");
+            const editorContent = document.getElementById("mansionarioEditorContent");
+            const btnSalva = document.getElementById("salvaMansionarioBtn");
+            
+            if (msgDisabilitato) msgDisabilitato.style.display = val ? "none" : "block";
+            if (editorContent) editorContent.style.display = val ? "block" : "none";
+            if (btnSalva) btnSalva.style.display = val ? "inline-block" : "none";
+            
+            // 3. Aggiorna il bottone del mansionario nella barra superiore (se presente)
+            if (typeof aggiornaVisibilitaTastoMansionario === "function") {
+                aggiornaVisibilitaTastoMansionario();
+            }
+        });
+    }
+
+    if (toggleMansionarioLogoutBtn) {
+        initToggle(toggleMansionarioLogoutBtn, mansionarioLogoutRef, {on: "ON", off: "OFF"}, false, val => {
+            window.settings.mansionarioRichiediLogout = val;
+        });
+    }
+
+    if (toggleMansionarioObbligatorioBtn) {
+        initToggle(toggleMansionarioObbligatorioBtn, mansionarioObbligatorioRef, {on: "ON", off: "OFF"}, false, val => {
+            window.settings.mansionarioObbligatorio = val;
+        });
+    }
 }
 function initTickNoteDestinazioni() {
     db.ref("impostazioni/noteDestinazioniAbilitate").on("value", snap => {
