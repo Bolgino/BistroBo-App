@@ -4278,14 +4278,22 @@ function apriPopupVarianti(idx) {
     document.body.appendChild(overlay);
 }
 // --- INPUT E PULSANTE ---
-const numInput = document.getElementById("numComanda");
-const letteraInput = document.getElementById("letteraComanda");
-const inviaBtn = document.getElementById("inviaComandaBtn");
+var numInput = document.getElementById("numComanda");
+var letteraInput = document.getElementById("letteraComanda");
+var inviaBtn = document.getElementById("inviaComandaBtn");
 
 function aggiornaStatoInvio() {
     if (!checkOnline(true)) return;
-    const num = numInput ? numInput.value.trim() : "";
-    const lettera = letteraInput ? letteraInput.value.trim().toUpperCase() : "";
+    
+    // Recuperiamo i bottoni internamente alla funzione per prevenire errori di caricamento (Temporal Dead Zone)
+    const btnInviaAttuale = document.getElementById("inviaComandaBtn");
+    const inputNumAttuale = document.getElementById("numComanda");
+    const inputLettAttuale = document.getElementById("letteraComanda");
+    
+    if(!btnInviaAttuale) return; // Se la pagina non ha ancora caricato la cassa, fermati in sicurezza
+
+    const num = inputNumAttuale ? inputNumAttuale.value.trim() : "";
+    const lettera = inputLettAttuale ? inputLettAttuale.value.trim().toUpperCase() : "";
 
     // verifica che ci sia almeno un piatto con quantità > 0
     const hasPiattiValidi = comandaCorrente.some(p => p.quantita > 0);
@@ -4316,19 +4324,19 @@ function aggiornaStatoInvio() {
     }
 
     // disabilita se manca numero, lettera (se abilitata), piatti o tavolo
-    inviaBtn.disabled = !(numOk && letteraOk && hasPiattiValidi && tavoloOk);
+    btnInviaAttuale.disabled = !(numOk && letteraOk && hasPiattiValidi && tavoloOk);
 
     // Aggiorna stile visivo
-    if (inviaBtn.disabled) {
-        inviaBtn.style.opacity = 0.5;
-        inviaBtn.style.cursor = "not-allowed";
-        inviaBtn.style.backgroundColor = "#ccc";
-        inviaBtn.style.border = "1px solid #999";
+    if (btnInviaAttuale.disabled) {
+        btnInviaAttuale.style.opacity = 0.5;
+        btnInviaAttuale.style.cursor = "not-allowed";
+        btnInviaAttuale.style.backgroundColor = "#ccc";
+        btnInviaAttuale.style.border = "1px solid #999";
     } else {
-        inviaBtn.style.opacity = 1;
-        inviaBtn.style.cursor = "pointer";
-        inviaBtn.style.backgroundColor = "#f5f5f5";
-        inviaBtn.style.border = "1px solid #aaa";
+        btnInviaAttuale.style.opacity = 1;
+        btnInviaAttuale.style.cursor = "pointer";
+        btnInviaAttuale.style.backgroundColor = "#f5f5f5";
+        btnInviaAttuale.style.border = "1px solid #aaa";
     }
 }
 // --- LISTENER INPUT ---
@@ -13721,11 +13729,3 @@ window.aggiungiEsperienza = async function(punti) {
     } catch(e) { console.error("Errore exp:", e); }
 };
 
-// 6. Collega il nuovo pulsante di Logout
-const logoutBtnNew = document.getElementById("logoutBtnNew");
-if(logoutBtnNew) {
-    logoutBtnNew.addEventListener("click", () => {
-        // Clicca "di nascosto" il tuo vecchio tasto logout per far partire il mansionario o il logout
-        document.getElementById("logoutBtn").click(); 
-    });
-}
