@@ -103,7 +103,7 @@
 	            <!-- Pulsante Profilo con Avatar -->
 	            <div class="admin-dropdown">
 	                <button class="profile-trigger-btn" onclick="toggleDropdown(this)">
-	                    <img id="topBarAvatar" src="img/default-avatar.png" alt="Avatar" class="avatar-sm">
+	                    <div id="topBarAvatar" class="avatar-sm">🧑‍🍳</div>
 	                    <div class="profile-text-info">
 	                        <span id="topBarUsername">Utente</span>
 	                        <small id="topBarStatus">Disponibile</small>
@@ -112,12 +112,12 @@
 	                </button>
 	                <div class="admin-dropdown-content" style="right: 0; left: auto; min-width: 220px;">
 	                    <div style="padding: 15px; text-align: center; border-bottom: 1px solid #eee;">
-	                        <img id="dropdownAvatar" src="img/default-avatar.png" class="avatar-md">
+	                        <div id="dropdownAvatar" class="avatar-md">🧑‍🍳</div>
 	                        <div id="dropdownExp" style="font-weight: bold; color: #FF9800; margin-top: 5px;">Livello: Novellino</div>
 	                        <div id="dropdownBadge" style="font-size: 1.5em; margin-top: 5px;">🪵 Badge Legno</div>
 	                    </div>
 	                    <button class="tabBtn" onclick="apriModalProfilo()">✏️ Modifica Profilo</button>
-	                    <button class="tabBtn" id="logoutBtnNew" style="color: #d32f2f !important; font-weight: bold;">🚪 Esci (Logout)</button>
+	                    <button class="tabBtn" id="logoutBtn" style="color: #d32f2f !important; font-weight: bold;">🚪 Esci (Logout)</button>
 	                </div>
 	            </div>
 	        </div>
