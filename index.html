@@ -83,8 +83,48 @@
 			<div id="forgotMsg" style="margin-top: 10px; font-weight: bold;"></div>
 		</div>
 	</div>
+	<!-- ================= NUOVA TOP BAR ================= -->
+	<div id="logoutDiv" class="hidden profile-top-bar">
+	    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+	        
+	        <!-- Zona Sinistra: Mansionario o Simulatore -->
+	        <div style="display: flex; gap: 10px; align-items: center;">
+	            <div id="simulatoreRuoliDiv" style="display: none !important;"></div>
+	            <button id="passaACassaBtn" style="display:none;"></button>
+	            <button id="btnMansionario" style="display:none; padding:10px 15px; border-radius:50px; border:none; background: linear-gradient(135deg, #00BCD4, #009688); color:white; font-weight:bold; cursor:pointer; box-shadow: 0 4px 10px rgba(0, 188, 212, 0.3);">📋 Mansionario</button>
+	        </div>
 	
-	<!-- ================= LOGOUT ================= -->
+	        <!-- Zona Destra: Profilo e Orologio -->
+	        <div style="display: flex; gap: 15px; align-items: center;">
+	            <div id="orologioDiv" style="font-weight:bold; font-size:1.3em; color:#333;">
+	                <span id="orologio">--:--</span>
+	            </div>
+	
+	            <!-- Pulsante Profilo con Avatar -->
+	            <div class="admin-dropdown">
+	                <button class="profile-trigger-btn" onclick="toggleDropdown(this)">
+	                    <img id="topBarAvatar" src="img/default-avatar.png" alt="Avatar" class="avatar-sm">
+	                    <div class="profile-text-info">
+	                        <span id="topBarUsername">Utente</span>
+	                        <small id="topBarStatus">Disponibile</small>
+	                    </div>
+	                    <span style="margin-left: 5px;">▾</span>
+	                </button>
+	                <div class="admin-dropdown-content" style="right: 0; left: auto; min-width: 220px;">
+	                    <div style="padding: 15px; text-align: center; border-bottom: 1px solid #eee;">
+	                        <img id="dropdownAvatar" src="img/default-avatar.png" class="avatar-md">
+	                        <div id="dropdownExp" style="font-weight: bold; color: #FF9800; margin-top: 5px;">Livello: Novellino</div>
+	                        <div id="dropdownBadge" style="font-size: 1.5em; margin-top: 5px;">🪵 Badge Legno</div>
+	                    </div>
+	                    <button class="tabBtn" onclick="apriModalProfilo()">✏️ Modifica Profilo</button>
+	                    <button class="tabBtn" id="logoutBtnNew" style="color: #d32f2f !important; font-weight: bold;">🚪 Esci (Logout)</button>
+	                </div>
+	            </div>
+	        </div>
+	    </div>
+	</div>
+	
+	<!-- ================= LOGOUT ================= 
 	<div id="logoutDiv" class="hidden" style="padding-bottom: 10px;">
 		<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
 			
@@ -105,7 +145,7 @@
 					color:#000000;">
 			<span id="orologio">--:--</span>
 		</div>
-	</div>
+	</div> -->
 
 	<!-- ================= CASSA ================= -->
 	<div id="cassaDiv" class="hidden">
@@ -1752,6 +1792,35 @@
 	        </div>
 	        <ul id="lista-totali-sommario" style="list-style: none; padding: 0; margin: 0; max-height: 60vh; overflow-y: auto;">
 	            </ul>
+	    </div>
+	</div>
+	<!-- ================= POPUP PERSONALIZZAZIONE PROFILO ================= -->
+	<div id="modalProfilo" class="modal-overlay hidden">
+	    <div class="modal-varianti" style="max-width: 400px; text-align: center;">
+	        <h3 style="margin-top: 0; color: #2196F3;">Il tuo Profilo</h3>
+	        <p style="font-size: 0.85em; color: #666; margin-bottom: 20px;">Scegli come gli altri ti vedranno nella chat e nel sistema.</p>
+	        
+	        <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-bottom: 20px;" id="avatarSelector">
+	            <!-- Gli avatar selezionabili -->
+	            <div class="avatar-option selected" data-avatar="🧑‍🍳">👨‍🍳</div>
+	            <div class="avatar-option" data-avatar="👩‍🍳">👩‍🍳</div>
+	            <div class="avatar-option" data-avatar="🧑‍💼">🧑‍💼</div>
+	            <div class="avatar-option" data-avatar="🍕">🍕</div>
+	            <div class="avatar-option" data-avatar="🍺">🍺</div>
+	            <div class="avatar-option" data-avatar="🍟">🍟</div>
+	            <div class="avatar-option" data-avatar="👑">👑</div>
+	            <div class="avatar-option" data-avatar="🦄">🦄</div>
+	            <div class="avatar-option" data-avatar="👽">👽</div>
+	        </div>
+	
+	        <div style="text-align: left; margin-bottom: 15px;">
+	            <label style="font-weight: bold; font-size: 0.9em; color: #333;">Il tuo stato (es. Preso bene!, Aiuto!)</label>
+	            <input type="text" id="inputStatoProfilo" maxlength="30" placeholder="Inserisci uno stato..." style="width: 100%; box-sizing: border-box; padding: 10px; margin-top: 5px; border-radius: 8px; border: 1px solid #ccc;">
+	        </div>
+	
+	        <div class="modal-actions" style="margin-top: 20px;">
+	            <button class="btn-salva" id="salvaProfiloBtn" style="width: 100%; border-radius: 8px;">Salva Profilo</button>
+	        </div>
 	    </div>
 	</div>
 	<!-- ================= SCRIPT ================= -->
