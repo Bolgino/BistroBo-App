@@ -1864,6 +1864,9 @@ if (archiviaComandeStatsBtn) {
 // =====================================================
 // 🔹 Aggiunge "Snack" nei menu a tendina ruoli se attivo
 // =====================================================
+// =====================================================
+// 🔹 Aggiunge "Snack" nei menu a tendina ruoli se attivo
+// =====================================================
 function aggiornaSelectRuoliDinamici() {
     const profili = [
         { id: "snack", attivo: !!window.settings.snackAbilitato, label: "Snack" },
@@ -1871,6 +1874,16 @@ function aggiornaSelectRuoliDinamici() {
         { id: "extra2", attivo: !!window.settings.extra2Abilitato, label: window.nomiRepartiExtra?.extra2 || "Extra 2" },
         { id: "extra3", attivo: !!window.settings.extra3Abilitato, label: window.nomiRepartiExtra?.extra3 || "Extra 3" }
     ];
+
+    // Aggiorna anche le checkbox della Bacheca Avvisi!
+    profili.forEach(prof => {
+        const lbl = document.getElementById("lblAvviso" + prof.id.charAt(0).toUpperCase() + prof.id.slice(1));
+        const txt = document.getElementById("txtAvviso" + prof.id.charAt(0).toUpperCase() + prof.id.slice(1));
+        if (lbl && txt) {
+            lbl.style.display = prof.attivo ? "inline-block" : "none";
+            txt.innerText = prof.label;
+        }
+    });
 
     ["regRole", "newRole"].forEach(selectId => {
         const selectEl = document.getElementById(selectId);
@@ -2938,22 +2951,36 @@ function initBachecaListener() {
 
         // --- 1. GESTIONE UI ADMIN (Mostra cosa c'è in onda) ---
         if (ruolo === "admin" && adminStatusDiv) {
-            if (avviso) {
+            if (avviso && avviso.testo) {
                 adminStatusDiv.style.display = "block";
                 document.getElementById("testoAvvisoInOnda").innerText = avviso.testo;
-                document.getElementById("destinatariAvvisoInOnda").innerText = avviso.destinatari.join(", ").toUpperCase();
+                
+                // Traduciamo i nomi grezzi nei nomi belli scelti dall'admin
+                const nomiDest = avviso.destinatari.map(d => {
+                    if (d === "tutti") return "Tutti";
+                    if (d === "cassa") return "Cassa";
+                    if (d === "cucina") return "Cucina";
+                    if (d === "bere") return "Bere";
+                    if (d === "snack") return "Snack";
+                    if (d.startsWith("extra")) return window.nomiRepartiExtra?.[d] || d.toUpperCase();
+                    return d;
+                });
+                
+                document.getElementById("destinatariAvvisoInOnda").innerText = nomiDest.join(", ");
             } else {
                 adminStatusDiv.style.display = "none";
             }
         }
 
-       // --- 2. GESTIONE POPUP UTENTE ---
-        if (!avviso) {
+        // --- 2. GESTIONE POPUP UTENTE (E PROTEZIONE LOGIN) ---
+        if (!avviso || !avviso.testo) {
             if (modal) modal.classList.add("hidden");
             return;
         }
 
-        // FIX: NON mostrare MAI l'avviso a chi si trova ancora sulla schermata di Login!
+        // FIX FONDAMENTALE: Blocca il popup se l'utente è ancora nella pagina di login!
+        const divLogin = document.getElementById("loginDiv");
+        if (divLogin && !divLogin.classList.contains("hidden")) return;
         if (!uid || !ruolo) return;
 
         // Se l'admin è "lui stesso" e non sta simulando un ruolo, non mostrare il popup gigante
@@ -2965,7 +2992,7 @@ function initBachecaListener() {
         const isDestinatario = avviso.destinatari.includes("tutti") || avviso.destinatari.includes(ruolo);
         if (!isDestinatario) return;
 
-        // Controlla se lo abbiamo già letto e se la data è più vecchia del nuovo avviso
+        // Controlla se lo abbiamo già letto
         const ultimoLettoStr = localStorage.getItem("ultimoAvvisoLetto_" + uid);
         if (ultimoLettoStr && parseInt(ultimoLettoStr) >= avviso.timestamp) {
             return; // Già letto, ignora
@@ -2977,7 +3004,7 @@ function initBachecaListener() {
             document.getElementById("autoreAvvisoGlobale").innerText = avviso.autore || "Amministrazione";
             modal.classList.remove("hidden");
             
-            // Suono d'allarme forte (se l'audio globale non è silenziato)
+            // Suono d'allarme
             if (window.settings && window.settings.suono) {
                 try {
                     const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -2997,7 +3024,6 @@ function initBachecaListener() {
             }
         }
 
-        // Azione tasto conferma (salva nel telefono che l'ha letto)
         document.getElementById("btnConfermaAvviso").onclick = () => {
             localStorage.setItem("ultimoAvvisoLetto_" + uid, avviso.timestamp.toString());
             modal.classList.add("hidden");
