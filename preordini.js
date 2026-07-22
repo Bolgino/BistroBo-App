@@ -1129,7 +1129,8 @@ async function initPreordiniClienti() {
         telWrap.style.display = "block";
         posWrap.style.display = "block";
         posInp.placeholder = "Postazione (Es. Palco, Stand 3...)";
-        oraWrap.style.display = "none";
+        oraWrap.style.display = "flex";
+        document.getElementById("orarioLabel").innerText = "Orario desiderato:";
     } else if (mode === "tavolo") {
         nomeInp.placeholder = "Il tuo Nome";
         telWrap.style.display = "none";
@@ -1373,6 +1374,7 @@ window.aggiungiVeloceCarrello = function(id) {
         } else if (window.currentPreorderMode === "sanmatteo") {
             if (!telValue || telPuro.length < 8) { notifypreordini("⚠ Inserisci un numero di telefono valido (min. 8 cifre)!", "warn"); return; }
             if (document.getElementById("posizioneCliente").value.trim().length < 2) { notifypreordini("⚠ Inserisci una postazione valida!", "warn"); return; }
+            if (!document.getElementById("orarioConsegnaCliente").value.trim()) { notifypreordini("⚠ Inserisci l'orario desiderato!", "warn"); return; }
         }
 
         const piatti = carrelloCliente.map(c => {
@@ -1394,6 +1396,7 @@ window.aggiungiVeloceCarrello = function(id) {
         } else if (window.currentPreorderMode === "sanmatteo") {
             html += `<p><b>Telefono:</b> ${document.getElementById("telefonoCliente").value}</p>`;
             html += `<p><b>Postazione:</b> ${document.getElementById("posizioneCliente").value}</p>`;
+            html += `<p><b>Orario:</b> ${document.getElementById("orarioConsegnaCliente").value}</p>`;
         } else if (window.currentPreorderMode === "tavolo") {
             const urlP = new URLSearchParams(window.location.search);
             html += `<p><b>Tavolo:</b> ${urlP.get('t')}</p>`;
@@ -1429,6 +1432,7 @@ window.aggiungiVeloceCarrello = function(id) {
             } else if (window.currentPreorderMode === "sanmatteo") {
                 preordine.telefono = document.getElementById("telefonoCliente").value.trim();
                 preordine.posizione = document.getElementById("posizioneCliente").value.trim();
+                preordine.orarioConsegna = document.getElementById("orarioConsegnaCliente").value;
             } else if (window.currentPreorderMode === "tavolo") {
                 const urlP = new URLSearchParams(window.location.search);
                 preordine.tavoloPreimpostato = urlP.get('t');
