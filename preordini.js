@@ -349,14 +349,13 @@ async function renderPreordiniAdmin(data) {
                     </span>
 
                     <div style="display:flex; align-items:center; gap:10px;">
-                        ${(asportoAbilitato && !window.settings.preordiniAsportoAutomatico) ? `
+                        ${(p.modalita === "deliveroo" || p.modalita === "sanmatteo") ? `
+                            <span style="color:#007b00; font-weight:bold; font-size:0.95em;">📦 Asporto (Auto)</span>
+                        ` : (p.modalita === "fila" && window.settings.asportoAbilitato) ? `
                             <label>
-                                <input type="checkbox"
-                                    onchange="segnaAsporto('${id}', this.checked)"
-                                    ${p.asporto ? 'checked' : ''}/> Asporto
+                                <input type="checkbox" onchange="segnaAsporto('${id}', this.checked)" ${p.asporto ? 'checked' : ''}/> Asporto
                             </label>
-                        ` : (window.settings.preordiniAsportoAutomatico ? `<span style="color:#007b00; font-weight:bold; font-size:0.95em;">📦 Asporto Auto</span>` : "")}
-
+                        ` : ""}
                         <label>
                             <select onchange="impostaMetodoPagamento('${id}', this.value)">
                                 <option value="contanti" ${p.metodoPagamento === 'contanti' ? 'selected' : ''}>Contanti</option>
@@ -538,14 +537,13 @@ function renderPreordiniCassa(data) {
                     </span>
 
                     <div style="display:flex; align-items:center; gap:10px;">
-                       ${(window.settings.asportoAbilitato && !window.settings.preordiniAsportoAutomatico) ? `
+                       ${(p.modalita === "deliveroo" || p.modalita === "sanmatteo") ? `
+                            <span style="color:#007b00; font-weight:bold; font-size:0.95em;">📦 Asporto (Auto)</span>
+                        ` : (p.modalita === "fila" && window.settings.asportoAbilitato) ? `
                             <label>
-                                <input type="checkbox"
-                                    onchange="segnaAsporto('${id}', this.checked)"
-                                    ${p.asporto ? 'checked' : ''}/> Asporto
+                                <input type="checkbox" onchange="segnaAsporto('${id}', this.checked)" ${p.asporto ? 'checked' : ''}/> Asporto
                             </label>
-                        ` : (window.settings.preordiniAsportoAutomatico ? `<span style="color:#007b00; font-weight:bold; font-size:0.95em;">📦 Asporto Auto</span>` : "")}
-
+                        ` : ""}
                         <label>
                             <select onchange="impostaMetodoPagamento('${id}', this.value)">
                                 <option value="contanti" ${p.metodoPagamento === 'contanti' ? 'selected' : ''}>Contanti</option>
@@ -593,28 +591,28 @@ async function aggiungiPreordineAlleComande(id) {
     let commentoAsporto = null;
     let numeroTavolo = "";
 
-    if (p.modalita === "deliveroo" || (window.settings.asportoAbilitato && p.asporto)) {
+    if (p.modalita === "deliveroo") {
         isAsporto = true;
-        commentoAsporto = p.modalita === "deliveroo" ? `DELIVEROO (${p.posizione})` : "ASPORTO";
+        commentoAsporto = `DELIVEROO (${p.posizione})`;
     } else if (p.modalita === "sanmatteo") {
-        commentoAsporto = `POSTAZIONE: ${p.posizione}`;
+        isAsporto = true; // Di default asporto
+        commentoAsporto = `EVENTO (${p.posizione})`;
     } else if (p.modalita === "fila") {
-        isAsporto = p.asporto ? true : false;
+        isAsporto = p.asporto === true;
         if(isAsporto) commentoAsporto = "ASPORTO";
+    } else if (p.modalita === "tavolo") {
+        isAsporto = false;
     }
 
     // 0.5️⃣ RICHIESTA TAVOLO AUTO-COMPILATO O MODALE
     if (p.modalita === "tavolo" && p.tavoloPreimpostato) {
-        numeroTavolo = p.tavoloPreimpostato; // Auto-passa il tavolo senza chiedere nulla alla cassa!
+        numeroTavolo = p.tavoloPreimpostato; 
     } else if (window.settings.richiediTavolo && !isAsporto && p.modalita !== "sanmatteo" && p.modalita !== "fila") {
-        // Se è in fila o ha un evento, ignoriamo il numero del tavolo classico per velocizzare
         numeroTavolo = await new Promise((resolve) => {
-            // Crea l'overlay scuro
             const overlay = document.createElement("div");
             overlay.className = "modal-overlay";
             overlay.style.zIndex = "10005"; 
 
-            // Crea il box del modale
             const modal = document.createElement("div");
             modal.className = "modal-varianti";
             modal.style.textAlign = "center";
@@ -647,9 +645,12 @@ async function aggiungiPreordineAlleComande(id) {
     }
 
     // 1️⃣ Genera numero + lettera per la comanda
-    const lettera = (window.settings?.letteraPreordini || "D").toUpperCase();
+    let lettera = "";
+    if (p.modalita === "deliveroo" || p.modalita === "sanmatteo") {
+        lettera = (window.settings?.letteraPreordini || "D").toUpperCase();
+    }
     const numeroBase = await getProssimoNumero(lettera);
-    const numeroComandaFinale = numeroBase + lettera;
+    const numeroComandaFinale = lettera ? numeroBase + lettera : numeroBase.toString();
 
     // 🔥 2️⃣ SCALA INGREDIENTI DAL MAGAZZINO (Come fa la Cassa!)
     if (typeof calcolaRichiesteDaPiatti === "function" && typeof applicaDecrementiIngredienti === "function") {
@@ -757,21 +758,28 @@ async function eliminaPreordine(id) {
   if (typeof notifypreordini === "function") notifypreordini("🗑️ Preordine eliminato.", "info");
 }
 async function getProssimoNumero(lettera) {
-    // Prendi tutte le comande con la lettera selezionata
     const snap = await db.ref("comande").once("value");
     const data = snap.val() || {};
 
     let maxNum = 0;
     Object.values(data).forEach(c => {
         if (!c.numero) return;
-        const match = c.numero.toString().match(/^(\d+)([A-Za-z])$/);
-        if (match && match[2].toUpperCase() === lettera.toUpperCase()) {
-            const num = parseInt(match[1], 10);
-            if (num > maxNum) maxNum = num;
+        if (lettera) {
+            const match = c.numero.toString().match(/^(\d+)([A-Za-z])$/);
+            if (match && match[2].toUpperCase() === lettera.toUpperCase()) {
+                const num = parseInt(match[1], 10);
+                if (num > maxNum) maxNum = num;
+            }
+        } else {
+            // Se non c'è lettera, cerchiamo il progressivo numerico puro
+            const match = c.numero.toString().match(/^(\d+)$/);
+            if (match) {
+                const num = parseInt(match[1], 10);
+                if (num > maxNum) maxNum = num;
+            }
         }
     });
-
-    return maxNum + 1; // ritorna il prossimo numero disponibile
+    return maxNum + 1;
 }
 // ================================================================
 // ========== 3️⃣ PARTE CLIENTI (pagina preordina.html) ============
@@ -1086,6 +1094,10 @@ async function initPreordiniClienti() {
     const posInp = document.getElementById("posizioneCliente");
     const oraWrap = document.getElementById("orarioConsegnaWrapper");
 
+    // Rimuoviamo eventuali box informativi vecchi per pulizia
+    const oldBox = document.getElementById("tavoloInfoBox");
+    if(oldBox) oldBox.remove();
+
     if (mode === "fila") {
         nomeInp.placeholder = "Il tuo Nome";
         telWrap.style.display = "none";
@@ -1100,7 +1112,7 @@ async function initPreordiniClienti() {
         document.getElementById("orarioLabel").innerText = "Orario di consegna:";
     } else if (mode === "sanmatteo") {
         nomeInp.placeholder = "Il tuo Nome";
-        telWrap.style.display = "none";
+        telWrap.style.display = "block"; // Aggiunto Telefono per San Matteo!
         posWrap.style.display = "block";
         posInp.placeholder = "Postazione / Ombrellone (Es. A12)";
         oraWrap.style.display = "none";
@@ -1109,8 +1121,13 @@ async function initPreordiniClienti() {
         telWrap.style.display = "none";
         posWrap.style.display = "none";
         oraWrap.style.display = "none";
+        // Box informativo di sicurezza per il tavolo
+        const infoBox = document.createElement("div");
+        infoBox.id = "tavoloInfoBox";
+        infoBox.style.cssText = "background: #e8f5e9; color: #2e7d32; padding: 15px; border-radius: 8px; text-align: center; font-weight: bold; border: 1px solid #c8e6c9;";
+        infoBox.innerHTML = `🍽️ Stai ordinando per il <b>Tavolo ${tavoloPreimpostato || "Sconosciuto"}</b>. Ti porteremo tutto noi!`;
+        document.getElementById("campiDinamiciWrapper").prepend(infoBox);
     }
-   
     // Permette al cliente di cancellare un piatto se ci ha ripensato
     function rimuoviDalCarrello(index) {
         carrelloCliente.splice(index, 1);
@@ -1304,6 +1321,7 @@ window.aggiungiVeloceCarrello = function(id) {
             if (!document.getElementById("posizioneCliente").value.trim()) { notifypreordini("⚠ Inserisci l'indirizzo di consegna!", "warn"); return; }
             if (!document.getElementById("orarioConsegnaCliente").value.trim()) { notifypreordini("⚠ Inserisci l'orario desiderato!", "warn"); return; }
         } else if (window.currentPreorderMode === "sanmatteo") {
+            if (!document.getElementById("telefonoCliente").value.trim()) { notifypreordini("⚠ Inserisci il numero di telefono!", "warn"); return; }
             if (!document.getElementById("posizioneCliente").value.trim()) { notifypreordini("⚠ Inserisci la postazione/ombrellone!", "warn"); return; }
         }
 
@@ -1324,6 +1342,7 @@ window.aggiungiVeloceCarrello = function(id) {
             html += `<p><b>Indirizzo:</b> ${document.getElementById("posizioneCliente").value}</p>`;
             html += `<p><b>Consegna per le:</b> ${document.getElementById("orarioConsegnaCliente").value}</p>`;
         } else if (window.currentPreorderMode === "sanmatteo") {
+            html += `<p><b>Telefono:</b> ${document.getElementById("telefonoCliente").value}</p>`;
             html += `<p><b>Postazione:</b> ${document.getElementById("posizioneCliente").value}</p>`;
         } else if (window.currentPreorderMode === "tavolo") {
             const urlP = new URLSearchParams(window.location.search);
@@ -1358,6 +1377,7 @@ window.aggiungiVeloceCarrello = function(id) {
                 preordine.posizione = document.getElementById("posizioneCliente").value.trim();
                 preordine.orarioConsegna = document.getElementById("orarioConsegnaCliente").value;
             } else if (window.currentPreorderMode === "sanmatteo") {
+                preordine.telefono = document.getElementById("telefonoCliente").value.trim();
                 preordine.posizione = document.getElementById("posizioneCliente").value.trim();
             } else if (window.currentPreorderMode === "tavolo") {
                 const urlP = new URLSearchParams(window.location.search);
