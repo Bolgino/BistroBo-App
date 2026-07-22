@@ -1074,24 +1074,6 @@ function initImpostazioniToggle() {
             aggiornaVisibilitaOrdinaPreordini();
         });
     }
-    // NUOVA IMPOSTAZIONE: richiedi numero e posizione
-    const togglePreordiniInfoBtn = document.getElementById("togglePreordiniInfoBtn");
-    const preordiniInfoRef = db.ref("impostazioni/preordiniRichiediInfo");
-    if (togglePreordiniInfoBtn) {
-        initToggle(togglePreordiniInfoBtn, preordiniInfoRef, {on:"ON", off:"OFF"}, false, val => {
-            window.settings.preordiniRichiediInfo = val;
-
-            // Aggiorna eventuali UI esistenti
-            if (window.isLoggedInAdmin) renderPreordiniAdmin({...ultimiPreordini});
-            if (window.isLoggedInCassa) renderPreordiniCassa({...ultimiPreordini});
-        });
-
-        // Visibilità toggle solo se preordini attivi
-        db.ref("impostazioni/preordiniAbilitati").on("value", snap => {
-            const preordiniOn = snap.exists() && snap.val() === true;
-            togglePreordiniInfoBtn.parentElement.style.display = preordiniOn ? "flex" : "none";
-        });
-    }
     const nomeStandRef = db.ref("impostazioni/nomeStand");
     const inputNomeStand = document.getElementById("inputNomeStand");
     const saveNomeStandBtn = document.getElementById("saveNomeStandBtn");
@@ -1466,21 +1448,26 @@ function initImpostazioniToggle() {
 		    });
 		}
     });
-	// 🔹 ASPORTO AUTOMATICO PREORDINI
-    const togglePreordiniAsportoAutoBtn = document.getElementById("togglePreordiniAsportoAutoBtn");
-    const preordiniAsportoAutoRef = db.ref("impostazioni/preordiniAsportoAutomatico");
-    
-    if (togglePreordiniAsportoAutoBtn) {
-        initToggle(togglePreordiniAsportoAutoBtn, preordiniAsportoAutoRef, {on:"ON", off:"OFF"}, false, val => {
-            window.settings.preordiniAsportoAutomatico = val;
-        });
+	// NUOVI TOGGLES MODALITA PREORDINI
+    const mods = ["Fila", "Deliveroo", "Sanmatteo", "Tavolo"];
+    mods.forEach(mod => {
+        const btn = document.getElementById("toggleMod" + mod);
+        const ref = db.ref("impostazioni/modPreordini/" + mod.toLowerCase());
+        if(btn) {
+            initToggle(btn, ref, {on:"ON", off:"OFF"}, false, val => {
+                if(!window.settings.modPreordini) window.settings.modPreordini = {};
+                window.settings.modPreordini[mod.toLowerCase()] = val;
+            });
+        }
+    });
 
-        // Mostra il bottone nelle impostazioni solo se i preordini sono abilitati
-        db.ref("impostazioni/preordiniAbilitati").on("value", snap => {
-            const preordiniOn = snap.exists() && snap.val() === true;
-            togglePreordiniAsportoAutoBtn.parentElement.style.display = preordiniOn ? "flex" : "none";
-        });
-    }
+    // Visibilità dei blocchi modalità solo se preordini globali ON
+    db.ref("impostazioni/preordiniAbilitati").on("value", snap => {
+        const preordiniOn = snap.exists() && snap.val() === true;
+        document.querySelectorAll(".modPreordineSetting").forEach(el => el.style.display = preordiniOn ? "flex" : "none");
+        const tit = document.getElementById("titoloModalitaPreordini");
+        if(tit) tit.style.display = preordiniOn ? "block" : "none";
+    });
 	// ================= COPERTO E COSTO ASPORTO =================
     const copertoRef = db.ref("impostazioni/copertoAbilitato");
     const copertoValRef = db.ref("impostazioni/copertoValore");
@@ -13779,3 +13766,55 @@ window.addEventListener("click", function(e) {
     });
 });
 
+// Generatore QR Code per le varie modalità di Preordine
+window.apriQRModal = function(mode) {
+    let baseUrl = window.location.href.replace("index.html", "").split("?")[0];
+    if(!baseUrl.endsWith("/")) baseUrl += "/";
+    let link = `${baseUrl}preordini.html?mode=${mode}`;
+    
+    let titolo = "QR Code";
+    if(mode === "fila") titolo = "QR Code - In Fila 🚶‍♂️";
+    if(mode === "deliveroo") titolo = "QR Code - Deliveroo 🛵";
+    if(mode === "sanmatteo") titolo = "QR Code - San Matteo 🎪";
+    if(mode === "tavolo") {
+        const tav = document.getElementById("inputTavoloQR").value.trim();
+        if(!tav) {
+            notify("Inserisci un numero di tavolo prima di generare il QR!", "warn");
+            return;
+        }
+        link += `&t=${encodeURIComponent(tav)}`;
+        titolo = `QR Code - Tavolo ${tav} 🍽️`;
+    }
+
+    const overlay = document.createElement("div");
+    overlay.className = "modal-overlay";
+    overlay.style.zIndex = "10005";
+    
+    const modal = document.createElement("div");
+    modal.className = "modal-varianti";
+    modal.style.textAlign = "center";
+    
+    modal.innerHTML = `
+        <h3 style="margin-top:0; color:#E91E63;">${titolo}</h3>
+        <canvas id="qrCanvas" style="margin: 20px auto; display: block; border: 10px solid white; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);"></canvas>
+        <p style="font-size: 0.8em; word-break: break-all; color: #555; background: #f5f5f5; padding: 10px; border-radius: 6px;">
+            <a href="${link}" target="_blank" style="text-decoration:none; color:#2196F3;">${link}</a>
+        </p>
+        <div class="modal-actions" style="display:flex; gap:10px; margin-top:20px;">
+            <button class="btn-chiudi" onclick="this.closest('.modal-overlay').remove()">Chiudi</button>
+            <button class="btn-salva" onclick="navigator.clipboard.writeText('${link}').then(()=>notify('Link copiato nella clipboard!', 'success'))" style="background:#4CAF50;">Copia Link</button>
+        </div>
+    `;
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    // Disegna il QR usando la libreria qrious
+    setTimeout(() => {
+        new QRious({
+            element: document.getElementById('qrCanvas'),
+            value: link,
+            size: 220,
+            level: 'H'
+        });
+    }, 100);
+};
