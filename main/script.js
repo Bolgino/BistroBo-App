@@ -1449,7 +1449,7 @@ function initImpostazioniToggle() {
 		}
     });
 	// NUOVI TOGGLES MODALITA PREORDINI
-    const mods = ["Fila", "Deliveroo", "Sanmatteo", "Tavolo"];
+    const mods = ["Fila", "Deliveroo", "SanMatteo", "Tavolo"];
     mods.forEach(mod => {
         const btn = document.getElementById("toggleMod" + mod);
         const ref = db.ref("impostazioni/modPreordini/" + mod.toLowerCase());
