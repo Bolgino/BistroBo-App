@@ -1040,10 +1040,10 @@
 				</div>
 
 				<!-- Mostra quale avviso è attualmente "in onda" -->
-				<div id="statoAvvisoAttuale" style="margin-top: 25px; padding: 15px; background: #ffebee; border-left: 5px solid #f44336; border-radius: 6px; display: none;">
-					<h4 style="margin: 0 0 8px 0; color: #d32f2f;">⚠️ Avviso attualmente in onda:</h4>
-					<div id="testoAvvisoInOnda" style="font-size: 1.1em; font-weight: 600; color: #333; margin-bottom: 8px;"></div>
-					<div style="font-size: 0.85em; color: #666; font-style: italic;">Destinatari: <span id="destinatariAvvisoInOnda" style="font-weight:bold; color:#000;"></span></div>
+				<div id="statoAvvisoAttuale" style="margin-top: 25px; padding: 15px; background: rgba(244, 67, 54, 0.1); border: 1px solid #f44336; border-left: 5px solid #f44336; border-radius: 6px; display: none;">
+					<h4 style="margin: 0 0 8px 0; color: #f44336; text-shadow: none;">⚠️ Avviso attualmente in onda:</h4>
+					<div id="testoAvvisoInOnda" style="font-size: 1.1em; font-weight: 600; color: inherit; margin-bottom: 8px;"></div>
+					<div style="font-size: 0.85em; color: inherit; font-style: italic; opacity: 0.8;">Destinatari: <span id="destinatariAvvisoInOnda" style="font-weight:bold; opacity: 1;"></span></div>
 				</div>
 			</div>
 		</div>
@@ -1863,7 +1863,7 @@
 	    </div>
 	</div>
 	<!-- ================= POPUP BACHECA AVVISI GLOBALE ================= -->
-	<div id="modalAvvisoGlobale" class="modal-overlay hidden" style="z-index: 999999;">
+	<div id="modalAvvisoGlobale" class="modal-overlay hidden" style="z-index: 999999; display: none;">
 		<div class="modal-varianti" style="border: 5px solid #F44336; max-width: 550px; text-align: center; padding: 30px;">
 			<div style="font-size: 3em; margin-bottom: 10px;">📢</div>
 			<h2 style="color: #D32F2F; font-size: 1.8em; margin-top: 0; margin-bottom: 15px;">AVVISO IMPORTANTE</h2>
@@ -1872,7 +1872,7 @@
 			
 			<p style="font-size: 0.9em; color: #777; margin-top: 20px; font-style: italic;">Inviato da: <span id="autoreAvvisoGlobale" style="font-weight:bold;"></span></p>
 			
-			<button id="btnConfermaAvviso" style="width: 100%; padding: 18px; background: #4CAF50; color: white; font-size: 1.2em; font-weight: bold; border-radius: 8px; margin-top: 25px; border:none; cursor:pointer; box-shadow: 0 4px 10px rgba(76, 175, 80, 0.4);">✓ HO LETTO E COMPRESO</button>
+			<button id="btnConfermaAvviso" style="width: 100%; padding: 18px; background: #4CAF50 !important; color: white !important; font-size: 1.2em; font-weight: bold; border-radius: 8px; margin-top: 25px; border:none !important; cursor:pointer; box-shadow: 0 4px 10px rgba(76, 175, 80, 0.4) !important;">✓ HO LETTO E COMPRESO</button>
 		</div>
 	</div>
 	<!-- ================= POPUP PERSONALIZZAZIONE PROFILO ================= -->
