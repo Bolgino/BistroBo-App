@@ -892,11 +892,9 @@ async function initPreordiniClienti() {
 
 
         // Piatti della categoria
+        // Piatti della categoria
         items.forEach(([id, item]) => {
             
-            // 🛑 NUOVO CONTROLLO: Se l'admin ha nascosto il piatto, salta la generazione grafica!
-            if (item.visibilePreordini === false) return;
-
            const piattoBloccato = item.bloccato === true;
             let ingredientiEsauriti = false;
             if (item.ingredienti) {
@@ -936,6 +934,15 @@ async function initPreordiniClienti() {
             const riga = document.createElement("div");
             riga.className = "menu-item";
             riga.dataset.tags = JSON.stringify(item.tags || {});
+            
+            // Salviamo lo stato di visibilità nel box stesso
+            riga.dataset.visibilePreordini = item.visibilePreordini === false ? "false" : "true";
+            
+            // Se nascosto dall'admin, lo rendiamo invisibile subito
+            if (item.visibilePreordini === false) {
+                riga.style.display = "none";
+            }
+
             if (esaurito) riga.classList.add("esaurito");
             
             const topDiv = document.createElement("div");
@@ -1024,12 +1031,19 @@ async function initPreordiniClienti() {
                 
                 // Filtra le singole righe dei piatti
                 document.querySelectorAll('.menu-item').forEach(riga => {
+                    // Controlla prima se l'admin ha nascosto il piatto globalmente
+                    const isVisibleAdmin = riga.dataset.visibilePreordini !== "false";
+                    if (!isVisibleAdmin) {
+                        riga.style.display = 'none';
+                        return; // Se è nascosto dall'Admin, ignora i filtri dieta e tienilo nascosto
+                    }
+
                     if (filter === 'all') {
-                        riga.style.display = 'block'; // 🔥 FIX: Usa block invece di flex
+                        riga.style.display = 'block'; 
                     } else {
                         const tags = JSON.parse(riga.dataset.tags || '{}');
                         if (tags[filter]) {
-                            riga.style.display = 'block'; // 🔥 FIX: Usa block invece di flex
+                            riga.style.display = 'block'; 
                         } else {
                             riga.style.display = 'none';
                         }
@@ -1134,9 +1148,15 @@ async function initPreordiniClienti() {
     }
     // Listener combinato ingredienti + bloccato
     // Motore unificato per bloccare/sbloccare i tasti
+    // Listener combinato ingredienti + bloccato + VISIBILITÀ
+    // Motore unificato per gestire in realtime la UI del menu
     window.aggiornaDisponibilitaPiatti = function() {
         const menuData = window.menuPreordini || {};
         const ingredientiDB = window.ingredientiPreordini || {};
+
+        // Capiamo qual è il filtro dieta attualmente attivo dal cliente
+        const activeFilterBtn = document.querySelector('.diet-filter-btn.active');
+        const currentFilter = activeFilterBtn ? activeFilterBtn.dataset.filter : 'all';
 
         document.querySelectorAll(".menu-item").forEach(riga => {
             // TROVA IL BOTTONE TRAMITE ID FISSO (METODO INFALLIBILE)
@@ -1148,7 +1168,21 @@ async function initPreordiniClienti() {
             const item = menuData[id];
             if (!item) return;
 
-            // 1. Determina se il piatto è esaurito
+            // --- 0. AGGIORNAMENTO VISIBILITA' REALTIME ---
+            riga.dataset.visibilePreordini = item.visibilePreordini === false ? "false" : "true";
+            
+            let passaFiltro = false;
+            if (currentFilter === 'all') {
+                passaFiltro = true;
+            } else {
+                const tags = JSON.parse(riga.dataset.tags || '{}');
+                passaFiltro = !!tags[currentFilter];
+            }
+            
+            // Applica il display combinato (Admin + Filtro Dieta)
+            riga.style.display = (item.visibilePreordini !== false && passaFiltro) ? 'block' : 'none';
+
+            // --- 1. Determina se il piatto è esaurito ---
             let esaurito = item.bloccato === true;
             if (item.ingredienti) {
                 for (const ing of item.ingredienti) {
@@ -1216,6 +1250,20 @@ async function initPreordiniClienti() {
 
                 if (labelEsaurito) labelEsaurito.remove();
             }
+        });
+
+        // 4. Aggiorna in realtime anche i titoli delle categorie se si svuotano/riempiono
+        document.querySelectorAll('.categoria-titolo').forEach(titolo => {
+            let hasVisible = false;
+            let next = titolo.nextElementSibling;
+            while(next && next.classList.contains('menu-item')) {
+                if (next.style.display !== 'none') {
+                    hasVisible = true;
+                    break;
+                }
+                next = next.nextElementSibling;
+            }
+            titolo.style.display = hasVisible ? 'block' : 'none';
         });
 
         if (typeof aggiornaRiepilogoCarrelloUI === "function") {
