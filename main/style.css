@@ -3646,3 +3646,21 @@ body.tema-notte #tavoloInfoBox {
 body.tema-astronave #tavoloInfoBox {
     background: #003B2A !important; color: #4DFFB2 !important; border: 1px solid #00B35F !important; box-shadow: inset 0 0 8px rgba(0,255,136,.2) !important; text-shadow: none !important;
 }
+/* ===========================================================
+   STILE BACHECA AVVISI (TEMI SCURI INCLUSI)
+=========================================================== */
+body.tema-notte #modalAvvisoGlobale .modal-varianti,
+body.tema-astronave #modalAvvisoGlobale .modal-varianti {
+    background: #050A13 !important;
+    border-color: #D32F2F !important;
+    box-shadow: 0 0 30px rgba(244, 67, 54, 0.3) !important;
+}
+body.tema-notte #testoAvvisoGlobale,
+body.tema-astronave #testoAvvisoGlobale {
+    color: #FFFFFF !important;
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.3) !important;
+}
+body.tema-notte #modalAvvisoGlobale p,
+body.tema-astronave #modalAvvisoGlobale p {
+    color: #94A3B8 !important;
+}
