@@ -2947,11 +2947,14 @@ function initBachecaListener() {
             }
         }
 
-        // --- 2. GESTIONE POPUP UTENTE ---
+       // --- 2. GESTIONE POPUP UTENTE ---
         if (!avviso) {
             if (modal) modal.classList.add("hidden");
             return;
         }
+
+        // FIX: NON mostrare MAI l'avviso a chi si trova ancora sulla schermata di Login!
+        if (!uid || !ruolo) return;
 
         // Se l'admin è "lui stesso" e non sta simulando un ruolo, non mostrare il popup gigante
         const passaBtn = document.getElementById("passaACassaBtn");
