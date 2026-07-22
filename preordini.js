@@ -1380,32 +1380,89 @@ window.aggiungiVeloceCarrello = function(id) {
                 })
             };
 
-            try {
-                await preordiniRef.push(preordine);
+           try {
+                // 1. Salviamo il riferimento per ottenere l'ID univoco generato da Firebase
+                const nuovoPreordineRef = await preordiniRef.push(preordine);
+                const preordineId = nuovoPreordineRef.key;
 
                 mostraNotificaCentrale("✅ Preordine inviato!");
 
-                // 🔹 Reset identico al tuo codice
+                // 2. Reset dei campi (come nel tuo codice originale)
                 document.getElementById("nomeCliente").value = "";
                 document.getElementById("noteCliente").value = "";
-                document.getElementById("posizioneCliente").value = "";
-                document.getElementById("telefonoCliente").value = "";
-                document.getElementById("orarioConsegnaCliente").value = "";
+                if(document.getElementById("posizioneCliente")) document.getElementById("posizioneCliente").value = "";
+                if(document.getElementById("telefonoCliente")) document.getElementById("telefonoCliente").value = "";
+                if(document.getElementById("orarioConsegnaCliente")) document.getElementById("orarioConsegnaCliente").value = "";
                 document.getElementById("soldiGiusti").checked = false;
                 document.getElementById("restoRichiesto").value = "";
                 document.getElementById("restoRichiesto").disabled = false;
                 document.querySelectorAll("select[data-id]").forEach(sel => sel.value = "0");
                 totale = 0;
                 document.getElementById("totaleCliente").innerText = "0.00";
-                // 🔥 AGGIUNGI QUESTE DUE RIGHE QUI: Svuota il carrello e aggiorna la grafica
+                
                 carrelloCliente = [];
                 if (typeof aggiornaRiepilogoCarrelloUI === "function") aggiornaRiepilogoCarrelloUI();
+
+                // 3. Nascondiamo il popup di riepilogo
+                document.getElementById("popupRiepilogo").classList.add("hidden");
+
+                // --- 4. NUOVA LOGICA ANNULLAMENTO (30 SECONDI) ---
+                const btnInviaMain = document.getElementById("inviaPreordineBtn");
+                
+                // Salviamo la funzione originale che apre il popup
+                const onclickOriginale = btnInviaMain.onclick; 
+                
+                // Prendiamo il tempo dalle impostazioni globali (lo stesso della cassa) o usiamo 30 di default
+                let tempoResiduo = window.settings.tempoAnnullamento || 30;
+                
+                // Trasformiamo il bottone in "Annulla"
+                btnInviaMain.innerHTML = `⏳ Annulla Ordine (${tempoResiduo}s)`;
+                btnInviaMain.style.background = "linear-gradient(135deg, #f44336, #d32f2f)"; // Diventa rosso
+                
+                // Avviamo il timer
+                const timerAnnullamento = setInterval(() => {
+                    tempoResiduo--;
+                    if (tempoResiduo > 0) {
+                        btnInviaMain.innerHTML = `⏳ Annulla Ordine (${tempoResiduo}s)`;
+                    } else {
+                        // Tempo scaduto: ripristiniamo il bottone
+                        clearInterval(timerAnnullamento);
+                        ripristinaBottone(btnInviaMain, onclickOriginale);
+                    }
+                }, 1000);
+
+                // Definiamo cosa succede se il cliente clicca su "Annulla" in tempo
+                btnInviaMain.onclick = async () => {
+                    clearInterval(timerAnnullamento);
+                    btnInviaMain.disabled = true;
+                    btnInviaMain.innerText = "Annullamento...";
+                    
+                    try {
+                        // Eliminiamo il preordine da Firebase
+                        await preordiniRef.child(preordineId).remove();
+                        mostraNotificaCentrale("🚫 Ordine annullato!");
+                    } catch(err) {
+                        console.error("Errore durante l'annullamento:", err);
+                    }
+                    
+                    // Ripristiniamo subito il bottone
+                    ripristinaBottone(btnInviaMain, onclickOriginale);
+                };
+
+                // Funzione helper per far tornare il bottone al suo stato verde originale
+                function ripristinaBottone(btn, onclickOrig) {
+                    btn.innerHTML = "📩 Invia Preordine";
+                    btn.style.background = "linear-gradient(135deg, #4caf50, #2e7d32)"; 
+                    btn.disabled = false;
+                    btn.onclick = onclickOrig;
+                }
+                // ------------------------------------------------
 
             } catch (err) {
                 console.error(err);
                 notifypreordini("❌ Errore nell'invio del preordine.", "critico");
+                document.getElementById("popupRiepilogo").classList.add("hidden");
             }
-
             document.getElementById("popupRiepilogo").classList.add("hidden");
         };
 
