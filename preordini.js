@@ -1112,19 +1112,18 @@ async function initPreordiniClienti() {
         document.getElementById("orarioLabel").innerText = "Orario di consegna:";
     } else if (mode === "sanmatteo") {
         nomeInp.placeholder = "Il tuo Nome";
-        telWrap.style.display = "block"; // Aggiunto Telefono per San Matteo!
+        telWrap.style.display = "block";
         posWrap.style.display = "block";
-        posInp.placeholder = "Postazione / Ombrellone (Es. A12)";
+        posInp.placeholder = "Postazione (Es. Palco, Stand 3...)";
         oraWrap.style.display = "none";
     } else if (mode === "tavolo") {
         nomeInp.placeholder = "Il tuo Nome";
         telWrap.style.display = "none";
         posWrap.style.display = "none";
         oraWrap.style.display = "none";
-        // Box informativo di sicurezza per il tavolo
+        // Box informativo di sicurezza per il tavolo (Si adatterà ai temi col CSS)
         const infoBox = document.createElement("div");
         infoBox.id = "tavoloInfoBox";
-        infoBox.style.cssText = "background: #e8f5e9; color: #2e7d32; padding: 15px; border-radius: 8px; text-align: center; font-weight: bold; border: 1px solid #c8e6c9;";
         infoBox.innerHTML = `🍽️ Stai ordinando per il <b>Tavolo ${tavoloPreimpostato || "Sconosciuto"}</b>. Ti porteremo tutto noi!`;
         document.getElementById("campiDinamiciWrapper").prepend(infoBox);
     }
@@ -1316,13 +1315,16 @@ window.aggiungiVeloceCarrello = function(id) {
         if (!nome) { notifypreordini("⚠ Inserisci il tuo nome!", "warn"); return; }
 
         // VALIDAZIONE IN BASE ALLA MODALITÀ
+        const telValue = document.getElementById("telefonoCliente").value.trim();
+        const telPuro = telValue.replace(/\D/g, ""); // Solo i numeri effettivi
+
         if (window.currentPreorderMode === "deliveroo") {
-            if (!document.getElementById("telefonoCliente").value.trim()) { notifypreordini("⚠ Inserisci il numero di telefono!", "warn"); return; }
-            if (!document.getElementById("posizioneCliente").value.trim()) { notifypreordini("⚠ Inserisci l'indirizzo di consegna!", "warn"); return; }
+            if (!telValue || telPuro.length < 8) { notifypreordini("⚠ Inserisci un numero di telefono valido (min. 8 cifre)!", "warn"); return; }
+            if (document.getElementById("posizioneCliente").value.trim().length < 5) { notifypreordini("⚠ Inserisci un indirizzo di consegna completo e valido!", "warn"); return; }
             if (!document.getElementById("orarioConsegnaCliente").value.trim()) { notifypreordini("⚠ Inserisci l'orario desiderato!", "warn"); return; }
         } else if (window.currentPreorderMode === "sanmatteo") {
-            if (!document.getElementById("telefonoCliente").value.trim()) { notifypreordini("⚠ Inserisci il numero di telefono!", "warn"); return; }
-            if (!document.getElementById("posizioneCliente").value.trim()) { notifypreordini("⚠ Inserisci la postazione/ombrellone!", "warn"); return; }
+            if (!telValue || telPuro.length < 8) { notifypreordini("⚠ Inserisci un numero di telefono valido (min. 8 cifre)!", "warn"); return; }
+            if (document.getElementById("posizioneCliente").value.trim().length < 2) { notifypreordini("⚠ Inserisci una postazione valida!", "warn"); return; }
         }
 
         const piatti = carrelloCliente.map(c => {
