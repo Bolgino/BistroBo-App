@@ -2854,7 +2854,7 @@ function mostraSchermata() {
             hideLoader();
         }
     }
-    initChat();
+initChat();
     // 🔹 ATTIVA I PREORDINI SOLO SE ABILITATI
     const attendiPreordini = setInterval(() => {
         if (window.settings && typeof window.settings.preordiniAbilitati !== "undefined") {
@@ -2865,7 +2865,143 @@ function mostraSchermata() {
         }
     }, 200);
 	if (typeof aggiornaVisibilitaTastoMansionario === "function") aggiornaVisibilitaTastoMansionario();
+	
+	// Avvia l'ascolto degli avvisi bacheca
+	initBachecaListener();
 }
+
+// ================= BACHECA AVVISI GLOBALI =================
+function pubblicaAvviso() {
+    if (!checkOnline(true)) return;
+    const testo = document.getElementById("testoNuovoAvviso").value.trim();
+    if (!testo) return notify("Inserisci un messaggio!", "warn");
+
+    const tuttiChecked = document.getElementById("chkAvvisoTutti").checked;
+    let destinatari = [];
+
+    if (tuttiChecked) {
+        destinatari = ["tutti"];
+    } else {
+        document.querySelectorAll(".chk-avviso:checked").forEach(chk => destinatari.push(chk.value));
+    }
+
+    if (destinatari.length === 0) return notify("Seleziona almeno un destinatario!", "warn");
+
+    const autoreAvatar = window.profiloUtente ? window.profiloUtente.avatar : "👑";
+    const autoreNome = document.getElementById("topBarUsername") ? document.getElementById("topBarUsername").innerText : "Admin";
+
+    const avviso = {
+        testo: testo,
+        destinatari: destinatari,
+        timestamp: Date.now(),
+        autore: `${autoreAvatar} ${autoreNome}`
+    };
+
+    db.ref("impostazioni/bachecaAvviso").set(avviso)
+        .then(() => {
+            notify("📢 Avviso pubblicato con successo a tutti i monitor scelti!", "success");
+            document.getElementById("testoNuovoAvviso").value = "";
+        })
+        .catch(err => notify("Errore: " + err.message, "error"));
+}
+
+function rimuoviAvviso() {
+    if (!checkOnline(true)) return;
+    db.ref("impostazioni/bachecaAvviso").remove()
+        .then(() => notify("🗑️ Avviso disattivato.", "info"));
+}
+
+// Gestione Checkbox esclusive
+document.addEventListener("DOMContentLoaded", () => {
+    const chkTutti = document.getElementById("chkAvvisoTutti");
+    const chkSingoli = document.querySelectorAll(".chk-avviso");
+    if(chkTutti) {
+        chkTutti.addEventListener("change", function() {
+            if (this.checked) chkSingoli.forEach(chk => chk.checked = false);
+        });
+        chkSingoli.forEach(chk => {
+            chk.addEventListener("change", function() {
+                if (this.checked) chkTutti.checked = false;
+            });
+        });
+    }
+});
+
+let avvisoListenerRef = null;
+function initBachecaListener() {
+    if (avvisoListenerRef) db.ref("impostazioni/bachecaAvviso").off("value", avvisoListenerRef);
+
+    avvisoListenerRef = db.ref("impostazioni/bachecaAvviso").on("value", snap => {
+        const avviso = snap.val();
+        const modal = document.getElementById("modalAvvisoGlobale");
+        const adminStatusDiv = document.getElementById("statoAvvisoAttuale");
+
+        // --- 1. GESTIONE UI ADMIN (Mostra cosa c'è in onda) ---
+        if (ruolo === "admin" && adminStatusDiv) {
+            if (avviso) {
+                adminStatusDiv.style.display = "block";
+                document.getElementById("testoAvvisoInOnda").innerText = avviso.testo;
+                document.getElementById("destinatariAvvisoInOnda").innerText = avviso.destinatari.join(", ").toUpperCase();
+            } else {
+                adminStatusDiv.style.display = "none";
+            }
+        }
+
+        // --- 2. GESTIONE POPUP UTENTE ---
+        if (!avviso) {
+            if (modal) modal.classList.add("hidden");
+            return;
+        }
+
+        // Se l'admin è "lui stesso" e non sta simulando un ruolo, non mostrare il popup gigante
+        const passaBtn = document.getElementById("passaACassaBtn");
+        const staSimulando = passaBtn && passaBtn.style.display.includes("inline-block");
+        if (ruolo === "admin" && !staSimulando) return;
+
+        // Controlla i destinatari
+        const isDestinatario = avviso.destinatari.includes("tutti") || avviso.destinatari.includes(ruolo);
+        if (!isDestinatario) return;
+
+        // Controlla se lo abbiamo già letto e se la data è più vecchia del nuovo avviso
+        const ultimoLettoStr = localStorage.getItem("ultimoAvvisoLetto_" + uid);
+        if (ultimoLettoStr && parseInt(ultimoLettoStr) >= avviso.timestamp) {
+            return; // Già letto, ignora
+        }
+
+        // MOSTRA IL POPUP!
+        if (modal) {
+            document.getElementById("testoAvvisoGlobale").innerText = avviso.testo;
+            document.getElementById("autoreAvvisoGlobale").innerText = avviso.autore || "Amministrazione";
+            modal.classList.remove("hidden");
+            
+            // Suono d'allarme forte (se l'audio globale non è silenziato)
+            if (window.settings && window.settings.suono) {
+                try {
+                    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = "square";
+                    osc.frequency.setValueAtTime(300, ctx.currentTime);
+                    osc.frequency.setValueAtTime(400, ctx.currentTime + 0.1);
+                    osc.frequency.setValueAtTime(300, ctx.currentTime + 0.2);
+                    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.5);
+                } catch(e) {}
+            }
+        }
+
+        // Azione tasto conferma (salva nel telefono che l'ha letto)
+        document.getElementById("btnConfermaAvviso").onclick = () => {
+            localStorage.setItem("ultimoAvvisoLetto_" + uid, avviso.timestamp.toString());
+            modal.classList.add("hidden");
+        };
+    });
+}
+
 // ================= GESTIONE FONDO CASSA GLOBALE E ADMIN =================
 function gestisciFondoCassa(forzaModifica = false) {
     db.ref("impostazioni/fondoCassa").once("value").then(snap => {
