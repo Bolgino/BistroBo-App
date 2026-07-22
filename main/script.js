@@ -2951,12 +2951,14 @@ function initBachecaListener() {
 
         // --- 1. GESTIONE UI ADMIN (Mostra cosa c'è in onda) ---
         if (ruolo === "admin" && adminStatusDiv) {
-            if (avviso && avviso.testo) {
+            // Controlla che l'avviso esista e sia correttamente formattato (oggetto con testo)
+            if (avviso && typeof avviso === 'object' && avviso.testo && avviso.testo.trim() !== "") {
                 adminStatusDiv.style.display = "block";
                 document.getElementById("testoAvvisoInOnda").innerText = avviso.testo;
                 
-                // Traduciamo i nomi grezzi nei nomi belli scelti dall'admin
-                const nomiDest = avviso.destinatari.map(d => {
+                // Traduciamo i nomi grezzi nei nomi belli personalizzati dall'admin
+                const destinatariArray = Array.isArray(avviso.destinatari) ? avviso.destinatari : [];
+                const nomiDest = destinatariArray.map(d => {
                     if (d === "tutti") return "Tutti";
                     if (d === "cassa") return "Cassa";
                     if (d === "cucina") return "Cucina";
@@ -2972,65 +2974,92 @@ function initBachecaListener() {
             }
         }
 
-        // --- 2. GESTIONE POPUP UTENTE (E PROTEZIONE LOGIN) ---
-        if (!avviso || !avviso.testo) {
-            if (modal) modal.classList.add("hidden");
+        // --- 2. GESTIONE POPUP UTENTE ---
+        if (!modal) return;
+        
+        // Se non c'è nessun avviso o c'è un "fantasma" vecchio, nascondi e blocca tutto
+        if (!avviso || typeof avviso !== 'object' || !avviso.testo || avviso.testo.trim() === "") {
+            modal.classList.add("hidden");
+            modal.style.display = "none";
             return;
         }
 
-        // FIX FONDAMENTALE: Blocca il popup se l'utente è ancora nella pagina di login!
-        const divLogin = document.getElementById("loginDiv");
-        if (divLogin && !divLogin.classList.contains("hidden")) return;
-        if (!uid || !ruolo) return;
+        // 🛑 FIX FONDAMENTALE 1: Blocca il popup se l'utente non è loggato!
+        if (!uid || !ruolo) {
+            modal.classList.add("hidden");
+            modal.style.display = "none";
+            return;
+        }
 
-        // Se l'admin è "lui stesso" e non sta simulando un ruolo, non mostrare il popup gigante
+        // 🛑 FIX FONDAMENTALE 2: Blocca il popup se siamo ancora nella schermata di login (wrapper visibile)!
+        const divLogin = document.getElementById("loginWrapper");
+        if (divLogin && divLogin.style.display !== "none") {
+            modal.classList.add("hidden");
+            modal.style.display = "none";
+            return;
+        }
+
+        // Se l'admin è "lui stesso" e non sta simulando un ruolo, non viene bloccato dal popup gigante
         const passaBtn = document.getElementById("passaACassaBtn");
-        const staSimulando = passaBtn && passaBtn.style.display.includes("inline-block");
+        const staSimulando = passaBtn && passaBtn.style.display !== "none" && passaBtn.style.display !== "";
         if (ruolo === "admin" && !staSimulando) return;
 
-        // Controlla i destinatari
-        const isDestinatario = avviso.destinatari.includes("tutti") || avviso.destinatari.includes(ruolo);
+        // Controlla se fa parte dei destinatari
+        const destinatariArray = Array.isArray(avviso.destinatari) ? avviso.destinatari : [];
+        const isDestinatario = destinatariArray.includes("tutti") || destinatariArray.includes(ruolo);
         if (!isDestinatario) return;
 
         // Controlla se lo abbiamo già letto
         const ultimoLettoStr = localStorage.getItem("ultimoAvvisoLetto_" + uid);
         if (ultimoLettoStr && parseInt(ultimoLettoStr) >= avviso.timestamp) {
-            return; // Già letto, ignora
+            return; // Già letto, ignora!
         }
 
-        // MOSTRA IL POPUP!
-        if (modal) {
-            document.getElementById("testoAvvisoGlobale").innerText = avviso.testo;
-            document.getElementById("autoreAvvisoGlobale").innerText = avviso.autore || "Amministrazione";
-            modal.classList.remove("hidden");
-            
-            // Suono d'allarme
-            if (window.settings && window.settings.suono) {
-                try {
-                    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                    const osc = ctx.createOscillator();
-                    const gain = ctx.createGain();
-                    osc.type = "square";
-                    osc.frequency.setValueAtTime(300, ctx.currentTime);
-                    osc.frequency.setValueAtTime(400, ctx.currentTime + 0.1);
-                    osc.frequency.setValueAtTime(300, ctx.currentTime + 0.2);
-                    gain.gain.setValueAtTime(0.2, ctx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
-                    osc.connect(gain);
-                    gain.connect(ctx.destination);
-                    osc.start();
-                    osc.stop(ctx.currentTime + 0.5);
-                } catch(e) {}
-            }
+        // 🟢 VIA LIBERA: MOSTRA IL POPUP!
+        document.getElementById("testoAvvisoGlobale").innerText = avviso.testo;
+        document.getElementById("autoreAvvisoGlobale").innerText = avviso.autore || "Amministrazione";
+        modal.classList.remove("hidden");
+        modal.style.display = "flex";
+        
+        // Suono d'allarme
+        if (window.settings && window.settings.suono) {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = "square";
+                osc.frequency.setValueAtTime(300, ctx.currentTime);
+                osc.frequency.setValueAtTime(400, ctx.currentTime + 0.1);
+                osc.frequency.setValueAtTime(300, ctx.currentTime + 0.2);
+                gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.5);
+            } catch(e) {}
         }
-
-        document.getElementById("btnConfermaAvviso").onclick = () => {
-            localStorage.setItem("ultimoAvvisoLetto_" + uid, avviso.timestamp.toString());
-            modal.classList.add("hidden");
-        };
     });
-}
 
+    // Listener del bottone (Fuori dall'ascoltatore Firebase per evitare doppi click)
+    const btnConferma = document.getElementById("btnConfermaAvviso");
+    if (btnConferma) {
+        btnConferma.onclick = () => {
+            // Leggiamo al momento del click qual è il timestamp in corso nel database
+            db.ref("impostazioni/bachecaAvviso/timestamp").once("value").then(snap => {
+                const ts = snap.val();
+                if (ts && uid) {
+                    localStorage.setItem("ultimoAvvisoLetto_" + uid, ts.toString());
+                }
+                const modal = document.getElementById("modalAvvisoGlobale");
+                if (modal) {
+                    modal.classList.add("hidden");
+                    modal.style.display = "none";
+                }
+            });
+        };
+    }
+}
 // ================= GESTIONE FONDO CASSA GLOBALE E ADMIN =================
 function gestisciFondoCassa(forzaModifica = false) {
     db.ref("impostazioni/fondoCassa").once("value").then(snap => {
