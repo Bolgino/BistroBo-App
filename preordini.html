@@ -109,25 +109,22 @@
       <label>Resto richiesto (€): <input type="number" id="restoRichiesto" step="0.5" min="0"></label>
     </div>
 
-    <input type="text" id="nomeCliente" class="preordine-input" placeholder="Il tuo nome">
-    <div id="telefonoWrapper" style="display:none;">
-        <input type="tel" id="telefonoCliente" class="preordine-input"
-          placeholder="Telefono"
-          inputmode="numeric"
-          pattern="[0-9]{6,15}">
+    <div id="campiDinamiciWrapper" style="width: 100%; max-width: 600px; display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px;">
+        <input type="text" id="nomeCliente" class="preordine-input" placeholder="Il tuo nome" style="margin:0;">
+        
+        <div id="telefonoWrapper" style="display:none;">
+            <input type="tel" id="telefonoCliente" class="preordine-input" placeholder="Telefono" inputmode="numeric" style="margin:0;">
+        </div>
+
+        <div id="posizioneWrapper" style="display:none;">
+            <input type="text" id="posizioneCliente" class="preordine-input" placeholder="Postazione / Indirizzo" style="margin:0;">
+        </div>
+        
+        <div id="orarioConsegnaWrapper" style="display:none; align-items:center; gap:8px;">
+            <label id="orarioLabel" style="font-weight:bold;">Orario desiderato:</label>
+            <input type="time" id="orarioConsegnaCliente" class="preordine-input" style="width:130px; margin:0;">
+        </div>
     </div>
-
-    <div id="posizioneWrapper" style="display:none;">
-        <input type="text" id="posizioneCliente" class="preordine-input" placeholder="Numero Postazione / Posizione">
-    </div>
-    <div id="orarioConsegnaWrapper" 
-        style="display:none; display:inline-flex; align-items:center; gap:8px;">
-        <label>Orario di consegna:</label>
-        <input type="time" id="orarioConsegnaCliente" class="preordine-input" style="width:130px;">
-    </div>
-
-
-
     <!-- Pulsante in fondo al contenuto -->
     <button id="inviaPreordineBtn" class="preordine-btn">📩 Invia Preordine</button>
 
