@@ -281,19 +281,20 @@ async function renderPreordiniAdmin(data) {
         
         div.innerHTML = `
         
-            <div class="order-header">
-                <b>${p.nome}</b>
-                ${window.settings.preordiniRichiediInfo && p.telefono ? `
-                    <div><b>Telefono:</b> ${p.telefono}</div>
-                ` : ""}
-                ${window.settings.preordiniRichiediInfo && p.posizione ? `
-                    <div><b>Posizione:</b> ${p.posizione}</div>
-                ` : ""}
-                ${window.settings.preordiniRichiediInfo && p.orarioConsegna ? `
-                    <div><b>Orario consegna:</b> ${p.orarioConsegna}</div>
-                ` : ""}
-
-
+            <div class="order-header" style="flex-direction: column;">
+                <div style="display:flex; align-items:center;">
+                    <b>${p.nome}</b>
+                    ${p.modalita === 'fila' ? `<span style="background:#E91E63; color:white; padding:2px 6px; border-radius:4px; font-size:0.8em; margin-left:8px;">🚶 In Fila</span>` : ""}
+                    ${p.modalita === 'deliveroo' ? `<span style="background:#2196F3; color:white; padding:2px 6px; border-radius:4px; font-size:0.8em; margin-left:8px;">🛵 Deliveroo</span>` : ""}
+                    ${p.modalita === 'sanmatteo' ? `<span style="background:#FFC107; color:#333; padding:2px 6px; border-radius:4px; font-size:0.8em; margin-left:8px;">🎪 Evento</span>` : ""}
+                    ${p.modalita === 'tavolo' ? `<span style="background:#4CAF50; color:white; padding:2px 6px; border-radius:4px; font-size:0.8em; margin-left:8px;">🍽️ Tavolo ${p.tavoloPreimpostato}</span>` : ""}
+                </div>
+                
+                <div style="margin-top: 5px; font-weight: normal; font-size: 0.9em; color: #555;">
+                    ${p.telefono ? `<div><b>Telefono:</b> ${p.telefono}</div>` : ""}
+                    ${p.posizione ? `<div><b>Posizione/Indirizzo:</b> ${p.posizione}</div>` : ""}
+                    ${p.orarioConsegna ? `<div><b>Orario consegna:</b> ${p.orarioConsegna}</div>` : ""}
+                </div>
             </div>
 
             <div class="order-body">
@@ -470,19 +471,20 @@ function renderPreordiniCassa(data) {
         div.className = "order cassa-preordine";
 
         div.innerHTML = `
-            <div class="order-header">
-                <b>${p.nome}</b>
-                ${window.settings.preordiniRichiediInfo && p.telefono ? `
-                    <div><b>Telefono:</b> ${p.telefono}</div>
-                ` : ""}
-                ${window.settings.preordiniRichiediInfo && p.posizione ? `
-                    <div><b>Posizione:</b> ${p.posizione}</div>
-                ` : ""}
-                ${window.settings.preordiniRichiediInfo && p.orarioConsegna ? `
-                    <div><b>Orario consegna:</b> ${p.orarioConsegna}</div>
-                ` : ""}
-
-
+            <div class="order-header" style="flex-direction: column;">
+                <div style="display:flex; align-items:center;">
+                    <b>${p.nome}</b>
+                    ${p.modalita === 'fila' ? `<span style="background:#E91E63; color:white; padding:2px 6px; border-radius:4px; font-size:0.8em; margin-left:8px;">🚶 In Fila</span>` : ""}
+                    ${p.modalita === 'deliveroo' ? `<span style="background:#2196F3; color:white; padding:2px 6px; border-radius:4px; font-size:0.8em; margin-left:8px;">🛵 Deliveroo</span>` : ""}
+                    ${p.modalita === 'sanmatteo' ? `<span style="background:#FFC107; color:#333; padding:2px 6px; border-radius:4px; font-size:0.8em; margin-left:8px;">🎪 Evento</span>` : ""}
+                    ${p.modalita === 'tavolo' ? `<span style="background:#4CAF50; color:white; padding:2px 6px; border-radius:4px; font-size:0.8em; margin-left:8px;">🍽️ Tavolo ${p.tavoloPreimpostato}</span>` : ""}
+                </div>
+                
+                <div style="margin-top: 5px; font-weight: normal; font-size: 0.9em; color: #555;">
+                    ${p.telefono ? `<div><b>Telefono:</b> ${p.telefono}</div>` : ""}
+                    ${p.posizione ? `<div><b>Posizione/Indirizzo:</b> ${p.posizione}</div>` : ""}
+                    ${p.orarioConsegna ? `<div><b>Orario consegna:</b> ${p.orarioConsegna}</div>` : ""}
+                </div>
             </div>
 
             <div class="order-body">
@@ -586,37 +588,41 @@ async function aggiungiPreordineAlleComande(id) {
     const p = snap.val();
 
     // 0️⃣ CONTROLLO ASPORTO (Modalità Deliveroo)
+    // 0️⃣ CONTROLLO ASPORTO E COMMENTI IN BASE ALLA MODALITÀ
     let isAsporto = false;
     let commentoAsporto = null;
-    if (window.settings.preordiniAsportoAutomatico || (window.settings.asportoAbilitato && p.asporto)) {
+    let numeroTavolo = "";
+
+    if (p.modalita === "deliveroo" || (window.settings.asportoAbilitato && p.asporto)) {
         isAsporto = true;
-        commentoAsporto = "ASPORTO";
+        commentoAsporto = p.modalita === "deliveroo" ? `DELIVEROO (${p.posizione})` : "ASPORTO";
+    } else if (p.modalita === "sanmatteo") {
+        commentoAsporto = `POSTAZIONE: ${p.posizione}`;
+    } else if (p.modalita === "fila") {
+        isAsporto = p.asporto ? true : false;
+        if(isAsporto) commentoAsporto = "ASPORTO";
     }
 
-    // 0.5️⃣ RICHIESTA TAVOLO CON MODALE A TEMA BISTROBÒ
-    let numeroTavolo = "";
-    if (window.settings.richiediTavolo && !isAsporto) {
-        
-        // Creiamo una Promessa per aspettare la risposta del cassiere dal modale
+    // 0.5️⃣ RICHIESTA TAVOLO AUTO-COMPILATO O MODALE
+    if (p.modalita === "tavolo" && p.tavoloPreimpostato) {
+        numeroTavolo = p.tavoloPreimpostato; // Auto-passa il tavolo senza chiedere nulla alla cassa!
+    } else if (window.settings.richiediTavolo && !isAsporto && p.modalita !== "sanmatteo" && p.modalita !== "fila") {
+        // Se è in fila o ha un evento, ignoriamo il numero del tavolo classico per velocizzare
         numeroTavolo = await new Promise((resolve) => {
             // Crea l'overlay scuro
             const overlay = document.createElement("div");
             overlay.className = "modal-overlay";
-            overlay.style.zIndex = "10005"; // Sta sopra a tutto
+            overlay.style.zIndex = "10005"; 
 
             // Crea il box del modale
             const modal = document.createElement("div");
             modal.className = "modal-varianti";
             modal.style.textAlign = "center";
             
-            // Popola il modale con titolo, testo, input e bottoni
             modal.innerHTML = `
                 <h3 style="margin-bottom: 15px; color: #333;">🪑 Numero Tavolo</h3>
-                <p style="font-size: 0.9em; color: #555; margin-bottom: 15px;">
-                    Inserisci il tavolo per il preordine di <b>${p.nome}</b>
-                </p>
-                <input type="text" id="inputTavoloModale" placeholder="Es. 12" 
-                       style="width: 100%; box-sizing: border-box; padding: 10px; margin-bottom: 20px; border: 1px solid #ccc; border-radius: 6px; font-size: 1.1rem; text-align: center; outline: none;">
+                <p style="font-size: 0.9em; color: #555; margin-bottom: 15px;">Inserisci il tavolo per il preordine di <b>${p.nome}</b></p>
+                <input type="text" id="inputTavoloModale" placeholder="Es. 12" style="width: 100%; box-sizing: border-box; padding: 10px; margin-bottom: 20px; border: 1px solid #ccc; border-radius: 6px; font-size: 1.1rem; text-align: center; outline: none;">
                 <div class="modal-actions" style="display: flex; gap: 10px;">
                     <button class="btn-chiudi" id="btnAnnullaTavolo" style="flex: 1; margin: 0;">Annulla</button>
                     <button class="btn-salva" id="btnConfermaTavolo" style="flex: 1; margin: 0; background-color: #4CAF50;">Conferma</button>
@@ -625,33 +631,15 @@ async function aggiungiPreordineAlleComande(id) {
             
             overlay.appendChild(modal);
             document.body.appendChild(overlay);
-            
-            // Focus automatico sull'input
             document.getElementById("inputTavoloModale").focus();
 
-            // Gestione Click su Annulla
-            document.getElementById("btnAnnullaTavolo").onclick = () => {
-                overlay.remove();
-                resolve(null); // Restituisce null per bloccare il processo
-            };
-            
-            // Gestione Click su Conferma
-            document.getElementById("btnConfermaTavolo").onclick = () => {
-                const val = document.getElementById("inputTavoloModale").value.trim();
-                overlay.remove();
-                resolve(val); // Restituisce il valore digitato
-            };
-            
-            // Permette di premere INVIO da tastiera per confermare
+            document.getElementById("btnAnnullaTavolo").onclick = () => { overlay.remove(); resolve(null); };
+            document.getElementById("btnConfermaTavolo").onclick = () => { const val = document.getElementById("inputTavoloModale").value.trim(); overlay.remove(); resolve(val); };
             document.getElementById("inputTavoloModale").addEventListener("keypress", function(event) {
-                if (event.key === "Enter") {
-                    event.preventDefault();
-                    document.getElementById("btnConfermaTavolo").click();
-                }
+                if (event.key === "Enter") { event.preventDefault(); document.getElementById("btnConfermaTavolo").click(); }
             });
         });
 
-        // Se il cassiere ha cliccato "Annulla", numeroTavolo è null -> usciamo dalla funzione
         if (numeroTavolo === null) {
             notifypreordini("Aggiunta comanda annullata.", "warn");
             return; 
@@ -1061,37 +1049,66 @@ async function initPreordiniClienti() {
     const telefonoInput = document.getElementById("telefonoCliente");
     telefonoInput.addEventListener("input", () => {
         let val = telefonoInput.value.replace(/\D/g, ""); // solo numeri
-
-        if (val.length <= 8) {
-            // Formato 1234 5678
-            val = val.replace(/(\d{4})(\d{1,4})/, "$1 $2");
-        } else {
-            // Formato 123 456 7890
-            val = val.replace(/(\d{3})(\d{3})(\d{1,4})/, "$1 $2 $3");
-        }
-
+        if (val.length <= 8) val = val.replace(/(\d{4})(\d{1,4})/, "$1 $2");
+        else val = val.replace(/(\d{3})(\d{3})(\d{1,4})/, "$1 $2 $3");
         telefonoInput.value = val.trim();
     });
 
+    // 🔹 ESTRAZIONE MODALITA DAL LINK (Es: ?mode=deliveroo)
+    const urlParams = new URLSearchParams(window.location.search);
+    const mode = urlParams.get('mode') || 'fila'; 
+    window.currentPreorderMode = mode;
+    const tavoloPreimpostato = urlParams.get('t');
 
-    const posizioneInput = document.getElementById("posizioneCliente");
-    // ✅ Listener realtime per mostra/nascondi campi informazioni
-    db.ref("impostazioni/preordiniRichiediInfo").on("value", snap => {
-        const val = snap.exists() ? snap.val() : false;
-        window.settings.preordiniRichiediInfo = val;
-        if (orarioConsegnaInput) orarioConsegnaInput.parentElement.style.display = val ? "block" : "none";
-
-        if (telefonoInput) telefonoInput.parentElement.style.display = val ? "block" : "none";
-        if (posizioneInput) posizioneInput.parentElement.style.display = val ? "block" : "none";
+    // 🔹 CONTROLLO BLOCCO DELLA SINGOLA MODALITÀ DALL'ADMIN
+    db.ref("impostazioni/modPreordini/" + mode).on("value", snap => {
+        const modeEnabled = snap.exists() ? snap.val() : false;
+        
+        if (!modeEnabled || !window.settings.preordiniAbilitati) {
+            if (inviaBtn) {
+                inviaBtn.disabled = true;
+                inviaBtn.innerText = "⚠ Questa modalità è disabilitata";
+                inviaBtn.style.background = "#999";
+            }
+        } else {
+            if (inviaBtn) {
+                inviaBtn.disabled = false;
+                inviaBtn.innerText = "📩 Invia Preordine";
+                inviaBtn.style.background = "linear-gradient(135deg, #4caf50, #2e7d32)";
+            }
+        }
     });
-    if (window.settings.preordiniRichiediInfo) {
-        if (telefonoInput) telefonoInput.parentElement.style.display = "block";
-        if (posizioneInput) posizioneInput.parentElement.style.display = "block";
-        if (orarioConsegnaInput) orarioConsegnaInput.parentElement.style.display = "block";
-    } else {
-        if (telefonoInput) telefonoInput.parentElement.style.display = "none";
-        if (posizioneInput) posizioneInput.parentElement.style.display = "none";
-        if (orarioConsegnaInput) orarioConsegnaInput.parentElement.style.display = "none";
+
+    // 🔹 AUTO-CONFIGURAZIONE DELL'INTERFACCIA CLIENTE IN BASE ALLA MODALITÀ
+    const nomeInp = document.getElementById("nomeCliente");
+    const telWrap = document.getElementById("telefonoWrapper");
+    const posWrap = document.getElementById("posizioneWrapper");
+    const posInp = document.getElementById("posizioneCliente");
+    const oraWrap = document.getElementById("orarioConsegnaWrapper");
+
+    if (mode === "fila") {
+        nomeInp.placeholder = "Il tuo Nome";
+        telWrap.style.display = "none";
+        posWrap.style.display = "none";
+        oraWrap.style.display = "none";
+    } else if (mode === "deliveroo") {
+        nomeInp.placeholder = "Nome e Cognome";
+        telWrap.style.display = "block";
+        posWrap.style.display = "block";
+        posInp.placeholder = "Indirizzo di consegna completo";
+        oraWrap.style.display = "flex";
+        document.getElementById("orarioLabel").innerText = "Orario di consegna:";
+    } else if (mode === "sanmatteo") {
+        nomeInp.placeholder = "Il tuo Nome";
+        telWrap.style.display = "none";
+        posWrap.style.display = "block";
+        posInp.placeholder = "Postazione / Ombrellone (Es. A12)";
+        oraWrap.style.display = "none";
+    } else if (mode === "tavolo") {
+        nomeInp.placeholder = "Il tuo Nome";
+        telWrap.style.display = "none";
+        posWrap.style.display = "none";
+        oraWrap.style.display = "none";
     }
    
     // Permette al cliente di cancellare un piatto se ci ha ripensato
@@ -1269,7 +1286,6 @@ window.aggiungiVeloceCarrello = function(id) {
   if (!inviaBtn) return;
 
     inviaBtn.onclick = async () => {
-
         if (!window.settings.preordiniAbilitati) {
             notifypreordini("⚠ Il sistema dei preordini è disabilitato.", "warn");
             return;
@@ -1280,75 +1296,42 @@ window.aggiungiVeloceCarrello = function(id) {
         const haSoldiGiusti = document.getElementById("soldiGiusti").checked;
         const restoRichiesto = parseFloat(document.getElementById("restoRichiesto").value || 0);
 
-        if (!nome) {
-            notifypreordini("⚠ Inserisci il tuo nome!", "warn");
-            return;
+        if (!nome) { notifypreordini("⚠ Inserisci il tuo nome!", "warn"); return; }
+
+        // VALIDAZIONE IN BASE ALLA MODALITÀ
+        if (window.currentPreorderMode === "deliveroo") {
+            if (!document.getElementById("telefonoCliente").value.trim()) { notifypreordini("⚠ Inserisci il numero di telefono!", "warn"); return; }
+            if (!document.getElementById("posizioneCliente").value.trim()) { notifypreordini("⚠ Inserisci l'indirizzo di consegna!", "warn"); return; }
+            if (!document.getElementById("orarioConsegnaCliente").value.trim()) { notifypreordini("⚠ Inserisci l'orario desiderato!", "warn"); return; }
+        } else if (window.currentPreorderMode === "sanmatteo") {
+            if (!document.getElementById("posizioneCliente").value.trim()) { notifypreordini("⚠ Inserisci la postazione/ombrellone!", "warn"); return; }
         }
 
-        if (window.settings.preordiniRichiediInfo) {
-            if (!telefonoInput.value.trim()) {
-                notifypreordini("⚠ Inserisci il numero di telefono!", "warn");
-                return;
-            }
-            if (!posizioneInput.value.trim()) {
-                notifypreordini("⚠ Inserisci la posizione!", "warn");
-                return;
-            }
-            // Controllo formato telefono
-            const telefonoPulito = telefonoInput.value.replace(/\D/g, ""); // solo cifre
-            if (!/^[0-9]{8,12}$/.test(telefonoPulito)) {
-                notifypreordini("⚠ Inserisci un numero di telefono valido (solo numeri)!", "warn");
-                return;
-            }
-            if (!orarioConsegnaInput.value.trim()) {
-                notifypreordini("⚠ Inserisci l'orario di consegna!", "warn");
-                return;
-            }
-        }
-
-        // 🔹 Costruisci lista piatti MANTENENDO CONTORNI E VARIANTI
         const piatti = carrelloCliente.map(c => {
             return {
-                nome: c.nome,
-                prezzo: c.prezzo,
-                extraPrezzo: c.extraPrezzo || 0,
-                varianti: c.varianti || [],
-                contorniScelti: c.contorniScelti || [],
-                ingredienti: c.ingredienti || [],
-                quantita: 1, // È sempre 1 perché ogni configurazione è unica
-                categoria: c.categoria,
-                isCombo: c.isCombo || false,
-                maxVariantiGratis: c.maxVariantiGratis || 0
+                nome: c.nome, prezzo: c.prezzo, extraPrezzo: c.extraPrezzo || 0, varianti: c.varianti || [],
+                contorniScelti: c.contorniScelti || [], ingredienti: c.ingredienti || [], quantita: 1, categoria: c.categoria, isCombo: c.isCombo || false, maxVariantiGratis: c.maxVariantiGratis || 0
             };
         });
 
-        if (piatti.length === 0) {
-            notifypreordini("⚠ Il carrello è vuoto!", "warn");
-            return;
-        }
+        if (piatti.length === 0) { notifypreordini("⚠ Il carrello è vuoto!", "warn"); return; }
+        if (!haSoldiGiusti && (isNaN(restoRichiesto) || restoRichiesto <= 0)) { notifypreordini("⚠ Devi indicare soldi giusti o il resto!", "warn"); return; }
 
-        if (!haSoldiGiusti && (isNaN(restoRichiesto) || restoRichiesto <= 0)) {
-            notifypreordini("⚠ Devi indicare soldi giusti o il resto!", "warn");
-            return;
-        }
-
-        // ==================================================================
-        // 🔥 INVECE DI INVIARE SUBITO → MOSTRO IL POPUP DI RIEPILOGO
-        // ==================================================================
+        // ================= POPUP DI RIEPILOGO =================
         let html = `<p><b>Nome:</b> ${nome}</p>`;
-        if (window.settings.preordiniRichiediInfo) {
-            html += `<p><b>Telefono:</b> ${telefonoInput.value}</p>`;
-            html += `<p><b>Posizione:</b> ${posizioneInput.value}</p>`;
-            html += `<p><b>Orario consegna:</b> ${orarioConsegnaInput.value || "-"}</p>`;
-
+        if (window.currentPreorderMode === "deliveroo") {
+            html += `<p><b>Telefono:</b> ${document.getElementById("telefonoCliente").value}</p>`;
+            html += `<p><b>Indirizzo:</b> ${document.getElementById("posizioneCliente").value}</p>`;
+            html += `<p><b>Consegna per le:</b> ${document.getElementById("orarioConsegnaCliente").value}</p>`;
+        } else if (window.currentPreorderMode === "sanmatteo") {
+            html += `<p><b>Postazione:</b> ${document.getElementById("posizioneCliente").value}</p>`;
+        } else if (window.currentPreorderMode === "tavolo") {
+            const urlP = new URLSearchParams(window.location.search);
+            html += `<p><b>Tavolo:</b> ${urlP.get('t')}</p>`;
         }
 
         html += `<hr><h3>Piatti</h3>`;
-
-        piatti.forEach(p => {
-            html += `<div>${p.quantita}× ${p.nome} — €${p.prezzo.toFixed(2)}</div>`;
-        });
-
+        piatti.forEach(p => { html += `<div>${p.quantita}× ${p.nome} — €${p.prezzo.toFixed(2)}</div>`; });
         html += `<hr><p><b>Totale: €${totale.toFixed(2)}</b></p>`;
         if (note) html += `<p><i>Note: ${note}</i></p>`;
         if (restoRichiesto > 0) html += `<p>Resto richiesto: €${restoRichiesto}</p>`;
@@ -1358,117 +1341,76 @@ window.aggiungiVeloceCarrello = function(id) {
 
         // 🔹 SE CONFERMA INVIO
         document.getElementById("confermaInvioPreordine").onclick = async () => {
-
-            // CREA L’OGGETTO COME PRIMA (identico!)
             const now = new Date();
             const orario = now.toLocaleTimeString("it-IT", { hour: '2-digit', minute: '2-digit' });
 
             const preordine = {
-                nome,
-                orario,
-                piatti,
-                totale,
-                note,
-                haSoldiGiusti,
-                restoRichiesto,
+                nome, orario, piatti, totale, note, haSoldiGiusti, restoRichiesto,
                 timestamp: Date.now(),
                 stato: piatti.length ? "da fare" : "completato",
-                ...(window.settings.preordiniRichiediInfo && {
-                    telefono: telefonoInput.value.trim(),
-                    posizione: posizioneInput.value.trim(),
-                    orarioConsegna: orarioConsegnaInput.value || null
-                })
+                modalita: window.currentPreorderMode, // <-- SALVATAGGIO DELLA MODALITÀ!
+                asporto: (window.currentPreorderMode === "deliveroo") // Deliveroo è SEMPRE asporto automatico
             };
 
-           try {
-                // 1. Salviamo il riferimento per ottenere l'ID univoco generato da Firebase
+            // Salva campi extra in base alla modalità
+            if (window.currentPreorderMode === "deliveroo") {
+                preordine.telefono = document.getElementById("telefonoCliente").value.trim();
+                preordine.posizione = document.getElementById("posizioneCliente").value.trim();
+                preordine.orarioConsegna = document.getElementById("orarioConsegnaCliente").value;
+            } else if (window.currentPreorderMode === "sanmatteo") {
+                preordine.posizione = document.getElementById("posizioneCliente").value.trim();
+            } else if (window.currentPreorderMode === "tavolo") {
+                const urlP = new URLSearchParams(window.location.search);
+                preordine.tavoloPreimpostato = urlP.get('t');
+            }
+
+            try {
                 const nuovoPreordineRef = await preordiniRef.push(preordine);
                 const preordineId = nuovoPreordineRef.key;
 
                 mostraNotificaCentrale("✅ Preordine inviato!");
-
-                // 2. Reset dei campi (come nel tuo codice originale)
-                document.getElementById("nomeCliente").value = "";
-                document.getElementById("noteCliente").value = "";
-                if(document.getElementById("posizioneCliente")) document.getElementById("posizioneCliente").value = "";
-                if(document.getElementById("telefonoCliente")) document.getElementById("telefonoCliente").value = "";
-                if(document.getElementById("orarioConsegnaCliente")) document.getElementById("orarioConsegnaCliente").value = "";
-                document.getElementById("soldiGiusti").checked = false;
-                document.getElementById("restoRichiesto").value = "";
-                document.getElementById("restoRichiesto").disabled = false;
-                document.querySelectorAll("select[data-id]").forEach(sel => sel.value = "0");
-                totale = 0;
-                document.getElementById("totaleCliente").innerText = "0.00";
                 
-                carrelloCliente = [];
-                if (typeof aggiornaRiepilogoCarrelloUI === "function") aggiornaRiepilogoCarrelloUI();
-
-                // 3. Nascondiamo il popup di riepilogo
+                // --- 4. LOGICA ANNULLAMENTO (30 SECONDI) ---
                 document.getElementById("popupRiepilogo").classList.add("hidden");
-
-                // --- 4. NUOVA LOGICA ANNULLAMENTO (30 SECONDI) ---
                 const btnInviaMain = document.getElementById("inviaPreordineBtn");
-                
-                // Salviamo la funzione originale che apre il popup
                 const onclickOriginale = btnInviaMain.onclick; 
-                
-                // Prendiamo il tempo dalle impostazioni globali (lo stesso della cassa) o usiamo 30 di default
                 let tempoResiduo = window.settings.tempoAnnullamento || 30;
                 
-                // Trasformiamo il bottone in "Annulla"
                 btnInviaMain.innerHTML = `⏳ Annulla Ordine (${tempoResiduo}s)`;
-                btnInviaMain.style.background = "linear-gradient(135deg, #f44336, #d32f2f)"; // Diventa rosso
+                btnInviaMain.style.background = "linear-gradient(135deg, #f44336, #d32f2f)"; 
                 
-                // Avviamo il timer
                 const timerAnnullamento = setInterval(() => {
                     tempoResiduo--;
                     if (tempoResiduo > 0) {
                         btnInviaMain.innerHTML = `⏳ Annulla Ordine (${tempoResiduo}s)`;
                     } else {
-                        // Tempo scaduto: ripristiniamo il bottone
                         clearInterval(timerAnnullamento);
-                        ripristinaBottone(btnInviaMain, onclickOriginale);
+                        location.reload(); // Il tempo è scaduto, svuota tutto e ricarica
                     }
                 }, 1000);
 
-                // Definiamo cosa succede se il cliente clicca su "Annulla" in tempo
                 btnInviaMain.onclick = async () => {
                     clearInterval(timerAnnullamento);
                     btnInviaMain.disabled = true;
                     btnInviaMain.innerText = "Annullamento...";
-                    
                     try {
-                        // Eliminiamo il preordine da Firebase
                         await preordiniRef.child(preordineId).remove();
                         mostraNotificaCentrale("🚫 Ordine annullato!");
-                    } catch(err) {
-                        console.error("Errore durante l'annullamento:", err);
-                    }
+                    } catch(err) {}
                     
-                    // Ripristiniamo subito il bottone
-                    ripristinaBottone(btnInviaMain, onclickOriginale);
+                    btnInviaMain.innerHTML = "📩 Invia Preordine";
+                    btnInviaMain.style.background = "linear-gradient(135deg, #4caf50, #2e7d32)"; 
+                    btnInviaMain.disabled = false;
+                    btnInviaMain.onclick = onclickOriginale;
                 };
 
-                // Funzione helper per far tornare il bottone al suo stato verde originale
-                function ripristinaBottone(btn, onclickOrig) {
-                    btn.innerHTML = "📩 Invia Preordine";
-                    btn.style.background = "linear-gradient(135deg, #4caf50, #2e7d32)"; 
-                    btn.disabled = false;
-                    btn.onclick = onclickOrig;
-                }
-                // ------------------------------------------------
-
             } catch (err) {
-                console.error(err);
                 notifypreordini("❌ Errore nell'invio del preordine.", "critico");
                 document.getElementById("popupRiepilogo").classList.add("hidden");
             }
-            document.getElementById("popupRiepilogo").classList.add("hidden");
         };
 
-        document.getElementById("annullaInvioPreordine").onclick = () => {
-            document.getElementById("popupRiepilogo").classList.add("hidden");
-        };
+        document.getElementById("annullaInvioPreordine").onclick = () => document.getElementById("popupRiepilogo").classList.add("hidden");
     };
 }
 // ==========================================
