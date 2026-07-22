@@ -1734,20 +1734,52 @@
 					</div>
 					<button id="toggleOrdinaPreordiniBtn" class="toggleBtn">ON</button>
 				</div>
-				<div class="settingItem" id="settingPreordiniInfo" style="display:none;">
-					<div class="settingLabel">
-						<span>Richiedi Numero, Orario di Consegna e Posizione nei preordini</span>
-						<small>Se attivo, i clienti dovranno compilare info aggiuntive per la consegna</small>
-					</div>
-					<button id="togglePreordiniInfoBtn" class="toggleBtn">ON</button>
-				</div>
-				<div class="settingItem" id="settingPreordiniAsportoAutomatico" style="display:none;">
-				    <div class="settingLabel">
-				        <span>Asporto Auto / Modalità Deliveroo 🛵</span>
-				        <small>Se attivo, i preordini diventano comande "DA ASPORTO" e non verrà richiesto il tavolo.</small>
-				    </div>
-				    <button id="togglePreordiniAsportoAutoBtn" class="toggleBtn">OFF</button>
-				</div>
+				<h4 id="titoloModalitaPreordini" style="display:none; margin-top: 15px; padding-bottom: 5px; color: #E91E63; border-top: 1px dashed #ccc; padding-top: 15px;">Modalità Preordini (Attivabili insieme)</h4>
+                
+                <div class="settingItem modPreordineSetting" style="display:none; background: #fce4ec; border-left: 4px solid #E91E63;">
+                    <div class="settingLabel">
+                        <span>Modalità "In Fila" 🚶‍♂️</span>
+                        <small>Preordine rapido in coda (chiede solo nome). Salta la scelta del tavolo in cassa.</small>
+                    </div>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <button onclick="apriQRModal('fila')" class="toggleBtn" style="background:#E91E63; color:white;">QR Code</button>
+                        <button id="toggleModFila" class="toggleBtn">ON</button>
+                    </div>
+                </div>
+                
+                <div class="settingItem modPreordineSetting" style="display:none; background: #e3f2fd; border-left: 4px solid #2196F3;">
+                    <div class="settingLabel">
+                        <span>Modalità "Deliveroo / Delivery" 🛵</span>
+                        <small>Chiede Indirizzo, Telefono, Orario. La comanda diventa Asporto automatico.</small>
+                    </div>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <button onclick="apriQRModal('deliveroo')" class="toggleBtn" style="background:#2196F3; color:white;">QR Code</button>
+                        <button id="toggleModDeliveroo" class="toggleBtn">ON</button>
+                    </div>
+                </div>
+
+                <div class="settingItem modPreordineSetting" style="display:none; background: #fff8e1; border-left: 4px solid #FFC107;">
+                    <div class="settingLabel">
+                        <span>Modalità "San Matteo / Eventi" 🎪</span>
+                        <small>Chiede la Postazione / Ombrellone e il Nome.</small>
+                    </div>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <button onclick="apriQRModal('sanmatteo')" class="toggleBtn" style="background:#FF9800; color:white;">QR Code</button>
+                        <button id="toggleModSanMatteo" class="toggleBtn">ON</button>
+                    </div>
+                </div>
+
+                <div class="settingItem modPreordineSetting" style="display:none; background: #e8f5e9; border-left: 4px solid #4CAF50;">
+                    <div class="settingLabel">
+                        <span>Modalità "Da Tavolo" 🍽️</span>
+                        <small>Scegli il numero del tavolo e genera un QR specifico da incollare su quel tavolo.</small>
+                    </div>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <input type="text" id="inputTavoloQR" placeholder="Es: 12" style="width:60px; padding: 6px; border-radius: 6px; border: 1px solid #ccc; text-align: center;">
+                        <button onclick="apriQRModal('tavolo')" class="toggleBtn" style="background:#4CAF50; color:white;">QR Code</button>
+                        <button id="toggleModTavolo" class="toggleBtn">ON</button>
+                    </div>
+                </div>
 			</div>
 		</div>
 	</div>
