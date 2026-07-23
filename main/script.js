@@ -10091,7 +10091,7 @@ async function generaExcel() {
       });
       sheet4.columns.forEach(column => { column.width = 18; });
   }
-	// ----------------- Scheda 5: Spese e Rimborsi -----------------
+	// ----------------- Scheda 5: Spese e Rimborsi (EXCEL) -----------------
   let arraySpese = Object.values(window.datiSpeseMemoria || {}).sort((a,b) => a.data - b.data);
   
   if (arraySpese.length > 0) {
@@ -10350,7 +10350,7 @@ function generaPdf() {
           let dataSt = new Date(s.data).toLocaleDateString("it-IT");
           
           doc.text(dataSt, xLeft, y);
-          // Tronchiamo i testi troppo lunghi per non farli sovrapporre
+          // Tronchiamo i testi troppo lunghi per evitare che si sovrappongano
           doc.text(s.descrizione.substring(0, 35), xLeft + 25, y); 
           doc.text(s.pagatoDa.substring(0, 20), xCenter + 15, y);
           doc.text(`€${s.importo.toFixed(2)}`, xRight, y, { align: "right" });
@@ -10373,7 +10373,6 @@ function generaPdf() {
       
       doc.setTextColor(0, 0, 0); // Reset colore per la sezione successiva
   }
-
   // Aggiunta Fasce Orarie al PDF
   const datiFasce = window[`datiFasce_${s.tipoEsportazione}`];
   if (datiFasce) {
