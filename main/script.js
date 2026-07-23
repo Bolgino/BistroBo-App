@@ -10091,53 +10091,42 @@ async function generaExcel() {
       });
       sheet4.columns.forEach(column => { column.width = 18; });
   }
-	// ----------------- Scheda 5: Spese e Rimborsi (EXCEL) -----------------
+	// ----------------- Scheda 5: Spese e Rimborsi -----------------
+  const sheet5 = workbook.addWorksheet("Spese e Rimborsi");
+  sheet5.columns = [
+    { header: "Data", key: "data", width: 15 },
+    { header: "Descrizione", key: "descrizione", width: 35 },
+    { header: "Pagato Da", key: "pagatoda", width: 20 },
+    { header: "Stato Rimborso", key: "stato", width: 20 },
+    { header: "Importo", key: "importo", width: 15 }
+  ];
+
+  sheet5.getRow(1).eachCell(cell => {
+    cell.fill = { type:'pattern', pattern:'solid', fgColor:{argb:'FFFF00'} };
+    cell.font = { bold:true };
+  });
+
   let arraySpese = Object.values(window.datiSpeseMemoria || {}).sort((a,b) => a.data - b.data);
-  
-  if (arraySpese.length > 0) {
-      const sheetSpese = workbook.addWorksheet("Spese e Rimborsi");
-      
-      sheetSpese.columns = [
-          { header: "Data", key: "data", width: 15 },
-          { header: "Descrizione", key: "descrizione", width: 35 },
-          { header: "Pagato Da", key: "pagatoDa", width: 20 },
-          { header: "Stato Rimborso", key: "stato", width: 20 },
-          { header: "Importo", key: "importo", width: 15 }
-      ];
+  let totSpeseExc = 0;
 
-      sheetSpese.getRow(1).eachCell(cell => {
-          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFF00' } };
-          cell.font = { bold: true };
-      });
-      
-      let totSpese = 0;
-      arraySpese.forEach(s => {
-          totSpese += s.importo;
-          let dataSt = new Date(s.data).toLocaleDateString("it-IT");
-          let statoSt = s.daRimborsare ? (s.rimborsato ? "Saldato" : "DA RIMBORSARE") : "-";
-          
-          let row = sheetSpese.addRow({
-              data: dataSt, 
-              descrizione: s.descrizione, 
-              pagatoDa: s.pagatoDa, 
-              stato: statoSt, 
-              importo: s.importo
-          });
-          row.getCell('E').numFmt = '€ #,##0.00';
-      });
+  arraySpese.forEach(s => {
+    totSpeseExc += s.importo;
+    let dataSt = new Date(s.data).toLocaleDateString("it-IT");
+    let statoSt = s.daRimborsare ? (s.rimborsato ? "Saldato" : "DA RIMBORSARE") : "-";
+    
+    const row = sheet5.addRow({ data: dataSt, descrizione: s.descrizione, pagatoda: s.pagatoDa, stato: statoSt, importo: Number(s.importo.toFixed(2)) });
+    row.getCell('E').numFmt = '€#,##0.00';
+  });
 
-      sheetSpese.addRow([]); // Riga vuota
-      
-      let summaryRow = sheetSpese.addRow({ descrizione: 'TOTALE SPESE:', importo: totSpese });
-      summaryRow.font = { bold: true, color: { argb: 'FFFF0000' } };
-      summaryRow.getCell('E').numFmt = '€ #,##0.00';
+  sheet5.addRow({}); // riga vuota
+  const rowTot = sheet5.addRow({ descrizione: "TOTALE SPESE:", importo: Number(totSpeseExc.toFixed(2)) });
+  rowTot.font = { bold: true };
+  rowTot.getCell('E').numFmt = '€#,##0.00';
 
-      let utileNetto = globaleIncassoLordo - totSpese;
-      let utileRow = sheetSpese.addRow({ descrizione: 'UTILE NETTO (Lordo - Spese):', importo: utileNetto });
-      utileRow.font = { bold: true, color: { argb: 'FF0056B3' } }; // Blu
-      utileRow.getCell('E').numFmt = '€ #,##0.00';
-  }
-  // ----------------- Salva file -----------------
+  const rowUtile = sheet5.addRow({ descrizione: "UTILE NETTO:", importo: Number((totaleIncasso - totSpeseExc).toFixed(2)) });
+  rowUtile.font = { bold: true, color: { argb: 'FF0056B3' } };
+  rowUtile.getCell('E').numFmt = '€#,##0.00';
+	// ----------------- Salva file -----------------
   const buf = await workbook.xlsx.writeBuffer();
   const blob = new Blob([buf], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   const url = URL.createObjectURL(blob);
@@ -10319,60 +10308,47 @@ function generaPdf() {
     doc.text(`€${c.totale.toFixed(2)}`, xRight, y, {align:"right"});
     y += 6;
   });
-	// ----------------- Sezione Spese nel PDF -----------------
+	// ----------------- Spese e Rimborsi -----------------
+  y += 8;
+  if (y > 260) { doc.addPage(); y = 20; }
+  doc.setFontSize(13);
+  doc.setFont(undefined,'bold');
+  doc.setTextColor(0,100,0); // verde
+  doc.text("Spese e Rimborsi", xLeft, y);
+  y += 6;
+
+  doc.setFontSize(11);
+  doc.setFont(undefined,'normal');
+  doc.setTextColor(0,0,0); // dati in nero
+  doc.text("Data", xLeft, y);
+  doc.text("Descrizione", xLeft + 25, y);
+  doc.text("Pagato Da", xCenter + 15, y);
+  doc.text("Importo", xRight, y, { align: "right" });
+  y += 6;
+
   let arraySpesePdf = Object.values(window.datiSpeseMemoria || {}).sort((a,b) => a.data - b.data);
   let totSpesePdf = 0;
-  
-  if (arraySpesePdf.length > 0) {
-      y += 10;
-      if (y > 260) { doc.addPage(); y = 20; }
-      
-      doc.setFontSize(13);
-      doc.setFont(undefined, 'bold');
-      doc.setTextColor(211, 47, 47); // Rosso
-      doc.text("Riscontrato Spese e Rimborsi", xLeft, y);
-      y += 6;
 
-      // Intestazione Colonne
-      doc.setFontSize(10);
-      doc.setTextColor(0, 0, 0); // Nero
-      doc.text("Data", xLeft, y);
-      doc.text("Descrizione", xLeft + 25, y);
-      doc.text("Pagato Da", xCenter + 15, y);
-      doc.text("Importo", xRight, y, { align: "right" });
-      y += 6;
-      
-      // Righe Spese
-      doc.setFont(undefined, 'normal');
-      arraySpesePdf.forEach(s => {
-          if (y > 275) { doc.addPage(); y = 20; }
-          totSpesePdf += s.importo;
-          let dataSt = new Date(s.data).toLocaleDateString("it-IT");
-          
-          doc.text(dataSt, xLeft, y);
-          // Tronchiamo i testi troppo lunghi per evitare che si sovrappongano
-          doc.text(s.descrizione.substring(0, 35), xLeft + 25, y); 
-          doc.text(s.pagatoDa.substring(0, 20), xCenter + 15, y);
-          doc.text(`€${s.importo.toFixed(2)}`, xRight, y, { align: "right" });
-          y += 6;
-      });
-      
-      // Totali Spese e Utile
-      y += 4;
-      doc.setFont(undefined, 'bold');
-      doc.setTextColor(211, 47, 47); // Rosso
-      doc.text("TOTALE SPESE:", xRight - 30, y, { align: "right" });
-      doc.text(`€${totSpesePdf.toFixed(2)}`, xRight, y, { align: "right" });
-      y += 6;
-      
-      let utile = globaleIncassoLordo - totSpesePdf;
-      doc.setTextColor(13, 71, 161); // Blu
-      doc.text("UTILE NETTO:", xRight - 30, y, { align: "right" });
-      doc.text(`€${utile.toFixed(2)}`, xRight, y, { align: "right" });
-      y += 8;
-      
-      doc.setTextColor(0, 0, 0); // Reset colore per la sezione successiva
-  }
+  arraySpesePdf.forEach(s => {
+    if(y > 275){ doc.addPage(); y=20; }
+    totSpesePdf += s.importo;
+    let dataSt = new Date(s.data).toLocaleDateString("it-IT");
+    
+    doc.text(dataSt, xLeft, y); 
+    doc.text(s.descrizione.substring(0, 35), xLeft + 25, y);
+    doc.text(s.pagatoDa.substring(0, 20), xCenter + 15, y);
+    doc.text(`€${s.importo.toFixed(2)}`, xRight, y, {align:"right"});
+    y += 6;
+  });
+
+  y += 4;
+  doc.setFont(undefined,'bold');
+  doc.text("TOTALE SPESE:", xRight - 30, y, { align: "right" });
+  doc.text(`€${totSpesePdf.toFixed(2)}`, xRight, y, { align: "right" });
+  y += 6;
+  doc.text("UTILE NETTO:", xRight - 30, y, { align: "right" });
+  doc.text(`€${(totaleIncasso - totSpesePdf).toFixed(2)}`, xRight, y, { align: "right" });
+  y += 8;
   // Aggiunta Fasce Orarie al PDF
   const datiFasce = window[`datiFasce_${s.tipoEsportazione}`];
   if (datiFasce) {
