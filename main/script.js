@@ -2808,7 +2808,9 @@ function mostraSchermata() {
         caricaStatistiche();
         caricaMenuAdmin();
         caricaUtenti();
+		caricaSpeseAdmin();
 		gestisciLoopAutoBackup(); // Avvia il backup automatico se l'Admin si è appena loggato
+		
 		if (typeof generaEditorMansionarioAdmin === "function") generaEditorMansionarioAdmin();
         setTimeout(() => {
             const dashBtn = document.querySelector("#adminDiv .tabBtn[data-tab='dashboardAdminTab']");
@@ -3407,6 +3409,7 @@ function mostraAdminDaSimulazione() {
     caricaStatistiche();
     caricaMenuAdmin();
     caricaUtenti();
+	caricaSpeseAdmin();
 	if (typeof renderPreordiniAdmin === "function") {
         db.ref("preordini").once("value").then(snap => renderPreordiniAdmin(snap.val() || {}));
     }
@@ -14078,82 +14081,83 @@ window.apriQRModal = function(mode) {
 // ==========================================
 let globaleIncassoLordo = 0;
 let globaleTotaleSpese = 0;
-window.datiSpeseMemoria = {}; // Ci servirà per PDF/Excel
+window.datiSpeseMemoria = {};
 
-// 1. Ascolta le spese in tempo reale
-db.ref("spese").on("value", snap => {
-    const body = document.getElementById("listaSpeseBody");
-    if (!body) return;
-    
-    let totSpese = 0;
-    window.datiSpeseMemoria = snap.val() || {};
-    body.innerHTML = "";
+// Racchiudiamo tutto in una funzione chiamata al login Admin
+window.caricaSpeseAdmin = function() {
+    if (!checkOnline(true)) return;
 
-    if (!snap.exists()) {
-        body.innerHTML = "<tr><td colspan='6' style='text-align: center; padding: 20px; color: #777;'>Nessuna spesa registrata.</td></tr>";
-    } else {
-        // Ordina cronologicamente
-        const speseArray = Object.entries(window.datiSpeseMemoria)
-            .map(([id, s]) => ({ id, ...s }))
-            .sort((a, b) => b.data - a.data);
+    // 1. Ascolta le spese in tempo reale
+    db.ref("spese").on("value", snap => {
+        const body = document.getElementById("listaSpeseBody");
+        if (!body) return;
+        
+        let totSpese = 0;
+        window.datiSpeseMemoria = snap.val() || {};
+        body.innerHTML = "";
 
-        speseArray.forEach(spesa => {
-            totSpese += spesa.importo;
+        if (!snap.exists()) {
+            body.innerHTML = "<tr><td colspan='6' style='text-align: center; padding: 20px; color: #777;'>Nessuna spesa registrata.</td></tr>";
+        } else {
+            // Ordina cronologicamente
+            const speseArray = Object.entries(window.datiSpeseMemoria)
+                .map(([id, s]) => ({ id, ...s }))
+                .sort((a, b) => b.data - a.data);
 
-            const dateStr = new Date(spesa.data).toLocaleDateString("it-IT", { day: '2-digit', month: '2-digit', year: '2-digit' });
-            
-            // Gestione Pulsante Rimborso
-            let statoRimborsoHtml = `<span style="color:#999; font-style:italic;">Non richiesto</span>`;
-            if (spesa.daRimborsare) {
-                if (spesa.rimborsato) {
-                    statoRimborsoHtml = `<button onclick="toggleRimborsoSpesa('${spesa.id}', true)" style="background: transparent; color: #4CAF50; border: 1px solid #4CAF50; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-weight: bold;">✅ Saldato</button>`;
-                } else {
-                    statoRimborsoHtml = `<button onclick="toggleRimborsoSpesa('${spesa.id}', false)" style="background: #FF9800; color: white; padding: 4px 10px; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">Da Rimborsare</button>`;
+            speseArray.forEach(spesa => {
+                totSpese += spesa.importo;
+                const dateStr = new Date(spesa.data).toLocaleDateString("it-IT", { day: '2-digit', month: '2-digit', year: '2-digit' });
+                
+                // Gestione Pulsante Rimborso
+                let statoRimborsoHtml = `<span style="color:#999; font-style:italic;">Non richiesto</span>`;
+                if (spesa.daRimborsare) {
+                    if (spesa.rimborsato) {
+                        statoRimborsoHtml = `<button onclick="toggleRimborsoSpesa('${spesa.id}', true)" style="background: transparent; color: #4CAF50; border: 1px solid #4CAF50; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-weight: bold;">✅ Saldato</button>`;
+                    } else {
+                        statoRimborsoHtml = `<button onclick="toggleRimborsoSpesa('${spesa.id}', false)" style="background: #FF9800; color: white; padding: 4px 10px; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">Da Rimborsare</button>`;
+                    }
                 }
-            }
 
-            body.innerHTML += `
-                <tr style="border-bottom: 1px solid #eee;">
-                    <td style="padding: 10px;">${dateStr}</td>
-                    <td style="padding: 10px; font-weight: 500;">${spesa.descrizione}</td>
-                    <td style="padding: 10px; font-weight: bold; color: #d32f2f;">€${spesa.importo.toFixed(2)}</td>
-                    <td style="padding: 10px;">${spesa.pagatoDa}</td>
-                    <td style="padding: 10px;">${statoRimborsoHtml}</td>
-                    <td style="padding: 10px; text-align: center;">
-                        <button onclick="eliminaSpesa('${spesa.id}')" style="background: #f44336; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer;">🗑️</button>
-                    </td>
-                </tr>
-            `;
-        });
-    }
-
-    globaleTotaleSpese = totSpese;
-    aggiornaRiepilogoSpese();
-});
-
-// 2. Intercetta il calcolo globale per prendere il Lordo
-// (Si aggancia a tutte le comande sul DB per sommarle)
-db.ref("comande").on("value", snap => {
-    let totIncassi = 0;
-    snap.forEach(s => {
-        const c = s.val();
-        // Calcola l'incasso in base a come vuoi considerarlo (di solito si considerano tutte)
-        if (c.piatti) {
-            c.piatti.forEach(p => {
-                const q = p.quantita || 1;
-                // Usa la tua funzione calcolaPrezzoConSconto se disponibile, altrimenti grezzo
-                const prezzoRiga = typeof calcolaPrezzoConSconto === "function" 
-                    ? calcolaPrezzoConSconto(p) 
-                    : (p.prezzo + (p.extraPrezzo || 0)) * q;
-                totIncassi += prezzoRiga;
+                body.innerHTML += `
+                    <tr style="border-bottom: 1px solid #eee;">
+                        <td style="padding: 10px;">${dateStr}</td>
+                        <td style="padding: 10px; font-weight: 500;">${spesa.descrizione}</td>
+                        <td style="padding: 10px; font-weight: bold; color: #d32f2f;">€${spesa.importo.toFixed(2)}</td>
+                        <td style="padding: 10px;">${spesa.pagatoDa}</td>
+                        <td style="padding: 10px;">${statoRimborsoHtml}</td>
+                        <td style="padding: 10px; text-align: center;">
+                            <button onclick="eliminaSpesa('${spesa.id}')" style="background: #f44336; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer;">🗑️</button>
+                        </td>
+                    </tr>
+                `;
             });
         }
-    });
-    globaleIncassoLordo = totIncassi;
-    aggiornaRiepilogoSpese();
-});
 
-// 3. Funzioni di Update
+        globaleTotaleSpese = totSpese;
+        aggiornaRiepilogoSpese();
+    });
+
+    // 2. Intercetta il calcolo globale per prendere il Lordo
+    db.ref("comande").on("value", snap => {
+        let totIncassi = 0;
+        snap.forEach(s => {
+            const c = s.val();
+            if (c.piatti) {
+                c.piatti.forEach(p => {
+                    const q = p.quantita || 1;
+                    const prezzoRiga = typeof calcolaPrezzoConSconto === "function" 
+                        ? calcolaPrezzoConSconto(p) 
+                        : (p.prezzo + (p.extraPrezzo || 0)) * q;
+                    totIncassi += prezzoRiga;
+                });
+            }
+        });
+        globaleIncassoLordo = totIncassi;
+        aggiornaRiepilogoSpese();
+    });
+};
+
+// 3. Funzioni di Update (Restano invariate)
 function aggiornaRiepilogoSpese() {
     const elIncasso = document.getElementById("speseIncassoLordo");
     const elSpese = document.getElementById("speseTotaleSpese");
