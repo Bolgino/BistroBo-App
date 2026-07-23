@@ -10088,6 +10088,34 @@ async function generaExcel() {
       });
       sheet4.columns.forEach(column => { column.width = 18; });
   }
+	// Aggiunta sezione spese in EXCEL
+	let arraySpese = Object.values(window.datiSpeseMemoria || {}).sort((a,b) => a.data - b.data);
+	
+	if (arraySpese.length > 0) {
+	    worksheet.addRow([]); // Riga vuota
+	    worksheet.addRow(['RISCONTRATO SPESE E RIMBORSI']).font = { bold: true, size: 14, color: { argb: 'FFFF0000' } };
+	    worksheet.addRow(['Data', 'Descrizione', 'Importo', 'Pagato Da', 'Stato Rimborso']).font = { bold: true };
+	    
+	    let totSpese = 0;
+	    arraySpese.forEach(s => {
+	        totSpese += s.importo;
+	        let dataSt = new Date(s.data).toLocaleDateString("it-IT");
+	        let statoSt = s.daRimborsare ? (s.rimborsato ? "Saldato" : "DA RIMBORSARE") : "-";
+	        
+	        let row = worksheet.addRow([dataSt, s.descrizione, s.importo, s.pagatoDa, statoSt]);
+	        row.getCell(3).numFmt = '€ #,##0.00';
+	    });
+	
+	    worksheet.addRow([]);
+	    let summaryRow = worksheet.addRow(['TOTALE SPESE:', '', totSpese]);
+	    summaryRow.font = { bold: true, color: { argb: 'FFFF0000' } };
+	    summaryRow.getCell(3).numFmt = '€ #,##0.00';
+	
+	    let utileNetto = globaleIncassoLordo - totSpese;
+	    let utileRow = worksheet.addRow(['UTILE NETTO:', '', utileNetto]);
+	    utileRow.font = { bold: true, color: { argb: 'FF0000FF' } }; // Blu
+	    utileRow.getCell(3).numFmt = '€ #,##0.00';
+	}
 
   // ----------------- Salva file -----------------
   const buf = await workbook.xlsx.writeBuffer();
@@ -10271,6 +10299,39 @@ function generaPdf() {
     doc.text(`€${c.totale.toFixed(2)}`, xRight, y, {align:"right"});
     y += 6;
   });
+	// Aggiunta sezione spese in PDF
+	let arraySpesePdf = Object.values(window.datiSpeseMemoria || {}).sort((a,b) => a.data - b.data);
+	let totSpesePdf = 0;
+	
+	if (arraySpesePdf.length > 0) {
+	    // Supponendo che `doc.lastAutoTable.finalY` sia l'altezza finale della tua ultima tabella
+	    let startYSpese = (doc.lastAutoTable ? doc.lastAutoTable.finalY : 20) + 15; 
+	    
+	    doc.setFontSize(14);
+	    doc.setTextColor(211, 47, 47); // Rosso
+	    doc.text("Riscontrato Spese e Rimborsi", 14, startYSpese);
+	    
+	    let bodySpese = arraySpesePdf.map(s => {
+	        totSpesePdf += s.importo;
+	        let dataSt = new Date(s.data).toLocaleDateString("it-IT");
+	        let statoSt = s.daRimborsare ? (s.rimborsato ? "Saldato" : "DA RIMBORSARE") : "-";
+	        return [dataSt, s.descrizione, `€ ${s.importo.toFixed(2)}`, s.pagatoDa, statoSt];
+	    });
+	
+	    // Aggiungi riga totale
+	    bodySpese.push([{content: 'TOTALE SPESE:', colSpan: 2, styles: {halign: 'right', fontStyle: 'bold'}}, `€ ${totSpesePdf.toFixed(2)}`, '', '']);
+	    
+	    let utile = globaleIncassoLordo - totSpesePdf;
+	    bodySpese.push([{content: 'UTILE NETTO:', colSpan: 2, styles: {halign: 'right', fontStyle: 'bold', textColor: [13, 71, 161]}}, `€ ${utile.toFixed(2)}`, '', '']);
+	
+	    doc.autoTable({
+	        startY: startYSpese + 5,
+	        head: [['Data', 'Descrizione', 'Importo', 'Pagato Da', 'Stato Rimborso']],
+	        body: bodySpese,
+	        headStyles: { fillColor: [244, 67, 54] },
+	        theme: 'grid'
+	    });
+	}
 
   // Aggiunta Fasce Orarie al PDF
   const datiFasce = window[`datiFasce_${s.tipoEsportazione}`];
@@ -14011,4 +14072,145 @@ window.apriQRModal = function(mode) {
             level: 'H'
         });
     }, 100);
+};
+// ==========================================
+// GESTIONE SPESE E RIMBORSI
+// ==========================================
+let globaleIncassoLordo = 0;
+let globaleTotaleSpese = 0;
+window.datiSpeseMemoria = {}; // Ci servirà per PDF/Excel
+
+// 1. Ascolta le spese in tempo reale
+db.ref("spese").on("value", snap => {
+    const body = document.getElementById("listaSpeseBody");
+    if (!body) return;
+    
+    let totSpese = 0;
+    window.datiSpeseMemoria = snap.val() || {};
+    body.innerHTML = "";
+
+    if (!snap.exists()) {
+        body.innerHTML = "<tr><td colspan='6' style='text-align: center; padding: 20px; color: #777;'>Nessuna spesa registrata.</td></tr>";
+    } else {
+        // Ordina cronologicamente
+        const speseArray = Object.entries(window.datiSpeseMemoria)
+            .map(([id, s]) => ({ id, ...s }))
+            .sort((a, b) => b.data - a.data);
+
+        speseArray.forEach(spesa => {
+            totSpese += spesa.importo;
+
+            const dateStr = new Date(spesa.data).toLocaleDateString("it-IT", { day: '2-digit', month: '2-digit', year: '2-digit' });
+            
+            // Gestione Pulsante Rimborso
+            let statoRimborsoHtml = `<span style="color:#999; font-style:italic;">Non richiesto</span>`;
+            if (spesa.daRimborsare) {
+                if (spesa.rimborsato) {
+                    statoRimborsoHtml = `<button onclick="toggleRimborsoSpesa('${spesa.id}', true)" style="background: transparent; color: #4CAF50; border: 1px solid #4CAF50; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-weight: bold;">✅ Saldato</button>`;
+                } else {
+                    statoRimborsoHtml = `<button onclick="toggleRimborsoSpesa('${spesa.id}', false)" style="background: #FF9800; color: white; padding: 4px 10px; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">Da Rimborsare</button>`;
+                }
+            }
+
+            body.innerHTML += `
+                <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 10px;">${dateStr}</td>
+                    <td style="padding: 10px; font-weight: 500;">${spesa.descrizione}</td>
+                    <td style="padding: 10px; font-weight: bold; color: #d32f2f;">€${spesa.importo.toFixed(2)}</td>
+                    <td style="padding: 10px;">${spesa.pagatoDa}</td>
+                    <td style="padding: 10px;">${statoRimborsoHtml}</td>
+                    <td style="padding: 10px; text-align: center;">
+                        <button onclick="eliminaSpesa('${spesa.id}')" style="background: #f44336; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer;">🗑️</button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    globaleTotaleSpese = totSpese;
+    aggiornaRiepilogoSpese();
+});
+
+// 2. Intercetta il calcolo globale per prendere il Lordo
+// (Si aggancia a tutte le comande sul DB per sommarle)
+db.ref("comande").on("value", snap => {
+    let totIncassi = 0;
+    snap.forEach(s => {
+        const c = s.val();
+        // Calcola l'incasso in base a come vuoi considerarlo (di solito si considerano tutte)
+        if (c.piatti) {
+            c.piatti.forEach(p => {
+                const q = p.quantita || 1;
+                // Usa la tua funzione calcolaPrezzoConSconto se disponibile, altrimenti grezzo
+                const prezzoRiga = typeof calcolaPrezzoConSconto === "function" 
+                    ? calcolaPrezzoConSconto(p) 
+                    : (p.prezzo + (p.extraPrezzo || 0)) * q;
+                totIncassi += prezzoRiga;
+            });
+        }
+    });
+    globaleIncassoLordo = totIncassi;
+    aggiornaRiepilogoSpese();
+});
+
+// 3. Funzioni di Update
+function aggiornaRiepilogoSpese() {
+    const elIncasso = document.getElementById("speseIncassoLordo");
+    const elSpese = document.getElementById("speseTotaleSpese");
+    const elUtile = document.getElementById("speseUtileNetto");
+
+    if (elIncasso) elIncasso.innerText = "€ " + globaleIncassoLordo.toFixed(2);
+    if (elSpese) elSpese.innerText = "€ " + globaleTotaleSpese.toFixed(2);
+    if (elUtile) {
+        const utile = globaleIncassoLordo - globaleTotaleSpese;
+        elUtile.innerText = "€ " + utile.toFixed(2);
+        elUtile.style.color = utile >= 0 ? "#0d47a1" : "#d32f2f";
+        elUtile.parentElement.style.background = utile >= 0 ? "#e3f2fd" : "#ffebee";
+        elUtile.parentElement.style.borderColor = utile >= 0 ? "#bbdefb" : "#ffcdd2";
+    }
+}
+
+window.aggiungiSpesa = function() {
+    const desc = document.getElementById("spesaDescrizione").value.trim();
+    const importoStr = document.getElementById("spesaImporto").value.replace(",", ".");
+    const importo = parseFloat(importoStr);
+    const pagatoDa = document.getElementById("spesaPagatoDa").value.trim();
+    const daRimborsare = document.getElementById("spesaDaRimborsare").checked;
+
+    if (!desc || isNaN(importo) || importo <= 0 || !pagatoDa) {
+        if (typeof notify === "function") notify("Compila tutti i campi. Importo valido richiesto.", "warn");
+        return;
+    }
+
+    db.ref("spese").push({
+        data: Date.now(),
+        descrizione: desc,
+        importo: importo,
+        pagatoDa: pagatoDa,
+        daRimborsare: daRimborsare,
+        rimborsato: false
+    }).then(() => {
+        document.getElementById("spesaDescrizione").value = "";
+        document.getElementById("spesaImporto").value = "";
+        document.getElementById("spesaPagatoDa").value = "";
+        document.getElementById("spesaDaRimborsare").checked = false;
+        if (typeof notify === "function") notify("Spesa registrata con successo!", "success");
+    });
+};
+
+window.toggleRimborsoSpesa = function(id, statoAttuale) {
+    db.ref("spese/" + id).update({ rimborsato: !statoAttuale }).then(() => {
+        if (typeof notify === "function") notify(!statoAttuale ? "Rimborso segnato come SALDATO!" : "Rimborso annullato.", "info");
+    });
+};
+
+window.eliminaSpesa = function(id) {
+    if (typeof disonotify === "function") {
+        disonotify("Vuoi eliminare questa spesa?", {
+            confirmText: "Elimina", showCancel: true, cancelText: "Annulla",
+            onConfirm: () => db.ref("spese/" + id).remove()
+        });
+    } else if (confirm("Vuoi eliminare questa spesa?")) {
+        db.ref("spese/" + id).remove();
+    }
 };
