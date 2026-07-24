@@ -9948,11 +9948,7 @@ async function generaExcel() {
     incassoAsporto, incassoPreordini, totaleComandePreordini, incassoSoloExtra, fondoCassa 
  } = s;
  
-  // Pre-calcolo spese per l'Excel
-  let arraySpese = Object.values(window.datiSpeseMemoria || {}).sort((a,b) => a.data - b.data);
-  let totSpese = 0;
-  arraySpese.forEach(s => { totSpese += s.importo; });
-  let utileNetto = totaleIncasso - totSpese;
+  
 
   const workbook = new ExcelJS.Workbook();
 
@@ -10115,41 +10111,41 @@ async function generaExcel() {
       sheet4.columns.forEach(column => { column.width = 18; });
   }
 	// ----------------- Scheda 5: Dettaglio Spese -----------------
-  if (arraySpeseExcel.length > 0) {
-      const sheetSpese = workbook.addWorksheet("Spese e Rimborsi");
+ if (arraySpeseExcel.length > 0) {
+     const sheetSpese = workbook.addWorksheet("Spese e Rimborsi");
       
-      sheetSpese.columns = [
-          { header: "Data", key: "data", width: 15 },
-          { header: "Descrizione", key: "descrizione", width: 35 },
-          { header: "Pagato Da", key: "pagatoda", width: 20 },
-          { header: "Stato Rimborso", key: "stato", width: 20 },
-          { header: "Importo", key: "importo", width: 15 }
-      ];
+     sheetSpese.columns = [
+         { header: "Data", key: "data", width: 15 },
+         { header: "Descrizione", key: "descrizione", width: 35 },
+         { header: "Pagato Da", key: "pagatoda", width: 20 },
+         { header: "Stato Rimborso", key: "stato", width: 20 },
+         { header: "Importo", key: "importo", width: 15 }
+     ];
 
-      sheetSpese.getRow(1).eachCell(cell => {
-          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFF00' } };
-          cell.font = { bold: true };
-      });
+     sheetSpese.getRow(1).eachCell(cell => {
+         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFF00' } };
+         cell.font = { bold: true };
+     });
       
-      arraySpeseExcel.forEach(s => {
-          let dataSt = new Date(s.data).toLocaleDateString("it-IT");
-          let statoSt = s.daRimborsare ? (s.rimborsato ? "Saldato" : "DA RIMBORSARE") : "-";
+     arraySpeseExcel.forEach(s => {
+         let dataSt = new Date(s.data).toLocaleDateString("it-IT");
+         let statoSt = s.daRimborsare ? (s.rimborsato ? "Saldato" : "DA RIMBORSARE") : "-";
           
-          let row = sheetSpese.addRow({
-              data: dataSt, 
-              descrizione: s.descrizione, 
-              pagatoda: s.pagatoDa, 
-              stato: statoSt, 
-              importo: s.importo
-          });
-          row.getCell('E').numFmt = '€#,##0.00';
-      });
+         let row = sheetSpese.addRow({
+             data: dataSt, 
+             descrizione: s.descrizione, 
+             pagatoda: s.pagatoDa, 
+             stato: statoSt, 
+             importo: s.importo
+         });
+         row.getCell('E').numFmt = '€#,##0.00';
+     });
 
-      sheetSpese.addRow([]); // Riga vuota
-      let summaryRow = sheetSpese.addRow({ descrizione: 'TOTALE SPESE:', importo: totaleSpeseExcel });
-      summaryRow.font = { bold: true, color: { argb: 'FFFF0000' } };
-      summaryRow.getCell('E').numFmt = '€#,##0.00';
-  }
+     sheetSpese.addRow([]); // Riga vuota
+     let summaryRow = sheetSpese.addRow({ descrizione: 'TOTALE SPESE:', importo: totaleSpeseExcel });
+     summaryRow.font = { bold: true, color: { argb: 'FFFF0000' } };
+     summaryRow.getCell('E').numFmt = '€#,##0.00';
+ }
 	// ----------------- Salva file -----------------
   const buf = await workbook.xlsx.writeBuffer();
   const blob = new Blob([buf], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
@@ -10171,11 +10167,7 @@ function generaPdf() {
     piattiByQuantita, piattiByIncasso, ingrByQuantita, listaComande, titoloReport
   } = s;
   
-  // Pre-calcolo spese per l'intestazione PDF
-  let arraySpesePdf = Object.values(window.datiSpeseMemoria || {}).sort((a,b) => a.data - b.data);
-  let totSpesePdf = 0;
-  arraySpesePdf.forEach(s => { totSpesePdf += s.importo; });
-  let utileNettoPdf = totaleIncasso - totSpesePdf;
+ 
 
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
