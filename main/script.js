@@ -11114,6 +11114,7 @@ document.addEventListener("DOMContentLoaded", () => {
 			    piatti: piattiValidi || [],
 			    statoCucina: cibo.length > 0 ? "da fare" : "completato",
 			    statoBere: bere.length > 0 ? "da fare" : "completato",
+			    // 🔹 FIX: Dichiariamo SEMPRE gli stati. Se non ci sono piatti (o disattivati), vanno a completato automaticamente.
 			    statoSnack: snack.length > 0 ? "da fare" : "completato",
 			    statoExtra1: extra1.length > 0 ? "da fare" : "completato",
 			    statoExtra2: extra2.length > 0 ? "da fare" : "completato",
@@ -11129,25 +11130,13 @@ document.addEventListener("DOMContentLoaded", () => {
 			    uidCassiere: uid
 			};
 			
-			// --- NUOVO: SEGNATURA DEL CONTO SEPARATO / MISTO ---
-			if (metodoPagamento === "misto" && window.dettaglioPagamentoMisto) {
-			    nuovaComanda.dettaglioMisto = {
-			        contanti: window.dettaglioPagamentoMisto.contanti,
-			        pos: window.dettaglioPagamentoMisto.pos
-			    };
-			    // Ripulisci la variabile per l'ordine successivo
-			    window.dettaglioPagamentoMisto = null;
-			    
-			    // Ripristina la select a Contanti per il prossimo cliente
-			    if (metodoPagamentoEl) {
-			        setTimeout(() => {
-			            metodoPagamentoEl.value = "contanti";
-			        }, 500);
-			    }
-			}
-
-			// Salvataggio nel DB
+			// 🔹 FIX: Elimina o commenta i 4 if() successivi che accendevano gli Extra. 
+			// La nuovaComanda gestisce già tutto al suo interno in modo infallibile!
+			
+				
+				// Salvataggio nel DB
 	        await ref.set(nuovaComanda);
+			
 			
 	        // 🔹 AVVIO TIMER ANNULLAMENTO (SE ABILITATO)
 	        if (window.settings.annullamentoVendita) {
@@ -14096,8 +14085,6 @@ window.apriQRModal = function(mode) {
     let link = `${baseUrl}preordini.html?mode=${mode}`;
     
     let titolo = "QR Code";
-    let nomeFile = `QR_${mode}.png`; // Nome file base per il download
-    
     if(mode === "fila") titolo = "QR Code - In Fila 🚶‍♂️";
     if(mode === "deliveroo") titolo = "QR Code - Deliveroo 🛵";
     if(mode === "sanmatteo") titolo = "QR Code - San Matteo 🎪";
@@ -14109,7 +14096,6 @@ window.apriQRModal = function(mode) {
         }
         link += `&t=${encodeURIComponent(tav)}`;
         titolo = `QR Code - Tavolo ${tav} 🍽️`;
-        nomeFile = `QR_Tavolo_${tav}.png`; // Nome file personalizzato col numero del tavolo
     }
 
     const overlay = document.createElement("div");
@@ -14120,18 +14106,15 @@ window.apriQRModal = function(mode) {
     modal.className = "modal-varianti";
     modal.style.textAlign = "center";
     
-    // Ho aggiunto flex-wrap ai bottoni per evitare che si schiaccino troppo sui cellulari
     modal.innerHTML = `
         <h3 style="margin-top:0; color:#E91E63;">${titolo}</h3>
         <canvas id="qrCanvas" style="margin: 20px auto; display: block; border: 10px solid white; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);"></canvas>
         <p style="font-size: 0.8em; word-break: break-all; color: #555; background: #f5f5f5; padding: 10px; border-radius: 6px;">
             <a href="${link}" target="_blank" style="text-decoration:none; color:#2196F3;">${link}</a>
         </p>
-        <div class="modal-actions" style="display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin-top:20px;">
+        <div class="modal-actions" style="display:flex; gap:10px; margin-top:20px;">
             <button class="btn-chiudi" onclick="this.closest('.modal-overlay').remove()">Chiudi</button>
             <button class="btn-salva" onclick="navigator.clipboard.writeText('${link}').then(()=>notify('Link copiato nella clipboard!', 'success'))" style="background:#4CAF50;">Copia Link</button>
-            <!-- TASTO SCARICA AGGIUNTO QUI -->
-            <button class="btn-salva" onclick="const cvs = document.getElementById('qrCanvas'); const a = document.createElement('a'); a.href = cvs.toDataURL('image/png'); a.download = '${nomeFile}'; a.click();" style="background:#2196F3;">Scarica QR</button>
         </div>
     `;
     overlay.appendChild(modal);
@@ -14289,211 +14272,3 @@ window.eliminaSpesa = function(id) {
         db.ref("spese/" + id).remove();
     }
 };
-// Variabili di stato per i conti separati
-let csStato = {
-    totaleOrdine: 0,
-    pagatoContanti: 0,
-    pagatoPos: 0,
-    rimanente: 0,
-    articoliPagati: [] // Tiene traccia degli indici di comandaCorrente già pagati
-};
-
-function apriModaleContiSeparati() {
-    if (!comandaCorrente || comandaCorrente.length === 0) {
-        notify("Aggiungi dei piatti alla comanda prima di dividere il conto!", "warn");
-        return;
-    }
-
-    // Calcola il totale attuale della comanda
-    let tot = 0;
-    comandaCorrente.forEach(i => tot += calcolaPrezzoConSconto(i));
-    
-    // Inizializza lo stato
-    csStato.totaleOrdine = Number(tot.toFixed(2));
-    csStato.pagatoContanti = 0;
-    csStato.pagatoPos = 0;
-    csStato.rimanente = csStato.totaleOrdine;
-    csStato.articoliPagati = [];
-
-    // Nascondi il tasto Salva di default
-    const btnSalva = document.getElementById("btnSalvaPagamentoCS");
-    if(btnSalva) btnSalva.style.display = "none";
-
-    aggiornaUICS();
-    cambiaTabCS('romana');
-    
-    document.getElementById("modalContiSeparati").style.display = "flex";
-}
-
-function chiudiModaleContiSeparati() {
-    document.getElementById("modalContiSeparati").style.display = "none";
-}
-
-function cambiaTabCS(tab) {
-    document.querySelectorAll('.cs-tab-content').forEach(el => el.style.display = 'none');
-    document.querySelectorAll('#modalContiSeparati .tabBtn').forEach(el => el.classList.remove('active'));
-
-    if (tab === 'romana') {
-        document.getElementById("csTabRomana").style.display = "block";
-        document.getElementById("btnTabRomana").classList.add("active");
-        calcolaQuotaRomana();
-    } else if (tab === 'articoli') {
-        document.getElementById("csTabArticoli").style.display = "block";
-        document.getElementById("btnTabArticoli").classList.add("active");
-        renderizzaArticoliCS();
-    } else if (tab === 'libero') {
-        document.getElementById("csTabLibero").style.display = "block";
-        document.getElementById("btnTabLibero").classList.add("active");
-        document.getElementById("csInputContanti").value = csStato.rimanente.toFixed(2);
-        document.getElementById("csInputPos").value = "0.00";
-    }
-}
-
-function calcolaQuotaRomana() {
-    const persone = parseInt(document.getElementById("csNumeroPersone").value) || 1;
-    const quota = csStato.rimanente / persone;
-    document.getElementById("csQuotaRomana").innerText = `€${quota.toFixed(2)}`;
-    
-    // Precompila gli input col Pos di default (spesso si divide col bancomat)
-    document.getElementById("csInputContanti").value = "0.00";
-    document.getElementById("csInputPos").value = quota.toFixed(2);
-}
-
-function renderizzaArticoliCS() {
-    const lista = document.getElementById("csListaArticoli");
-    lista.innerHTML = "";
-    
-    comandaCorrente.forEach((piatto, idx) => {
-        // Se è già stato pagato, lo saltiamo
-        if (csStato.articoliPagati.includes(idx)) return;
-
-        // Se la quantità è > 1, per i conti separati è meglio esploderlo visivamente o farlo intero.
-        // Per semplicità lo calcoliamo per intero (quantità totale del rigo)
-        const prezzoTotale = calcolaPrezzoConSconto(piatto);
-
-        const div = document.createElement("div");
-        div.style.display = "flex";
-        div.style.justifyContent = "space-between";
-        div.style.padding = "5px 0";
-        div.style.borderBottom = "1px dashed #ccc";
-
-        div.innerHTML = `
-            <label style="cursor: pointer; flex: 1; display: flex; align-items: center;">
-                <input type="checkbox" class="chk-articolo-cs" data-idx="${idx}" data-prezzo="${prezzoTotale}" onchange="ricalcolaSubtotaleArticoliCS()" style="transform: scale(1.3); margin-right: 10px;">
-                ${piatto.quantita}x ${piatto.nome}
-            </label>
-            <b>€${prezzoTotale.toFixed(2)}</b>
-        `;
-        lista.appendChild(div);
-    });
-
-    ricalcolaSubtotaleArticoliCS();
-}
-
-function ricalcolaSubtotaleArticoliCS() {
-    let subtotale = 0;
-    document.querySelectorAll(".chk-articolo-cs:checked").forEach(chk => {
-        subtotale += parseFloat(chk.getAttribute("data-prezzo"));
-    });
-    document.getElementById("csSubtotaleArticoli").innerText = `€${subtotale.toFixed(2)}`;
-    
-    document.getElementById("csInputContanti").value = "0.00";
-    document.getElementById("csInputPos").value = subtotale.toFixed(2);
-}
-
-function registraPagamentoCS() {
-    const inContanti = parseFloat(document.getElementById("csInputContanti").value) || 0;
-    const inPos = parseFloat(document.getElementById("csInputPos").value) || 0;
-    const totaleInserito = inContanti + inPos;
-
-    if (totaleInserito <= 0) {
-        notify("Inserisci un importo maggiore di zero.", "warn");
-        return;
-    }
-
-    if (totaleInserito > (csStato.rimanente + 0.05)) { // +0.05 tolleranza arrotondamento
-        notify("Stai inserendo più del rimanente!", "error");
-        return;
-    }
-
-    // Aggiorna stato pagamenti
-    csStato.pagatoContanti += inContanti;
-    csStato.pagatoPos += inPos;
-    csStato.rimanente = Math.max(0, csStato.totaleOrdine - (csStato.pagatoContanti + csStato.pagatoPos));
-
-    // Se eravamo nel tab articoli, segnamo gli articoli come pagati
-    if (document.getElementById("btnTabArticoli").classList.contains("active")) {
-        document.querySelectorAll(".chk-articolo-cs:checked").forEach(chk => {
-            csStato.articoliPagati.push(parseInt(chk.getAttribute("data-idx")));
-        });
-        renderizzaArticoliCS(); // Ricarica la lista nascondendo quelli pagati
-    }
-
-    aggiornaUICS();
-    
-    // Se il rimanente è zero, mostra il tasto per SALVARE la configurazione
-    if (csStato.rimanente <= 0.01) {
-        document.getElementById("btnSalvaPagamentoCS").style.display = "block";
-        notify("Conto saldato! Conferma la personalizzazione.", "success");
-    } else {
-        document.getElementById("btnSalvaPagamentoCS").style.display = "none";
-        // Se non è finito, ricalcoliamo il suggerimento per la tab corrente
-        if (document.getElementById("btnTabRomana").classList.contains("active")) calcolaQuotaRomana();
-        else if (document.getElementById("btnTabLibero").classList.contains("active")) cambiaTabCS('libero');
-    }
-}
-
-function aggiornaUICS() {
-    document.getElementById("csTotaleOrdine").innerText = `€${csStato.totaleOrdine.toFixed(2)}`;
-    document.getElementById("csPagatoTotale").innerText = `€${(csStato.pagatoContanti + csStato.pagatoPos).toFixed(2)}`;
-    document.getElementById("csRimanente").innerText = `€${csStato.rimanente.toFixed(2)}`;
-
-    const logDiv = document.getElementById("csLogPagamenti");
-    logDiv.innerHTML = `
-        <div style="background: #e8f5e9; padding: 5px 10px; border-radius: 4px; border: 1px solid #c8e6c9; margin-bottom: 5px;">
-            💵 Totale accumulato Contanti: <b>€${csStato.pagatoContanti.toFixed(2)}</b>
-        </div>
-        <div style="background: #e3f2fd; padding: 5px 10px; border-radius: 4px; border: 1px solid #bbdefb;">
-            💳 Totale accumulato POS: <b>€${csStato.pagatoPos.toFixed(2)}</b>
-        </div>
-    `;
-}
-
-function salvaPagamentoCS() {
-    // 1. Aggiungiamo l'opzione "Misto" alla select principale in Cassa se non c'è già
-    const selectMetodo = document.getElementById("metodoPagamento");
-    let optionMisto = Array.from(selectMetodo.options).find(opt => opt.value === "misto");
-    
-    if (!optionMisto) {
-        optionMisto = document.createElement("option");
-        optionMisto.value = "misto";
-        optionMisto.text = "Misto (Contanti + POS)";
-        selectMetodo.appendChild(optionMisto);
-    }
-    // Imposta la select su Misto
-    selectMetodo.value = "misto";
-
-    // 2. Salviamo il dettaglio dei pagamenti nella variabile globale che poi intercetti nell'invio comanda
-    window.dettaglioPagamentoMisto = {
-        contanti: csStato.pagatoContanti,
-        pos: csStato.pagatoPos
-    };
-
-    // 3. Sincronizziamo la grafica della cassa per far capire che i soldi sono stati inseriti correttamente!
-    totalePagato = csStato.pagatoContanti + csStato.pagatoPos;
-    const totalePagatoSpan = document.getElementById("totalePagato");
-    if (totalePagatoSpan) totalePagatoSpan.innerText = totalePagato.toFixed(2);
-    
-    // 4. Aggiorniamo l'eventuale resto visivo sulla cassa principale (che in questo caso sarà zero perfetto)
-    const totale = parseFloat(document.getElementById("totale").innerText) || 0;
-    const resto = Math.round((totalePagato - totale) * 100) / 100;
-    const restoDovutoSpan = document.getElementById("restoDovuto");
-    if (restoDovutoSpan) {
-        restoDovutoSpan.innerText = resto >= 0 ? resto.toFixed(2) : "0.00";
-        restoDovutoSpan.parentElement.style.color = totalePagato > totale ? "blue" : "black";
-    }
-
-    // 5. Chiudiamo il modale
-    chiudiModaleContiSeparati();
-    notify("Configurazione di pagamento applicata! Ora puoi inviare la comanda.", "success");
-}
