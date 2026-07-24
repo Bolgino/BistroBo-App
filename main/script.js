@@ -9723,16 +9723,8 @@ function analizzaComande(comandeObj, fondoCassaTot) {
         });
 
         // 5. Aggiorno i totali di cassa con il totale reale scontato
-        // CODICE NUOVO
-		// 5. Aggiorno i totali di cassa con il totale reale scontato (e Misto)
-		if (c.metodoPagamento === "misto") {
-			totaleContanti += (c.pagatoContanti || 0);
-			totalePos += (c.pagatoPOS || 0);
-		} else if (c.metodoPagamento === "pos") {
-			totalePos += totaleComandaScontata;
-		} else {
-			totaleContanti += totaleComandaScontata; // Fallback "contanti" di default
-		}
+        if (c.metodoPagamento === "pos") totalePos += totaleComandaScontata;
+        else totaleContanti += totaleComandaScontata;
 
         totaleIncasso += totaleComandaScontata;
         if (c.commento) incassoAsporto += totaleComandaScontata;
@@ -11096,21 +11088,8 @@ document.addEventListener("DOMContentLoaded", () => {
 			    commentoAsporto = "ASPORTO";
 			}
 			
-			// CODICE NUOVO
 			const metodoPagamentoEl = document.getElementById("metodoPagamento");
-			let metodoPagamento = metodoPagamentoEl ? metodoPagamentoEl.value : "contanti";
-			let pagatoContanti = 0;
-			let pagatoPOS = 0;
-			const totaleComanda = parseFloat(document.getElementById("totale").innerText) || 0;
-			
-			if (window.pagamentoMistoConfig && window.pagamentoMistoConfig.attivo) {
-			    metodoPagamento = "misto";
-			    pagatoContanti = window.pagamentoMistoConfig.contanti;
-			    pagatoPOS = window.pagamentoMistoConfig.pos;
-			} else {
-			    if (metodoPagamento === "contanti") pagatoContanti = totaleComanda;
-			    if (metodoPagamento === "pos") pagatoPOS = totaleComanda;
-			}
+			const metodoPagamento = metodoPagamentoEl ? metodoPagamentoEl.value : "contanti";
 			
 			let noteDestinazioni = [];
 			if (window.settings.noteDestinazioniAbilitate) {
@@ -11145,11 +11124,8 @@ document.addEventListener("DOMContentLoaded", () => {
 			    note: note || "",
 			    noteDestinazioni: noteDestinazioni,
 			    commento: commentoAsporto || null,
-			    // CODICE NUOVO
-				metodoPagamento: metodoPagamento,
-				pagatoContanti: pagatoContanti,
-				pagatoPOS: pagatoPOS,
-				scontoGlobale: window.scontoGlobaleCorrente || null,
+			    metodoPagamento: metodoPagamento,
+			    scontoGlobale: window.scontoGlobaleCorrente || null,
 				tavolo: numeroTavolo,
 			    uidCassiere: uid
 			};
@@ -11177,7 +11153,6 @@ document.addEventListener("DOMContentLoaded", () => {
       		const testoAsporto = (asportoCheck && asportoCheck.checked) ? "DA ASPORTO" : "";
             comandaCorrente = [];
 			window.rimuoviScontoGlobaleCassa();
-			if (typeof window.annullaPagamentoMisto === "function") window.annullaPagamentoMisto();
             if(typeof aggiornaComandaCorrente === 'function') aggiornaComandaCorrente();
             if(typeof sincronizzaDisplayLive === 'function') sincronizzaDisplayLive();
             
@@ -14110,6 +14085,8 @@ window.apriQRModal = function(mode) {
     let link = `${baseUrl}preordini.html?mode=${mode}`;
     
     let titolo = "QR Code";
+    let nomeFile = `QR_${mode}.png`; // Nome file base per il download
+    
     if(mode === "fila") titolo = "QR Code - In Fila 🚶‍♂️";
     if(mode === "deliveroo") titolo = "QR Code - Deliveroo 🛵";
     if(mode === "sanmatteo") titolo = "QR Code - San Matteo 🎪";
@@ -14121,6 +14098,7 @@ window.apriQRModal = function(mode) {
         }
         link += `&t=${encodeURIComponent(tav)}`;
         titolo = `QR Code - Tavolo ${tav} 🍽️`;
+        nomeFile = `QR_Tavolo_${tav}.png`; // Nome file personalizzato col numero del tavolo
     }
 
     const overlay = document.createElement("div");
@@ -14131,15 +14109,18 @@ window.apriQRModal = function(mode) {
     modal.className = "modal-varianti";
     modal.style.textAlign = "center";
     
+    // Ho aggiunto flex-wrap ai bottoni per evitare che si schiaccino troppo sui cellulari
     modal.innerHTML = `
         <h3 style="margin-top:0; color:#E91E63;">${titolo}</h3>
         <canvas id="qrCanvas" style="margin: 20px auto; display: block; border: 10px solid white; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);"></canvas>
         <p style="font-size: 0.8em; word-break: break-all; color: #555; background: #f5f5f5; padding: 10px; border-radius: 6px;">
             <a href="${link}" target="_blank" style="text-decoration:none; color:#2196F3;">${link}</a>
         </p>
-        <div class="modal-actions" style="display:flex; gap:10px; margin-top:20px;">
+        <div class="modal-actions" style="display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin-top:20px;">
             <button class="btn-chiudi" onclick="this.closest('.modal-overlay').remove()">Chiudi</button>
             <button class="btn-salva" onclick="navigator.clipboard.writeText('${link}').then(()=>notify('Link copiato nella clipboard!', 'success'))" style="background:#4CAF50;">Copia Link</button>
+            <!-- TASTO SCARICA AGGIUNTO QUI -->
+            <button class="btn-salva" onclick="const cvs = document.getElementById('qrCanvas'); const a = document.createElement('a'); a.href = cvs.toDataURL('image/png'); a.download = '${nomeFile}'; a.click();" style="background:#2196F3;">Scarica QR</button>
         </div>
     `;
     overlay.appendChild(modal);
@@ -14297,72 +14278,3 @@ window.eliminaSpesa = function(id) {
         db.ref("spese/" + id).remove();
     }
 };
-// ================= LOGICA PAGAMENTO MISTO =================
-window.pagamentoMistoConfig = { attivo: false, contanti: 0, pos: 0 };
-
-document.getElementById("btnPagamentoMisto")?.addEventListener("click", () => {
-    const totale = parseFloat(document.getElementById("totale").innerText) || 0;
-    if (totale <= 0) {
-        if(typeof notify === "function") notify("Aggiungi dei piatti prima di dividere il conto!", "warn");
-        return;
-    }
-    
-    document.getElementById("totaleMistoPopup").innerText = totale.toFixed(2);
-    // Di default mettiamo tutto sui contanti, l'operatore poi abbassa la cifra
-    document.getElementById("inputMistoContanti").value = totale.toFixed(2);
-    document.getElementById("inputMistoPOS").value = "0.00";
-    
-    document.getElementById("popupPagamentoMisto").style.display = "flex";
-});
-
-// Bilanciamento automatico: se tocco Contanti, calcola POS
-document.getElementById("inputMistoContanti")?.addEventListener("input", function() {
-    const totale = parseFloat(document.getElementById("totale").innerText) || 0;
-    let val = parseFloat(this.value.replace(",", ".")) || 0;
-    if (val > totale) {
-        val = totale;
-        this.value = val.toFixed(2);
-    }
-    document.getElementById("inputMistoPOS").value = (totale - val).toFixed(2);
-});
-
-// Bilanciamento automatico: se tocco POS, calcola Contanti
-document.getElementById("inputMistoPOS")?.addEventListener("input", function() {
-    const totale = parseFloat(document.getElementById("totale").innerText) || 0;
-    let val = parseFloat(this.value.replace(",", ".")) || 0;
-    if (val > totale) {
-        val = totale;
-        this.value = val.toFixed(2);
-    }
-    document.getElementById("inputMistoContanti").value = (totale - val).toFixed(2);
-});
-
-document.getElementById("confermaMistoBtn")?.addEventListener("click", () => {
-    const contanti = parseFloat(document.getElementById("inputMistoContanti").value.replace(",", ".")) || 0;
-    const pos = parseFloat(document.getElementById("inputMistoPOS").value.replace(",", ".")) || 0;
-    const totale = parseFloat(document.getElementById("totale").innerText) || 0;
-
-    // Controllo sicurezza float (Tolleranza 1 centesimo per arrotondamenti)
-    if (Math.abs((contanti + pos) - totale) > 0.01) {
-        if(typeof notify === "function") notify("La somma di Contanti e POS non corrisponde al totale!", "error");
-        return;
-    }
-
-    window.pagamentoMistoConfig = { attivo: true, contanti: contanti, pos: pos };
-    
-    // Cambiamo la UI
-    document.getElementById("metodoPagamento").disabled = true; 
-    document.getElementById("btnPagamentoMisto").style.display = "none";
-    document.getElementById("riepilogoMisto").style.display = "block";
-    document.getElementById("txtMistoContanti").innerText = contanti.toFixed(2);
-    document.getElementById("txtMistoPOS").innerText = pos.toFixed(2);
-    
-    document.getElementById("popupPagamentoMisto").style.display = "none";
-});
-
-window.annullaPagamentoMisto = function() {
-    window.pagamentoMistoConfig = { attivo: false, contanti: 0, pos: 0 };
-    document.getElementById("metodoPagamento").disabled = false;
-    document.getElementById("btnPagamentoMisto").style.display = "inline-block";
-    document.getElementById("riepilogoMisto").style.display = "none";
-}
