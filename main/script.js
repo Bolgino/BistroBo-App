@@ -771,6 +771,18 @@ function initImpostazioniToggle() {
 	const displayClienteRef = db.ref("impostazioni/displayClienteAbilitato");
 	initToggle(toggleDisplayClienteBtn, displayClienteRef, {on: "ON", off: "OFF"}, false, val => {
 	    window.settings.displayClienteAbilitato = val;
+	    
+	    // Mostra il link cliccabile quando è abilitato
+	    let linkEl = document.getElementById("linkSchermoCliente");
+	    if (!linkEl && toggleDisplayClienteBtn) {
+	        linkEl = document.createElement("div");
+	        linkEl.id = "linkSchermoCliente";
+	        linkEl.style.marginTop = "8px";
+	        linkEl.innerHTML = `<a href="https://bolgino.github.io/BistroBo-App/cliente" target="_blank" style="color: #2196F3; font-weight: bold; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;">📺 Apri Schermo Cliente</a>`;
+	        // Lo appende sotto la descrizione nelle impostazioni
+	        toggleDisplayClienteBtn.parentElement.querySelector(".settingLabel").appendChild(linkEl);
+	    }
+	    if (linkEl) linkEl.style.display = val ? "block" : "none";
 	});
     // NUOVE COMANDE IN ALTO BERE
     const toggleNuoveInAltoBereBtn = document.getElementById("toggleNuoveInAltoBereBtn");
@@ -10400,21 +10412,25 @@ function generaPdf() {
 
       // Intestazione
       doc.setFontSize(10);
-      doc.setFont(undefined, 'normal');
+      doc.setFont(undefined, 'bold');
       doc.setTextColor(0, 0, 0); // Nero
       doc.text("Data", xLeft, y);
-      doc.text("Descrizione", xLeft + 25, y);
-      doc.text("Pagato Da", xCenter + 15, y);
+      doc.text("Descrizione", xLeft + 22, y);
+      doc.text("Pagato Da", xCenter - 5, y);
+      doc.text("Stato", xCenter + 25, y);
       doc.text("Importo", xRight, y, { align: "right" });
       y += 6;
       
+      doc.setFont(undefined, 'normal');
       arraySpesePdf.forEach(spesa => {
           if (y > 275) { doc.addPage(); y = 20; }
           let dataSt = new Date(spesa.data).toLocaleDateString("it-IT");
+          let statoSt = spesa.daRimborsare ? (spesa.rimborsato ? "Saldato" : "DA RIMBORSARE") : "-";
           
           doc.text(dataSt, xLeft, y);
-          doc.text(spesa.descrizione.substring(0, 35), xLeft + 25, y); 
-          doc.text(spesa.pagatoDa.substring(0, 20), xCenter + 15, y);
+          doc.text(spesa.descrizione.substring(0, 25), xLeft + 22, y); 
+          doc.text(spesa.pagatoDa.substring(0, 15), xCenter - 5, y);
+          doc.text(statoSt, xCenter + 25, y);
           doc.text(`€${spesa.importo.toFixed(2)}`, xRight, y, { align: "right" });
           y += 6;
       });
