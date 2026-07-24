@@ -11114,7 +11114,6 @@ document.addEventListener("DOMContentLoaded", () => {
 			    piatti: piattiValidi || [],
 			    statoCucina: cibo.length > 0 ? "da fare" : "completato",
 			    statoBere: bere.length > 0 ? "da fare" : "completato",
-			    // 🔹 FIX: Dichiariamo SEMPRE gli stati. Se non ci sono piatti (o disattivati), vanno a completato automaticamente.
 			    statoSnack: snack.length > 0 ? "da fare" : "completato",
 			    statoExtra1: extra1.length > 0 ? "da fare" : "completato",
 			    statoExtra2: extra2.length > 0 ? "da fare" : "completato",
@@ -11130,13 +11129,25 @@ document.addEventListener("DOMContentLoaded", () => {
 			    uidCassiere: uid
 			};
 			
-			// 🔹 FIX: Elimina o commenta i 4 if() successivi che accendevano gli Extra. 
-			// La nuovaComanda gestisce già tutto al suo interno in modo infallibile!
-			
-				
-				// Salvataggio nel DB
+			// --- NUOVO: SEGNATURA DEL CONTO SEPARATO / MISTO ---
+			if (metodoPagamento === "misto" && window.dettaglioPagamentoMisto) {
+			    nuovaComanda.dettaglioMisto = {
+			        contanti: window.dettaglioPagamentoMisto.contanti,
+			        pos: window.dettaglioPagamentoMisto.pos
+			    };
+			    // Ripulisci la variabile per l'ordine successivo
+			    window.dettaglioPagamentoMisto = null;
+			    
+			    // Ripristina la select a Contanti per il prossimo cliente
+			    if (metodoPagamentoEl) {
+			        setTimeout(() => {
+			            metodoPagamentoEl.value = "contanti";
+			        }, 500);
+			    }
+			}
+
+			// Salvataggio nel DB
 	        await ref.set(nuovaComanda);
-			
 			
 	        // 🔹 AVVIO TIMER ANNULLAMENTO (SE ABILITATO)
 	        if (window.settings.annullamentoVendita) {
@@ -14278,3 +14289,195 @@ window.eliminaSpesa = function(id) {
         db.ref("spese/" + id).remove();
     }
 };
+// Variabili di stato per i conti separati
+let csStato = {
+    totaleOrdine: 0,
+    pagatoContanti: 0,
+    pagatoPos: 0,
+    rimanente: 0,
+    articoliPagati: [] // Tiene traccia degli indici di comandaCorrente già pagati
+};
+
+function apriModaleContiSeparati() {
+    if (!comandaCorrente || comandaCorrente.length === 0) {
+        notify("Aggiungi dei piatti alla comanda prima di dividere il conto!", "warn");
+        return;
+    }
+
+    // Calcola il totale attuale della comanda
+    let tot = 0;
+    comandaCorrente.forEach(i => tot += calcolaPrezzoConSconto(i));
+    
+    // Inizializza lo stato
+    csStato.totaleOrdine = Number(tot.toFixed(2));
+    csStato.pagatoContanti = 0;
+    csStato.pagatoPos = 0;
+    csStato.rimanente = csStato.totaleOrdine;
+    csStato.articoliPagati = [];
+
+    aggiornaUICS();
+    cambiaTabCS('romana');
+    
+    document.getElementById("modalContiSeparati").style.display = "flex";
+}
+
+function chiudiModaleContiSeparati() {
+    document.getElementById("modalContiSeparati").style.display = "none";
+}
+
+function cambiaTabCS(tab) {
+    document.querySelectorAll('.cs-tab-content').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('#modalContiSeparati .tabBtn').forEach(el => el.classList.remove('active'));
+
+    if (tab === 'romana') {
+        document.getElementById("csTabRomana").style.display = "block";
+        document.getElementById("btnTabRomana").classList.add("active");
+        calcolaQuotaRomana();
+    } else if (tab === 'articoli') {
+        document.getElementById("csTabArticoli").style.display = "block";
+        document.getElementById("btnTabArticoli").classList.add("active");
+        renderizzaArticoliCS();
+    } else if (tab === 'libero') {
+        document.getElementById("csTabLibero").style.display = "block";
+        document.getElementById("btnTabLibero").classList.add("active");
+        document.getElementById("csInputContanti").value = csStato.rimanente.toFixed(2);
+        document.getElementById("csInputPos").value = "0.00";
+    }
+}
+
+function calcolaQuotaRomana() {
+    const persone = parseInt(document.getElementById("csNumeroPersone").value) || 1;
+    const quota = csStato.rimanente / persone;
+    document.getElementById("csQuotaRomana").innerText = `€${quota.toFixed(2)}`;
+    
+    // Precompila gli input col Pos di default (spesso si divide col bancomat)
+    document.getElementById("csInputContanti").value = "0.00";
+    document.getElementById("csInputPos").value = quota.toFixed(2);
+}
+
+function renderizzaArticoliCS() {
+    const lista = document.getElementById("csListaArticoli");
+    lista.innerHTML = "";
+    
+    comandaCorrente.forEach((piatto, idx) => {
+        // Se è già stato pagato, lo saltiamo
+        if (csStato.articoliPagati.includes(idx)) return;
+
+        // Se la quantità è > 1, per i conti separati è meglio esploderlo visivamente o farlo intero.
+        // Per semplicità lo calcoliamo per intero (quantità totale del rigo)
+        const prezzoTotale = calcolaPrezzoConSconto(piatto);
+
+        const div = document.createElement("div");
+        div.style.display = "flex";
+        div.style.justifyContent = "space-between";
+        div.style.padding = "5px 0";
+        div.style.borderBottom = "1px dashed #ccc";
+
+        div.innerHTML = `
+            <label style="cursor: pointer; flex: 1; display: flex; align-items: center;">
+                <input type="checkbox" class="chk-articolo-cs" data-idx="${idx}" data-prezzo="${prezzoTotale}" onchange="ricalcolaSubtotaleArticoliCS()" style="transform: scale(1.3); margin-right: 10px;">
+                ${piatto.quantita}x ${piatto.nome}
+            </label>
+            <b>€${prezzoTotale.toFixed(2)}</b>
+        `;
+        lista.appendChild(div);
+    });
+
+    ricalcolaSubtotaleArticoliCS();
+}
+
+function ricalcolaSubtotaleArticoliCS() {
+    let subtotale = 0;
+    document.querySelectorAll(".chk-articolo-cs:checked").forEach(chk => {
+        subtotale += parseFloat(chk.getAttribute("data-prezzo"));
+    });
+    document.getElementById("csSubtotaleArticoli").innerText = `€${subtotale.toFixed(2)}`;
+    
+    document.getElementById("csInputContanti").value = "0.00";
+    document.getElementById("csInputPos").value = subtotale.toFixed(2);
+}
+
+function registraPagamentoCS() {
+    const inContanti = parseFloat(document.getElementById("csInputContanti").value) || 0;
+    const inPos = parseFloat(document.getElementById("csInputPos").value) || 0;
+    const totaleInserito = inContanti + inPos;
+
+    if (totaleInserito <= 0) {
+        notify("Inserisci un importo maggiore di zero.", "warn");
+        return;
+    }
+
+    if (totaleInserito > (csStato.rimanente + 0.05)) { // +0.05 tolleranza arrotondamento
+        notify("Stai inserendo più del rimanente!", "error");
+        return;
+    }
+
+    // Aggiorna stato pagamenti
+    csStato.pagatoContanti += inContanti;
+    csStato.pagatoPos += inPos;
+    csStato.rimanente = Math.max(0, csStato.totaleOrdine - (csStato.pagatoContanti + csStato.pagatoPos));
+
+    // Se eravamo nel tab articoli, segnamo gli articoli come pagati
+    if (document.getElementById("btnTabArticoli").classList.contains("active")) {
+        document.querySelectorAll(".chk-articolo-cs:checked").forEach(chk => {
+            csStato.articoliPagati.push(parseInt(chk.getAttribute("data-idx")));
+        });
+        renderizzaArticoliCS(); // Ricarica la lista nascondendo quelli pagati
+    }
+
+    aggiornaUICS();
+    
+    // Se il rimanente è zero, mostra il tasto per inviare
+    if (csStato.rimanente <= 0.01) {
+        document.getElementById("btnChiudiEInviaCS").style.display = "block";
+        notify("Conto saldato! Ora puoi inviare la comanda.", "success");
+    } else {
+        // Se non è finito, ricalcoliamo il suggerimento per la tab corrente
+        if (document.getElementById("btnTabRomana").classList.contains("active")) calcolaQuotaRomana();
+        else if (document.getElementById("btnTabLibero").classList.contains("active")) cambiaTabCS('libero');
+    }
+}
+
+function aggiornaUICS() {
+    document.getElementById("csTotaleOrdine").innerText = `€${csStato.totaleOrdine.toFixed(2)}`;
+    document.getElementById("csPagatoTotale").innerText = `€${(csStato.pagatoContanti + csStato.pagatoPos).toFixed(2)}`;
+    document.getElementById("csRimanente").innerText = `€${csStato.rimanente.toFixed(2)}`;
+
+    const logDiv = document.getElementById("csLogPagamenti");
+    logDiv.innerHTML = `
+        <div style="background: #e8f5e9; padding: 5px 10px; border-radius: 4px; border: 1px solid #c8e6c9; margin-bottom: 5px;">
+            💵 Totale accumulato Contanti: <b>€${csStato.pagatoContanti.toFixed(2)}</b>
+        </div>
+        <div style="background: #e3f2fd; padding: 5px 10px; border-radius: 4px; border: 1px solid #bbdefb;">
+            💳 Totale accumulato POS: <b>€${csStato.pagatoPos.toFixed(2)}</b>
+        </div>
+    `;
+}
+
+function concludiEInviaComandaCS() {
+    // 1. Modifichiamo temporaneamente il selettore globale a "Misto"
+    // Dato che il tuo selettore ha solo "contanti" e "pos", aggiungiamo l'opzione dinamicamente
+    const selectMetodo = document.getElementById("metodoPagamento");
+    let optionMisto = Array.from(selectMetodo.options).find(opt => opt.value === "misto");
+    
+    if (!optionMisto) {
+        optionMisto = document.createElement("option");
+        optionMisto.value = "misto";
+        optionMisto.text = "Misto (Contanti + POS)";
+        selectMetodo.appendChild(optionMisto);
+    }
+    selectMetodo.value = "misto";
+
+    // 2. Salviamo il dettaglio dei pagamenti in una variabile globale o oggetto finestra 
+    // per intercettarlo durante la creazione dell'oggetto su Firebase.
+    window.dettaglioPagamentoMisto = {
+        contanti: csStato.pagatoContanti,
+        pos: csStato.pagatoPos
+    };
+
+    // 3. Chiudiamo il modale
+    chiudiModaleContiSeparati();
+
+    // 4. Scateniamo il click originario del bottone "Invia Comanda"
+    document.getElementById("inviaComandaBtn").click();
+}
