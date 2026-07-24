@@ -14085,6 +14085,8 @@ window.apriQRModal = function(mode) {
     let link = `${baseUrl}preordini.html?mode=${mode}`;
     
     let titolo = "QR Code";
+    let nomeFile = `QR_${mode}.png`; // Nome file base per il download
+    
     if(mode === "fila") titolo = "QR Code - In Fila 🚶‍♂️";
     if(mode === "deliveroo") titolo = "QR Code - Deliveroo 🛵";
     if(mode === "sanmatteo") titolo = "QR Code - San Matteo 🎪";
@@ -14096,6 +14098,7 @@ window.apriQRModal = function(mode) {
         }
         link += `&t=${encodeURIComponent(tav)}`;
         titolo = `QR Code - Tavolo ${tav} 🍽️`;
+        nomeFile = `QR_Tavolo_${tav}.png`; // Nome file personalizzato col numero del tavolo
     }
 
     const overlay = document.createElement("div");
@@ -14106,15 +14109,18 @@ window.apriQRModal = function(mode) {
     modal.className = "modal-varianti";
     modal.style.textAlign = "center";
     
+    // Ho aggiunto flex-wrap ai bottoni per evitare che si schiaccino troppo sui cellulari
     modal.innerHTML = `
         <h3 style="margin-top:0; color:#E91E63;">${titolo}</h3>
         <canvas id="qrCanvas" style="margin: 20px auto; display: block; border: 10px solid white; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);"></canvas>
         <p style="font-size: 0.8em; word-break: break-all; color: #555; background: #f5f5f5; padding: 10px; border-radius: 6px;">
             <a href="${link}" target="_blank" style="text-decoration:none; color:#2196F3;">${link}</a>
         </p>
-        <div class="modal-actions" style="display:flex; gap:10px; margin-top:20px;">
+        <div class="modal-actions" style="display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin-top:20px;">
             <button class="btn-chiudi" onclick="this.closest('.modal-overlay').remove()">Chiudi</button>
             <button class="btn-salva" onclick="navigator.clipboard.writeText('${link}').then(()=>notify('Link copiato nella clipboard!', 'success'))" style="background:#4CAF50;">Copia Link</button>
+            <!-- TASTO SCARICA AGGIUNTO QUI -->
+            <button class="btn-salva" onclick="const cvs = document.getElementById('qrCanvas'); const a = document.createElement('a'); a.href = cvs.toDataURL('image/png'); a.download = '${nomeFile}'; a.click();" style="background:#2196F3;">Scarica QR</button>
         </div>
     `;
     overlay.appendChild(modal);
