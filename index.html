@@ -262,12 +262,22 @@
 		                </b>
 		            </span>
 		            <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-		                <label for="metodoPagamento" style="margin:0;"><b>Metodo pagamento:</b></label>
-		                <select id="metodoPagamento" style="width:120px; height:32px; border-radius: 6px; border: 1px solid #ccc; font-weight: bold;">
-		                    <option value="contanti" selected>Contanti</option>
-		                    <option value="pos">POS</option>
-		                </select>
-		            </div>
+					    <label for="metodoPagamento" style="margin:0;"><b>Pagamento principale:</b></label>
+					    <select id="metodoPagamento" style="width:120px; height:32px; border-radius: 6px; border: 1px solid #ccc; font-weight: bold;">
+					        <option value="contanti" selected>Contanti</option>
+					        <option value="pos">POS</option>
+					    </select>
+					    
+					    <!-- NUOVO TASTO CONTI SEPARATI -->
+					    <button id="btnApriContiSeparati" class="primaryButton" style="padding: 5px 12px; border-radius: 6px; background: linear-gradient(135deg, #9C27B0, #7B1FA2); color: white; border: none; cursor: pointer; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+					        ➗ Misto/Separato
+					    </button>
+					</div>
+					
+					<!-- NUOVO BOX RIEPILOGO CARRELLO -->
+					<div id="riepilogoContiSeparati" style="display: none; background: #f3e5f5; padding: 10px; border-radius: 8px; border: 1px dashed #ce93d8; margin-bottom: 10px; font-size: 0.95em; cursor: pointer; color: #4a148c; font-weight: bold;" onclick="apriModaleContiSeparati()">
+					    <!-- Popolato da JS -->
+					</div>
 		
 		            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
 		                <button id="inviaComandaBtn" class="stickyBtn">Invia Comanda</button>
@@ -1971,6 +1981,75 @@
 	        <div class="modal-actions" style="margin-top: 20px; display: flex; gap: 10px;">
 	            <button class="btn-chiudi" id="chiudiProfiloBtn" style="flex: 1; border-radius: 8px; display: none;">Annulla</button>
 	            <button class="btn-salva" id="salvaProfiloBtn" style="flex: 1; border-radius: 8px;">Salva Profilo</button>
+	        </div>
+	    </div>
+	</div>
+	<!-- MODALE CONTI SEPARATI -->
+	<div id="modalContiSeparati" class="modal-overlay hidden" style="z-index: 10005; display: none;">
+	    <div class="modal-varianti" style="max-width: 500px; width: 95%;">
+	        <h3 style="margin-top: 0; color: #9C27B0; border-bottom: 2px solid #eee; padding-bottom: 10px;">➗ Conti Separati & Misti</h3>
+	        
+	        <!-- TABS -->
+	        <div style="display: flex; gap: 5px; margin-bottom: 15px; border-bottom: 2px solid #ddd; padding-bottom: 5px;">
+	            <button class="tabBtnSplit active" data-target="splitMath" style="flex: 1; padding: 8px; border-radius: 8px; border: none; background: #9C27B0; color: white; font-weight: bold; cursor: pointer;">Alla Romana</button>
+	            <button class="tabBtnSplit" data-target="splitArticoli" style="flex: 1; padding: 8px; border-radius: 8px; border: none; background: #eee; color: #333; font-weight: bold; cursor: pointer;">Per Articolo</button>
+	            <button class="tabBtnSplit" data-target="splitMisto" style="flex: 1; padding: 8px; border-radius: 8px; border: none; background: #eee; color: #333; font-weight: bold; cursor: pointer;">Metà & Metà</button>
+	        </div>
+	
+	        <!-- CONTENUTO TAB 1: MATEMATICA -->
+	        <div id="splitMath" class="splitContent active">
+	            <p style="font-size: 0.9em; color: #666;">Dividi il totale in parti uguali per emettere più scontrini.</p>
+	            <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin: 20px 0;">
+	                <b>Numero Persone:</b>
+	                <input type="number" id="splitPersone" value="2" min="2" max="50" style="width: 60px; padding: 8px; text-align: center; border-radius: 6px; border: 1px solid #ccc; font-size: 1.2em; font-weight: bold;">
+	            </div>
+	            <div style="text-align: center; font-size: 1.3em; color: #d32f2f;">
+	                Da pagare: <b id="splitQuotaSingola">€ 0.00</b> / testa
+	            </div>
+	            <div style="text-align: center; font-size: 0.85em; color: #777; margin-top: 5px;">
+	                Il software genererà automaticamente scontrini separati.
+	            </div>
+	        </div>
+	
+	        <!-- CONTENUTO TAB 2: ARTICOLI -->
+	        <div id="splitArticoli" class="splitContent" style="display: none;">
+	            <p style="font-size: 0.9em; color: #666;">Spunta cosa sta pagando la prima persona. Il resto rimarrà nel carrello.</p>
+	            <div id="splitListaArticoli" style="max-height: 200px; overflow-y: auto; background: #f9f9f9; border: 1px solid #eee; border-radius: 8px; padding: 10px; margin-bottom: 15px;">
+	                <!-- Generato da JS -->
+	            </div>
+	            <div style="text-align: right; font-size: 1.1em; color: #333;">
+	                Totale selezionato: <b style="color: #4CAF50;">€ <span id="splitTotaleSelezionato">0.00</span></b>
+	            </div>
+	            <div style="display: flex; gap: 10px; align-items: center; justify-content: flex-end; margin-top: 10px;">
+	                <small>Paga con:</small>
+	                <select id="splitMetodoArticoli" style="padding: 6px; border-radius: 6px; border: 1px solid #ccc;">
+	                    <option value="contanti">Contanti</option>
+	                    <option value="pos">POS</option>
+	                </select>
+	            </div>
+	        </div>
+	
+	        <!-- CONTENUTO TAB 3: MISTO -->
+	        <div id="splitMisto" class="splitContent" style="display: none;">
+	            <p style="font-size: 0.9em; color: #666;">Il cliente usa due metodi di pagamento (es. un po' in contanti, il resto col POS).</p>
+	            <div style="display: flex; justify-content: space-between; align-items: center; background: #e8f5e9; padding: 15px; border-radius: 8px; border: 1px solid #c8e6c9; margin-bottom: 10px;">
+	                <b>💶 Contanti:</b>
+	                <div style="display: flex; align-items: center; gap: 5px;">
+	                    € <input type="number" id="splitImportoContanti" step="0.50" min="0" placeholder="0.00" style="width: 80px; padding: 8px; border-radius: 6px; border: 1px solid #ccc; font-weight: bold; text-align: center;">
+	                </div>
+	            </div>
+	            <div style="display: flex; justify-content: space-between; align-items: center; background: #e3f2fd; padding: 15px; border-radius: 8px; border: 1px solid #bbdefb;">
+	                <b>💳 Resto su POS:</b>
+	                <div style="font-size: 1.2em; font-weight: bold; color: #1565c0;">
+	                    € <span id="splitImportoPos">0.00</span>
+	                </div>
+	            </div>
+	        </div>
+	
+	        <!-- AZIONI -->
+	        <div class="modal-actions" style="display: flex; gap: 10px; margin-top: 25px;">
+	            <button class="btn-chiudi" onclick="chiudiModaleContiSeparati()" style="flex: 1; padding: 10px; border-radius: 8px; border: none; background: #999; color: white; cursor: pointer; font-weight: bold;">Annulla</button>
+	            <button class="btn-salva" onclick="salvaContiSeparati()" style="flex: 1; padding: 10px; border-radius: 8px; border: none; background: #4CAF50; color: white; cursor: pointer; font-weight: bold;">Salva & Applica</button>
 	        </div>
 	    </div>
 	</div>
