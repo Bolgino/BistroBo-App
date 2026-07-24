@@ -14315,6 +14315,10 @@ function apriModaleContiSeparati() {
     csStato.rimanente = csStato.totaleOrdine;
     csStato.articoliPagati = [];
 
+    // Nascondi il tasto Salva di default
+    const btnSalva = document.getElementById("btnSalvaPagamentoCS");
+    if(btnSalva) btnSalva.style.display = "none";
+
     aggiornaUICS();
     cambiaTabCS('romana');
     
@@ -14427,11 +14431,12 @@ function registraPagamentoCS() {
 
     aggiornaUICS();
     
-    // Se il rimanente è zero, mostra il tasto per inviare
+    // Se il rimanente è zero, mostra il tasto per SALVARE la configurazione
     if (csStato.rimanente <= 0.01) {
-        document.getElementById("btnChiudiEInviaCS").style.display = "block";
-        notify("Conto saldato! Ora puoi inviare la comanda.", "success");
+        document.getElementById("btnSalvaPagamentoCS").style.display = "block";
+        notify("Conto saldato! Conferma la personalizzazione.", "success");
     } else {
+        document.getElementById("btnSalvaPagamentoCS").style.display = "none";
         // Se non è finito, ricalcoliamo il suggerimento per la tab corrente
         if (document.getElementById("btnTabRomana").classList.contains("active")) calcolaQuotaRomana();
         else if (document.getElementById("btnTabLibero").classList.contains("active")) cambiaTabCS('libero');
@@ -14454,9 +14459,8 @@ function aggiornaUICS() {
     `;
 }
 
-function concludiEInviaComandaCS() {
-    // 1. Modifichiamo temporaneamente il selettore globale a "Misto"
-    // Dato che il tuo selettore ha solo "contanti" e "pos", aggiungiamo l'opzione dinamicamente
+function salvaPagamentoCS() {
+    // 1. Aggiungiamo l'opzione "Misto" alla select principale in Cassa se non c'è già
     const selectMetodo = document.getElementById("metodoPagamento");
     let optionMisto = Array.from(selectMetodo.options).find(opt => opt.value === "misto");
     
@@ -14466,18 +14470,30 @@ function concludiEInviaComandaCS() {
         optionMisto.text = "Misto (Contanti + POS)";
         selectMetodo.appendChild(optionMisto);
     }
+    // Imposta la select su Misto
     selectMetodo.value = "misto";
 
-    // 2. Salviamo il dettaglio dei pagamenti in una variabile globale o oggetto finestra 
-    // per intercettarlo durante la creazione dell'oggetto su Firebase.
+    // 2. Salviamo il dettaglio dei pagamenti nella variabile globale che poi intercetti nell'invio comanda
     window.dettaglioPagamentoMisto = {
         contanti: csStato.pagatoContanti,
         pos: csStato.pagatoPos
     };
 
-    // 3. Chiudiamo il modale
-    chiudiModaleContiSeparati();
+    // 3. Sincronizziamo la grafica della cassa per far capire che i soldi sono stati inseriti correttamente!
+    totalePagato = csStato.pagatoContanti + csStato.pagatoPos;
+    const totalePagatoSpan = document.getElementById("totalePagato");
+    if (totalePagatoSpan) totalePagatoSpan.innerText = totalePagato.toFixed(2);
+    
+    // 4. Aggiorniamo l'eventuale resto visivo sulla cassa principale (che in questo caso sarà zero perfetto)
+    const totale = parseFloat(document.getElementById("totale").innerText) || 0;
+    const resto = Math.round((totalePagato - totale) * 100) / 100;
+    const restoDovutoSpan = document.getElementById("restoDovuto");
+    if (restoDovutoSpan) {
+        restoDovutoSpan.innerText = resto >= 0 ? resto.toFixed(2) : "0.00";
+        restoDovutoSpan.parentElement.style.color = totalePagato > totale ? "blue" : "black";
+    }
 
-    // 4. Scateniamo il click originario del bottone "Invia Comanda"
-    document.getElementById("inviaComandaBtn").click();
+    // 5. Chiudiamo il modale
+    chiudiModaleContiSeparati();
+    notify("Configurazione di pagamento applicata! Ora puoi inviare la comanda.", "success");
 }
