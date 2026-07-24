@@ -4256,20 +4256,9 @@ function aggiornaComandaCorrente(){
         restoB.style.color = "black"; 
     }
 
-    // FIX CONTI SEPARATI: Se il carrello viene modificato, il conto separato si resetta per evitare errori di calcolo.
-    if (window.pagamentoMistoSettings) {
-        window.pagamentoMistoSettings = null;
-        const boxSplit = document.getElementById("riepilogoContiSeparati");
-        if (boxSplit) boxSplit.style.display = "none";
-        const selectMetodo = document.getElementById("metodoPagamento");
-        if (selectMetodo) selectMetodo.disabled = false;
-        if (typeof notify === "function") notify("Carrello modificato: conti separati azzerati.", "attenzione");
-    }
-
-    aggiornaStatoInvio(); 
-    aggiornaSuggerimentoResto(); 
+    aggiornaStatoInvio();
+    aggiornaSuggerimentoResto();
 	sincronizzaDisplayLive();
-	
 }
 // ================= CALCOLO INGREDIENTI EFFETTIVI (CON VARIANTI) =================
 function getIngredientiEffettivi(p) {
@@ -5179,23 +5168,14 @@ function caricaComandeCassa() {
         }
 
         // --- Mostra metodo pagamento ---
-		if (c.metodoPagamento) {
-		    const mpDiv = document.createElement("div");
-		    mpDiv.style.marginTop = "6px";
-		    mpDiv.style.fontSize = "0.9em";
-		    
-		    if (c.dettagliMisto) {
-		        // Grafica speciale per i Conti Separati / Misti
-		        mpDiv.innerHTML = `<span style="background: #f3e5f5; color: #7b1fa2; padding: 3px 6px; border-radius: 4px; font-weight: bold; border: 1px solid #ce93d8;">➗ ${c.metodoPagamento}</span>`;
-		    } else {
-		        // Grafica standard (Contanti/POS)
-		        const icona = c.metodoPagamento.toLowerCase() === "pos" ? "💳" : "💶";
-		        mpDiv.innerHTML = `<b>Pagamento:</b> ${icona} ${c.metodoPagamento.toUpperCase()}`;
-		        mpDiv.style.fontStyle = "italic";
-		        mpDiv.style.color = "#555";
-		    }
-		    d.appendChild(mpDiv);
-		}
+        if (c.metodoPagamento) {
+        const mpDiv = document.createElement("div");
+        mpDiv.innerHTML = `<b>Pagamento:</b> ${c.metodoPagamento}`;
+        mpDiv.style.marginTop = "2px";
+        mpDiv.style.fontStyle = "italic";
+        mpDiv.style.color = "#333";
+        d.appendChild(mpDiv);
+        }
 
         // --- Mostra orario invio ---
         const timeDiv = document.createElement("div");
@@ -6287,24 +6267,14 @@ async function caricaGestioneComandeAdmin() {
             riga.appendChild(buttonsDiv);
 
             // --- Mostra metodo pagamento ---
-            // --- Mostra metodo pagamento ---
-			if (c.metodoPagamento) {
-			    const mpDiv = document.createElement("div");
-			    mpDiv.style.marginTop = "6px";
-			    mpDiv.style.fontSize = "0.9em";
-			    
-			    if (c.dettagliMisto) {
-			        // Grafica speciale per i Conti Separati / Misti
-			        mpDiv.innerHTML = `<span style="background: #f3e5f5; color: #7b1fa2; padding: 3px 6px; border-radius: 4px; font-weight: bold; border: 1px solid #ce93d8;">➗ ${c.metodoPagamento}</span>`;
-			    } else {
-			        // Grafica standard (Contanti/POS)
-			        const icona = c.metodoPagamento.toLowerCase() === "pos" ? "💳" : "💶";
-			        mpDiv.innerHTML = `<b>Pagamento:</b> ${icona} ${c.metodoPagamento.toUpperCase()}`;
-			        mpDiv.style.fontStyle = "italic";
-			        mpDiv.style.color = "#555";
-			    }
-			    riga.appendChild(mpDiv); // In Admin si chiama 'riga' invece di 'd'
-			}
+            if (c.metodoPagamento) {
+            const mpDiv = document.createElement("div");
+            mpDiv.innerHTML = `<b>Pagamento:</b> ${c.metodoPagamento}`;
+            mpDiv.style.marginTop = "2px";
+            mpDiv.style.fontStyle = "italic";
+            mpDiv.style.color = "#333";
+            riga.appendChild(mpDiv);
+            }
 
             // --- Mostra orario invio ---
             const timeDiv = document.createElement("div");
@@ -11118,22 +11088,8 @@ document.addEventListener("DOMContentLoaded", () => {
 			    commentoAsporto = "ASPORTO";
 			}
 			
-			// --- GESTIONE PAGAMENTO MISTO E CONTI SEPARATI ---
 			const metodoPagamentoEl = document.getElementById("metodoPagamento");
-			let metodoPagamentoDaSalvare = metodoPagamentoEl ? metodoPagamentoEl.value : "contanti";
-			let dettagliMisto = null;
-			
-			if (window.pagamentoMistoSettings) {
-			    dettagliMisto = window.pagamentoMistoSettings;
-			    // Sovrascriviamo la stringa base per una facile lettura a occhio nudo nelle liste
-			    if (dettagliMisto.tipo === "matematica") {
-			        metodoPagamentoDaSalvare = `Diviso in ${dettagliMisto.persone} (${dettagliMisto.quota.toFixed(2)}€ a testa)`;
-			    } else if (dettagliMisto.tipo === "articoli") {
-			        metodoPagamentoDaSalvare = `Misto Articoli`;
-			    } else if (dettagliMisto.tipo === "misto") {
-			        metodoPagamentoDaSalvare = `Misto (${dettagliMisto.importoContanti.toFixed(2)}€ Cont, ${dettagliMisto.importoPos.toFixed(2)}€ POS)`;
-			    }
-			}
+			const metodoPagamento = metodoPagamentoEl ? metodoPagamentoEl.value : "contanti";
 			
 			let noteDestinazioni = [];
 			if (window.settings.noteDestinazioniAbilitate) {
@@ -11158,6 +11114,7 @@ document.addEventListener("DOMContentLoaded", () => {
 			    piatti: piattiValidi || [],
 			    statoCucina: cibo.length > 0 ? "da fare" : "completato",
 			    statoBere: bere.length > 0 ? "da fare" : "completato",
+			    // 🔹 FIX: Dichiariamo SEMPRE gli stati. Se non ci sono piatti (o disattivati), vanno a completato automaticamente.
 			    statoSnack: snack.length > 0 ? "da fare" : "completato",
 			    statoExtra1: extra1.length > 0 ? "da fare" : "completato",
 			    statoExtra2: extra2.length > 0 ? "da fare" : "completato",
@@ -11167,10 +11124,9 @@ document.addEventListener("DOMContentLoaded", () => {
 			    note: note || "",
 			    noteDestinazioni: noteDestinazioni,
 			    commento: commentoAsporto || null,
-			    metodoPagamento: metodoPagamentoDaSalvare, // Salviamo la stringa descrittiva
-			    dettagliMisto: dettagliMisto, // SALVIAMO L'OGGETTO PER LE STATISTICHE
+			    metodoPagamento: metodoPagamento,
 			    scontoGlobale: window.scontoGlobaleCorrente || null,
-			    tavolo: numeroTavolo,
+				tavolo: numeroTavolo,
 			    uidCassiere: uid
 			};
 			
@@ -11234,12 +11190,6 @@ document.addEventListener("DOMContentLoaded", () => {
             inviaBtn.disabled = false;
             inviaBtn.innerText = "Invia Comanda";
             if(typeof aggiornaStatoInvio === 'function') aggiornaStatoInvio();
-			// ---> INCOLLA QUI: Resetta UI Conti Separati a fine invio <---
-            window.pagamentoMistoSettings = null;
-            const boxRiepilogoSplit = document.getElementById("riepilogoContiSeparati");
-            if (boxRiepilogoSplit) boxRiepilogoSplit.style.display = "none";
-            const selMetodo = document.getElementById("metodoPagamento");
-            if (selMetodo) selMetodo.disabled = false;
         }
     });
 });
@@ -14328,193 +14278,3 @@ window.eliminaSpesa = function(id) {
         db.ref("spese/" + id).remove();
     }
 };
-// Variabile globale per mantenere in memoria la configurazione del conto separato
-window.pagamentoMistoSettings = null;
-
-// --- 1. APERTURA E CHIUSURA MODALE ---
-document.getElementById("btnApriContiSeparati").addEventListener("click", apriModaleContiSeparati);
-
-function apriModaleContiSeparati() {
-    if (comandaCorrente.length === 0) {
-        notify("Aggiungi prima dei piatti alla comanda!", "warn");
-        return;
-    }
-    document.getElementById("modalContiSeparati").style.display = "flex";
-    
-    // Inizializza i valori in base al totale attuale
-    const totale = parseFloat(document.getElementById("totale").innerText) || 0;
-    
-    // Tab Matematica
-    aggiornaSplitMath(totale);
-    
-    // Tab Articoli
-    renderSplitArticoli();
-    
-    // Tab Misto
-    document.getElementById("splitImportoContanti").value = "";
-    document.getElementById("splitImportoPos").innerText = totale.toFixed(2);
-}
-
-function chiudiModaleContiSeparati() {
-    document.getElementById("modalContiSeparati").style.display = "none";
-}
-
-// --- 2. GESTIONE TABS INTERNE ---
-document.querySelectorAll(".tabBtnSplit").forEach(btn => {
-    btn.addEventListener("click", (e) => {
-        // Resetta lo stile dei bottoni
-        document.querySelectorAll(".tabBtnSplit").forEach(b => {
-            b.classList.remove("active");
-            b.style.background = "#eee";
-            b.style.color = "#333";
-        });
-        // Nascondi tutti i contenuti
-        document.querySelectorAll(".splitContent").forEach(c => c.style.display = "none");
-        
-        // Attiva quello cliccato
-        const targetId = e.target.getAttribute("data-target");
-        e.target.classList.add("active");
-        e.target.style.background = "#9C27B0";
-        e.target.style.color = "white";
-        document.getElementById(targetId).style.display = "block";
-    });
-});
-
-// --- 3. LOGICA TAB MATEMATICA ---
-const inputPersone = document.getElementById("splitPersone");
-inputPersone.addEventListener("input", () => {
-    const totale = parseFloat(document.getElementById("totale").innerText) || 0;
-    aggiornaSplitMath(totale);
-});
-
-function aggiornaSplitMath(totale) {
-    let persone = parseInt(inputPersone.value) || 1;
-    if (persone < 2) persone = 2;
-    document.getElementById("splitQuotaSingola").innerText = "€ " + (totale / persone).toFixed(2);
-}
-
-// --- 4. LOGICA TAB ARTICOLI ---
-function renderSplitArticoli() {
-    const lista = document.getElementById("splitListaArticoli");
-    lista.innerHTML = "";
-    
-    comandaCorrente.forEach((item, index) => {
-        // Usa la funzione esistente per calcolare il prezzo (sconti inclusi)
-        const costoScontato = calcolaPrezzoConSconto(item); 
-        const row = document.createElement("label");
-        row.style.display = "flex";
-        row.style.justifyContent = "space-between";
-        row.style.alignItems = "center";
-        row.style.padding = "8px 0";
-        row.style.borderBottom = "1px solid #ddd";
-        row.style.cursor = "pointer";
-        
-        row.innerHTML = `
-            <div style="display:flex; align-items:center; gap: 10px;">
-                <input type="checkbox" class="chk-split-articolo" data-index="${index}" data-prezzo="${costoScontato}" style="transform: scale(1.3);">
-                <span><b>${item.quantita}x</b> ${item.nome}</span>
-            </div>
-            <b style="color: #333;">€ ${costoScontato.toFixed(2)}</b>
-        `;
-        lista.appendChild(row);
-    });
-
-    document.querySelectorAll(".chk-split-articolo").forEach(chk => {
-        chk.addEventListener("change", () => {
-            let sum = 0;
-            document.querySelectorAll(".chk-split-articolo:checked").forEach(c => {
-                sum += parseFloat(c.getAttribute("data-prezzo"));
-            });
-            document.getElementById("splitTotaleSelezionato").innerText = sum.toFixed(2);
-        });
-    });
-}
-
-// --- 5. LOGICA TAB MISTO ---
-document.getElementById("splitImportoContanti").addEventListener("input", (e) => {
-    const totale = parseFloat(document.getElementById("totale").innerText) || 0;
-    let contanti = parseFloat(e.target.value) || 0;
-    
-    if (contanti > totale) {
-        contanti = totale;
-        e.target.value = totale.toFixed(2);
-    }
-    
-    const residuo = totale - contanti;
-    document.getElementById("splitImportoPos").innerText = residuo.toFixed(2);
-});
-
-// --- 6. SALVATAGGIO CONFIGURAZIONE ---
-function salvaContiSeparati() {
-    const activeTab = document.querySelector(".tabBtnSplit.active").getAttribute("data-target");
-    const totale = parseFloat(document.getElementById("totale").innerText) || 0;
-    
-    window.pagamentoMistoSettings = null; // Resetta
-
-    if (activeTab === "splitMath") {
-        let persone = parseInt(document.getElementById("splitPersone").value);
-        if (persone < 2) return notify("Inserisci almeno 2 persone", "warn");
-        
-        window.pagamentoMistoSettings = {
-            tipo: "matematica",
-            persone: persone,
-            quota: totale / persone
-        };
-        
-    } else if (activeTab === "splitArticoli") {
-        let scelti = [];
-        let sommaScelti = 0;
-        document.querySelectorAll(".chk-split-articolo:checked").forEach(c => {
-            scelti.push(parseInt(c.getAttribute("data-index")));
-            sommaScelti += parseFloat(c.getAttribute("data-prezzo"));
-        });
-        
-        if (scelti.length === 0) return notify("Seleziona almeno un articolo!", "warn");
-        if (scelti.length === comandaCorrente.length) return notify("Hai selezionato tutto! Usa il pagamento normale.", "warn");
-
-        window.pagamentoMistoSettings = {
-            tipo: "articoli",
-            indici: scelti,
-            importoScelti: sommaScelti,
-            metodoScelti: document.getElementById("splitMetodoArticoli").value,
-            importoRestante: totale - sommaScelti
-        };
-        
-    } else if (activeTab === "splitMisto") {
-        let contanti = parseFloat(document.getElementById("splitImportoContanti").value) || 0;
-        if (contanti <= 0 || contanti >= totale) return notify("L'importo in contanti deve essere parziale.", "warn");
-        
-        window.pagamentoMistoSettings = {
-            tipo: "misto",
-            importoContanti: contanti,
-            importoPos: totale - contanti
-        };
-    }
-
-    aggiornaUiRiepilogoSplit();
-    chiudiModaleContiSeparati();
-    notify("✅ Pagamento separato impostato!", "success");
-}
-
-// --- 7. MOSTRA RIEPILOGO NELLA CASSA ---
-function aggiornaUiRiepilogoSplit() {
-    const box = document.getElementById("riepilogoContiSeparati");
-    const p = window.pagamentoMistoSettings;
-    
-    if (!p) {
-        box.style.display = "none";
-        document.getElementById("metodoPagamento").disabled = false;
-        return;
-    }
-
-    document.getElementById("metodoPagamento").disabled = true; // Blocca il selettore base
-    box.style.display = "block";
-
-    if (p.tipo === "matematica") {
-        box.innerHTML = `➗ <b>Conto alla Romana:</b> Diviso in ${p.persone} scontrini da €${p.quota.toFixed(2)}`;
-    } else if (p.tipo === "articoli") {
-        box.innerHTML = `🛒 <b>Divisione Articoli:</b> Una persona paga €${p.importoScelti.toFixed(2)} (${p.metodoScelti.toUpperCase()}), il resto separato.`;
-    } else if (p.tipo === "misto") {
-        box.innerHTML = `💳 <b>Pagamento Misto:</b> €${p.importoContanti.toFixed(2)} Contanti + €${p.importoPos.toFixed(2)} POS`;
-    }
-}
