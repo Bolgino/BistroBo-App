@@ -271,6 +271,7 @@
 		
 		            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
 		                <button id="inviaComandaBtn" class="stickyBtn">Invia Comanda</button>
+						<button id="btnContiSeparati" class="stickyBtn" style="background: linear-gradient(135deg, #FF9800, #F57C00); box-shadow: 0 6px 15px rgba(255, 152, 0, 0.4);" onclick="apriModaleContiSeparati()">➗ Conti Separati / Misto</button>
 		                <button id="annullaUltimaVenditaBtn" class="stickyBtn" style="display:none; background: linear-gradient(135deg, #e53935, #ef5350); box-shadow: 0 0 15px rgba(229, 57, 53, 0.6);">
 						    ↩️ Annulla (<span id="timerAnnullamento">30</span>s)
 						</button>
@@ -1971,6 +1972,70 @@
 	        <div class="modal-actions" style="margin-top: 20px; display: flex; gap: 10px;">
 	            <button class="btn-chiudi" id="chiudiProfiloBtn" style="flex: 1; border-radius: 8px; display: none;">Annulla</button>
 	            <button class="btn-salva" id="salvaProfiloBtn" style="flex: 1; border-radius: 8px;">Salva Profilo</button>
+	        </div>
+	    </div>
+	</div>
+	<!-- ================= MODALE CONTI SEPARATI ================= -->
+	<div id="modalContiSeparati" class="modal-overlay hidden" style="z-index: 10005; display: none;">
+	    <div class="modal-varianti" style="max-width: 600px; width: 95%;">
+	        <h2 style="color: #FF9800; margin-top: 0;">➗ Gestione Conti Separati</h2>
+	        
+	        <!-- Riepilogo Cassa -->
+	        <div style="display: flex; justify-content: space-between; background: #f9f9f9; padding: 15px; border-radius: 8px; border: 1px solid #ddd; margin-bottom: 15px;">
+	            <div style="font-size: 1.2em;">Totale Ordine: <b id="csTotaleOrdine">€0.00</b></div>
+	            <div style="font-size: 1.2em; color: green;">Pagato: <b id="csPagatoTotale">€0.00</b></div>
+	            <div style="font-size: 1.2em; color: red;">Rimanente: <b id="csRimanente">€0.00</b></div>
+	        </div>
+	
+	        <!-- Selettore Modalità -->
+	        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+	            <button class="tabBtn active" id="btnTabRomana" onclick="cambiaTabCS('romana')" style="flex:1;">Matematica (N)</button>
+	            <button class="tabBtn" id="btnTabArticoli" onclick="cambiaTabCS('articoli')" style="flex:1;">Per Articoli</button>
+	            <button class="tabBtn" id="btnTabLibero" onclick="cambiaTabCS('libero')" style="flex:1;">Misto/Libero</button>
+	        </div>
+	
+	        <!-- Contenuto Tabs -->
+	        <div id="csTabRomana" class="cs-tab-content">
+	            <label><b>Dividi il rimanente per quante persone?</b></label>
+	            <input type="number" id="csNumeroPersone" min="1" value="2" style="width: 100%; padding: 10px; margin-top: 5px; border-radius: 6px; border: 1px solid #ccc; font-size: 1.1em;" oninput="calcolaQuotaRomana()">
+	            <div style="margin-top: 10px; font-size: 1.1em;">Quota a persona: <b id="csQuotaRomana" style="color: #2196F3;">€0.00</b></div>
+	        </div>
+	
+	        <div id="csTabArticoli" class="cs-tab-content" style="display: none; max-height: 200px; overflow-y: auto; border: 1px solid #eee; padding: 10px; border-radius: 8px;">
+	            <p style="margin-top:0; font-size: 0.9em; color: #666;">Seleziona i piatti che sta pagando questo cliente:</p>
+	            <div id="csListaArticoli"></div>
+	            <div style="margin-top: 10px; font-size: 1.1em; text-align: right;">Subtotale Selezionato: <b id="csSubtotaleArticoli" style="color: #2196F3;">€0.00</b></div>
+	        </div>
+	
+	        <div id="csTabLibero" class="cs-tab-content" style="display: none;">
+	            <p style="margin-top:0; font-size: 0.9em; color: #666;">Inserisci manualmente l'importo che sta per essere pagato in questa transazione.</p>
+	        </div>
+	
+	        <!-- Inserimento Pagamento Corrente -->
+	        <div style="margin-top: 20px; padding: 15px; background: #e3f2fd; border-radius: 8px; border: 1px solid #bbdefb;">
+	            <h4 style="margin-top: 0; color: #1565c0;">Registra Pagamento Attuale</h4>
+	            <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+	                <div style="flex: 1; min-width: 120px;">
+	                    <label>Importo in <b>Contanti</b></label>
+	                    <input type="number" id="csInputContanti" step="0.01" value="0.00" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #ccc; font-size: 1.1em;">
+	                </div>
+	                <div style="flex: 1; min-width: 120px;">
+	                    <label>Importo col <b>POS</b></label>
+	                    <input type="number" id="csInputPos" step="0.01" value="0.00" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #ccc; font-size: 1.1em;">
+	                </div>
+	            </div>
+	            <div style="text-align: right; margin-top: 10px;">
+	                <button onclick="registraPagamentoCS()" style="background: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 1.1em;">✅ Aggiungi Pagamento</button>
+	            </div>
+	        </div>
+	
+	        <!-- Log Pagamenti Effettuati -->
+	        <div id="csLogPagamenti" style="margin-top: 15px; font-size: 0.9em;"></div>
+	
+	        <!-- Azioni Modale -->
+	        <div class="modal-actions" style="margin-top: 20px; display: flex; gap: 10px;">
+	            <button class="btn-chiudi" onclick="chiudiModaleContiSeparati()" style="flex: 1;">Chiudi</button>
+	            <button id="btnChiudiEInviaCS" class="btn-salva" onclick="concludiEInviaComandaCS()" style="flex: 2; background: #FF9800; display: none;">Chiudi e Invia Comanda</button>
 	        </div>
 	    </div>
 	</div>
