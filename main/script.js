@@ -9723,8 +9723,16 @@ function analizzaComande(comandeObj, fondoCassaTot) {
         });
 
         // 5. Aggiorno i totali di cassa con il totale reale scontato
-        if (c.metodoPagamento === "pos") totalePos += totaleComandaScontata;
-        else totaleContanti += totaleComandaScontata;
+        // CODICE NUOVO
+		// 5. Aggiorno i totali di cassa con il totale reale scontato (e Misto)
+		if (c.metodoPagamento === "misto") {
+			totaleContanti += (c.pagatoContanti || 0);
+			totalePos += (c.pagatoPOS || 0);
+		} else if (c.metodoPagamento === "pos") {
+			totalePos += totaleComandaScontata;
+		} else {
+			totaleContanti += totaleComandaScontata; // Fallback "contanti" di default
+		}
 
         totaleIncasso += totaleComandaScontata;
         if (c.commento) incassoAsporto += totaleComandaScontata;
@@ -11088,8 +11096,21 @@ document.addEventListener("DOMContentLoaded", () => {
 			    commentoAsporto = "ASPORTO";
 			}
 			
+			// CODICE NUOVO
 			const metodoPagamentoEl = document.getElementById("metodoPagamento");
-			const metodoPagamento = metodoPagamentoEl ? metodoPagamentoEl.value : "contanti";
+			let metodoPagamento = metodoPagamentoEl ? metodoPagamentoEl.value : "contanti";
+			let pagatoContanti = 0;
+			let pagatoPOS = 0;
+			const totaleComanda = parseFloat(document.getElementById("totale").innerText) || 0;
+			
+			if (window.pagamentoMistoConfig && window.pagamentoMistoConfig.attivo) {
+			    metodoPagamento = "misto";
+			    pagatoContanti = window.pagamentoMistoConfig.contanti;
+			    pagatoPOS = window.pagamentoMistoConfig.pos;
+			} else {
+			    if (metodoPagamento === "contanti") pagatoContanti = totaleComanda;
+			    if (metodoPagamento === "pos") pagatoPOS = totaleComanda;
+			}
 			
 			let noteDestinazioni = [];
 			if (window.settings.noteDestinazioniAbilitate) {
@@ -11124,8 +11145,11 @@ document.addEventListener("DOMContentLoaded", () => {
 			    note: note || "",
 			    noteDestinazioni: noteDestinazioni,
 			    commento: commentoAsporto || null,
-			    metodoPagamento: metodoPagamento,
-			    scontoGlobale: window.scontoGlobaleCorrente || null,
+			    // CODICE NUOVO
+				metodoPagamento: metodoPagamento,
+				pagatoContanti: pagatoContanti,
+				pagatoPOS: pagatoPOS,
+				scontoGlobale: window.scontoGlobaleCorrente || null,
 				tavolo: numeroTavolo,
 			    uidCassiere: uid
 			};
@@ -11153,6 +11177,7 @@ document.addEventListener("DOMContentLoaded", () => {
       		const testoAsporto = (asportoCheck && asportoCheck.checked) ? "DA ASPORTO" : "";
             comandaCorrente = [];
 			window.rimuoviScontoGlobaleCassa();
+			if (typeof window.annullaPagamentoMisto === "function") window.annullaPagamentoMisto();
             if(typeof aggiornaComandaCorrente === 'function') aggiornaComandaCorrente();
             if(typeof sincronizzaDisplayLive === 'function') sincronizzaDisplayLive();
             
@@ -14272,3 +14297,72 @@ window.eliminaSpesa = function(id) {
         db.ref("spese/" + id).remove();
     }
 };
+// ================= LOGICA PAGAMENTO MISTO =================
+window.pagamentoMistoConfig = { attivo: false, contanti: 0, pos: 0 };
+
+document.getElementById("btnPagamentoMisto")?.addEventListener("click", () => {
+    const totale = parseFloat(document.getElementById("totale").innerText) || 0;
+    if (totale <= 0) {
+        if(typeof notify === "function") notify("Aggiungi dei piatti prima di dividere il conto!", "warn");
+        return;
+    }
+    
+    document.getElementById("totaleMistoPopup").innerText = totale.toFixed(2);
+    // Di default mettiamo tutto sui contanti, l'operatore poi abbassa la cifra
+    document.getElementById("inputMistoContanti").value = totale.toFixed(2);
+    document.getElementById("inputMistoPOS").value = "0.00";
+    
+    document.getElementById("popupPagamentoMisto").style.display = "flex";
+});
+
+// Bilanciamento automatico: se tocco Contanti, calcola POS
+document.getElementById("inputMistoContanti")?.addEventListener("input", function() {
+    const totale = parseFloat(document.getElementById("totale").innerText) || 0;
+    let val = parseFloat(this.value.replace(",", ".")) || 0;
+    if (val > totale) {
+        val = totale;
+        this.value = val.toFixed(2);
+    }
+    document.getElementById("inputMistoPOS").value = (totale - val).toFixed(2);
+});
+
+// Bilanciamento automatico: se tocco POS, calcola Contanti
+document.getElementById("inputMistoPOS")?.addEventListener("input", function() {
+    const totale = parseFloat(document.getElementById("totale").innerText) || 0;
+    let val = parseFloat(this.value.replace(",", ".")) || 0;
+    if (val > totale) {
+        val = totale;
+        this.value = val.toFixed(2);
+    }
+    document.getElementById("inputMistoContanti").value = (totale - val).toFixed(2);
+});
+
+document.getElementById("confermaMistoBtn")?.addEventListener("click", () => {
+    const contanti = parseFloat(document.getElementById("inputMistoContanti").value.replace(",", ".")) || 0;
+    const pos = parseFloat(document.getElementById("inputMistoPOS").value.replace(",", ".")) || 0;
+    const totale = parseFloat(document.getElementById("totale").innerText) || 0;
+
+    // Controllo sicurezza float (Tolleranza 1 centesimo per arrotondamenti)
+    if (Math.abs((contanti + pos) - totale) > 0.01) {
+        if(typeof notify === "function") notify("La somma di Contanti e POS non corrisponde al totale!", "error");
+        return;
+    }
+
+    window.pagamentoMistoConfig = { attivo: true, contanti: contanti, pos: pos };
+    
+    // Cambiamo la UI
+    document.getElementById("metodoPagamento").disabled = true; 
+    document.getElementById("btnPagamentoMisto").style.display = "none";
+    document.getElementById("riepilogoMisto").style.display = "block";
+    document.getElementById("txtMistoContanti").innerText = contanti.toFixed(2);
+    document.getElementById("txtMistoPOS").innerText = pos.toFixed(2);
+    
+    document.getElementById("popupPagamentoMisto").style.display = "none";
+});
+
+window.annullaPagamentoMisto = function() {
+    window.pagamentoMistoConfig = { attivo: false, contanti: 0, pos: 0 };
+    document.getElementById("metodoPagamento").disabled = false;
+    document.getElementById("btnPagamentoMisto").style.display = "inline-block";
+    document.getElementById("riepilogoMisto").style.display = "none";
+}
