@@ -261,13 +261,16 @@
 		                    <span id="suggerimentoResto" style="font-size:0.9em; color:blue;"></span>
 		                </b>
 		            </span>
-		            <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-		                <label for="metodoPagamento" style="margin:0;"><b>Metodo pagamento:</b></label>
-		                <select id="metodoPagamento" style="width:120px; height:32px; border-radius: 6px; border: 1px solid #ccc; font-weight: bold;">
-		                    <option value="contanti" selected>Contanti</option>
-		                    <option value="pos">POS</option>
-		                </select>
-		            </div>
+		            <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px; flex-wrap: wrap;">
+					    <label for="metodoPagamento" style="margin:0;"><b>Metodo pagamento:</b></label>
+					    <select id="metodoPagamento" style="width:120px; height:32px; border-radius: 6px; border: 1px solid #ccc; font-weight: bold;">
+					        <option value="contanti" selected>Contanti</option>
+					        <option value="pos">POS</option>
+					    </select>
+					    <button id="btnDividiConto" onclick="apriPopupDivisioneConto('cassa')" style="height:32px; padding: 0 12px; background: #607D8B; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+					        🧮 Dividi Conto
+					    </button>
+					</div>
 		
 		            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
 		                <button id="inviaComandaBtn" class="stickyBtn">Invia Comanda</button>
