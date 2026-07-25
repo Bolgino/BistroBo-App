@@ -360,9 +360,10 @@ async function renderPreordiniAdmin(data) {
                             <select onchange="impostaMetodoPagamento('${id}', this.value)">
                                 <option value="contanti" ${p.metodoPagamento === 'contanti' ? 'selected' : ''}>Contanti</option>
                                 <option value="pos" ${p.metodoPagamento === 'pos' ? 'selected' : ''}>POS</option>
+                                <option value="misto" ${p.metodoPagamento === 'misto' ? 'selected' : ''} style="display:none;">Misto / Separato</option>
                             </select>
                         </label>
-
+                        <button onclick="apriPopupContiSeparatiPerPreordine('${id}')" style="background:#9C27B0; color:white; border:none; padding:6px 10px; border-radius:8px; font-weight:bold; cursor:pointer;">🧮 Dividi</button>
                         <button class="aggiungi" onclick="aggiungiPreordineAlleComande('${id}')">Aggiungi</button>
                         <button class="elimina" onclick="eliminaPreordine('${id}')">Elimina</button>
 
@@ -548,9 +549,10 @@ function renderPreordiniCassa(data) {
                             <select onchange="impostaMetodoPagamento('${id}', this.value)">
                                 <option value="contanti" ${p.metodoPagamento === 'contanti' ? 'selected' : ''}>Contanti</option>
                                 <option value="pos" ${p.metodoPagamento === 'pos' ? 'selected' : ''}>POS</option>
+                                <option value="misto" ${p.metodoPagamento === 'misto' ? 'selected' : ''} style="display:none;">Misto / Separato</option>
                             </select>
                         </label>
-
+                        <button onclick="apriPopupContiSeparatiPerPreordine('${id}')" style="background:#9C27B0; color:white; border:none; padding:6px 10px; border-radius:8px; font-weight:bold; cursor:pointer;">🧮 Dividi</button>
                         <button class="aggiungi" onclick="aggiungiPreordineAlleComande('${id}')">Aggiungi</button>
 
                     </div>
@@ -700,11 +702,32 @@ async function aggiungiPreordineAlleComande(id) {
     }
 
     const metodoPagamento = p.metodoPagamento || "contanti";
+    
+    // Determina gli importi separati per le statistiche
+    let contantiFatti = 0;
+    let posFatti = 0;
+    
+    let totaleComandaCalcolato = 0;
+    (p.piatti || []).forEach(pi => {
+        if (typeof calcolaPrezzoConSconto === "function") { totaleComandaCalcolato += calcolaPrezzoConSconto(pi); } 
+        else { totaleComandaCalcolato += (Number(pi.prezzo || 0) + Number(pi.extraPrezzo || 0)) * (pi.quantita || 1); }
+    });
+
+    if (metodoPagamento === "misto" && p.importoContanti !== undefined && p.importoPos !== undefined) {
+        contantiFatti = p.importoContanti;
+        posFatti = p.importoPos;
+    } else if (metodoPagamento === "contanti") {
+        contantiFatti = totaleComandaCalcolato;
+        posFatti = 0;
+    } else if (metodoPagamento === "pos") {
+        contantiFatti = 0;
+        posFatti = totaleComandaCalcolato;
+    }
 
     // 8️⃣ Costruzione oggetto comanda
     const nuovaComanda = {
         numero: numeroComandaFinale,
-        tavolo: numeroTavolo.trim(), // <--- IL TAVOLO VIENE SALVATO QUI
+        tavolo: numeroTavolo.trim(), 
         piatti: p.piatti || [],
         statoCucina,
         statoBere,
@@ -717,7 +740,10 @@ async function aggiungiPreordineAlleComande(id) {
         note: p.note || "",
         noteDestinazioni,
         commento: commentoAsporto,
-        metodoPagamento,
+        metodoPagamento: metodoPagamento,
+        importoContanti: contantiFatti,  // <--- SALVATO NEL DB
+        importoPos: posFatti,            // <--- SALVATO NEL DB
+        totale: totaleComandaCalcolato,  // <--- SALVATO NEL DB
         preordine: true
     };
 
@@ -2332,4 +2358,39 @@ window.rimuoviContornoComboCliente = function(idPiattino) {
     const index = arr.map(e => e.id).lastIndexOf(idPiattino);
     if (index > -1) arr.splice(index, 1);
     renderListaPiattiComboCliente(menuItems[statoComboCliente.piattoId]);
+};
+// Apre il popup dei conti separati leggendo i dati dal preordine
+window.apriPopupContiSeparatiPerPreordine = async function(id) {
+    // Usiamo ultimiPreordini (cache di Cassa) o scarichiamo dal DB
+    const p = ultimiPreordini[id] || (await db.ref("preordini/" + id).once("value")).val();
+    if (!p) return;
+    
+    let totale = 0;
+    const piattiPerCalcolo = p.piatti || [];
+    piattiPerCalcolo.forEach(pi => {
+        if (typeof calcolaPrezzoConSconto === "function") {
+            totale += calcolaPrezzoConSconto(pi);
+        } else {
+            totale += (Number(pi.prezzo || 0) + Number(pi.extraPrezzo || 0)) * (pi.quantita || 1);
+        }
+    });
+    
+    document.getElementById("contoMistoTotaleDovuto").innerText = "€" + totale.toFixed(2);
+    
+    // Passiamo le variabili per far capire al popup che siamo in un preordine
+    window.idPreordineInDivisione = id;
+    window.comandaInDivisione = piattiPerCalcolo;
+    
+    document.getElementById("mistoInputContanti").value = "";
+    document.getElementById("mistoInputPos").value = totale.toFixed(2);
+    document.getElementById("erroreContiMisti").innerText = "";
+    
+    document.getElementById("romanaInputPersone").value = 2;
+    if (typeof calcolaAllaRomana === "function") calcolaAllaRomana(); 
+    
+    if (typeof generaListaArticoliDaDividere === "function") generaListaArticoliDaDividere(); 
+    window.totaleAssegnatoArticoli = { contanti: 0, pos: 0 };
+    if(document.getElementById("riepilogoArticoliPagati")) document.getElementById("riepilogoArticoliPagati").innerText = "";
+
+    document.getElementById("popupContiSeparati").style.display = "flex";
 };
