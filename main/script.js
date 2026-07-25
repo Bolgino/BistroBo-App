@@ -9722,9 +9722,16 @@ function analizzaComande(comandeObj, fondoCassaTot) {
             });
         });
 
-        // 5. Aggiorno i totali di cassa con il totale reale scontato
-        if (c.metodoPagamento === "pos") totalePos += totaleComandaScontata;
-        else totaleContanti += totaleComandaScontata;
+        // 5. Aggiorno i totali di cassa (Supporto Misto e Retrocompatibilità)
+		if (c.metodoPagamento === "misto" && c.importoContanti !== undefined && c.importoPos !== undefined) {
+		    // Se ha usato la nuova funzione "Conti Separati"
+		    totaleContanti += Number(c.importoContanti);
+		    totalePos += Number(c.importoPos);
+		} else {
+		    // Fallback di sicurezza per tutte le vecchie comande o per chi paga senza dividere
+		    if (c.metodoPagamento === "pos") totalePos += totaleComandaScontata;
+		    else totaleContanti += totaleComandaScontata;
+		}
 
         totaleIncasso += totaleComandaScontata;
         if (c.commento) incassoAsporto += totaleComandaScontata;
@@ -11091,30 +11098,47 @@ document.addEventListener("DOMContentLoaded", () => {
 			const metodoPagamentoEl = document.getElementById("metodoPagamento");
 			const metodoPagamento = metodoPagamentoEl ? metodoPagamentoEl.value : "contanti";
 			
+			// ---> INIZIO NOVITÀ: CALCOLO IMPORTI SEPARATI <---
+			let totaleComanda = parseFloat(document.getElementById("totale").innerText) || 0;
+			let contantiFatti = 0;
+			let posFatti = 0;
+			
+			if (window.datiPagamentoMisto && metodoPagamento === "misto") {
+			    contantiFatti = window.datiPagamentoMisto.contanti;
+			    posFatti = window.datiPagamentoMisto.pos;
+			} else if (metodoPagamento === "contanti") {
+			    contantiFatti = totaleComanda;
+			    posFatti = 0;
+			} else if (metodoPagamento === "pos") {
+			    contantiFatti = 0;
+			    posFatti = totaleComanda;
+			}
+			// ---> FINE NOVITÀ <---
+			
 			let noteDestinazioni = [];
 			if (window.settings.noteDestinazioniAbilitate) {
-				if (document.getElementById("tickCucina") && document.getElementById("tickCucina").checked) noteDestinazioni.push("cucina");
-				if (document.getElementById("tickBere") && document.getElementById("tickBere").checked) noteDestinazioni.push("bere");
-				if (document.getElementById("tickSnack") && document.getElementById("tickSnack").checked) noteDestinazioni.push("snack");
-				if (document.getElementById("tickExtra1") && document.getElementById("tickExtra1").checked) noteDestinazioni.push("extra1");
-				if (document.getElementById("tickExtra2") && document.getElementById("tickExtra2").checked) noteDestinazioni.push("extra2");
-				if (document.getElementById("tickExtra3") && document.getElementById("tickExtra3").checked) noteDestinazioni.push("extra3");
+			    if (document.getElementById("tickCucina") && document.getElementById("tickCucina").checked) noteDestinazioni.push("cucina");
+			    if (document.getElementById("tickBere") && document.getElementById("tickBere").checked) noteDestinazioni.push("bere");
+			    if (document.getElementById("tickSnack") && document.getElementById("tickSnack").checked) noteDestinazioni.push("snack");
+			    if (document.getElementById("tickExtra1") && document.getElementById("tickExtra1").checked) noteDestinazioni.push("extra1");
+			    if (document.getElementById("tickExtra2") && document.getElementById("tickExtra2").checked) noteDestinazioni.push("extra2");
+			    if (document.getElementById("tickExtra3") && document.getElementById("tickExtra3").checked) noteDestinazioni.push("extra3");
 			} else {
-				noteDestinazioni = ["cucina"];
-				if (window.settings.snackAbilitato) noteDestinazioni.push("snack");
+			    noteDestinazioni = ["cucina"];
+			    if (window.settings.snackAbilitato) noteDestinazioni.push("snack");
 			}
-			// ---> INSERISCI QUI LA CATTURA TAVOLO <---
+			
 			let numeroTavolo = "";
 			if (window.settings.richiediTavolo) {
 			    const inputTavolo = document.getElementById("numeroTavoloCassa");
 			    if (inputTavolo) numeroTavolo = inputTavolo.value.trim();
 			}
+			
 			const nuovaComanda = {
 			    numero: numeroComandaFinale,
 			    piatti: piattiValidi || [],
 			    statoCucina: cibo.length > 0 ? "da fare" : "completato",
 			    statoBere: bere.length > 0 ? "da fare" : "completato",
-			    // 🔹 FIX: Dichiariamo SEMPRE gli stati. Se non ci sono piatti (o disattivati), vanno a completato automaticamente.
 			    statoSnack: snack.length > 0 ? "da fare" : "completato",
 			    statoExtra1: extra1.length > 0 ? "da fare" : "completato",
 			    statoExtra2: extra2.length > 0 ? "da fare" : "completato",
@@ -11125,17 +11149,16 @@ document.addEventListener("DOMContentLoaded", () => {
 			    noteDestinazioni: noteDestinazioni,
 			    commento: commentoAsporto || null,
 			    metodoPagamento: metodoPagamento,
+			    importoContanti: contantiFatti,  // <--- SALVATO NEL DB
+			    importoPos: posFatti,            // <--- SALVATO NEL DB
+			    totale: totaleComanda,           // <--- SALVATO NEL DB
 			    scontoGlobale: window.scontoGlobaleCorrente || null,
-				tavolo: numeroTavolo,
+			    tavolo: numeroTavolo,
 			    uidCassiere: uid
 			};
 			
-			// 🔹 FIX: Elimina o commenta i 4 if() successivi che accendevano gli Extra. 
-			// La nuovaComanda gestisce già tutto al suo interno in modo infallibile!
-			
-				
-				// Salvataggio nel DB
-	        await ref.set(nuovaComanda);
+			// Salvataggio nel DB
+			await ref.set(nuovaComanda);
 			
 			
 	        // 🔹 AVVIO TIMER ANNULLAMENTO (SE ABILITATO)
@@ -11153,6 +11176,7 @@ document.addEventListener("DOMContentLoaded", () => {
       		const testoAsporto = (asportoCheck && asportoCheck.checked) ? "DA ASPORTO" : "";
             comandaCorrente = [];
 			window.rimuoviScontoGlobaleCassa();
+			if (typeof resetPagamentoMisto === 'function') resetPagamentoMisto();
             if(typeof aggiornaComandaCorrente === 'function') aggiornaComandaCorrente();
             if(typeof sincronizzaDisplayLive === 'function') sincronizzaDisplayLive();
             
@@ -11190,6 +11214,7 @@ document.addEventListener("DOMContentLoaded", () => {
             inviaBtn.disabled = false;
             inviaBtn.innerText = "Invia Comanda";
             if(typeof aggiornaStatoInvio === 'function') aggiornaStatoInvio();
+			
         }
     });
 });
@@ -14272,3 +14297,234 @@ window.eliminaSpesa = function(id) {
         db.ref("spese/" + id).remove();
     }
 };
+// ================= GESTIONE CONTI SEPARATI / MISTO =================
+window.datiPagamentoMisto = null; // Memorizza {contanti: X, pos: Y}
+
+function resetPagamentoMisto() {
+    window.datiPagamentoMisto = null;
+    const btn = document.getElementById("btnApriContiSeparati");
+    if(btn) {
+        btn.innerText = "🧮 Dividi Conto";
+        btn.style.background = "linear-gradient(135deg, #9C27B0, #673AB7)";
+    }
+}
+
+function apriPopupContiSeparati() {
+    const totale = parseFloat(document.getElementById("totale").innerText) || 0;
+    if (totale <= 0) {
+        notify("Aggiungi dei piatti prima di dividere il conto!", "warning");
+        return;
+    }
+    
+    document.getElementById("contoMistoTotaleDovuto").innerText = "€" + totale.toFixed(2);
+    document.getElementById("mistoInputContanti").value = "";
+    document.getElementById("mistoInputPos").value = totale.toFixed(2); // Default tutto POS per comodità
+    document.getElementById("erroreContiMisti").innerText = "";
+    
+    // Reset Romana
+    document.getElementById("romanaInputPersone").value = 2;
+    calcolaAllaRomana();
+    document.getElementById("romanaQuoteContanti").value = 0;
+    document.getElementById("romanaQuotePos").value = 2;
+    
+    // Reset Articoli
+    generaListaArticoliDaDividere();
+    window.totaleAssegnatoArticoli = { contanti: 0, pos: 0 };
+    document.getElementById("riepilogoArticoliPagati").innerText = "";
+
+    document.getElementById("popupContiSeparati").style.display = "flex";
+}
+
+function chiudiPopupContiSeparati() {
+    document.getElementById("popupContiSeparati").style.display = "none";
+}
+
+// Navigazione Tab Interne al Modale
+function cambiaTabConti(tab) {
+    document.querySelectorAll("[id^='tabConto_']").forEach(t => t.style.display = "none");
+    document.querySelectorAll("[id^='tabBtn_']").forEach(t => t.classList.remove("active"));
+    
+    document.getElementById("tabConto_" + tab).style.display = "block";
+    document.getElementById("tabBtn_" + tab).classList.add("active");
+    
+    // reset visivo
+    document.getElementById("erroreContiMisti").innerText = "";
+}
+
+// LOGICA TAB 1: MISTO IMPORTI
+function calcolaMistoDaContanti() {
+    const totale = parseFloat(document.getElementById("totale").innerText) || 0;
+    let contanti = parseFloat(document.getElementById("mistoInputContanti").value) || 0;
+    if (contanti > totale) contanti = totale; // Blocca over-pagamento
+    let pos = totale - contanti;
+    document.getElementById("mistoInputPos").value = pos.toFixed(2);
+}
+function calcolaMistoDaPos() {
+    const totale = parseFloat(document.getElementById("totale").innerText) || 0;
+    let pos = parseFloat(document.getElementById("mistoInputPos").value) || 0;
+    if (pos > totale) pos = totale;
+    let contanti = totale - pos;
+    document.getElementById("mistoInputContanti").value = contanti.toFixed(2);
+}
+
+// LOGICA TAB 2: ROMANA
+function calcolaAllaRomana() {
+    const totale = parseFloat(document.getElementById("totale").innerText) || 0;
+    const persone = parseInt(document.getElementById("romanaInputPersone").value) || 2;
+    document.getElementById("romanaCountText").innerText = persone;
+    const quota = totale / persone;
+    document.getElementById("romanaQuotaPerPersona").innerText = "€" + quota.toFixed(2);
+    
+    // Reset quote
+    document.getElementById("romanaQuoteContanti").value = 0;
+    document.getElementById("romanaQuotePos").value = persone;
+}
+
+function aggiornaQuoteRomana(modificato) {
+    const persone = parseInt(document.getElementById("romanaInputPersone").value) || 2;
+    let quoteContanti = parseInt(document.getElementById("romanaQuoteContanti").value) || 0;
+    let quotePos = parseInt(document.getElementById("romanaQuotePos").value) || 0;
+    
+    if (modificato === 'contanti') {
+        if (quoteContanti > persone) quoteContanti = persone;
+        document.getElementById("romanaQuoteContanti").value = quoteContanti;
+        document.getElementById("romanaQuotePos").value = persone - quoteContanti;
+    } else {
+        if (quotePos > persone) quotePos = persone;
+        document.getElementById("romanaQuotePos").value = quotePos;
+        document.getElementById("romanaQuoteContanti").value = persone - quotePos;
+    }
+}
+
+// LOGICA TAB 3: ARTICOLI
+function generaListaArticoliDaDividere() {
+    const contenitore = document.getElementById("listaArticoliDaDividere");
+    contenitore.innerHTML = "";
+    
+    // Scompone gli articoli per singola unità
+    window.articoliScomposti = [];
+    comandaCorrente.forEach((p, indexOriginale) => {
+        let prz = calcolaPrezzoConSconto(p) / p.quantita; // Prezzo unitario scontato
+        for(let i=0; i<p.quantita; i++) {
+            window.articoliScomposti.push({
+                nome: p.nome,
+                prezzo: prz,
+                pagato: false
+            });
+        }
+    });
+
+    renderizzaArticoliDaDividere();
+}
+
+function renderizzaArticoliDaDividere() {
+    const contenitore = document.getElementById("listaArticoliDaDividere");
+    contenitore.innerHTML = "";
+    let subtotale = 0;
+
+    window.articoliScomposti.forEach((art, index) => {
+        if (art.pagato) return; // Nasconde quelli già assegnati
+
+        const div = document.createElement("div");
+        div.style.padding = "5px";
+        div.style.borderBottom = "1px solid #eee";
+        div.innerHTML = `
+            <label style="display:flex; justify-content:space-between; width:100%; cursor:pointer;">
+                <span><input type="checkbox" class="chk-articolo-misto" data-index="${index}" onchange="calcolaSubtotaleArticoli()" style="transform:scale(1.2); margin-right:8px;"> ${art.nome}</span>
+                <b>€${art.prezzo.toFixed(2)}</b>
+            </label>
+        `;
+        contenitore.appendChild(div);
+    });
+    calcolaSubtotaleArticoli();
+}
+
+function calcolaSubtotaleArticoli() {
+    let sub = 0;
+    document.querySelectorAll(".chk-articolo-misto:checked").forEach(chk => {
+        let index = chk.getAttribute("data-index");
+        sub += window.articoliScomposti[index].prezzo;
+    });
+    document.getElementById("subtotaleArticoli").innerText = "€" + sub.toFixed(2);
+}
+
+function assegnaArticoli(metodo) {
+    let sub = 0;
+    document.querySelectorAll(".chk-articolo-misto:checked").forEach(chk => {
+        let index = chk.getAttribute("data-index");
+        sub += window.articoliScomposti[index].prezzo;
+        window.articoliScomposti[index].pagato = true;
+    });
+
+    if (sub === 0) return;
+
+    if (metodo === 'contanti') window.totaleAssegnatoArticoli.contanti += sub;
+    else window.totaleAssegnatoArticoli.pos += sub;
+
+    document.getElementById("riepilogoArticoliPagati").innerHTML = `Assegnati finora: <b>Contanti €${window.totaleAssegnatoArticoli.contanti.toFixed(2)}</b> | <b>POS €${window.totaleAssegnatoArticoli.pos.toFixed(2)}</b>`;
+    
+    renderizzaArticoliDaDividere();
+}
+
+// SALVATAGGIO FINALE
+function salvaContiSeparati() {
+    const totale = parseFloat(document.getElementById("totale").innerText) || 0;
+    let importoContanti = 0;
+    let importoPos = 0;
+    
+    // Controlla quale tab è attiva
+    if (document.getElementById("tabConto_misto").style.display !== "none") {
+        importoContanti = parseFloat(document.getElementById("mistoInputContanti").value) || 0;
+        importoPos = parseFloat(document.getElementById("mistoInputPos").value) || 0;
+    } 
+    else if (document.getElementById("tabConto_romana").style.display !== "none") {
+        const persone = parseInt(document.getElementById("romanaInputPersone").value) || 2;
+        const qContanti = parseInt(document.getElementById("romanaQuoteContanti").value) || 0;
+        const qPos = parseInt(document.getElementById("romanaQuotePos").value) || 0;
+        const quota = totale / persone;
+        
+        importoContanti = quota * qContanti;
+        importoPos = quota * qPos;
+    }
+    else if (document.getElementById("tabConto_articoli").style.display !== "none") {
+        importoContanti = window.totaleAssegnatoArticoli.contanti;
+        importoPos = window.totaleAssegnatoArticoli.pos;
+        
+        // Verifica se tutti gli articoli sono stati assegnati
+        const rimasti = window.articoliScomposti.filter(a => !a.pagato).length;
+        if (rimasti > 0) {
+            document.getElementById("erroreContiMisti").innerText = "Attenzione: devi assegnare tutti i piatti!";
+            return;
+        }
+    }
+
+    // ARROTONDAMENTI PER EVITARE BUG JAVASCRIPT
+    importoContanti = Math.round(importoContanti * 100) / 100;
+    importoPos = Math.round(importoPos * 100) / 100;
+    const totaleCalcolato = Math.round((importoContanti + importoPos) * 100) / 100;
+    
+    if (Math.abs(totaleCalcolato - totale) > 0.05) { // Tolleranza 5 centesimi
+        document.getElementById("erroreContiMisti").innerText = `Errore di somma! Diviso: €${totaleCalcolato} / Totale: €${totale}`;
+        return;
+    }
+
+    // Salva globalmente
+    window.datiPagamentoMisto = {
+        contanti: importoContanti,
+        pos: importoPos
+    };
+
+    // Cambia la select visivamente
+    const select = document.getElementById("metodoPagamento");
+    select.value = "misto";
+    
+    // Cambia il pulsante per far capire che è salvato
+    const btn = document.getElementById("btnApriContiSeparati");
+    btn.innerHTML = `✅ Misto (C:€${importoContanti.toFixed(2)} P:€${importoPos.toFixed(2)})`;
+    btn.style.background = "#4CAF50";
+
+    chiudiPopupContiSeparati();
+}
+
+// ⚠️ IMPORTANTE: Assicurati di svuotare `window.datiPagamentoMisto` quando l'ordine viene svuotato
+// Puoi aggiungere `resetPagamentoMisto()` nella logica del tasto "Reset Soldi" o quando elimini un piatto.
