@@ -3664,4 +3664,82 @@ body.tema-notte #modalAvvisoGlobale p,
 body.tema-astronave #modalAvvisoGlobale p {
     color: #94A3B8 !important;
 }
+/* ==================================================
+   CSS MODALE CONTI SEPARATI (TEMA CHIARO BASE)
+   ================================================== */
+.tabBtnPopup {
+    flex: 1;
+    padding: 8px;
+    margin: 0;
+    border: none;
+    border-radius: 8px;
+    background: #f0f2f5;
+    color: #555;
+    cursor: pointer;
+    font-weight: 600;
+    transition: 0.3s;
+}
+.tabBtnPopup:hover { background: #e4e6eb; color: #333; }
+.tabBtnPopup.active {
+    background: linear-gradient(135deg, #9C27B0, #673AB7) !important;
+    color: #fff !important;
+    box-shadow: 0 4px 12px rgba(103, 58, 183, 0.3);
+}
 
+.testo-misto-desc { font-size: 0.9em; color: #666; margin-bottom: 10px; }
+
+.input-misto-contanti { width:100%; padding:10px; border-radius:6px; border:2px solid #4CAF50; font-size:1.2em; font-weight:bold; outline:none; box-sizing:border-box;}
+.input-misto-pos { width:100%; padding:10px; border-radius:6px; border:2px solid #2196F3; font-size:1.2em; font-weight:bold; outline:none; box-sizing:border-box;}
+.input-misto-base { width:60px; padding:8px; border-radius:6px; border:1px solid #ccc; text-align:center; }
+
+.box-misto-grigio { display: flex; gap: 10px; align-items: center; margin-bottom: 15px; background: #f9f9f9; padding: 10px; border-radius: 8px; border: 1px solid #eee; }
+.box-misto-lista { max-height: 150px; overflow-y: auto; border: 1px solid #ccc; border-radius: 6px; padding: 10px; margin-bottom: 10px; background: #fafafa; }
+
+.btn-misto-contanti { flex:1; background:#4CAF50; color:white; border:none; padding:10px; border-radius:6px; font-weight:bold; cursor: pointer; transition: 0.2s;}
+.btn-misto-contanti:hover { background:#388E3C; transform: translateY(-2px);}
+.btn-misto-pos { flex:1; background:#2196F3; color:white; border:none; padding:10px; border-radius:6px; font-weight:bold; cursor: pointer; transition: 0.2s;}
+.btn-misto-pos:hover { background:#1976D2; transform: translateY(-2px);}
+
+/* ==================================================
+   TEMA NOTTE - CONTI SEPARATI
+   ================================================== */
+body.tema-notte .misto-modal,
+body.tema-notte .box-misto-grigio,
+body.tema-notte .box-misto-lista {
+    background: #111827 !important;
+    border-color: #334155 !important;
+}
+body.tema-notte #listaArticoliDaDividere div { border-bottom-color: #334155 !important; }
+body.tema-notte .testo-misto-desc { color: #94A3B8 !important; }
+body.tema-notte .tabBtnPopup { background: #1f2937 !important; color: #F8FAFC !important; border: 1px solid transparent !important; }
+body.tema-notte .nome-art-misto { color: #F8FAFC !important; text-shadow: none !important; }
+body.tema-notte .prezzo-art-misto { color: #34D399 !important; text-shadow: none !important; }
+body.tema-notte #riepilogoArticoliPagati { color: #34D399 !important; }
+
+/* ==================================================
+   TEMA ASTRONAVE - CONTI SEPARATI
+   ================================================== */
+body.tema-astronave .misto-modal,
+body.tema-astronave .box-misto-grigio,
+body.tema-astronave .box-misto-lista {
+    background: #06131E !important;
+    border-color: #00A6CC !important;
+    box-shadow: inset 0 0 5px rgba(0,217,255,.08) !important;
+}
+body.tema-astronave #listaArticoliDaDividere div { border-bottom-color: rgba(0,166,204,0.3) !important; }
+body.tema-astronave .testo-misto-desc { color: #00A6CC !important; }
+body.tema-astronave .tabBtnPopup { background: #040f18 !important; color: #00FFFF !important; border: 1px solid #00A6CC !important; }
+body.tema-astronave .tabBtnPopup.active { background: #003B55 !important; color: #FFFFFF !important; box-shadow: 0 0 8px rgba(0,229,255,.4) !important; }
+body.tema-astronave .nome-art-misto { color: #D0FFFF !important; text-shadow: none !important; }
+body.tema-astronave .prezzo-art-misto { color: #4DFFB2 !important; text-shadow: 0 0 4px rgba(0,255,128,.5) !important; }
+body.tema-astronave #riepilogoArticoliPagati { color: #4DFFB2 !important; text-shadow: 0 0 4px rgba(0,255,128,.5) !important; }
+
+/* Fix Inputs (Campi Numerici) per i temi Scuri */
+body.tema-notte .input-misto-contanti, body.tema-notte .input-misto-pos, body.tema-notte .input-misto-base,
+body.tema-astronave .input-misto-contanti, body.tema-astronave .input-misto-pos, body.tema-astronave .input-misto-base {
+    background: #000000 !important;
+    color: #FFFFFF !important;
+}
+body.tema-astronave .input-misto-base {
+    border-color: #00A6CC !important;
+}
