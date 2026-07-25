@@ -14430,8 +14430,11 @@ function renderizzaArticoliDaDividere() {
         div.style.borderBottom = "1px solid #eee";
         div.innerHTML = `
             <label style="display:flex; justify-content:space-between; width:100%; cursor:pointer;">
-                <span><input type="checkbox" class="chk-articolo-misto" data-index="${index}" onchange="calcolaSubtotaleArticoli()" style="transform:scale(1.2); margin-right:8px;"> ${art.nome}</span>
-                <b>€${art.prezzo.toFixed(2)}</b>
+                <span style="display:flex; align-items:center;">
+                    <input type="checkbox" class="chk-articolo-misto" data-index="${index}" onchange="calcolaSubtotaleArticoli()" style="transform:scale(1.2); margin-right:8px;"> 
+                    <span class="nome-art-misto">${art.nome}</span>
+                </span>
+                <b class="prezzo-art-misto">€${art.prezzo.toFixed(2)}</b>
             </label>
         `;
         contenitore.appendChild(div);
