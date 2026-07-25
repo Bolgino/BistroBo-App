@@ -4244,6 +4244,20 @@ function aggiornaComandaCorrente(){
     // --- FINE MATEMATICA SCONTO GLOBALE ---
 
     document.getElementById("totale").innerText=tot.toFixed(2);
+	// ---> FIX: CONTROLLO VALIDITÀ CONTI SEPARATI <---
+    // Se l'operatore ha fatto "Dividi Conto" ma poi aggiunge, toglie o sconta un piatto, il totale sballa.
+    // Qui controlliamo se il totale appena calcolato corrisponde ancora alla divisione salvata.
+    if (window.datiPagamentoMisto) {
+        const totaleSalvato = window.datiPagamentoMisto.contanti + window.datiPagamentoMisto.pos;
+        
+        // Usiamo una tolleranza di 5 centesimi per gli arrotondamenti di Javascript
+        if (Math.abs(tot - totaleSalvato) > 0.05) {
+            resetPagamentoMisto();
+            if (typeof notify === "function") {
+                notify("⚠️ Carrello modificato: la divisione del conto è stata annullata.", "warn");
+            }
+        }
+    }
 
     // Aggiorna il resto se già pagato
     const resto = totalePagato - tot;
@@ -14302,10 +14316,18 @@ window.datiPagamentoMisto = null; // Memorizza {contanti: X, pos: Y}
 
 function resetPagamentoMisto() {
     window.datiPagamentoMisto = null;
+    
+    // Ripristina l'aspetto del bottone
     const btn = document.getElementById("btnApriContiSeparati");
     if(btn) {
         btn.innerText = "🧮 Dividi Conto";
         btn.style.background = "linear-gradient(135deg, #9C27B0, #673AB7)";
+    }
+    
+    // Riporta la tendina su contanti se era rimasta incastrata su "misto"
+    const select = document.getElementById("metodoPagamento");
+    if (select && select.value === "misto") {
+        select.value = "contanti";
     }
 }
 
