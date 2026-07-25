@@ -1978,63 +1978,63 @@
 	</div>
 	<!-- ================= POPUP CONTI SEPARATI / MISTO ================= -->
 	<div id="popupContiSeparati" class="modal-overlay hidden" style="z-index: 10005; display: none;">
-	    <div class="modal-varianti" style="max-width: 500px; width: 95%;">
+	    <div class="modal-varianti misto-modal" style="max-width: 500px; width: 95%;">
 	        <h3 style="margin-top: 0; color: #673AB7; text-align: center;">🧮 Dividi Conto / Pagamento Misto</h3>
 	        <p style="text-align:center; font-size:1.2em; margin-bottom: 15px;">Totale Comanda: <b id="contoMistoTotaleDovuto" style="color:red;">€0.00</b></p>
 	        
 	        <div style="display: flex; gap: 5px; margin-bottom: 15px; border-bottom: 2px solid #eee; padding-bottom: 10px;">
-	            <button class="tabBtn active" onclick="cambiaTabConti('misto')" id="tabBtn_misto" style="flex:1; margin:0; padding:8px;">Importi</button>
-	            <button class="tabBtn" onclick="cambiaTabConti('romana')" id="tabBtn_romana" style="flex:1; margin:0; padding:8px;">Alla Romana</button>
-	            <button class="tabBtn" onclick="cambiaTabConti('articoli')" id="tabBtn_articoli" style="flex:1; margin:0; padding:8px;">Per Articoli</button>
+	            <button class="tabBtnPopup active" onclick="cambiaTabConti('misto')" id="tabBtn_misto">Importi</button>
+	            <button class="tabBtnPopup" onclick="cambiaTabConti('romana')" id="tabBtn_romana">Alla Romana</button>
+	            <button class="tabBtnPopup" onclick="cambiaTabConti('articoli')" id="tabBtn_articoli">Per Articoli</button>
 	        </div>
 	
 	        <!-- TAB 1: MISTO IMPORTI -->
 	        <div id="tabConto_misto" style="display: block;">
-	            <p style="font-size: 0.9em; color: #666;">Inserisci quanto il cliente paga in contanti, il POS si calcolerà da solo.</p>
+	            <p class="testo-misto-desc">Inserisci quanto il cliente paga in contanti, il POS si calcolerà da solo.</p>
 	            <div style="display: flex; gap: 15px; align-items: center; margin-bottom: 15px;">
 	                <div style="flex:1;">
 	                    <label><b>💶 Contanti:</b></label>
-	                    <input type="number" id="mistoInputContanti" step="0.01" min="0" style="width:100%; padding:10px; border-radius:6px; border:2px solid #4CAF50; font-size:1.2em; font-weight:bold; outline:none;" oninput="calcolaMistoDaContanti()">
+	                    <input type="number" id="mistoInputContanti" class="input-misto-contanti" step="0.01" min="0" oninput="calcolaMistoDaContanti()">
 	                </div>
 	                <div style="flex:1;">
 	                    <label><b>💳 POS:</b></label>
-	                    <input type="number" id="mistoInputPos" step="0.01" min="0" style="width:100%; padding:10px; border-radius:6px; border:2px solid #2196F3; font-size:1.2em; font-weight:bold; outline:none;" oninput="calcolaMistoDaPos()">
+	                    <input type="number" id="mistoInputPos" class="input-misto-pos" step="0.01" min="0" oninput="calcolaMistoDaPos()">
 	                </div>
 	            </div>
 	        </div>
 	
 	        <!-- TAB 2: ALLA ROMANA -->
 	        <div id="tabConto_romana" style="display: none;">
-	            <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 15px; background: #f9f9f9; padding: 10px; border-radius: 8px;">
+	            <div class="box-misto-grigio">
 	                <label><b>Diviso per:</b></label>
-	                <input type="number" id="romanaInputPersone" min="2" value="2" style="width:60px; padding:8px; border-radius:6px; border:1px solid #ccc; text-align:center;" oninput="calcolaAllaRomana()">
+	                <input type="number" id="romanaInputPersone" class="input-misto-base" min="2" value="2" oninput="calcolaAllaRomana()">
 	                <span>persone = <b id="romanaQuotaPerPersona" style="color:#E91E63; font-size:1.2em;">€0.00</b> l'uno</span>
 	            </div>
-	            <p style="font-size: 0.9em; color: #666;">Come pagano queste <span id="romanaCountText">2</span> persone?</p>
+	            <p class="testo-misto-desc">Come pagano queste <span id="romanaCountText">2</span> persone?</p>
 	            <div style="display: flex; gap: 15px; align-items: center; margin-bottom: 15px;">
 	                <div style="flex:1;">
 	                    <label>N° Quote 💶 Contanti:</label>
-	                    <input type="number" id="romanaQuoteContanti" min="0" value="0" style="width:100%; padding:8px; border-radius:6px; border:1px solid #4CAF50;" oninput="aggiornaQuoteRomana('contanti')">
+	                    <input type="number" id="romanaQuoteContanti" class="input-misto-contanti" min="0" value="0" oninput="aggiornaQuoteRomana('contanti')">
 	                </div>
 	                <div style="flex:1;">
 	                    <label>N° Quote 💳 POS:</label>
-	                    <input type="number" id="romanaQuotePos" min="0" value="0" style="width:100%; padding:8px; border-radius:6px; border:1px solid #2196F3;" oninput="aggiornaQuoteRomana('pos')">
+	                    <input type="number" id="romanaQuotePos" class="input-misto-pos" min="0" value="0" oninput="aggiornaQuoteRomana('pos')">
 	                </div>
 	            </div>
 	        </div>
 	
 	        <!-- TAB 3: PER ARTICOLI -->
 	        <div id="tabConto_articoli" style="display: none;">
-	            <p style="font-size: 0.9em; color: #666;">Seleziona i piatti che il cliente 1 sta pagando ora.</p>
-	            <div id="listaArticoliDaDividere" style="max-height: 150px; overflow-y: auto; border: 1px solid #ccc; border-radius: 6px; padding: 10px; margin-bottom: 10px; background:#fafafa;">
+	            <p class="testo-misto-desc">Seleziona i piatti che il cliente 1 sta pagando ora.</p>
+	            <div id="listaArticoliDaDividere" class="box-misto-lista">
 	                <!-- Generato da JS -->
 	            </div>
 	            <div style="display:flex; justify-content:space-between; font-size:1.1em; margin-bottom:10px;">
 	                <span>Subtotale Selezionato:</span> <b id="subtotaleArticoli" style="color:#FF9800;">€0.00</b>
 	            </div>
 	            <div style="display:flex; gap:10px;">
-	                <button onclick="assegnaArticoli('contanti')" style="flex:1; background:#4CAF50; color:white; border:none; padding:10px; border-radius:6px; font-weight:bold;">Paga in 💶 Contanti</button>
-	                <button onclick="assegnaArticoli('pos')" style="flex:1; background:#2196F3; color:white; border:none; padding:10px; border-radius:6px; font-weight:bold;">Paga col 💳 POS</button>
+	                <button class="btn-misto-contanti" onclick="assegnaArticoli('contanti')">Paga in 💶 Contanti</button>
+	                <button class="btn-misto-pos" onclick="assegnaArticoli('pos')">Paga col 💳 POS</button>
 	            </div>
 	            <div id="riepilogoArticoliPagati" style="margin-top: 10px; font-size: 0.9em; color: #2e7d32; font-weight: bold;"></div>
 	        </div>
