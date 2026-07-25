@@ -3664,20 +3664,4 @@ body.tema-notte #modalAvvisoGlobale p,
 body.tema-astronave #modalAvvisoGlobale p {
     color: #94A3B8 !important;
 }
-/* --- STILI PER LA DIVISIONE CONTO --- */
-.tab-dividi-header { display: flex; border-bottom: 2px solid #ddd; margin-bottom: 15px; }
-.tab-dividi-btn { flex: 1; padding: 10px; background: transparent; border: none; font-weight: bold; color: #777; cursor: pointer; border-bottom: 3px solid transparent; transition: 0.2s; }
-.tab-dividi-btn.active { color: #2196F3; border-bottom: 3px solid #2196F3; }
-.tab-dividi-content { display: none; }
-.tab-dividi-content.active { display: block; animation: fadeIn 0.2s; }
 
-.dividi-input-group { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; background: #f9f9f9; padding: 10px; border-radius: 8px; border: 1px solid #eee; }
-.dividi-input-group input { width: 100px; padding: 8px; font-size: 1.1em; font-weight: bold; text-align: center; border: 1px solid #ccc; border-radius: 6px; }
-
-.badge-pagamento-misto {
-    background: #E3F2FD; border: 1px dashed #2196F3; color: #0D47A1;
-    padding: 10px; border-radius: 8px; margin-top: 10px;
-    display: flex; justify-content: space-between; align-items: center;
-    font-weight: bold; cursor: pointer; transition: 0.2s;
-}
-.badge-pagamento-misto:hover { background: #BBDEFB; }
