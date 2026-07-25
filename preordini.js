@@ -609,7 +609,8 @@ async function aggiungiPreordineAlleComande(id) {
     // 0.5️⃣ RICHIESTA TAVOLO AUTO-COMPILATO O MODALE
     if (p.modalita === "tavolo" && p.tavoloPreimpostato) {
         numeroTavolo = p.tavoloPreimpostato; 
-    } else if (window.settings.richiediTavolo && !isAsporto && p.modalita !== "sanmatteo" && p.modalita !== "fila") {
+    } else if (window.settings.richiediTavolo && !isAsporto && p.modalita !== "sanmatteo" && p.modalita !== "deliveroo") {
+        // Ora include anche p.modalita === "fila", a patto che non sia segnato come asporto!
         numeroTavolo = await new Promise((resolve) => {
             const overlay = document.createElement("div");
             overlay.className = "modal-overlay";
@@ -631,7 +632,9 @@ async function aggiungiPreordineAlleComande(id) {
             
             overlay.appendChild(modal);
             document.body.appendChild(overlay);
-            document.getElementById("inputTavoloModale").focus();
+            
+            // Forza il focus per non dover cliccare sull'input
+            setTimeout(() => document.getElementById("inputTavoloModale").focus(), 100);
 
             document.getElementById("btnAnnullaTavolo").onclick = () => { overlay.remove(); resolve(null); };
             document.getElementById("btnConfermaTavolo").onclick = () => { const val = document.getElementById("inputTavoloModale").value.trim(); overlay.remove(); resolve(val); };
