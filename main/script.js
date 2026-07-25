@@ -14359,6 +14359,9 @@ function apriPopupContiSeparati() {
 
 function chiudiPopupContiSeparati() {
     document.getElementById("popupContiSeparati").style.display = "none";
+    // Pulisce le variabili globali dei preordini quando si chiude il popup
+    window.idPreordineInDivisione = null;
+    window.comandaInDivisione = null;
 }
 
 // Navigazione Tab Interne al Modale
@@ -14373,31 +14376,29 @@ function cambiaTabConti(tab) {
     document.getElementById("erroreContiMisti").innerText = "";
 }
 
-// LOGICA TAB 1: MISTO IMPORTI
 function calcolaMistoDaContanti() {
-    const totale = parseFloat(document.getElementById("totale").innerText) || 0;
+    const totale = parseFloat(document.getElementById("contoMistoTotaleDovuto").innerText.replace("€", "")) || 0;
     let contanti = parseFloat(document.getElementById("mistoInputContanti").value) || 0;
-    if (contanti > totale) contanti = totale; // Blocca over-pagamento
+    if (contanti > totale) contanti = totale; 
     let pos = totale - contanti;
     document.getElementById("mistoInputPos").value = pos.toFixed(2);
 }
+
 function calcolaMistoDaPos() {
-    const totale = parseFloat(document.getElementById("totale").innerText) || 0;
+    const totale = parseFloat(document.getElementById("contoMistoTotaleDovuto").innerText.replace("€", "")) || 0;
     let pos = parseFloat(document.getElementById("mistoInputPos").value) || 0;
     if (pos > totale) pos = totale;
     let contanti = totale - pos;
     document.getElementById("mistoInputContanti").value = contanti.toFixed(2);
 }
 
-// LOGICA TAB 2: ROMANA
 function calcolaAllaRomana() {
-    const totale = parseFloat(document.getElementById("totale").innerText) || 0;
+    const totale = parseFloat(document.getElementById("contoMistoTotaleDovuto").innerText.replace("€", "")) || 0;
     const persone = parseInt(document.getElementById("romanaInputPersone").value) || 2;
     document.getElementById("romanaCountText").innerText = persone;
     const quota = totale / persone;
     document.getElementById("romanaQuotaPerPersona").innerText = "€" + quota.toFixed(2);
     
-    // Reset quote
     document.getElementById("romanaQuoteContanti").value = 0;
     document.getElementById("romanaQuotePos").value = persone;
 }
@@ -14422,11 +14423,13 @@ function aggiornaQuoteRomana(modificato) {
 function generaListaArticoliDaDividere() {
     const contenitore = document.getElementById("listaArticoliDaDividere");
     contenitore.innerHTML = "";
-    
-    // Scompone gli articoli per singola unità
     window.articoliScomposti = [];
-    comandaCorrente.forEach((p, indexOriginale) => {
-        let prz = calcolaPrezzoConSconto(p) / p.quantita; // Prezzo unitario scontato
+    
+    // Seleziona la lista piatti giusta (preordine o cassa)
+    const listaPiatti = window.idPreordineInDivisione ? window.comandaInDivisione : comandaCorrente;
+
+    listaPiatti.forEach((p, indexOriginale) => {
+        let prz = calcolaPrezzoConSconto(p) / p.quantita; 
         for(let i=0; i<p.quantita; i++) {
             window.articoliScomposti.push({
                 nome: p.nome,
@@ -14435,7 +14438,6 @@ function generaListaArticoliDaDividere() {
             });
         }
     });
-
     renderizzaArticoliDaDividere();
 }
 
@@ -14493,29 +14495,23 @@ function assegnaArticoli(metodo) {
 
 // SALVATAGGIO FINALE
 function salvaContiSeparati() {
-    const totale = parseFloat(document.getElementById("totale").innerText) || 0;
+    const totale = parseFloat(document.getElementById("contoMistoTotaleDovuto").innerText.replace("€", "")) || 0;
     let importoContanti = 0;
     let importoPos = 0;
     
-    // Controlla quale tab è attiva
     if (document.getElementById("tabConto_misto").style.display !== "none") {
         importoContanti = parseFloat(document.getElementById("mistoInputContanti").value) || 0;
         importoPos = parseFloat(document.getElementById("mistoInputPos").value) || 0;
-    } 
-    else if (document.getElementById("tabConto_romana").style.display !== "none") {
+    } else if (document.getElementById("tabConto_romana").style.display !== "none") {
         const persone = parseInt(document.getElementById("romanaInputPersone").value) || 2;
         const qContanti = parseInt(document.getElementById("romanaQuoteContanti").value) || 0;
         const qPos = parseInt(document.getElementById("romanaQuotePos").value) || 0;
         const quota = totale / persone;
-        
         importoContanti = quota * qContanti;
         importoPos = quota * qPos;
-    }
-    else if (document.getElementById("tabConto_articoli").style.display !== "none") {
+    } else if (document.getElementById("tabConto_articoli").style.display !== "none") {
         importoContanti = window.totaleAssegnatoArticoli.contanti;
         importoPos = window.totaleAssegnatoArticoli.pos;
-        
-        // Verifica se tutti gli articoli sono stati assegnati
         const rimasti = window.articoliScomposti.filter(a => !a.pagato).length;
         if (rimasti > 0) {
             document.getElementById("erroreContiMisti").innerText = "Attenzione: devi assegnare tutti i piatti!";
@@ -14523,33 +14519,31 @@ function salvaContiSeparati() {
         }
     }
 
-    // ARROTONDAMENTI PER EVITARE BUG JAVASCRIPT
     importoContanti = Math.round(importoContanti * 100) / 100;
     importoPos = Math.round(importoPos * 100) / 100;
     const totaleCalcolato = Math.round((importoContanti + importoPos) * 100) / 100;
     
-    if (Math.abs(totaleCalcolato - totale) > 0.05) { // Tolleranza 5 centesimi
+    if (Math.abs(totaleCalcolato - totale) > 0.05) { 
         document.getElementById("erroreContiMisti").innerText = `Errore di somma! Diviso: €${totaleCalcolato} / Totale: €${totale}`;
         return;
     }
 
-    // Salva globalmente
-    window.datiPagamentoMisto = {
-        contanti: importoContanti,
-        pos: importoPos
-    };
-
-    // Cambia la select visivamente
-    const select = document.getElementById("metodoPagamento");
-    select.value = "misto";
-    
-    // Cambia il pulsante per far capire che è salvato
-    const btn = document.getElementById("btnApriContiSeparati");
-    btn.innerHTML = `✅ Misto (C:€${importoContanti.toFixed(2)} P:€${importoPos.toFixed(2)})`;
-    btn.style.background = "#4CAF50";
+    // SALVATAGGIO DINAMICO (Preordine o Cassa)
+    if (window.idPreordineInDivisione) {
+        db.ref("preordini/" + window.idPreordineInDivisione).update({
+            metodoPagamento: "misto",
+            importoContanti: importoContanti,
+            importoPos: importoPos
+        });
+        if(typeof notify === "function") notify("Divisione applicata al preordine!", "success");
+    } else {
+        window.datiPagamentoMisto = { contanti: importoContanti, pos: importoPos };
+        document.getElementById("metodoPagamento").value = "misto";
+        const btn = document.getElementById("btnApriContiSeparati");
+        btn.innerHTML = `✅ Misto (C:€${importoContanti.toFixed(2)} P:€${importoPos.toFixed(2)})`;
+        btn.style.background = "#4CAF50";
+    }
 
     chiudiPopupContiSeparati();
 }
 
-// ⚠️ IMPORTANTE: Assicurati di svuotare `window.datiPagamentoMisto` quando l'ordine viene svuotato
-// Puoi aggiungere `resetPagamentoMisto()` nella logica del tasto "Reset Soldi" o quando elimini un piatto.
