@@ -7100,8 +7100,10 @@ function modificaComanda(id, comanda) {
     btnSalva.innerText = "Salva";
     btnSalva.onclick = async () => {
         try {
+            // SE LA COMANDA È STATA SVUOTATA COMPLETAMENTE
             if (!comandaTemp.piatti || comandaTemp.piatti.length === 0) {
                 await db.ref("comande/" + id).remove();
+                logAttivita(`Ha svuotato e quindi eliminato la comanda #${comanda.numero}`);
             } else {
                 const ciboNuovo = comandaTemp.piatti.some(p => p.categoria !== "bevande" && !p.categoria.toLowerCase().includes("snack"));
                 const bereNuovo = comandaTemp.piatti.some(p => p.categoria === "bevande");
@@ -7122,7 +7124,20 @@ function modificaComanda(id, comanda) {
                 if (extra3Nuovo) updateData.statoExtra3 = "da fare"; else updateData.statoExtra3 = null;
 
                 await db.ref("comande/" + id).update(updateData);
-				logAttivita(`Ha modificato i piatti o lo stato della comanda #${comanda.numero}`);
+                
+                // --- INIZIO LOGICA DETTAGLIATA LOG ---
+                const formattaPiattiLog = (piattiArray) => (piattiArray || []).map(p => `${p.quantita}x ${p.nome}`).join(", ");
+                const piattiPrima = formattaPiattiLog(comanda.piatti);
+                const piattiDopo = formattaPiattiLog(comandaTemp.piatti);
+                
+                let dettaglioLog = `Ha modificato la comanda #${comanda.numero}.`;
+                if (piattiPrima !== piattiDopo) {
+                    dettaglioLog += ` Da: [${piattiPrima}] ➔ A: [${piattiDopo}].`;
+                } else {
+                    dettaglioLog += ` (Ha modificato solo varianti o stati).`;
+                }
+                logAttivita(dettaglioLog);
+                // --- FINE LOGICA DETTAGLIATA LOG ---
                 
                 if (!snackNuovo) await db.ref("comande/" + id + "/statoSnack").remove();
                 if (!extra1Nuovo) await db.ref("comande/" + id + "/statoExtra1").remove();
