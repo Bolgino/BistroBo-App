@@ -783,8 +783,18 @@ async function aggiungiPreordineAlleComande(id) {
     notifypreordini(`✅ Preordine ${numeroComandaFinale} confermato!`, "info");
 }
 async function eliminaPreordine(id) {
-  await preordiniRef.child(id).remove();
-  if (typeof notifypreordini === "function") notifypreordini("🗑️ Preordine eliminato.", "info");
+    const snap = await preordiniRef.child(id).once("value");
+    const nome = snap.exists() ? snap.val().nome : "Sconosciuto";
+    
+    await preordiniRef.child(id).remove();
+    
+    if (typeof logAttivita === "function") {
+        logAttivita(`Ha eliminato o rifiutato il preordine di "${nome}"`);
+    }
+    
+    if (typeof notifypreordini === "function") {
+        notifypreordini("🗑️ Preordine eliminato.", "info");
+    }
 }
 async function getProssimoNumero(lettera) {
     const snap = await db.ref("comande").once("value");
