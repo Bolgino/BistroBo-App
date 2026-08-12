@@ -121,6 +121,24 @@ function checkOnline(silenzioso = false, sogliaMs = 2000) {
         }
     }
 }
+// =========================================
+// REGISTRO ATTIVITÀ DI SISTEMA (LOG)
+// =========================================
+function logAttivita(azione) {
+    if (!checkOnline(true)) return;
+    
+    // Recupera l'utente attualmente loggato (con fallback di sicurezza)
+    const autoreNome = document.getElementById("topBarUsername") ? document.getElementById("topBarUsername").innerText : "Utente";
+    const autoreRuolo = ruolo ? ruolo.toUpperCase() : "SISTEMA";
+    
+    const logEntry = {
+        timestamp: Date.now(),
+        autore: `${autoreNome} [${autoreRuolo}]`,
+        azione: azione
+    };
+    
+    db.ref("system_logs").push(logEntry).catch(e => console.error("Errore scrittura log:", e));
+}
 // Polling automatico ogni secondo
 setInterval(() => {
     checkOnline();
@@ -521,6 +539,7 @@ if (toggleChiusuraBtn) {
                         btnAdminChiudi.style.background = "#4CAF50"; // Verde
                         btnAdminChiudi.onclick = () => {
                             db.ref(`impostazioni/chiusuraServizio/chiusi/${rep}`).set(false);
+							logAttivita(`L'Admin ha riaperto il reparto ${rep}`);
                             notify(`Reparto riaperto!`, "success");
                         };
                     } else {
@@ -534,6 +553,7 @@ if (toggleChiusuraBtn) {
                                 cancelText: "Annulla",
                                 onConfirm: async () => {
                                     await db.ref(`impostazioni/chiusuraServizio/chiusi/${rep}`).set(true);
+									logAttivita(`L'Admin ha chiuso forzatamente il reparto ${rep}`);
                                     notify(`Reparto chiuso!`, "info");
                                 }
                             });
@@ -624,6 +644,7 @@ function confermaChiusuraOperatore(rep) {
         cancelText: "Annulla",
         onConfirm: async () => {
             await db.ref(`impostazioni/chiusuraServizio/chiusi/${rep}`).set(true);
+			logAttivita(`Ha chiuso le ordinazioni dal monitor di ${rep}`);
             notify("✅ Reparto Chiuso! Non riceverai più ordini.", "info");
         }
     });
@@ -712,6 +733,7 @@ function initImpostazioniToggle() {
                 onConfirm: async () => {
                     try {
                         await db.ref("impostazioni/contatoreComande").set(0);
+						
                         notify("✅ Contatore azzerato con successo!", "info");
                     } catch (err) {
                         notify("❌ Errore durante l'azzeramento: " + err.message, "error");
@@ -823,9 +845,11 @@ function initImpostazioniToggle() {
                             await db.ref("preordini").remove(); // 🔥 ELIMINA I PREORDINI PENDENTI
                             await db.ref("impostazioni/contatoreComande").set(0); 
                             await db.ref("impostazioni/fondoCassa").remove(); 
+							await db.ref("system_logs").remove();
                             
                             // 2. Cancella l'intero archivio delle giornate (se abilitato)
                             await db.ref("storico_giornate").remove();
+							logAttivita("🚨 Ha eseguito un RESET GLOBALE, eliminando comande, preordini e lo storico delle giornate.");
                             
                             notify("✅ Database completamente resettato (Comande, Preordini e Archivi)! 💣", "info");
 
@@ -878,6 +902,7 @@ function initImpostazioniToggle() {
                     try {
                         // 1️⃣ Cancella tutti i messaggi dal DB
                         await db.ref("chat/messaggi").remove();
+						logAttivita("Ha eliminato tutti i messaggi dalla Chat di sistema.");
 
                         // 2️⃣ Pulisce il localStorage di tutti gli utenti
                         Object.keys(localStorage).forEach(key => {
@@ -1295,6 +1320,7 @@ function initImpostazioniToggle() {
                         // Radiamo al suolo Menu e Dispensa
                         await db.ref("menu").remove();
                         await db.ref("ingredienti").remove();
+						logAttivita("🚨 Ha SVUOTATO completamente il Menu e la Dispensa.");
                         
                         notify("✅ Menu e Dispensa azzerati completamente!", "success");
                         hideLoader();
@@ -1695,6 +1721,32 @@ function initImpostazioniToggle() {
             });
         };
     }
+	// ================= PULSANTE SVUOTA LOG SISTEMA =================
+    const svuotaRegistroBtn = document.getElementById("svuotaRegistroBtn");
+    if (svuotaRegistroBtn) {
+        svuotaRegistroBtn.onclick = async () => {
+            if (!checkOnline(true)) return;
+
+            disonotify("⚠️ Vuoi davvero svuotare l'intero registro delle attività? Questa operazione è irreversibile.", {
+                confirmText: "Sì, Elimina Log 🗑️",
+                showCancel: true,
+                cancelText: "Annulla",
+                onConfirm: async () => {
+                    try {
+                        showLoader();
+                        await db.ref("system_logs").remove();
+                        // Registriamo che l'admin ha svuotato i log!
+                        logAttivita("Ha svuotato manualmente l'intero registro attività.");
+                        notify("✅ Registro attività svuotato!", "success");
+                        hideLoader();
+                    } catch (err) {
+                        hideLoader();
+                        notify("❌ Errore durante l'eliminazione dei log.", "error");
+                    }
+                }
+            });
+        };
+    }
 }
 function initTickNoteDestinazioni() {
     db.ref("impostazioni/noteDestinazioniAbilitate").on("value", snap => {
@@ -1846,6 +1898,7 @@ async function apriModaleArchiviazione() {
             // 3. Cancella le comande attive, il contatore e il fondo cassa
             await db.ref("comande").remove();
             await db.ref("impostazioni/contatoreComande").set(0); 
+			logAttivita(`Ha archiviato il turno con nome: "${nomeTurno}" e azzerato le casse.`);
             await db.ref("impostazioni/fondoCassa").remove(); 
 
             notify(`✅ Turno "${nomeTurno}" archiviato con successo!`, "success");
@@ -2821,6 +2874,7 @@ function mostraSchermata() {
         caricaMenuAdmin();
         caricaUtenti();
 		caricaSpeseAdmin();
+		caricaRegistroAttivita();
 		gestisciLoopAutoBackup(); // Avvia il backup automatico se l'Admin si è appena loggato
 		
 		if (typeof generaEditorMansionarioAdmin === "function") generaEditorMansionarioAdmin();
@@ -3116,6 +3170,7 @@ function gestisciFondoCassa(forzaModifica = false) {
             document.getElementById("btnChiudiFondo").onclick = () => overlay.remove();
             document.getElementById("btnAzzeraFondo").onclick = () => {
                 db.ref("impostazioni/fondoCassa").remove();
+				if (typeof logAttivita === "function") logAttivita(`Ha azzerato il fondo cassa.`);
                 overlay.remove();
                 notify("Fondo azzerato. Verrà richiesto al prossimo accesso in Cassa.", "info");
             };
@@ -3127,6 +3182,7 @@ function gestisciFondoCassa(forzaModifica = false) {
             const fondo = parseFloat(valStr);
             if (!isNaN(fondo) && fondo >= 0) {
                 db.ref("impostazioni/fondoCassa").set(fondo);
+				if (typeof logAttivita === "function") logAttivita(`Ha impostato il fondo cassa a €${fondo.toFixed(2)}`);
                 overlay.remove();
                 notify("Fondo cassa salvato: €" + fondo.toFixed(2), "success");
             } else {
@@ -3422,6 +3478,7 @@ function mostraAdminDaSimulazione() {
     caricaMenuAdmin();
     caricaUtenti();
 	caricaSpeseAdmin();
+	caricaRegistroAttivita();
 	if (typeof renderPreordiniAdmin === "function") {
         db.ref("preordini").once("value").then(snap => renderPreordiniAdmin(snap.val() || {}));
     }
@@ -5362,6 +5419,7 @@ async function caricaIngredienti() {
                             cancelText: "Annulla",
                             onConfirm: async () => {
                                 await db.ref(`ingredienti/${ing.id}`).remove();
+								logAttivita(`Ha eliminato definitivamente l'ingrediente "${ing.nome}" dal magazzino.`);
                                 const snapMenu2 = await db.ref("menu").once("value");
                                 const menuData2 = snapMenu2.val() || {};
                                 for (const [pid, piatto] of Object.entries(menuData2)) {
@@ -6199,6 +6257,7 @@ async function caricaGestioneComandeAdmin() {
                                 }
                             }
                             await db.ref("comande/"+id).remove();
+							logAttivita(`Ha eliminato la comanda #${c.numero}`);
                             const riga = document.getElementById("admin_comanda_" + id);
                             if (riga && riga.parentNode) riga.parentNode.removeChild(riga);
                             console.log("Comanda eliminata e ingredienti ripristinati.");
@@ -7063,6 +7122,7 @@ function modificaComanda(id, comanda) {
                 if (extra3Nuovo) updateData.statoExtra3 = "da fare"; else updateData.statoExtra3 = null;
 
                 await db.ref("comande/" + id).update(updateData);
+				logAttivita(`Ha modificato i piatti o lo stato della comanda #${comanda.numero}`);
                 
                 if (!snackNuovo) await db.ref("comande/" + id + "/statoSnack").remove();
                 if (!extra1Nuovo) await db.ref("comande/" + id + "/statoExtra1").remove();
@@ -8652,6 +8712,40 @@ window.caricaGamification = async function() {
     } finally {
         hideLoader();
     }
+}
+function caricaRegistroAttivita() {
+    if (!checkOnline(true)) return;
+    const listaLog = document.getElementById("listaLogSistema");
+    if (!listaLog) return;
+
+    // Leggiamo gli ultimi 300 log in tempo reale
+    db.ref("system_logs").orderByChild("timestamp").limitToLast(300).on("value", snap => {
+        listaLog.innerHTML = "";
+        
+        if (!snap.exists()) {
+            listaLog.innerHTML = "<div style='text-align:center; padding: 20px; color: #777; font-style: italic;'>Nessuna attività registrata. Il sistema è pulito! ✨</div>";
+            return;
+        }
+
+        const logs = [];
+        snap.forEach(child => { logs.push(child.val()); });
+        logs.reverse(); // Mettiamo i più recenti in cima
+
+        logs.forEach(log => {
+            const d = new Date(log.timestamp);
+            const orario = d.toLocaleDateString('it-IT') + " - " + d.toLocaleTimeString('it-IT', {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+            
+            const riga = document.createElement("div");
+            riga.style.cssText = "padding: 12px 10px; border-bottom: 1px solid #e0e0e0; display: flex; flex-direction: column; gap: 4px;";
+            riga.innerHTML = `
+                <div style="font-size: 0.85em; color: #888;">🕒 ${orario}</div>
+                <div style="font-size: 1.05em; color: #333;">
+                    <b style="color: #607D8B;">${log.autore}</b>: ${log.azione}
+                </div>
+            `;
+            listaLog.appendChild(riga);
+        });
+    });
 }
 // -------------------- UTENTI --------------------
 async function caricaUtenti(){
