@@ -127,13 +127,18 @@ function checkOnline(silenzioso = false, sogliaMs = 2000) {
 function logAttivita(azione) {
     if (!checkOnline(true)) return;
     
-    // Recupera l'utente attualmente loggato (con fallback di sicurezza)
     const autoreNome = document.getElementById("topBarUsername") ? document.getElementById("topBarUsername").innerText : "Utente";
     const autoreRuolo = ruolo ? ruolo.toUpperCase() : "SISTEMA";
     
+    // Recupera l'email dell'utente direttamente dall'autenticazione Firebase
+    const utenteCorrente = firebase.auth().currentUser;
+    const autoreEmail = utenteCorrente && utenteCorrente.email ? utenteCorrente.email : "Sconosciuto";
+    
     const logEntry = {
         timestamp: Date.now(),
-        autore: `${autoreNome} [${autoreRuolo}]`,
+        autore: autoreNome,
+        email: autoreEmail, // Salviamo l'email separatamente
+        ruolo: autoreRuolo, // Salviamo il ruolo separatamente
         azione: azione
     };
     
@@ -8750,12 +8755,22 @@ function caricaRegistroAttivita() {
             const d = new Date(log.timestamp);
             const orario = d.toLocaleDateString('it-IT') + " - " + d.toLocaleTimeString('it-IT', {hour: '2-digit', minute:'2-digit', second:'2-digit'});
             
+            let intestazioneAutore = "";
+
+            // Se è un log NUOVO (con email e ruolo salvati separatamente)
+            if (log.email && log.ruolo) {
+                intestazioneAutore = `<b style="color: #607D8B;">${log.autore}</b> <span style="color: #888; font-size: 0.9em;">(${log.email})</span> <b style="color: #00BCD4;">[${log.ruolo}]</b>`;
+            } else {
+                // Se è un log VECCHIO (nome e ruolo tutto in una stringa)
+                intestazioneAutore = `<b style="color: #607D8B;">${log.autore || "Sistema"}</b>`;
+            }
+            
             const riga = document.createElement("div");
             riga.style.cssText = "padding: 12px 10px; border-bottom: 1px solid #e0e0e0; display: flex; flex-direction: column; gap: 4px;";
             riga.innerHTML = `
                 <div style="font-size: 0.85em; color: #888;">🕒 ${orario}</div>
                 <div style="font-size: 1.05em; color: #333;">
-                    <b style="color: #607D8B;">${log.autore}</b>: ${log.azione}
+                    ${intestazioneAutore}: ${log.azione}
                 </div>
             `;
             listaLog.appendChild(riga);
