@@ -2731,8 +2731,8 @@ body.tema-astronave #btnCopertoCassa div {
 }
 
 body.tema-astronave #orologio {
-    color: #0080ff !important;
-    text-shadow: none !important;
+    color: #00FFFF !important;
+    text-shadow: 0 0 5px #00D9FF, 0 0 10px rgba(0, 217, 255, 0.8) !important;
 }
 /* ===========================================================
    FIX LEGGIBILITÀ BOX MODALI (CREA PIATTO / INGREDIENTE) 
