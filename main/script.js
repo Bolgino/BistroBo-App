@@ -1672,7 +1672,7 @@ function initImpostazioniToggle() {
 	        gestisciLoopAutoBackup(); // Riavvia il loop col nuovo tempo
 	    });
 
-	    inputAutoIntervallo.addEventListener("change", () => {
+	    inputAutoBackupIntervallo.addEventListener("change", () => {
 	        let val = parseInt(inputAutoBackupIntervallo.value, 10);
 	        if (isNaN(val) || val < 1) val = 15;
 	        autoBackupIntervalloRef.set(val);
@@ -11831,14 +11831,19 @@ backupDbBtn.onclick = async () => {
     if (!checkOnline(true)) return;
     try {
         const [
-            comandeSnap, preordiniSnap, storicoGiornateSnap, 
-            ingredientiSnap, menuSnap, impostazioniSnap, 
-            mansionariSnap, repartiSnap, scontiGlobaliSnap, 
-            speseSnap, statisticheTempiSnap
+            comandeSnap, 
+            utentiSnap, 
+            ingredientiSnap, 
+            menuSnap, 
+            impostazioniSnap,
+            mansionariSnap,
+            repartiSnap,
+            scontiGlobaliSnap,
+            speseSnap,
+            statisticheSnap
         ] = await Promise.all([
             db.ref("comande").once("value"),
-            db.ref("preordini").once("value"),
-            db.ref("storico_giornate").once("value"),
+            db.ref("utenti").once("value"),
             db.ref("ingredienti").once("value"),
             db.ref("menu").once("value"),
             db.ref("impostazioni").once("value"),
@@ -11851,8 +11856,7 @@ backupDbBtn.onclick = async () => {
 
         const data = {
             comande: comandeSnap.val() || {},
-            preordini: preordiniSnap.val() || {},
-            storico_giornate: storicoGiornateSnap.val() || {},
+            utenti: utentiSnap.val() || {},
             ingredienti: ingredientiSnap.val() || {},
             menu: menuSnap.val() || {},
             impostazioni: impostazioniSnap.val() || {},
@@ -11860,14 +11864,14 @@ backupDbBtn.onclick = async () => {
             reparti: repartiSnap.val() || {},
             scontiGlobali: scontiGlobaliSnap.val() || {},
             spese: speseSnap.val() || {},
-            statistiche_tempi_prodotti: statisticheTempiSnap.val() || {}
+            statistiche_tempi_prodotti: statisticheSnap.val() || {}
         };
 
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = "backup_comande.json";
+        a.download = "backup_completo.json"; // Cambiato nome per riflettere il nuovo contenuto
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -13461,8 +13465,22 @@ async function eseguiAutoBackupCloud() {
     if (!checkOnline(true)) return;
 
     try {
-        // 1. Peschiamo tutti i dati "vitali" del ristorante (ignoriamo i log di sistema e i vecchi backup)
-        const [comande, menu, ingredienti, impostazioni, utenti, preordini, storico, sconti] = await Promise.all([
+        // 1. Peschiamo tutti i dati del ristorante (ora inclusi anche i system_logs)
+        const [
+            comande, 
+            menu, 
+            ingredienti, 
+            impostazioni, 
+            utenti, 
+            preordini, 
+            storico, 
+            sconti,
+            mansionari,
+            reparti,
+            spese,
+            statistiche,
+            systemLogs
+        ] = await Promise.all([
             db.ref("comande").once("value"),
             db.ref("menu").once("value"),
             db.ref("ingredienti").once("value"),
@@ -13470,7 +13488,12 @@ async function eseguiAutoBackupCloud() {
             db.ref("utenti").once("value"),
             db.ref("preordini").once("value"),
             db.ref("storico_giornate").once("value"),
-            db.ref("scontiGlobali").once("value")
+            db.ref("scontiGlobali").once("value"),
+            db.ref("mansionari").once("value"),
+            db.ref("reparti").once("value"),
+            db.ref("spese").once("value"),
+            db.ref("statistiche_tempi_prodotti").once("value"),
+            db.ref("system_logs").once("value")
         ]);
 
         const backupData = {
@@ -13481,7 +13504,12 @@ async function eseguiAutoBackupCloud() {
             utenti: utenti.val() || {},
             preordini: preordini.val() || {},
             storico_giornate: storico.val() || {},
-            scontiGlobali: sconti.val() || {}
+            scontiGlobali: sconti.val() || {},
+            mansionari: mansionari.val() || {},
+            reparti: reparti.val() || {},
+            spese: spese.val() || {},
+            statistiche_tempi_prodotti: statistiche.val() || {},
+            system_logs: systemLogs.val() || {}
         };
 
         const dataString = JSON.stringify(backupData);
@@ -13515,7 +13543,6 @@ async function eseguiAutoBackupCloud() {
         console.error("Errore Auto-Backup Cloud:", err);
     }
 }
-
 // 4. Mostra i Backup nell'Interfaccia Grafica Admin
 function renderCloudBackups(backupsData) {
     const container = document.getElementById("listaCloudBackups");
