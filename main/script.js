@@ -11826,16 +11826,29 @@ function disonotify(msg, options = {}) {
 
     document.body.appendChild(div);
 }
-// ---------- Backup Database ----------
+// ---------- Backup Database (ONLINE - COMPLETO) ----------
 backupDbBtn.onclick = async () => {
     if (!checkOnline(true)) return;
     try {
-        const [comandeSnap, utentiSnap, ingredientiSnap, menuSnap, impostazioniSnap] = await Promise.all([
+        const [
+            comandeSnap, utentiSnap, ingredientiSnap, menuSnap, impostazioniSnap,
+            displayLiveSnap, mansionariSnap, repartiSnap, scontiGlobaliSnap, 
+            speseSnap, statisticheTempiSnap, systemLogsSnap, preordiniSnap, storicoGiornateSnap
+        ] = await Promise.all([
             db.ref("comande").once("value"),
             db.ref("utenti").once("value"),
             db.ref("ingredienti").once("value"),
             db.ref("menu").once("value"),
-            db.ref("impostazioni").once("value")
+            db.ref("impostazioni").once("value"),
+            db.ref("displayLive").once("value"),
+            db.ref("mansionari").once("value"),
+            db.ref("reparti").once("value"),
+            db.ref("scontiGlobali").once("value"),
+            db.ref("spese").once("value"),
+            db.ref("statistiche_tempi_prodotti").once("value"),
+            db.ref("system_logs").once("value"),
+            db.ref("preordini").once("value"),
+            db.ref("storico_giornate").once("value")
         ]);
 
         const data = {
@@ -11843,14 +11856,23 @@ backupDbBtn.onclick = async () => {
             utenti: utentiSnap.val() || {},
             ingredienti: ingredientiSnap.val() || {},
             menu: menuSnap.val() || {},
-            impostazioni: impostazioniSnap.val() || {}
+            impostazioni: impostazioniSnap.val() || {},
+            displayLive: displayLiveSnap.val() || {},
+            mansionari: mansionariSnap.val() || {},
+            reparti: repartiSnap.val() || {},
+            scontiGlobali: scontiGlobaliSnap.val() || {},
+            spese: speseSnap.val() || {},
+            statistiche_tempi_prodotti: statisticheTempiSnap.val() || {},
+            system_logs: systemLogsSnap.val() || {},
+            preordini: preordiniSnap.val() || {},
+            storico_giornate: storicoGiornateSnap.val() || {}
         };
 
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = "backup_comande.json";
+        a.download = "backup_completo_online.json";
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
