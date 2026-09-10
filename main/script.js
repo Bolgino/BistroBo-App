@@ -12064,8 +12064,13 @@ if (restoreDbBtn && restoreDbFile) {
                 }
                 
                 let optionsHtml = "";
-                Object.keys(backups).sort((a, b) => b - a).forEach(k => {
-                    optionsHtml += `<button class="btnRipristinoSingolo" data-key="${k}" style="padding: 10px; margin-bottom: 8px; width: 100%; border-radius: 6px; background: #f0f0f0; border: 1px solid #ccc; cursor: pointer; text-align: left;">🕒 ${backups[k].label || new Date(parseInt(k)).toLocaleString('it-IT')}</button>`;
+                // Ordina i backup per timestamp decrescente (dal più nuovo al più vecchio)
+                Object.keys(backups).sort((a, b) => backups[b].timestamp - backups[a].timestamp).forEach(k => {
+                    const dataBackup = new Date(backups[k].timestamp).toLocaleString('it-IT');
+                    // Se non ha una label (quindi è automatico), gli diamo noi il nome "Salvataggio Automatico"
+                    const nomeVisualizzato = backups[k].label || `Salvataggio Automatico - ${dataBackup}`;
+                    
+                    optionsHtml += `<button class="btnRipristinoSingolo" data-key="${k}" style="padding: 10px; margin-bottom: 8px; width: 100%; border-radius: 6px; background: #f0f0f0; border: 1px solid #ccc; cursor: pointer; text-align: left;">🕒 ${nomeVisualizzato}</button>`;
                 });
                 
                 const overlayList = document.createElement("div");
