@@ -11826,83 +11826,328 @@ function disonotify(msg, options = {}) {
 
     document.body.appendChild(div);
 }
-// ---------- Backup Database ----------
-backupDbBtn.onclick = async () => {
-    if (!checkOnline(true)) return;
-    try {
-        const [
-            comandeSnap, 
-            utentiSnap, 
-            ingredientiSnap, 
-            menuSnap, 
-            impostazioniSnap,
-            mansionariSnap,
-            repartiSnap,
-            scontiGlobaliSnap,
-            speseSnap,
-            statisticheSnap
-        ] = await Promise.all([
-            db.ref("comande").once("value"),
-            db.ref("utenti").once("value"),
-            db.ref("ingredienti").once("value"),
-            db.ref("menu").once("value"),
-            db.ref("impostazioni").once("value"),
-            db.ref("mansionari").once("value"),
-            db.ref("reparti").once("value"),
-            db.ref("scontiGlobali").once("value"),
-            db.ref("spese").once("value"),
-            db.ref("statistiche_tempi_prodotti").once("value")
-        ]);
+// =========================================================
+// 1. GESTIONE CONFIGURAZIONE (Download / Upload Mirato)
+// =========================================================
+const scaricaConfigBtn = document.getElementById("scaricaConfigBtn");
+if (scaricaConfigBtn) {
+    scaricaConfigBtn.onclick = async () => {
+        if (!checkOnline(true)) return;
+        try {
+            showLoader();
+            const snap = await db.ref().once("value");
+            const data = snap.val() || {};
+            
+            // Filtriamo SOLO i nodi strutturali
+            const configData = {
+                displayLive: data.displayLive || {},
+                impostazioni: data.impostazioni || {},
+                ingredienti: data.ingredienti || {},
+                mansionari: data.mansionari || {},
+                menu: data.menu || {},
+                reparti: data.reparti || {},
+                scontiGlobali: data.scontiGlobali || {},
+                spese: data.spese || {},
+                utenti: data.utenti || {}
+            };
+            
+            const nomeSagra = window.settings.nomeStand || "BistroBo";
+            const filename = `Configurazione_${nomeSagra.replace(/\s+/g, '_')}.json`;
+            
+            const blob = new Blob([JSON.stringify(configData, null, 2)], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            hideLoader();
+            notify("Configurazione scaricata con successo!", "success");
+            logAttivita("Ha scaricato il file di Configurazione del sistema.");
+        } catch (error) {
+            hideLoader();
+            notify("Errore scaricamento configurazione: " + error.message, "error");
+        }
+    };
+}
 
-        const data = {
-            comande: comandeSnap.val() || {},
-            utenti: utentiSnap.val() || {},
-            ingredienti: ingredientiSnap.val() || {},
-            menu: menuSnap.val() || {},
-            impostazioni: impostazioniSnap.val() || {},
-            mansionari: mansionariSnap.val() || {},
-            reparti: repartiSnap.val() || {},
-            scontiGlobali: scontiGlobaliSnap.val() || {},
-            spese: speseSnap.val() || {},
-            statistiche_tempi_prodotti: statisticheSnap.val() || {}
+const caricaConfigBtn = document.getElementById("caricaConfigBtn");
+const caricaConfigFile = document.getElementById("caricaConfigFile");
+if (caricaConfigBtn && caricaConfigFile) {
+    caricaConfigBtn.onclick = () => caricaConfigFile.click();
+
+    caricaConfigFile.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        disonotify("⚠️ Attenzione: il caricamento SOVRASCRIVERÀ le impostazioni, il menu, la dispensa, i reparti e gli utenti attuali. Vuoi procedere?", {
+            confirmText: "Carica Configurazione",
+            showCancel: true,
+            cancelText: "Annulla",
+            onConfirm: () => {
+                const reader = new FileReader();
+                reader.onload = async (event) => {
+                    try {
+                        showLoader();
+                        const configData = JSON.parse(event.target.result);
+                        
+                        let updates = {};
+                        // Aggiorniamo solo i nodi previsti
+                        if (configData.displayLive !== undefined) updates["displayLive"] = configData.displayLive;
+                        if (configData.impostazioni !== undefined) updates["impostazioni"] = configData.impostazioni;
+                        if (configData.ingredienti !== undefined) updates["ingredienti"] = configData.ingredienti;
+                        if (configData.mansionari !== undefined) updates["mansionari"] = configData.mansionari;
+                        if (configData.menu !== undefined) updates["menu"] = configData.menu;
+                        if (configData.reparti !== undefined) updates["reparti"] = configData.reparti;
+                        if (configData.scontiGlobali !== undefined) updates["scontiGlobali"] = configData.scontiGlobali;
+                        if (configData.spese !== undefined) updates["spese"] = configData.spese;
+                        if (configData.utenti !== undefined) updates["utenti"] = configData.utenti;
+
+                        await db.ref().update(updates);
+                        
+                        logAttivita("Ha caricato un nuovo file di Configurazione.");
+                        notify("✅ Configurazione caricata con successo!", "success");
+                        caricaConfigFile.value = "";
+                        hideLoader();
+                        
+                        setTimeout(() => location.reload(), 1500);
+                    } catch (err) {
+                        hideLoader();
+                        notify("❌ Errore durante il caricamento del file JSON", "error");
+                        caricaConfigFile.value = "";
+                    }
+                };
+                reader.readAsText(file);
+            },
+            onCancel: () => {
+                caricaConfigFile.value = "";
+            }
+        });
+    };
+}
+
+// =========================================================
+// 2. GESTIONE BACKUP COMPLETO (MODALI CLOUD / MANUALE)
+// =========================================================
+const backupDbBtn = document.getElementById("backupDbBtn");
+if (backupDbBtn) {
+    backupDbBtn.onclick = () => {
+        const overlay = document.createElement("div");
+        overlay.className = "modal-overlay";
+        overlay.style.zIndex = "10005";
+        
+        const modal = document.createElement("div");
+        modal.className = "modal-varianti";
+        modal.style.textAlign = "center";
+        modal.innerHTML = `
+            <h3 style="margin-top: 0; color: #00796B;">💾 Crea Backup Database</h3>
+            <p style="font-size: 0.9em; color: #555; margin-bottom: 20px;">Vuoi salvare il backup COMPLETO (tutti i nodi, comande incluse) sul PC o sul Cloud?</p>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button id="btnSalvaCloud" style="padding: 12px; background: #2196F3; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">☁️ Salva su Cloud</button>
+                <button id="btnScaricaManuale" style="padding: 12px; background: #4CAF50; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">📥 Scarica sul Dispositivo</button>
+            </div>
+            <div class="modal-actions" style="margin-top: 20px;">
+                <button class="btn-chiudi" id="btnChiudiModalBackup" style="width: 100%;">Annulla</button>
+            </div>
+        `;
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+
+        document.getElementById("btnChiudiModalBackup").onclick = () => overlay.remove();
+
+        // Salva su Cloud
+        document.getElementById("btnSalvaCloud").onclick = async () => {
+            overlay.remove();
+            if (!checkOnline(true)) return;
+            try {
+                showLoader();
+                const snap = await db.ref().once("value");
+                const fullData = snap.val() || {};
+                
+                const dataKey = Date.now();
+                const label = `Salvataggio Manuale - ${new Date().toLocaleString('it-IT')}`;
+                
+                await db.ref("cloud_backups/" + dataKey).set({
+                    timestamp: dataKey,
+                    label: label,
+                    data: fullData
+                });
+                
+                hideLoader();
+                notify("Backup completo salvato sul Cloud!", "success");
+                logAttivita("Ha salvato un backup completo sul Cloud.");
+            } catch (error) {
+                hideLoader();
+                notify("Errore salvataggio Cloud: " + error.message, "error");
+            }
         };
 
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "backup_completo.json"; // Cambiato nome per riflettere il nuovo contenuto
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        notify("Backup scaricato correttamente!","info");
-    } catch(e) {
-        notify("Errore nel backup: " + e.message, "error");
-    }
-};
-// ---------- Ripristina backup ----------
-restoreDbBtn.onclick = () => restoreDbFile.click();
-restoreDbFile.addEventListener("change", async function() {
-    if (!checkOnline(true)) return;
-    const file = this.files[0];
-    if (!file) return;
-    try {
-        const text = await file.text();
-        const jsonData = JSON.parse(text);
+        // Scarica Manualmente
+        document.getElementById("btnScaricaManuale").onclick = async () => {
+            overlay.remove();
+            if (!checkOnline(true)) return;
+            try {
+                showLoader();
+                const snap = await db.ref().once("value");
+                const fullData = snap.val() || {};
+                
+                const nomeSagra = window.settings.nomeStand || "BistroBo";
+                const dataOggi = new Date().toISOString().replace(/:/g, '-').split('.')[0];
+                const filename = `Backup_Completo_${nomeSagra.replace(/\s+/g, '_')}_${dataOggi}.json`;
+                
+                const blob = new Blob([JSON.stringify(fullData, null, 2)], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = filename;
+                a.click();
+                URL.revokeObjectURL(url);
+                
+                hideLoader();
+                notify("Backup completo scaricato!", "success");
+                logAttivita("Ha scaricato un backup completo sul dispositivo.");
+            } catch (error) {
+                hideLoader();
+                notify("Errore scaricamento: " + error.message, "error");
+            }
+        };
+    };
+}
 
-        // Scrive solo i nodi esistenti nel backup
-        const promises = [];
-        for (const nodo in jsonData) {
-            promises.push(db.ref(nodo).set(jsonData[nodo]));
-        }
-        await Promise.all(promises);
+const restoreDbBtn = document.getElementById("restoreDbBtn");
+const restoreDbFile = document.getElementById("restoreDbFile");
+if (restoreDbBtn && restoreDbFile) {
+    restoreDbBtn.onclick = () => {
+        const overlay = document.createElement("div");
+        overlay.className = "modal-overlay";
+        overlay.style.zIndex = "10005";
+        
+        const modal = document.createElement("div");
+        modal.className = "modal-varianti";
+        modal.style.textAlign = "center";
+        modal.innerHTML = `
+            <h3 style="margin-top: 0; color: #d32f2f;">⚠️ Ripristina Database</h3>
+            <p style="font-size: 0.9em; color: #555; margin-bottom: 20px;">Come vuoi ripristinare il database completo?</p>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button id="btnRipristinaCloud" style="padding: 12px; background: #2196F3; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">☁️ Scegli dal Cloud</button>
+                <button id="btnCaricaManualeBackup" style="padding: 12px; background: #4CAF50; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">📤 Carica File dal Dispositivo</button>
+            </div>
+            <div class="modal-actions" style="margin-top: 20px;">
+                <button class="btn-chiudi" id="btnChiudiModalRestore" style="width: 100%;">Annulla</button>
+            </div>
+        `;
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
 
-        notify("Database ripristinato correttamente!", "info");
-    } catch(e) {
-        notify("Errore nel ripristino: " + e.message, "error");
+        document.getElementById("btnChiudiModalRestore").onclick = () => overlay.remove();
+
+        // Carica Manuale (Apre l'input file nascosto)
+        document.getElementById("btnCaricaManualeBackup").onclick = () => {
+            overlay.remove();
+            restoreDbFile.click();
+        };
+
+        // Ripristina da Cloud (Mostra la lista dei backup cloud disponibili)
+        document.getElementById("btnRipristinaCloud").onclick = async () => {
+            overlay.remove();
+            if (!checkOnline(true)) return;
+            try {
+                showLoader();
+                const snap = await db.ref("cloud_backups").once("value");
+                hideLoader();
+                
+                const backups = snap.val() || {};
+                if (Object.keys(backups).length === 0) {
+                    notify("Nessun backup trovato sul Cloud.", "warn");
+                    return;
+                }
+                
+                let optionsHtml = "";
+                Object.keys(backups).sort((a, b) => b - a).forEach(k => {
+                    optionsHtml += `<button class="btnRipristinoSingolo" data-key="${k}" style="padding: 10px; margin-bottom: 8px; width: 100%; border-radius: 6px; background: #f0f0f0; border: 1px solid #ccc; cursor: pointer; text-align: left;">🕒 ${backups[k].label || new Date(parseInt(k)).toLocaleString('it-IT')}</button>`;
+                });
+                
+                const overlayList = document.createElement("div");
+                overlayList.className = "modal-overlay";
+                overlayList.style.zIndex = "10006";
+                const modalList = document.createElement("div");
+                modalList.className = "modal-varianti";
+                modalList.innerHTML = `
+                    <h3 style="margin-top:0;">Scegli Backup dal Cloud</h3>
+                    <div style="max-height: 300px; overflow-y: auto;">
+                        ${optionsHtml}
+                    </div>
+                    <div class="modal-actions" style="margin-top: 20px;">
+                        <button class="btn-chiudi" id="btnChiudiListBackup" style="width: 100%;">Annulla</button>
+                    </div>
+                `;
+                overlayList.appendChild(modalList);
+                document.body.appendChild(overlayList);
+                
+                document.getElementById("btnChiudiListBackup").onclick = () => overlayList.remove();
+                
+                document.querySelectorAll(".btnRipristinoSingolo").forEach(btn => {
+                    btn.onclick = () => {
+                        const key = btn.dataset.key;
+                        overlayList.remove();
+                        eseguiRipristinoTotale(backups[key].data);
+                    };
+                });
+                
+            } catch (error) {
+                hideLoader();
+                notify("Errore accesso Cloud: " + error.message, "error");
+            }
+        };
+    };
+
+    // Lettura del file quando si sceglie il caricamento manuale
+    restoreDbFile.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const fullData = JSON.parse(event.target.result);
+                eseguiRipristinoTotale(fullData);
+                restoreDbFile.value = "";
+            } catch (err) {
+                notify("❌ Errore durante il caricamento del file JSON", "error");
+                restoreDbFile.value = "";
+            }
+        };
+        reader.readAsText(file);
+    };
+
+    // Helper per l'invio del ripristino DB (preserva lo storico cloud)
+    function eseguiRipristinoTotale(fullData) {
+        disonotify("⚠️ ATTENZIONE: Questo SOVRASCRIVERÀ l'intero database. Sei assolutamente sicuro?", {
+            confirmText: "Sì, Ripristina",
+            showCancel: true,
+            cancelText: "Annulla",
+            onConfirm: async () => {
+                try {
+                    showLoader();
+                    const cloudBackups = (await db.ref("cloud_backups").once("value")).val();
+                    await db.ref().set(fullData);
+                    if (cloudBackups) {
+                        await db.ref("cloud_backups").set(cloudBackups);
+                    }
+                    
+                    logAttivita("Ha effettuato un ripristino totale del database.");
+                    notify("✅ Database ripristinato con successo!", "success");
+                    hideLoader();
+                    setTimeout(() => location.reload(), 1500);
+                } catch (err) {
+                    hideLoader();
+                    notify("❌ Errore di ripristino: " + err.message, "error");
+                }
+            }
+        });
     }
-});
+}
 //RICERCA
 function initRicercaComande(containerId, inputId) {
     if (!checkOnline(true)) return;
@@ -13543,13 +13788,13 @@ async function eseguiAutoBackupCloud() {
         console.error("Errore Auto-Backup Cloud:", err);
     }
 }
-// 4. Mostra i Backup nell'Interfaccia Grafica Admin
+// 4. Mostra i Backup nell'Interfaccia Grafica Admin (Senza bottoni azione)
 function renderCloudBackups(backupsData) {
     const container = document.getElementById("listaCloudBackups");
     if (!container) return;
     container.innerHTML = "";
 
-    const keys = Object.keys(backupsData).sort((a, b) => backupsData[b].timestamp - backupsData[a].timestamp); // Dal più nuovo al più vecchio
+    const keys = Object.keys(backupsData).sort((a, b) => backupsData[b].timestamp - backupsData[a].timestamp);
 
     if (keys.length === 0) {
         container.innerHTML = "<i style='color:#777;'>In attesa del primo salvataggio automatico...</i>";
@@ -13563,63 +13808,15 @@ function renderCloudBackups(backupsData) {
         div.style.display = "flex";
         div.style.justifyContent = "space-between";
         div.style.alignItems = "center";
-        div.style.background = "#fff";
+        div.style.background = "#f9f9f9";
         div.style.padding = "10px";
-        div.style.border = "1px solid #ccc";
+        div.style.border = "1px dashed #ccc";
         div.style.borderRadius = "6px";
 
         const info = document.createElement("div");
-        info.innerHTML = `<b>☁️ Salvataggio:</b> ${date.toLocaleDateString('it-IT')} - ${date.toLocaleTimeString('it-IT')}`;
+        info.innerHTML = `<b>☁️ Copia salvata:</b> ${date.toLocaleDateString('it-IT')} - ${date.toLocaleTimeString('it-IT')}`;
         
-        const btnContainer = document.createElement("div");
-        btnContainer.style.display = "flex";
-        btnContainer.style.gap = "5px";
-
-        // TASTO: Scarica sul PC (.json)
-        const btnDownload = document.createElement("button");
-        btnDownload.innerText = "Scarica";
-        btnDownload.style.background = "#2196F3";
-        btnDownload.style.color = "white";
-        btnDownload.style.padding = "6px 12px";
-        btnDownload.onclick = () => {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(b.data));
-            const dlAnchorElem = document.createElement('a');
-            dlAnchorElem.setAttribute("href", dataStr);
-            dlAnchorElem.setAttribute("download", `Backup_Cloud_BistroBo_${b.timestamp}.json`);
-            dlAnchorElem.click();
-            notify("Copia locale scaricata!", "success");
-        };
-
-        // TASTO: Ripristina istantaneamente il DB
-        const btnRestore = document.createElement("button");
-        btnRestore.innerText = "Ripristina DB";
-        btnRestore.style.background = "#f44336";
-        btnRestore.style.color = "white";
-        btnRestore.style.padding = "6px 12px";
-        btnRestore.onclick = () => {
-            disonotify("⚠️ Vuoi davvero sovrascrivere tutto il database ripristinando questa copia?", {
-                confirmText: "Ripristina",
-                showCancel: true,
-                cancelText: "Annulla",
-                onConfirm: async () => {
-                    showLoader();
-                    try {
-                        await db.ref().update(b.data);
-                        notify("✅ Database ripristinato con successo!", "success");
-                        setTimeout(() => location.reload(), 1500); // Ricarica per rendere tutto effettivo
-                    } catch (e) {
-                        notify("❌ Errore ripristino: " + e.message, "error");
-                    } finally {
-                        hideLoader();
-                    }
-                }
-            });
-        };
-
-        btnContainer.appendChild(btnDownload);
-        btnContainer.appendChild(btnRestore);
         div.appendChild(info);
-        div.appendChild(btnContainer);
         container.appendChild(div);
     });
 }
