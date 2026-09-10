@@ -1645,16 +1645,30 @@
 				    </div>
 				    <button id="svuotaRegistroBtn" class="toggleBtn" style="background:#607D8B; color:white;">SVUOTA LOG</button>
 				</div>
-				<h4 style="margin-top: 30px; padding-bottom: 5px; color: #00796B; border-top: 1px dashed #ccc; padding-top: 20px;">Backup del sistema</h4>
+				<h4 style="margin-top: 30px; padding-bottom: 5px; color: #00796B; border-top: 1px dashed #ccc; padding-top: 20px;">Configurazione e Backup</h4>
+				<!-- Nuova sezione Configurazione Sistema -->
 				<div class="settingItem">
 					<div class="settingLabel">
-					    <span>Backup Database</span>
-					    <small>Scarica o ripristina il backup del database (include comande, preordini, storico, menù, ingredienti e impostazioni. Esclude utenti e log di sistema).</small>
+					    <span>Configurazione Sistema</span>
+					    <small>Scarica o carica solo la struttura (Impostazioni, Menu, Ingredienti, Mansionari, ecc). <b>Esclude comande, preordini e storico.</b></small>
 					</div>
 					<div style="display:flex; gap:10px; align-items:center;">
-						<button id="backupDbBtn" class="toggleBtn">Scarica Backup</button>
-						<button id="restoreDbBtn" class="toggleBtn">Ripristina Backup</button>
-						<input type="file" id="restoreDbFile" style="display:none;">
+						<button id="scaricaConfigBtn" class="toggleBtn">Scarica Config</button>
+						<button id="caricaConfigBtn" class="toggleBtn">Carica Config</button>
+						<input type="file" id="caricaConfigFile" style="display:none;" accept=".json">
+					</div>
+				</div>
+				
+				<!-- Sezione Modali Backup Completo -->
+				<div class="settingItem">
+					<div class="settingLabel">
+					    <span>Backup Completo Database</span>
+					    <small>Gestisci il backup completo di <b>TUTTI</b> i nodi del sistema. Usa questi tasti per salvare su PC/Cloud o ripristinare il database per intero.</small>
+					</div>
+					<div style="display:flex; gap:10px; align-items:center;">
+						<button id="backupDbBtn" class="toggleBtn">Crea Backup</button>
+						<button id="restoreDbBtn" class="toggleBtn">Ripristina DB</button>
+						<input type="file" id="restoreDbFile" style="display:none;" accept=".json">
 					</div>
 				</div>
 				<div class="settingItem">
