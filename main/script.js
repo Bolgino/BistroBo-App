@@ -13788,13 +13788,13 @@ async function eseguiAutoBackupCloud() {
         console.error("Errore Auto-Backup Cloud:", err);
     }
 }
-// 4. Mostra i Backup nell'Interfaccia Grafica Admin (Senza bottoni azione)
+// 4. Mostra i Backup nell'Interfaccia Grafica Admin (Con tasto Elimina singolo)
 function renderCloudBackups(backupsData) {
     const container = document.getElementById("listaCloudBackups");
     if (!container) return;
     container.innerHTML = "";
 
-    const keys = Object.keys(backupsData).sort((a, b) => backupsData[b].timestamp - backupsData[a].timestamp);
+    const keys = Object.keys(backupsData).sort((a, b) => backupsData[b].timestamp - backupsData[a].timestamp); // Dal più nuovo al più vecchio
 
     if (keys.length === 0) {
         container.innerHTML = "<i style='color:#777;'>In attesa del primo salvataggio automatico...</i>";
@@ -13808,15 +13808,50 @@ function renderCloudBackups(backupsData) {
         div.style.display = "flex";
         div.style.justifyContent = "space-between";
         div.style.alignItems = "center";
-        div.style.background = "#f9f9f9";
+        div.style.background = "#fff";
         div.style.padding = "10px";
-        div.style.border = "1px dashed #ccc";
+        div.style.border = "1px solid #ccc";
         div.style.borderRadius = "6px";
+        div.style.marginBottom = "8px"; // Piccola spaziatura tra un salvataggio e l'altro
 
         const info = document.createElement("div");
-        info.innerHTML = `<b>☁️ Copia salvata:</b> ${date.toLocaleDateString('it-IT')} - ${date.toLocaleTimeString('it-IT')}`;
+        info.innerHTML = `<b>☁️ Salvataggio:</b> ${date.toLocaleDateString('it-IT')} - ${date.toLocaleTimeString('it-IT')}`;
         
+        const btnContainer = document.createElement("div");
+        btnContainer.style.display = "flex";
+        btnContainer.style.gap = "5px";
+
+        // NUOVO TASTO: Elimina Singolo
+        const btnDelete = document.createElement("button");
+        btnDelete.innerText = "🗑️ Elimina";
+        btnDelete.style.background = "#f44336";
+        btnDelete.style.color = "white";
+        btnDelete.style.padding = "6px 12px";
+        btnDelete.style.border = "none";
+        btnDelete.style.borderRadius = "4px";
+        btnDelete.style.cursor = "pointer";
+        btnDelete.onclick = () => {
+            disonotify("Vuoi eliminare definitivamente solo questo backup dal Cloud?", {
+                confirmText: "Sì, Elimina",
+                showCancel: true,
+                cancelText: "Annulla",
+                onConfirm: async () => {
+                    try {
+                        showLoader();
+                        await db.ref("cloud_backups/" + k).remove();
+                        notify("Backup eliminato con successo!", "success");
+                        hideLoader();
+                    } catch (e) {
+                        hideLoader();
+                        notify("Errore durante l'eliminazione: " + e.message, "error");
+                    }
+                }
+            });
+        };
+
+        btnContainer.appendChild(btnDelete);
         div.appendChild(info);
+        div.appendChild(btnContainer);
         container.appendChild(div);
     });
 }
