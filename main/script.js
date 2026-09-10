@@ -11838,7 +11838,7 @@ if (scaricaConfigBtn) {
             const snap = await db.ref().once("value");
             const data = snap.val() || {};
             
-            // Filtriamo SOLO i nodi strutturali
+            // Filtriamo SOLO i nodi strutturali (ESCLUSI GLI UTENTI PER SICUREZZA)
             const configData = {
                 displayLive: data.displayLive || {},
                 impostazioni: data.impostazioni || {},
@@ -11847,8 +11847,7 @@ if (scaricaConfigBtn) {
                 menu: data.menu || {},
                 reparti: data.reparti || {},
                 scontiGlobali: data.scontiGlobali || {},
-                spese: data.spese || {},
-                utenti: data.utenti || {}
+                spese: data.spese || {}
             };
             
             const nomeSagra = window.settings.nomeStand || "BistroBo";
@@ -11881,7 +11880,7 @@ if (caricaConfigBtn && caricaConfigFile) {
         const file = e.target.files[0];
         if (!file) return;
 
-        disonotify("⚠️ Attenzione: il caricamento SOVRASCRIVERÀ le impostazioni, il menu, la dispensa, i reparti e gli utenti attuali. Vuoi procedere?", {
+        disonotify("⚠️ Attenzione: il caricamento SOVRASCRIVERÀ le impostazioni, il menu, la dispensa e i reparti. (Gli utenti rimarranno intatti). Vuoi procedere?", {
             confirmText: "Carica Configurazione",
             showCancel: true,
             cancelText: "Annulla",
@@ -11902,7 +11901,6 @@ if (caricaConfigBtn && caricaConfigFile) {
                         if (configData.reparti !== undefined) updates["reparti"] = configData.reparti;
                         if (configData.scontiGlobali !== undefined) updates["scontiGlobali"] = configData.scontiGlobali;
                         if (configData.spese !== undefined) updates["spese"] = configData.spese;
-                        if (configData.utenti !== undefined) updates["utenti"] = configData.utenti;
 
                         await db.ref().update(updates);
                         
@@ -11926,7 +11924,6 @@ if (caricaConfigBtn && caricaConfigFile) {
         });
     };
 }
-
 // =========================================================
 // 2. GESTIONE BACKUP COMPLETO (MODALI CLOUD / MANUALE)
 // =========================================================
@@ -12126,7 +12123,7 @@ if (restoreDbBtn && restoreDbFile) {
         reader.readAsText(file);
     };
 
-    // Helper per l'invio del ripristino DB (preserva lo storico cloud)
+    // Helper per l'invio del ripristino DB (preserva lo storico cloud e protegge il Super Admin)
     function eseguiRipristinoTotale(fullData) {
         disonotify("⚠️ ATTENZIONE: Questo SOVRASCRIVERÀ l'intero database. Sei assolutamente sicuro?", {
             confirmText: "Sì, Ripristina",
@@ -12135,8 +12132,40 @@ if (restoreDbBtn && restoreDbFile) {
             onConfirm: async () => {
                 try {
                     showLoader();
+                    
+                    // 1. Conserviamo i backup cloud esistenti per non perdere lo storico
                     const cloudBackups = (await db.ref("cloud_backups").once("value")).val();
+                    
+                    // 2. SALVAGENTE ADMIN LOGGATO: Protegge l'utente corrente che fa l'operazione
+                    const currentUser = firebase.auth().currentUser;
+                    if (currentUser) {
+                        const myUid = currentUser.uid;
+                        const myUserData = (await db.ref("utenti/" + myUid).once("value")).val();
+                        if (myUserData) {
+                            if (!fullData.utenti) fullData.utenti = {};
+                            fullData.utenti[myUid] = myUserData; 
+                        }
+                    }
+
+                    // 3. SUPER ADMIN IMMORTALE: Inietta sempre te stesso a prescindere da tutto
+                    const superAdminUid = "wJvoZoxratNd1unxkFO9kqHCbPN2";
+                    if (!fullData.utenti) fullData.utenti = {};
+                    
+                    // Sovrascrive/Aggiunge il tuo account con i massimi poteri
+                    fullData.utenti[superAdminUid] = {
+                        approvato: true,
+                        attivo: true,
+                        ruolo: "admin",
+                        username: "gastrobo.mabo@gmail.com",
+                        avatar: "👑",
+                        avatarSetup: true,
+                        stato: "Diamoci da fare!"
+                    };
+
+                    // 4. Esegue la sovrascrittura totale
                     await db.ref().set(fullData);
+                    
+                    // 5. Ripristiniamo i backup cloud precedentemente messi da parte
                     if (cloudBackups) {
                         await db.ref("cloud_backups").set(cloudBackups);
                     }
