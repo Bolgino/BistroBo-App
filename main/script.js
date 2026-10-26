@@ -24,8 +24,9 @@ const loginDiv = document.getElementById("loginDiv");
 const registerDiv = document.getElementById("registerDiv");
 const comandeNotificate = new Set(JSON.parse(localStorage.getItem("comandeNotificate") || "[]"));
 let logoutVolontario = false;      
-let statusListenerRef = null;     
-let timestampServerUTC = null; 
+let statusListenerRef = null;
+let manutenzioneListenerRef = null; // SIC-02: listener manutenzione per utenti già collegati
+let timestampServerUTC = null;
 let avvioLocale = null;
 let menuData = {};
 
@@ -2542,6 +2543,48 @@ document.getElementById("loginBtn").addEventListener("click", async () => {
             };
 
             userStatusDatabaseRef.on("value", statusListenerRef);
+
+            // ================== SIC-02: USCITA AUTOMATICA SE L'ADMIN ATTIVA LA MANUTENZIONE ==================
+            // Il controllo al login blocca solo chi entra dopo: chi è già dentro viene fatto uscire qui.
+            const manutenzioneLiveRef = db.ref("impostazioni/manutenzione");
+            if (manutenzioneListenerRef) manutenzioneLiveRef.off("value", manutenzioneListenerRef);
+
+            manutenzioneListenerRef = async snap => {
+                if (snap.val() !== true) return;
+
+                // Il popup deve comparire una volta sola
+                manutenzioneLiveRef.off("value", manutenzioneListenerRef);
+                manutenzioneListenerRef = null;
+
+                // Uscita voluta: non deve comparire il popup "Connessione persa"
+                logoutVolontario = true;
+                if (statusListenerRef) {
+                    userStatusDatabaseRef.off("value", statusListenerRef);
+                    statusListenerRef = null;
+                }
+
+                try {
+                    await userStatusDatabaseRef.set({
+                        state: "offline",
+                        last_changed: firebase.database.ServerValue.TIMESTAMP
+                    });
+                } catch (e) {
+                    console.warn("Impossibile aggiornare stato offline:", e);
+                }
+
+                // Logout subito, così l'operatore non può continuare a lavorare chiudendo il popup
+                try { await auth.signOut(); } catch (e) { console.warn(e); }
+
+                disonotify(
+                    "🛠️ L'amministratore ha attivato la MANUTENZIONE. L'accesso è consentito solo agli amministratori.",
+                    {
+                        confirmText: "OK",
+                        onConfirm: () => location.reload()
+                    }
+                );
+            };
+
+            manutenzioneLiveRef.on("value", manutenzioneListenerRef);
         }
     } catch (err) {
         document.getElementById("loginMsg").innerText = "❌ " + err.message;
