@@ -72,8 +72,35 @@
                 btnVerifica.disabled = true;
                 btnVerifica.innerText = "Cottura in corso...";
 
-                // Sblocca l'utente inviando il token di sicurezza
-                await db.ref("utenti/" + uid).update({ 
+                // 1. Controlla che l'account esista e che il token del link sia quello salvato
+                let datiUtente = null;
+                try {
+                    const snap = await db.ref("utenti/" + uid).once("value");
+                    if (!snap.exists()) {
+                        showStatus("❌", "Link non valido o scaduto.", "text-red-400");
+                        return;
+                    }
+                    datiUtente = snap.val();
+                } catch (errLettura) {
+                    // Se le regole del database non permettono la lettura, decide la regola di scrittura
+                    datiUtente = null;
+                }
+
+                if (datiUtente) {
+                    if (datiUtente.email_verificata === true) {
+                        showStatus("✅", "Email già verificata. Puoi accedere.", "text-green-400");
+                        btnTorna.classList.remove('hidden');
+                        document.getElementById('footer-links').classList.add('hidden');
+                        return;
+                    }
+                    if (!datiUtente.token_verifica || datiUtente.token_verifica !== token) {
+                        showStatus("⚠️", "Impossibile verificare l'account. Il codice potrebbe essere errato o già utilizzato.", "text-yellow-400");
+                        return;
+                    }
+                }
+
+                // 2. Sblocca l'utente inviando il token di sicurezza
+                await db.ref("utenti/" + uid).update({
                     email_verificata: true,
                     token_inserito: token 
                 });

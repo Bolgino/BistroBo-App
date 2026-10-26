@@ -317,7 +317,9 @@ if (sendResetBtn) {
             await auth.sendPasswordResetEmail(emailValue);
             
             forgotMsg.style.color = "green";
-            forgotMsg.innerHTML = "✅ Email inviata con successo!<br><span style='font-size:0.85em; color:gray;'>Controlla la posta (anche nello Spam).</span>";
+            // Firebase (protezione anti-enumerazione) non dice se l'email esiste:
+            // il messaggio resta neutro e la mail arriva solo agli account registrati.
+            forgotMsg.innerHTML = "✅ Se l'email è registrata, riceverai a breve il link per reimpostare la password.<br><span style='font-size:0.85em; color:gray;'>Controlla la posta (anche nello Spam).</span>";
             
             sendResetBtn.disabled = false;
             sendResetBtn.innerText = "Invia Email";
@@ -421,21 +423,31 @@ document.getElementById("regBtn").onclick = async () => {
         }
     }
 
-    try {
-        // 1. Crea account Firebase
-        const res = await auth.createUserWithEmailAndPassword(email, password);
-		
-        const ruoloUtente = approvAuto ? regRoleSelect.value : "utente";
-        
-        // Se snack è selezionato ma disattivato, correggi in "utente"
-        if (ruoloUtente === "snack") {
-            const snapSnack = await db.ref("impostazioni/snackAbilitato").once("value");
-            if (!snapSnack.exists() || !snapSnack.val()) {
-                notify("⚠️ Il profilo Snack non è attivo, seleziona un altro ruolo.", "warn");
+    const ruoloUtente = approvAuto ? regRoleSelect.value : "utente";
+
+    // Controllo PRIMA di creare l'account: il reparto scelto deve essere ancora attivo.
+    // (Prima l'account veniva creato e solo dopo bloccato, lasciando un account orfano.)
+    if (["snack", "extra1", "extra2", "extra3"].includes(ruoloUtente)) {
+        try {
+            const snapRep = await db.ref("impostazioni/" + ruoloUtente + "Abilitato").once("value");
+            const repartoAttivo = snapRep.val() === true || snapRep.val() === "true";
+            if (!repartoAttivo) {
+                const nomeRep = ruoloUtente === "snack" ? "Snack" : (window.nomiRepartiExtra?.[ruoloUtente] || ruoloUtente);
+                notify(`⚠️ Il profilo ${nomeRep} non è attivo, seleziona un altro ruolo.`, "warn");
+                aggiornaSelectRuoliDinamici();
                 hideLoader();
                 return;
             }
+        } catch (e) {
+            notify("❌ Impossibile controllare il ruolo scelto, riprova.", "error");
+            hideLoader();
+            return;
         }
+    }
+
+    try {
+        // 1. Crea account Firebase
+        const res = await auth.createUserWithEmailAndPassword(email, password);
 
         // 2. Generiamo un Token Segreto e salviamo l'utente
         const tokenSegreto = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
@@ -948,6 +960,8 @@ function initImpostazioniToggle() {
     const snackRef = db.ref("impostazioni/snackAbilitato");
     initToggle(toggleSnackBtn, snackRef, {on: "ON", off: "OFF"}, false, val => {
         window.settings.snackAbilitato = val;
+        // Come per i reparti Extra: aggiorna subito i menu Ruolo (registrazione e Admin)
+        aggiornaSelectRuoliDinamici();
     });
     aggiornaSelectRuoliDinamici();
     // Aggiornamenti in tempo reale all'attivazione/disattivazione dello Snack
@@ -1966,7 +1980,10 @@ function aggiornaSelectRuoliDinamici() {
                     const opt = document.createElement("option");
                     opt.value = prof.id;
                     opt.textContent = prof.label;
-                    selectEl.appendChild(opt);
+                    // Snack subito dopo "Bere", così l'ordine resta uguale a quello iniziale
+                    const optBere = selectEl.querySelector("option[value='bere']");
+                    if (prof.id === "snack" && optBere) optBere.after(opt);
+                    else selectEl.appendChild(opt);
                 } else {
                     optEsistente.textContent = prof.label; // Aggiorna il nome se viene rinominato!
                 }
@@ -3500,6 +3517,8 @@ document.getElementById("registraBtn").onclick = async () => {
     const ruoloNuovo = document.getElementById("newRole").value;
 
     if(!email || !password){ notify("Compila tutti i campi", "warn"); return; }
+    // Il ruolo è obbligatorio: senza, l'utente finiva salvato con ruolo vuoto
+    if(!ruoloNuovo){ notify("⚠️ Seleziona un ruolo!", "warn"); return; }
 
     try{
         // 1. Creiamo un'app Firebase secondaria al volo per non perdere la sessione Admin
@@ -13364,6 +13383,8 @@ document.addEventListener("keydown", function(e) {
 
         if (e.key === "Escape") {
             e.preventDefault();
+            // I popup obbligatori (es. profilo al primo accesso) non si chiudono con ESC
+            if (modaleAttivo.dataset.obbligatorio === "true") return;
             // Cerca il bottone annulla/chiudi usando le classi o il testo
             const btnAnnulla = modaleAttivo.querySelector(".btn-chiudi, #annullaArchiviaBtn, #btnChiudiVisibilitaPreordini") 
                 || Array.from(modaleAttivo.querySelectorAll("button")).find(b => b.innerText.toLowerCase().includes("annull") || b.innerText.toLowerCase().includes("chiud"));
@@ -13479,6 +13500,8 @@ document.addEventListener("mousedown", function(e) {
         
         // Evitiamo di chiudere schermate critiche come i caricamenti o l'assenza di rete
         if (modaleAttivo.id === "loader" || modaleAttivo.id === "offlineLoader") return;
+        // I popup obbligatori (es. profilo al primo accesso) non si chiudono cliccando fuori
+        if (modaleAttivo.dataset.obbligatorio === "true") return;
 
         // Cerchiamo il bottone "Annulla", "Chiudi" o le loro varianti all'interno del modale
         const btnAnnulla = modaleAttivo.querySelector(".btn-chiudi, #annullaArchiviaBtn, #btnChiudiVisibilitaPreordini") || 
@@ -14454,7 +14477,9 @@ window.apriModalProfilo = function(primoAvvio = false) {
     
     // Mostra il popup forzando il display
     modal.style.display = "flex";
-    
+    // Al primo accesso il popup è obbligatorio: ESC e click fuori non lo chiudono
+    modal.dataset.obbligatorio = primoAvvio ? "true" : "false";
+
     // Gestione bottone Annulla: se è il primo avvio non puoi annullare, devi salvare!
     const btnAnnulla = document.getElementById("chiudiProfiloBtn");
     if (btnAnnulla) {
@@ -14507,8 +14532,11 @@ if(salvaProfiloBtn) {
             
             // Chiude il modal
             const modal = document.getElementById("modalProfilo");
-            if (modal) modal.style.display = "none";
-            
+            if (modal) {
+                modal.style.display = "none";
+                modal.dataset.obbligatorio = "false";
+            }
+
             if(isPrimoAvvio) notify("Profilo configurato con successo! Buon lavoro!", "success");
             else notify("Profilo aggiornato!", "info");
 
