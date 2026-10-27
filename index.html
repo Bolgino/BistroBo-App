@@ -1160,6 +1160,7 @@
 					<input id="newUsername" placeholder="Username" style="padding: 10px; border-radius: 6px; border: 1px solid #ccc; flex: 1; min-width: 150px; outline: none;">
 					<input id="newPass" placeholder="Password" style="padding: 10px; border-radius: 6px; border: 1px solid #ccc; flex: 1; min-width: 150px; outline: none;">
 					<select id="newRole" style="padding: 10px; border-radius: 6px; border: 1px solid #ccc; flex: 1; min-width: 150px; outline: none; background: white;">
+						<option value="" selected>-- Seleziona ruolo --</option>
 						<option value="cassa">Cassa</option>
 						<option value="cucina">Cucina</option>
 						<option value="admin">Admin</option>
@@ -1613,7 +1614,7 @@
 				<div class="settingItem" style="border-left: 4px solid #f44336; background: #ffebee;">
 					<div class="settingLabel">
 						<span style="color: #d32f2f; font-weight: bold;">Modalità Manutenzione 🛠️</span>
-						<small>Blocca l'accesso al personale (tranne admin) e chiude la pagina pubblica ai clienti.</small>
+						<small>Blocca l'accesso al personale (tranne admin), fa uscire chi è già collegato e chiude la pagina pubblica ai clienti.</small>
 					</div>
 					<button id="toggleManutenzioneBtn" class="toggleBtn">OFF</button>
 				</div>
